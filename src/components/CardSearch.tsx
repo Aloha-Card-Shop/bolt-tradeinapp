@@ -1,28 +1,53 @@
+
 import React, { useState, useEffect } from 'react';
-import { useCardSearch } from '../hooks/useCardSearch';
 import { CardDetails } from '../types/card';
 
-interface CardSearchProps {
-  onCardSelect: (card: CardDetails) => void;
+interface SetOption {
+  id: number;
+  name: string;
 }
 
-const CardSearch: React.FC<CardSearchProps> = ({ onCardSelect }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const { cards, isLoading, error, searchCards } = useCardSearch();
+interface CardSearchProps {
+  cardDetails: CardDetails;
+  onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  setOptions: SetOption[];
+  isLoadingSets: boolean;
+  onCardSelect?: (card: CardDetails) => void;
+}
 
+const CardSearch: React.FC<CardSearchProps> = ({ 
+  cardDetails, 
+  onInputChange, 
+  setOptions, 
+  isLoadingSets,
+  onCardSelect 
+}) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  
   useEffect(() => {
-    if (searchTerm) {
-      searchCards(searchTerm);
-    }
-  }, [searchTerm, searchCards]);
+    setSearchTerm(cardDetails.name || '');
+  }, [cardDetails.name]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+    
+    const event = {
+      ...e,
+      target: {
+        ...e.target,
+        name: 'name',
+        value: e.target.value
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    onInputChange(event);
   };
 
   const handleCardSelect = (card: CardDetails) => {
-    onCardSelect(card);
-    setSearchTerm(''); // Clear the search term after selecting a card
+    if (onCardSelect) {
+      onCardSelect(card);
+      setSearchTerm(''); // Clear the search term after selecting a card
+    }
   };
 
   return (
@@ -34,20 +59,41 @@ const CardSearch: React.FC<CardSearchProps> = ({ onCardSelect }) => {
         onChange={handleInputChange}
         className="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
-      {isLoading && <p>Loading...</p>}
-      {error && <p className="text-red-500">Error: {error}</p>}
-      {cards && cards.length > 0 && (
-        <ul className="mt-2">
-          {cards.map((card) => (
-            <li
-              key={card.id}
-              className="py-2 px-4 border-b cursor-pointer hover:bg-gray-100"
-              onClick={() => handleCardSelect(card)}
-            >
-              {card.name} ({card.set})
-            </li>
-          ))}
-        </ul>
+      
+      {isLoadingSets && <p>Loading sets...</p>}
+      
+      {setOptions && setOptions.length > 0 && cardDetails.name && (
+        <div className="mt-2">
+          <label className="block mb-1 text-sm font-medium">Set:</label>
+          <select 
+            name="set"
+            value={cardDetails.set || ''}
+            onChange={onInputChange}
+            className="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All Sets</option>
+            {setOptions.map((set) => (
+              <option key={set.id} value={set.name}>
+                {set.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Card number input */}
+      {cardDetails.name && (
+        <div className="mt-2">
+          <label className="block mb-1 text-sm font-medium">Card Number:</label>
+          <input
+            type="text"
+            name="number"
+            value={cardDetails.number || ''}
+            onChange={onInputChange}
+            placeholder="Enter card number..."
+            className="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       )}
     </div>
   );

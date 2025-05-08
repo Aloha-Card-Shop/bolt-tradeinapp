@@ -1,4 +1,3 @@
-import { CardDetails } from '../types/card';
 
 interface CacheEntry {
   price: number;
@@ -37,8 +36,8 @@ export const buildTcgPlayerUrl = (productId: string, condition: string | undefin
 export const fetchCardPrices = async (
   productId: string,
   condition: string, 
-  isFirstEdition?: boolean,  // Keep param even if unused
-  isHolo?: boolean,         // Keep param even if unused
+  _isFirstEdition?: boolean,  // Prefix with underscore to indicate unused param
+  _isHolo?: boolean,         // Prefix with underscore to indicate unused param
   game?: string
 ): Promise<{ price: string }> => {
   try {

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DatabaseIcon, Sparkles } from 'lucide-react';
 import CardSearch from './CardSearch';
@@ -11,7 +10,16 @@ import { useTradeInList } from '../hooks/useTradeInList';
 import { CardDetails, SavedCard } from '../types/card';
 
 function MainApp() {
-  const { cardDetails, searchResults, setOptions, isLoadingSets, isSearching, handleInputChange, resetSearch } = useCardSearch();
+  const { 
+    cardDetails, 
+    searchResults, 
+    setOptions, 
+    isLoadingSets, 
+    isSearching, 
+    handleInputChange, 
+    resetSearch 
+  } = useCardSearch();
+  
   const { savedCards, removeCard } = useSavedCards();
   const { items, addItem, removeItem, updateItem } = useTradeInList();
 
@@ -25,14 +33,6 @@ function MainApp() {
   const handleAddToList = (card: CardDetails | SavedCard, price: number) => {
     addItem(card, price);
     resetSearch(); // Reset search after adding card
-  };
-
-  const cardDetailsForSearch = {
-    name: cardDetails.name,
-    set: cardDetails.set || '',
-    number: cardDetails.number || '',
-    game: cardDetails.game,
-    categoryId: cardDetails.categoryId
   };
 
   return (
@@ -63,7 +63,7 @@ function MainApp() {
           <div className="lg:col-span-3 space-y-8">
             <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
               <CardSearch 
-                cardDetails={cardDetailsForSearch}
+                cardDetails={cardDetails}
                 onInputChange={handleInputChange}
                 setOptions={setOptions}
                 isLoadingSets={isLoadingSets}
