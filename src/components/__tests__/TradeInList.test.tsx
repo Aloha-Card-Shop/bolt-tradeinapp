@@ -68,6 +68,7 @@ describe('TradeInList Validation', () => {
   it('should disable review button when items are invalid', async () => {
     const mockRemoveItem = vi.fn();
     const mockUpdateItem = vi.fn();
+    const mockClearList = vi.fn(); // Add mockClearList function
     const mockItems = [invalidItem];
 
     await act(async () => {
@@ -76,6 +77,7 @@ describe('TradeInList Validation', () => {
           items={mockItems}
           onRemoveItem={mockRemoveItem}
           onUpdateItem={mockUpdateItem}
+          clearList={mockClearList} // Add clearList prop
         />
       );
     });
@@ -87,6 +89,7 @@ describe('TradeInList Validation', () => {
   it('should enable review button when all items are valid', async () => {
     const mockRemoveItem = vi.fn();
     const mockUpdateItem = vi.fn();
+    const mockClearList = vi.fn(); // Add mockClearList function
     const mockItems = [validItem];
 
     await act(async () => {
@@ -95,6 +98,7 @@ describe('TradeInList Validation', () => {
           items={mockItems}
           onRemoveItem={mockRemoveItem}
           onUpdateItem={mockUpdateItem}
+          clearList={mockClearList} // Add clearList prop
         />
       );
     });
@@ -106,6 +110,7 @@ describe('TradeInList Validation', () => {
   it('should validate price is greater than 0', async () => {
     const mockRemoveItem = vi.fn();
     const mockUpdateItem = vi.fn();
+    const mockClearList = vi.fn(); // Add mockClearList function
     const itemWithZeroPrice: TradeInItem = {
       ...validItem,
       price: 0
@@ -117,6 +122,7 @@ describe('TradeInList Validation', () => {
           items={[itemWithZeroPrice]}
           onRemoveItem={mockRemoveItem}
           onUpdateItem={mockUpdateItem}
+          clearList={mockClearList} // Add clearList prop
         />
       );
     });
@@ -128,6 +134,7 @@ describe('TradeInList Validation', () => {
   it('should prevent submission with invalid items', async () => {
     const mockRemoveItem = vi.fn();
     const mockUpdateItem = vi.fn();
+    const mockClearList = vi.fn(); // Add mockClearList function
     const mockItems = [validItem, invalidItem];
 
     await act(async () => {
@@ -136,6 +143,7 @@ describe('TradeInList Validation', () => {
           items={mockItems}
           onRemoveItem={mockRemoveItem}
           onUpdateItem={mockUpdateItem}
+          clearList={mockClearList} // Add clearList prop
         />
       );
     });

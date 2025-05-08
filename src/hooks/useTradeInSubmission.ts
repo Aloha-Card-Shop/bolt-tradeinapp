@@ -8,16 +8,14 @@ interface UseTradeInSubmissionProps {
   items: TradeInItem[];
   selectedCustomer: Customer | null;
   itemValuesMap: Record<string, { tradeValue: number; cashValue: number }>;
-  onRemoveItem: (index: number) => void;
   onSuccess?: () => void;
-  clearList?: () => void; // Added clear list function
+  clearList?: () => void;
 }
 
 export const useTradeInSubmission = ({
   items,
   selectedCustomer,
   itemValuesMap,
-  onRemoveItem,
   onSuccess,
   clearList
 }: UseTradeInSubmissionProps) => {

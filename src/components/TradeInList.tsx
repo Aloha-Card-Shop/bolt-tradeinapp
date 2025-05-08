@@ -40,7 +40,6 @@ const TradeInList: React.FC<TradeInListProps> = ({
     items,
     selectedCustomer,
     itemValuesMap,
-    onRemoveItem,
     clearList, // Pass clearList to useTradeInSubmission
     onSuccess: () => {
       setIsReviewing(false);
