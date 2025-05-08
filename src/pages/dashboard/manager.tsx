@@ -99,14 +99,33 @@ const ManagerDashboard = () => {
             notes: item.notes,
             payment_type: item.payment_type as 'cash' | 'trade' | 'mixed',
             staff_notes: item.staff_notes,
-            // The customers field is an object, not an array
-            customers: item.customers as Customer,
           };
           
-          // Set the customer_name based on the customers object
-          tradeIn.customer_name = tradeIn.customers
-            ? `${tradeIn.customers.first_name} ${tradeIn.customers.last_name}` 
-            : 'Unknown';
+          // Handle the customers object which may be returned as an object or an array with a single object
+          if (item.customers) {
+            if (Array.isArray(item.customers)) {
+              // If it's an array, take the first customer
+              if (item.customers.length > 0) {
+                const customer = item.customers[0];
+                tradeIn.customers = {
+                  first_name: customer.first_name,
+                  last_name: customer.last_name
+                };
+                tradeIn.customer_name = `${customer.first_name} ${customer.last_name}`;
+              } else {
+                tradeIn.customer_name = 'Unknown';
+              }
+            } else {
+              // If it's an object, use it directly
+              tradeIn.customers = {
+                first_name: item.customers.first_name,
+                last_name: item.customers.last_name
+              };
+              tradeIn.customer_name = `${item.customers.first_name} ${item.customers.last_name}`;
+            }
+          } else {
+            tradeIn.customer_name = 'Unknown';
+          }
             
           return tradeIn;
         });
