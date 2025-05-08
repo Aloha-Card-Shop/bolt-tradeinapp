@@ -62,7 +62,10 @@ const MyTradeIns: React.FC = () => {
           payment_type: item.payment_type as 'cash' | 'trade' | 'mixed',
           staff_notes: item.staff_notes,
           customer_name: item.customers 
-            ? `${item.customers.first_name || ''} ${item.customers.last_name || ''}` 
+            ? (typeof item.customers === 'object' 
+               ? Array.isArray(item.customers)
+                 ? `${item.customers[0]?.first_name || ''} ${item.customers[0]?.last_name || ''}` 
+                 : `${item.customers.first_name || ''} ${item.customers.last_name || ''}`)
             : 'Unknown',
           customers: item.customers as any
         }));
@@ -110,19 +113,26 @@ const MyTradeIns: React.FC = () => {
             tradeIn.id === tradeInId 
               ? { 
                   ...tradeIn, 
-                  items: data.map(item => ({
-                    id: item.id,
-                    trade_in_id: item.trade_in_id,
-                    card_id: item.card_id,
-                    quantity: item.quantity,
-                    price: item.price,
-                    condition: item.condition,
-                    attributes: item.attributes,
-                    card_name: item.cards?.name || 'Unknown Card',
-                    set_name: item.cards?.set_name || 'Unknown Set',
-                    image_url: item.cards?.image_url,
-                    rarity: item.cards?.rarity
-                  }))
+                  items: data.map(item => {
+                    // Handle cards data that might be returned as array or object
+                    const cardData = item.cards 
+                      ? (Array.isArray(item.cards) ? item.cards[0] : item.cards) 
+                      : null;
+                    
+                    return {
+                      id: item.id,
+                      trade_in_id: item.trade_in_id,
+                      card_id: item.card_id,
+                      quantity: item.quantity,
+                      price: item.price,
+                      condition: item.condition,
+                      attributes: item.attributes,
+                      card_name: cardData?.name || 'Unknown Card',
+                      set_name: cardData?.set_name || 'Unknown Set',
+                      image_url: cardData?.image_url,
+                      rarity: cardData?.rarity
+                    };
+                  })
                 }
               : tradeIn
           )
