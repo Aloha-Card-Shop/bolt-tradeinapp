@@ -90,6 +90,8 @@ export const useTradeInSubmission = ({
         status: 'pending' as const
       };
 
+      console.log('Submitting trade-in data:', tradeInData);
+
       const itemsData = validItems.map(item => ({
         card: {
           id: item.card.id!,

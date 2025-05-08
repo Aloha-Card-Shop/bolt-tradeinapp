@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 import { getOrCreateCard } from './cardService';
 
@@ -65,6 +66,9 @@ export async function insertTradeInAndItems(
       paymentType = 'trade';
     }
 
+    console.log('Determined payment type:', paymentType);
+    console.log('Cash value:', cashValue, 'Trade value:', tradeValue);
+
     // First, ensure all cards exist in the database
     const cardPromises = items.map(async (item, index) => {
       try {
@@ -96,7 +100,7 @@ export async function insertTradeInAndItems(
 
     if (tradeInError) {
       console.error('Error creating trade-in record:', tradeInError);
-      throw new Error('Failed to create trade-in record');
+      throw new Error(`Failed to create trade-in record: ${tradeInError.message}`);
     }
 
     if (!tradeIn) {
@@ -139,7 +143,7 @@ export async function insertTradeInAndItems(
         console.error('Error cleaning up trade-in after items insertion failure:', deleteError);
       }
 
-      throw new Error('Failed to create trade-in items');
+      throw new Error(`Failed to create trade-in items: ${itemsError.message}`);
     }
 
     console.log('Successfully created trade-in with items');
