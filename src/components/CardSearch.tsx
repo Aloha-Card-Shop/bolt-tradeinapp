@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { CardDetails, GameType, GAME_OPTIONS } from '../types/card';
+import { CardDetails, GAME_OPTIONS } from '../types/card';
 import { Package } from 'lucide-react';
 
 interface SetOption {
