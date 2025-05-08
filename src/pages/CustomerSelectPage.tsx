@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, User } from 'lucide-react';
@@ -115,6 +114,7 @@ const CustomerSelectPage = () => {
           <CustomerSelect
             customers={customers}
             isLoading={isLoadingCustomers}
+            selectedCustomer={null}
             onSelect={handleCustomerSelect}
             onCreateNew={handleCreateCustomer}
             isSubmitting={isSubmitting}

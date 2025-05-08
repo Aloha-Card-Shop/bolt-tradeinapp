@@ -17,7 +17,7 @@ class MockBroadcastChannel {
   addEventListener(): void {}
   removeEventListener(): void {}
   close(): void {}
-  dispatchEvent(event: Event): boolean { return true; }
+  dispatchEvent(): boolean { return true; }
 }
 
 // Assign the mock class to global

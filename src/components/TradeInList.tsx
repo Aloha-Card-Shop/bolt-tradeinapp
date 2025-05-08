@@ -1,9 +1,6 @@
-
-import React, { useState, useMemo } from 'react';
-import { ShoppingCart } from 'lucide-react';
+import React, { useState } from 'react';
 import { TradeInItem as TradeInItemType } from '../hooks/useTradeInList';
 import { useCustomers } from '../hooks/useCustomers';
-import { insertTradeInAndItems } from '../services/insertTradeInAndItems';
 import { Customer } from '../hooks/useCustomers';
 import TradeInReview from './TradeInReview';
 import TradeInItem from './TradeInItem';

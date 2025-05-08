@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Search, UserPlus, Loader2, User } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { Customer } from '../hooks/useCustomers';
 
 export interface CustomerSelectProps {
   customers: Customer[];
   isLoading: boolean;
-  selectedCustomer: Customer | null;
+  selectedCustomer?: Customer | null;
   onSelect: (customer: Customer | null) => void;
   onCreateNew: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
   isSubmitting?: boolean;

@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Search } from 'lucide-react';
-import { CardDetails } from '../types/card';
-import { GAME_OPTIONS } from '../types/card';
+import { GameOption, GAME_OPTIONS } from '../types/card';
 
 interface CardSearchProps {
   cardDetails: {
