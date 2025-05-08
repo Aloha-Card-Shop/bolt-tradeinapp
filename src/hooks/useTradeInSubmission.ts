@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from 'react';
 import { TradeInItem } from './useTradeInList';
 import { Customer } from './useCustomers';
@@ -29,10 +30,21 @@ export const useTradeInSubmission = ({
 
   const { totalCashValue, totalTradeValue } = useMemo(() => {
     return validItems.reduce((acc, item) => {
+      const cardId = item.card.id || '';
+      const itemValues = cardId && itemValuesMap[cardId];
+      
       if (item.paymentType === 'trade') {
-        acc.totalTradeValue += item.price * item.quantity;
+        // Use the trade value from itemValuesMap if available, otherwise fall back to item price
+        const tradeValue = itemValues?.tradeValue !== undefined 
+          ? itemValues.tradeValue
+          : item.price;
+        acc.totalTradeValue += tradeValue * item.quantity;
       } else {
-        acc.totalCashValue += item.price * item.quantity;
+        // Use the cash value from itemValuesMap if available, otherwise fall back to item price
+        const cashValue = itemValues?.cashValue !== undefined 
+          ? itemValues.cashValue
+          : item.price;
+        acc.totalCashValue += cashValue * item.quantity;
       }
       
       return acc;
