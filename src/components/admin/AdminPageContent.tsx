@@ -14,7 +14,7 @@ interface StaffUser {
 }
 
 interface NewStaffUser {
-  email: string;
+  email?: string; // Make email optional to match other definitions
   password: string;
   username?: string;
   role: 'admin' | 'manager' | 'user';
@@ -58,6 +58,10 @@ const AdminPageContent: React.FC<AdminPageContentProps> = ({
     setNewUser({ email: '', password: '', username: '', role: 'user' });
   };
 
+  const handleUserChange = (user: NewStaffUser) => {
+    setNewUser(user);
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
       <div className="flex items-center justify-between mb-6">
@@ -83,7 +87,7 @@ const AdminPageContent: React.FC<AdminPageContentProps> = ({
       {showCreateModal && (
         <CreateUserModal
           newUser={newUser}
-          onUserChange={setNewUser}
+          onUserChange={handleUserChange}
           onSubmit={handleCreateUser}
           onClose={handleCloseModal}
         />
