@@ -31,17 +31,18 @@ export const useTradeInSubmission = ({
   const { totalCashValue, totalTradeValue } = useMemo(() => {
     return validItems.reduce((acc, item) => {
       const cardId = item.card.id || '';
-      const itemValues = cardId && itemValuesMap[cardId];
+      // Make sure itemValues is a valid object with the expected properties
+      const itemValues = cardId && typeof itemValuesMap[cardId] === 'object' ? itemValuesMap[cardId] : null;
       
       if (item.paymentType === 'trade') {
         // Use the trade value from itemValuesMap if available, otherwise fall back to item price
-        const tradeValue = itemValues?.tradeValue !== undefined 
+        const tradeValue = itemValues && itemValues.tradeValue !== undefined 
           ? itemValues.tradeValue
           : item.price;
         acc.totalTradeValue += tradeValue * item.quantity;
       } else {
         // Use the cash value from itemValuesMap if available, otherwise fall back to item price
-        const cashValue = itemValues?.cashValue !== undefined 
+        const cashValue = itemValues && itemValues.cashValue !== undefined 
           ? itemValues.cashValue
           : item.price;
         acc.totalCashValue += cashValue * item.quantity;
