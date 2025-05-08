@@ -59,11 +59,18 @@ const ManagerDashboard = () => {
             trade_in_date: item.trade_in_date,
             total_value: item.total_value,
             status: item.status as 'pending' | 'completed' | 'cancelled',
-            customers: item.customers as Customer,
-            customer_name: item.customers 
-              ? `${item.customers.first_name} ${item.customers.last_name}` 
-              : 'Unknown'
+            // The customers field is actually an array with a single element
+            // but our interface expects a single object, so we take the first item
+            customers: item.customers && Array.isArray(item.customers) && item.customers.length > 0
+              ? item.customers[0] as Customer
+              : undefined,
           };
+          
+          // Set the customer_name based on the customers object
+          tradeIn.customer_name = tradeIn.customers
+            ? `${tradeIn.customers.first_name} ${tradeIn.customers.last_name}` 
+            : 'Unknown';
+            
           return tradeIn;
         });
         
