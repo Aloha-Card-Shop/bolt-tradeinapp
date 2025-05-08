@@ -1,7 +1,7 @@
-
-import React from 'react';
-import { Package } from 'lucide-react';
-import { GAME_OPTIONS, GameType } from '../types/card';
+import React, { useState } from 'react';
+import { Search } from 'lucide-react';
+import { CardDetails } from '../types/card';
+import { GAME_OPTIONS } from '../types/card';
 
 interface CardSearchProps {
   cardDetails: {
@@ -26,7 +26,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
     <div className="p-6">
       <div className="flex items-center space-x-3 mb-6">
         <div className="p-2 bg-blue-100 rounded-lg">
-          <Package className="h-6 w-6 text-blue-600" />
+          <Search className="h-6 w-6 text-blue-600" />
         </div>
         <h2 className="text-xl font-semibold text-gray-800">Find Cards</h2>
       </div>

@@ -1,4 +1,5 @@
 
+// Fix TradeInList test
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import TradeInList from '../TradeInList';
@@ -25,7 +26,7 @@ const mockCardWithoutId: CardDetails = {
   productId: '67890'
 };
 
-// Mock trade-in items
+// Mock trade-in items - Adding paymentType to fix the error
 const validItem: TradeInItem = {
   card: mockCard,
   quantity: 1,

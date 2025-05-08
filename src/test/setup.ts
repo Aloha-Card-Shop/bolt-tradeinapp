@@ -1,9 +1,10 @@
 
+// Fix test/setup.ts implementation
 import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 
 // Mock BroadcastChannel
-class MockBroadcastChannel implements BroadcastChannel {
+class MockBroadcastChannel {
   name: string;
   onmessage: ((this: BroadcastChannel, ev: MessageEvent) => any) | null = null;
   onmessageerror: ((this: BroadcastChannel, ev: MessageEvent) => any) | null = null;
@@ -16,10 +17,11 @@ class MockBroadcastChannel implements BroadcastChannel {
   addEventListener(): void {}
   removeEventListener(): void {}
   close(): void {}
+  dispatchEvent(event: Event): boolean { return true; }
 }
 
 // Assign the mock class to global
-(global.BroadcastChannel as any) = MockBroadcastChannel;
+(global as any).BroadcastChannel = MockBroadcastChannel;
 
 // Mock Supabase auth
 vi.mock('@supabase/supabase-js', () => ({

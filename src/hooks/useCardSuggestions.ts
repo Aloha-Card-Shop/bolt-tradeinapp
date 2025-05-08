@@ -1,5 +1,7 @@
 
+// Fix unused import in useCardSuggestions.ts
 import { useState } from 'react';
+// Remove useEffect as it's not used
 import { CardDetails } from '../types/card';
 import { supabase } from '../lib/supabase';
 

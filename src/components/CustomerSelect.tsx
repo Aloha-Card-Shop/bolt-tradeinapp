@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { User, Plus, Search, Loader2 } from 'lucide-react';
+import { Search, UserPlus, Loader2, User } from 'lucide-react';
 import { Customer } from '../hooks/useCustomers';
 
-interface CustomerSelectProps {
+export interface CustomerSelectProps {
   customers: Customer[];
   isLoading: boolean;
   selectedCustomer: Customer | null;
   onSelect: (customer: Customer | null) => void;
   onCreateNew: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
+  isSubmitting?: boolean;
 }
 
 const CustomerSelect: React.FC<CustomerSelectProps> = ({
@@ -15,7 +16,8 @@ const CustomerSelect: React.FC<CustomerSelectProps> = ({
   isLoading,
   selectedCustomer,
   onSelect,
-  onCreateNew
+  onCreateNew,
+  isSubmitting
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreatingNew, setIsCreatingNew] = useState(false);
@@ -146,7 +148,7 @@ const CustomerSelect: React.FC<CustomerSelectProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <User className="h-5 w-5 text-blue-600" />
+                <UserPlus className="h-5 w-5 text-blue-600" />
               </div>
               <h3 className="text-lg font-medium text-gray-800">Select Customer</h3>
             </div>
