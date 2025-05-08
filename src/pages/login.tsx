@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, AlertCircle } from 'lucide-react';
+import { Lock, Mail, User, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSession } from '../hooks/useSession';
 import { toast } from 'react-hot-toast';
@@ -9,7 +9,7 @@ import { toast } from 'react-hot-toast';
 const Login = () => {
   const navigate = useNavigate();
   const { user, loading, cleanupAuthState } = useSession();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,16 +37,41 @@ const Login = () => {
         // Continue even if this fails
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        throw error;
+      // Determine if identifier is an email
+      const isEmail = /^\S+@\S+\.\S+$/.test(identifier);
+      let result;
+      
+      if (isEmail) {
+        // Login with email and password
+        result = await supabase.auth.signInWithPassword({
+          email: identifier,
+          password
+        });
+      } else {
+        // Login with username
+        // First get all users with this username from our profiles
+        const { data: userData, error: fetchError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('username', identifier)
+          .single();
+        
+        if (fetchError || !userData) {
+          throw new Error('Invalid username or password');
+        }
+        
+        // Now login with the retrieved email
+        result = await supabase.auth.signInWithPassword({
+          email: userData.email,
+          password
+        });
       }
 
-      if (data?.session) {
+      if (result.error) {
+        throw result.error;
+      }
+
+      if (result.data?.session) {
         toast.success('Logged in successfully');
         // Force page reload to ensure clean state
         window.location.href = '/dashboard';
@@ -78,18 +103,22 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
+              <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 mb-2">
+                Email or Username
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                {/^\S+@\S+\.\S+$/.test(identifier) ? (
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                ) : (
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                )}
                 <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="identifier"
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your email"
+                  placeholder="Enter your email or username"
                   required
                 />
               </div>

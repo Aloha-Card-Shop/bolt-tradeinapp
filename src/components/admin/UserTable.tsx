@@ -5,6 +5,7 @@ import { Loader2, Trash2 } from 'lucide-react';
 interface StaffUser {
   id: string;
   email: string;
+  username?: string;
   role: 'admin' | 'manager' | 'user';
   created_at: string;
 }
@@ -36,7 +37,7 @@ const UserTable: React.FC<UserTableProps> = ({
       <table className="w-full">
         <thead>
           <tr className="border-b border-gray-200">
-            <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Email</th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Email / Username</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Role</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Created</th>
             <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">Actions</th>
@@ -47,6 +48,9 @@ const UserTable: React.FC<UserTableProps> = ({
             <tr key={staffUser.id}>
               <td className="py-3 px-4">
                 <p className="font-medium text-gray-900">{staffUser.email}</p>
+                {staffUser.username && (
+                  <p className="text-sm text-gray-500">@{staffUser.username}</p>
+                )}
               </td>
               <td className="py-3 px-4">
                 <select

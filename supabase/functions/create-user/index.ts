@@ -1,3 +1,4 @@
+
 import { createClient } from 'npm:@supabase/supabase-js@2.39.7';
 
 const corsHeaders = {
@@ -9,6 +10,7 @@ const corsHeaders = {
 interface CreateUserRequest {
   email: string;
   password: string;
+  username?: string;
   role: 'admin' | 'manager' | 'user';
 }
 
@@ -49,7 +51,7 @@ Deno.serve(async (req) => {
     );
 
     // Get request body
-    const { email, password, role }: CreateUserRequest = await req.json();
+    const { email, password, username, role }: CreateUserRequest = await req.json();
 
     // Validate input
     if (!email || !password || !role) {
@@ -70,13 +72,21 @@ Deno.serve(async (req) => {
       throw new Error('User already exists');
     }
 
-    // Create new user
-    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+    // Define user options
+    const userOptions: any = {
       email,
       password,
       email_confirm: true,
       user_metadata: { role }
-    });
+    };
+
+    // Add username if provided
+    if (username && username.trim() !== '') {
+      userOptions.user_metadata.username = username.trim();
+    }
+
+    // Create new user
+    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser(userOptions);
 
     if (createError) {
       throw createError;
@@ -86,6 +96,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         id: newUser.user.id,
         email: newUser.user.email,
+        username: newUser.user.user_metadata.username,
         role: newUser.user.user_metadata.role
       }),
       {
