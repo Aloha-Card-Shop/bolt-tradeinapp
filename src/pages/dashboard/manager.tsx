@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from 'react';
+import React from 'react';
 import { supabase } from '../../lib/supabase';
-import { ArrowRight, Clock, AlertTriangle, CheckCircle, AlertCircle, Check, X, Trash2, DollarSign, Tag, ChevronDown, ChevronUp, Loader2, Filter } from 'lucide-react';
+import { Clock, AlertTriangle, CheckCircle, AlertCircle, Check, X, Trash2, DollarSign, Tag, ChevronDown, ChevronUp, Loader2, Filter } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import { deleteTradeIn } from '../../services/tradeInService';
 
@@ -98,11 +99,8 @@ const ManagerDashboard = () => {
             notes: item.notes,
             payment_type: item.payment_type as 'cash' | 'trade' | 'mixed',
             staff_notes: item.staff_notes,
-            // The customers field is actually an array with a single element
-            // but our interface expects a single object, so we take the first item
-            customers: item.customers && Array.isArray(item.customers) && item.customers.length > 0
-              ? item.customers[0] as Customer
-              : undefined,
+            // The customers field is an object, not an array
+            customers: item.customers as Customer,
           };
           
           // Set the customer_name based on the customers object
