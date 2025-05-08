@@ -2,7 +2,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/login';
 import Dashboard from './pages/dashboard';
-import Admin from './pages/admin';
+import AdminPage from './pages/admin/AdminPage';
 import AdminCustomers from './pages/admin/customers';
 import AdminUsers from './pages/admin/users';
 import TradeValues from './pages/admin/trade-values';
@@ -38,7 +38,7 @@ function App() {
         
         <Route path="/admin" element={
           <AuthGuard allowedRoles={['admin']}>
-            <Admin />
+            <AdminPage />
           </AuthGuard>
         } />
         

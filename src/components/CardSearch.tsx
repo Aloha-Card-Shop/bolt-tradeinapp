@@ -43,13 +43,6 @@ const CardSearch: React.FC<CardSearchProps> = ({
     onInputChange(event);
   };
 
-  const handleCardSelect = (card: CardDetails) => {
-    if (onCardSelect) {
-      onCardSelect(card);
-      setSearchTerm(''); // Clear the search term after selecting a card
-    }
-  };
-
   return (
     <div className="mb-4">
       <input
