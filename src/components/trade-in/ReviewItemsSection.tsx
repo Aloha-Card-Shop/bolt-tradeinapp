@@ -3,6 +3,7 @@ import React from 'react';
 import { Receipt } from 'lucide-react';
 import { TradeInItem } from '../../hooks/useTradeInList';
 import ReviewItemCard from './ReviewItemCard';
+import { formatCurrency } from '../../utils/formatters';
 
 interface ReviewItemsSectionProps {
   items: TradeInItem[];
@@ -36,8 +37,8 @@ const ReviewItemsSection: React.FC<ReviewItemsSectionProps> = ({
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-600">Total Values:</p>
-          <p className="font-medium text-gray-900">Cash: ${totalCashValue.toFixed(2)}</p>
-          <p className="font-medium text-gray-900">Trade: ${totalTradeValue.toFixed(2)}</p>
+          <p className="font-medium text-gray-900">Cash: ${formatCurrency(totalCashValue)}</p>
+          <p className="font-medium text-gray-900">Trade: ${formatCurrency(totalTradeValue)}</p>
         </div>
       </div>
 

@@ -3,6 +3,7 @@ import React from 'react';
 import { X, ImageOff, DollarSign } from 'lucide-react';
 import { TradeInItem } from '../../hooks/useTradeInList';
 import { CONDITIONS, PAYMENT_TYPES } from '../../constants/tradeInConstants';
+import { formatCurrency } from '../../utils/formatters';
 
 interface ReviewItemCardProps {
   item: TradeInItem;
@@ -129,7 +130,7 @@ const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
                 </span>
                 <input
                   type="text"
-                  value={(currentValue || 0) * item.quantity}
+                  value={formatCurrency((currentValue || 0) * item.quantity)}
                   readOnly
                   className="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700"
                 />

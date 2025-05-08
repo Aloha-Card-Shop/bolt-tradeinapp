@@ -2,6 +2,7 @@
 import React from 'react';
 import { Loader2, ImageOff, PlusCircle, Search } from 'lucide-react';
 import { CardDetails, SavedCard } from '../types/card';
+import { formatCurrency } from '../utils/formatters';
 
 interface CardResultsProps {
   results: CardDetails[];
