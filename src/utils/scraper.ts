@@ -36,10 +36,10 @@ export const buildTcgPlayerUrl = (productId: string, condition: string | undefin
 
 export const fetchCardPrices = async (
   productId: string,
-  condition: string,
-  isFirstEdition: boolean,
-  isHolo: boolean,
-  game: string
+  condition: string, 
+  isFirstEdition?: boolean,  // Keep param even if unused
+  isHolo?: boolean,         // Keep param even if unused
+  game?: string
 ): Promise<{ price: string }> => {
   try {
     if (!productId) {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, User, UserPlus, Loader2 } from 'lucide-react';
 import { Customer } from '../hooks/useCustomers';
 
 export interface CustomerSelectProps {
@@ -16,8 +16,7 @@ const CustomerSelect: React.FC<CustomerSelectProps> = ({
   isLoading,
   selectedCustomer,
   onSelect,
-  onCreateNew,
-  isSubmitting
+  onCreateNew
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreatingNew, setIsCreatingNew] = useState(false);

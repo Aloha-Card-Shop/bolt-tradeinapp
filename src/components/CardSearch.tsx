@@ -1,110 +1,54 @@
-import React from 'react';
-import { Search } from 'lucide-react';
-import { GameOption, GAME_OPTIONS } from '../types/card';
+import React, { useState, useEffect } from 'react';
+import { useCardSearch } from '../hooks/useCardSearch';
+import { CardDetails } from '../types/card';
 
 interface CardSearchProps {
-  cardDetails: {
-    name: string;
-    set: string;
-    number: string;
-    game: string;
-    categoryId?: number;
-  };
-  onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  setOptions: { id: number; name: string; }[];
-  isLoadingSets: boolean;
+  onCardSelect: (card: CardDetails) => void;
 }
 
-const CardSearch: React.FC<CardSearchProps> = ({ 
-  cardDetails, 
-  onInputChange,
-  setOptions,
-  isLoadingSets
-}) => {
-  return (
-    <div className="p-6">
-      <div className="flex items-center space-x-3 mb-6">
-        <div className="p-2 bg-blue-100 rounded-lg">
-          <Search className="h-6 w-6 text-blue-600" />
-        </div>
-        <h2 className="text-xl font-semibold text-gray-800">Find Cards</h2>
-      </div>
-      
-      <div className="space-y-5">
-        <div className="space-y-2">
-          <label htmlFor="game" className="block text-sm font-medium text-gray-700">
-            Game <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="game"
-            name="game"
-            value={cardDetails.game}
-            onChange={onInputChange}
-            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-            required
-          >
-            {GAME_OPTIONS.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+const CardSearch: React.FC<CardSearchProps> = ({ onCardSelect }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const { cards, isLoading, error, searchCards } = useCardSearch();
 
-        <div className="space-y-2">
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Card Name <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={cardDetails.name}
-            onChange={onInputChange}
-            placeholder="Start typing to search..."
-            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-            required
-          />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label htmlFor="set" className="block text-sm font-medium text-gray-700">
-              Set Name
-            </label>
-            <select
-              id="set"
-              name="set"
-              value={cardDetails.set}
-              onChange={onInputChange}
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
-              disabled={isLoadingSets}
+  useEffect(() => {
+    if (searchTerm) {
+      searchCards(searchTerm);
+    }
+  }, [searchTerm, searchCards]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleCardSelect = (card: CardDetails) => {
+    onCardSelect(card);
+    setSearchTerm(''); // Clear the search term after selecting a card
+  };
+
+  return (
+    <div className="mb-4">
+      <input
+        type="text"
+        placeholder="Search for a card..."
+        value={searchTerm}
+        onChange={handleInputChange}
+        className="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      {isLoading && <p>Loading...</p>}
+      {error && <p className="text-red-500">Error: {error}</p>}
+      {cards && cards.length > 0 && (
+        <ul className="mt-2">
+          {cards.map((card) => (
+            <li
+              key={card.id}
+              className="py-2 px-4 border-b cursor-pointer hover:bg-gray-100"
+              onClick={() => handleCardSelect(card)}
             >
-              <option value="">Select a set</option>
-              {setOptions.map(set => (
-                <option key={set.id} value={set.name}>
-                  {set.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="number" className="block text-sm font-medium text-gray-700">
-              Card Number
-            </label>
-            <input
-              type="text"
-              id="number"
-              name="number"
-              value={cardDetails.number}
-              onChange={onInputChange}
-              placeholder="e.g. 269/193"
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-            />
-          </div>
-        </div>
-      </div>
+              {card.name} ({card.set})
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };

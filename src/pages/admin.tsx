@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, ArrowLeft, Loader2, AlertCircle, UserPlus, Pencil, Trash2, X } from 'lucide-react';
+import { Users, ArrowLeft, Loader2, AlertCircle, UserPlus, Trash2, X } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
 import { supabase } from '../lib/supabase';
 
