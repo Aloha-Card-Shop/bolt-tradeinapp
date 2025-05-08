@@ -1,9 +1,16 @@
+
 import React from 'react';
 import { Package } from 'lucide-react';
-import { CardDetails, GameType, GAME_OPTIONS } from '../types/card';
+import { GAME_OPTIONS } from '../types/card';
 
 interface CardSearchProps {
-  cardDetails: CardDetails;
+  cardDetails: {
+    name: string;
+    set: string;
+    number: string;
+    game: string;
+    categoryId?: number;
+  };
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   setOptions: { id: number; name: string; }[];
   isLoadingSets: boolean;

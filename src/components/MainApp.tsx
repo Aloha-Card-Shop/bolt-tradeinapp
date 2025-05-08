@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DatabaseIcon, Sparkles } from 'lucide-react';
 import CardSearch from './CardSearch';
@@ -21,7 +22,7 @@ function MainApp() {
     handleInputChange(event);
   };
 
-  const handleAddToList = (card: SavedCard, price: number) => {
+  const handleAddToList = (card: SavedCard | any, price: number) => {
     addItem(card, price);
     resetSearch(); // Reset search after adding card
   };
@@ -77,7 +78,6 @@ function MainApp() {
               <CardResults 
                 results={searchResults}
                 isLoading={isSearching}
-                onSave={saveCard}
                 onAddToList={handleAddToList}
               />
             </div>

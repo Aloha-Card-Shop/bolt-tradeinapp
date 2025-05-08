@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+
+import React from 'react';
 import { ArrowLeft, Receipt, User, Loader2, ImageOff, DollarSign, X } from 'lucide-react';
 import { TradeInItem } from '../hooks/useTradeInList';
 import { Customer } from '../hooks/useCustomers';
@@ -15,7 +16,7 @@ interface TradeInReviewProps {
   customers: Customer[];
   isLoadingCustomers: boolean;
   selectedCustomer: Customer | null;
-  onCustomerSelect: (customer: Customer) => void;
+  onCustomerSelect: (customer: Customer | null) => void;
   onCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
   totalCashValue: number;
   totalTradeValue: number;

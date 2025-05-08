@@ -10,7 +10,7 @@ interface CardResultsProps {
   onAddToList: (card: CardDetails | SavedCard, price: number) => void;
 }
 
-const CardResults: React.FC<CardResultsProps> = ({ results, isLoading, onSave, onAddToList }) => {
+const CardResults: React.FC<CardResultsProps> = ({ results, isLoading, onAddToList }) => {
   if (isLoading) {
     return (
       <div className="p-8 flex items-center justify-center">

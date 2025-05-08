@@ -1,10 +1,10 @@
+
 import React, { useState, useMemo } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import { TradeInItem as TradeInItemType } from '../hooks/useTradeInList';
 import { useCustomers } from '../hooks/useCustomers';
 import { insertTradeInAndItems } from '../services/insertTradeInAndItems';
 import { Customer } from '../hooks/useCustomers';
-import CustomerSelect from './CustomerSelect';
 import TradeInReview from './TradeInReview';
 import TradeInItem from './TradeInItem';
 import { fetchCardPrices } from '../utils/scraper';
@@ -35,7 +35,7 @@ const TradeInList: React.FC<TradeInListProps> = ({
 
   const { totalCashValue, totalTradeValue } = useMemo(() => {
     return validItems.reduce((acc, item) => {
-      const values = itemValuesMap[item.card.id] ?? { tradeValue: 0, cashValue: 0 };
+      const values = itemValuesMap[item.card.id || ''] ?? { tradeValue: 0, cashValue: 0 };
       const value = item.paymentType === 'trade' ? values.tradeValue : values.cashValue;
       
       if (item.paymentType === 'trade') {
@@ -48,9 +48,11 @@ const TradeInList: React.FC<TradeInListProps> = ({
     }, { totalCashValue: 0, totalTradeValue: 0 });
   }, [validItems, itemValuesMap]);
 
-  const handleCustomerSelect = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setError(null);
+  const handleCustomerSelect = (customer: Customer | null) => {
+    if (customer) {
+      setSelectedCustomer(customer);
+      setError(null);
+    }
   };
 
   const handleCreateCustomer = async (first: string, last: string, email?: string, phone?: string) => {
@@ -98,7 +100,7 @@ const TradeInList: React.FC<TradeInListProps> = ({
     setIsSubmitting(true);
     try {
       const tradeInData = {
-        customer_id: selectedCustomer.id,
+        customer_id: selectedCustomer.id!,
         trade_in_date: new Date().toISOString(),
         total_value: totalCashValue + totalTradeValue,
         status: 'pending' as const
@@ -194,8 +196,8 @@ const TradeInList: React.FC<TradeInListProps> = ({
                 index={idx}
                 onRemove={onRemoveItem}
                 onUpdate={onUpdateItem}
-                onConditionChange={cond => handleConditionChange(idx, cond)}
-                onValueChange={vals => handleValueChange(item.card.id, vals)}
+                onConditionChange={(cond) => handleConditionChange(idx, cond)}
+                onValueChange={(values) => handleValueChange(item.card.id!, values)}
               />
             ))}
           </div>
