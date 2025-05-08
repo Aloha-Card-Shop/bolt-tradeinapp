@@ -1,0 +1,75 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/login';
+import Dashboard from './pages/dashboard';
+import Admin from './pages/admin';
+import AdminCustomers from './pages/admin/customers';
+import AdminUsers from './pages/admin/users';
+import TradeValues from './pages/admin/trade-values';
+import ManagerDashboard from './pages/dashboard/manager';
+import MainApp from './components/MainApp';
+import AdminNav from './components/AdminNav';
+import AuthGuard from './components/AuthGuard';
+import { useSession } from './hooks/useSession';
+
+function App() {
+  const { user, loading } = useSession();
+  const userRole = user?.user_metadata?.role || 'user';
+
+  return (
+    <Router>
+      {!loading && user && (userRole === 'admin' || userRole === 'manager') && (
+        <AdminNav userRole={userRole as 'admin' | 'manager' | 'user'} />
+      )}
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        
+        <Route path="/dashboard" element={
+          <AuthGuard allowedRoles={['admin', 'manager', 'user']}>
+            <Dashboard />
+          </AuthGuard>
+        } />
+        
+        <Route path="/dashboard/manager" element={
+          <AuthGuard allowedRoles={['admin', 'manager']}>
+            <ManagerDashboard />
+          </AuthGuard>
+        } />
+        
+        <Route path="/admin" element={
+          <AuthGuard allowedRoles={['admin']}>
+            <Admin />
+          </AuthGuard>
+        } />
+        
+        <Route path="/admin/customers" element={
+          <AuthGuard allowedRoles={['admin', 'manager']}>
+            <AdminCustomers />
+          </AuthGuard>
+        } />
+        
+        <Route path="/admin/users" element={
+          <AuthGuard allowedRoles={['admin']}>
+            <AdminUsers />
+          </AuthGuard>
+        } />
+
+        <Route path="/admin/trade-values" element={
+          <AuthGuard allowedRoles={['admin']}>
+            <TradeValues />
+          </AuthGuard>
+        } />
+        
+        <Route path="/app" element={
+          <AuthGuard allowedRoles={['admin', 'manager', 'user']}>
+            <MainApp />
+          </AuthGuard>
+        } />
+        
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App
