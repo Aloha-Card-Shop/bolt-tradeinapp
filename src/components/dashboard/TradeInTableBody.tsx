@@ -1,9 +1,6 @@
 
 import React from 'react';
-import TradeInTableHeader from './TradeInTableHeader';
-import TradeInTableBody from './TradeInTableBody';
-import TradeInTableLoading from './TradeInTableLoading';
-import TradeInEmptyState from './TradeInEmptyState';
+import TradeInRow from './TradeInRow';
 
 interface TradeIn {
   id: string;
@@ -20,9 +17,8 @@ interface TradeIn {
   items?: any[];
 }
 
-interface TradeInTableProps {
+interface TradeInTableBodyProps {
   tradeIns: TradeIn[];
-  isLoading: boolean;
   expandedTradeIn: string | null;
   loadingItems: string | null;
   actionLoading: string | null;
@@ -32,9 +28,8 @@ interface TradeInTableProps {
   onDelete: (id: string) => void;
 }
 
-const TradeInTable: React.FC<TradeInTableProps> = ({
+const TradeInTableBody: React.FC<TradeInTableBodyProps> = ({
   tradeIns,
-  isLoading,
   expandedTradeIn,
   loadingItems,
   actionLoading,
@@ -43,17 +38,13 @@ const TradeInTable: React.FC<TradeInTableProps> = ({
   onDeny,
   onDelete
 }) => {
-  if (isLoading) {
-    return <TradeInTableLoading />;
-  }
-
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full leading-normal">
-        <TradeInTableHeader />
-        <TradeInTableBody 
-          tradeIns={tradeIns}
-          expandedTradeIn={expandedTradeIn}
+    <tbody>
+      {tradeIns.map((tradeIn) => (
+        <TradeInRow
+          key={tradeIn.id}
+          tradeIn={tradeIn}
+          isExpanded={expandedTradeIn === tradeIn.id}
           loadingItems={loadingItems}
           actionLoading={actionLoading}
           onToggleDetails={onToggleDetails}
@@ -61,11 +52,9 @@ const TradeInTable: React.FC<TradeInTableProps> = ({
           onDeny={onDeny}
           onDelete={onDelete}
         />
-      </table>
-      
-      {tradeIns.length === 0 && <TradeInEmptyState />}
-    </div>
+      ))}
+    </tbody>
   );
 };
 
-export default TradeInTable;
+export default TradeInTableBody;
