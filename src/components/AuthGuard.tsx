@@ -1,7 +1,9 @@
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../hooks/useSession';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -10,7 +12,7 @@ interface AuthGuardProps {
 
 const AuthGuard: React.FC<AuthGuardProps> = ({ children, allowedRoles }) => {
   const navigate = useNavigate();
-  const { user, loading } = useSession();
+  const { user, loading, signOut } = useSession();
 
   useEffect(() => {
     if (!loading) {
@@ -21,6 +23,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, allowedRoles }) => {
 
       const userRole = user.user_metadata?.role || 'user';
       if (!allowedRoles.includes(userRole)) {
+        toast.error('You do not have permission to access this page');
         navigate('/dashboard');
       }
     }

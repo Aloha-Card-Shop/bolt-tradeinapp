@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
@@ -7,7 +8,29 @@ interface SessionHookReturn {
   user: User | null;
   loading: boolean;
   error: Error | null;
+  signOut: () => Promise<void>;
+  cleanupAuthState: () => void;
 }
+
+// Helper function to clean up all Supabase auth state
+const cleanupLocalStorage = () => {
+  // Remove standard auth tokens
+  localStorage.removeItem('supabase.auth.token');
+  
+  // Remove all Supabase auth keys from localStorage
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      localStorage.removeItem(key);
+    }
+  });
+  
+  // Remove from sessionStorage if in use
+  Object.keys(sessionStorage || {}).forEach((key) => {
+    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      sessionStorage.removeItem(key);
+    }
+  });
+};
 
 export const useSession = (): SessionHookReturn => {
   const [session, setSession] = useState<Session | null>(null);
@@ -54,10 +77,31 @@ export const useSession = (): SessionHookReturn => {
     }
   };
 
+  const signOut = async () => {
+    try {
+      // Clean up auth state first
+      cleanupLocalStorage();
+      
+      // Attempt global sign out
+      await supabase.auth.signOut({ scope: 'global' });
+      
+      // Clear state
+      setSession(null);
+      setUser(null);
+
+      // Force page reload for a clean state
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return {
     session,
     user,
     loading,
-    error
+    error,
+    signOut,
+    cleanupAuthState: cleanupLocalStorage
   };
 };

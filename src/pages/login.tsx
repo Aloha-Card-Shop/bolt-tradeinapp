@@ -1,14 +1,25 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useSession } from '../hooks/useSession';
+import { toast } from 'react-hot-toast';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { user, loading, cleanupAuthState } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,6 +27,16 @@ const Login = () => {
     setError(null);
 
     try {
+      // Clean up existing auth state to prevent conflicts
+      cleanupAuthState();
+      
+      // Attempt global sign out first (in case there's any existing session)
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continue even if this fails
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -26,10 +47,14 @@ const Login = () => {
       }
 
       if (data?.session) {
-        navigate('/dashboard');
+        toast.success('Logged in successfully');
+        // Force page reload to ensure clean state
+        window.location.href = '/dashboard';
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'Failed to sign in');
+      toast.error('Login failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
     }
@@ -40,8 +65,8 @@ const Login = () => {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
-            <p className="text-gray-600 mt-2">Sign in to your account</p>
+            <h1 className="text-2xl font-bold text-gray-900">Staff Login</h1>
+            <p className="text-gray-600 mt-2">Sign in to access the dashboard</p>
           </div>
 
           {error && (

@@ -1,5 +1,6 @@
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Login from './pages/login';
 import Dashboard from './pages/dashboard';
 import AdminPage from './pages/admin/AdminPage';
@@ -18,6 +19,8 @@ function App() {
 
   return (
     <Router>
+      <Toaster position="top-center" />
+      
       {!loading && user && (userRole === 'admin' || userRole === 'manager') && (
         <AdminNav userRole={userRole as 'admin' | 'manager' | 'user'} />
       )}
