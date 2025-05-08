@@ -45,7 +45,7 @@ const AdminPageContent: React.FC<AdminPageContentProps> = ({
     role: 'user'
   });
 
-  const handleCreateUser = async (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     const success = await onCreateUser(newUser);
     if (success) {

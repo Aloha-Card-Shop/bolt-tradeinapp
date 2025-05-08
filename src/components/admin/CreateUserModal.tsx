@@ -23,6 +23,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
   onClose 
 }) => {
   const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Validate form data when either email or username changes
   useEffect(() => {
@@ -33,7 +34,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     }
   }, [newUser.email, newUser.username]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!newUser.email && !newUser.username) {
@@ -41,17 +42,27 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
       return;
     }
     
-    onSubmit(e);
+    setIsSubmitting(true);
+    
+    try {
+      await onSubmit(e);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900">Create Staff User</h2>
           <button
             onClick={onClose}
+            disabled={isSubmitting}
             className="text-gray-400 hover:text-gray-500"
+            type="button"
           >
             <X className="h-5 w-5" />
           </button>
@@ -69,6 +80,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                 onChange={(e) => onUserChange({ ...newUser, email: e.target.value || undefined })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="email@example.com (optional with username)"
+                disabled={isSubmitting}
               />
             </div>
 
@@ -82,6 +94,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                 onChange={(e) => onUserChange({ ...newUser, username: e.target.value || undefined })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Username for login"
+                disabled={isSubmitting}
               />
               <p className="mt-1 text-sm text-gray-500">
                 Either email or username is required
@@ -99,6 +112,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
                 minLength={6}
+                disabled={isSubmitting}
               />
               <p className="mt-1 text-sm text-gray-500">
                 Must be at least 6 characters long
@@ -114,6 +128,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                 onChange={(e) => onUserChange({ ...newUser, role: e.target.value as 'admin' | 'manager' | 'user' })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
+                disabled={isSubmitting}
               >
                 <option value="user">User</option>
                 <option value="manager">Manager</option>
@@ -133,15 +148,18 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 mr-2"
+              disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-              disabled={!newUser.password || (!newUser.email && !newUser.username)}
+              className={`px-4 py-2 text-white bg-blue-600 rounded-lg ${
+                isSubmitting ? 'opacity-75 cursor-not-allowed' : 'hover:bg-blue-700'
+              }`}
+              disabled={isSubmitting || !newUser.password || (!newUser.email && !newUser.username)}
             >
-              Create User
+              {isSubmitting ? 'Creating...' : 'Create User'}
             </button>
           </div>
         </form>
