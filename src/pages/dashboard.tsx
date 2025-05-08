@@ -11,6 +11,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
+import { supabase } from '../lib/supabase';
 
 const Dashboard: React.FC = () => {
   const { user } = useSession();
@@ -22,7 +23,8 @@ const Dashboard: React.FC = () => {
 
   const handleSignOut = async () => {
     try {
-      await navigate('/login');
+      await supabase.auth.signOut();
+      navigate('/login');
     } catch (error) {
       console.error('Error signing out:', error);
     }
