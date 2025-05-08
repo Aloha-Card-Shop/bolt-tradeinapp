@@ -25,7 +25,6 @@ interface TradeInTableProps {
   expandedTradeIn: string | null;
   loadingItems: string | null;
   actionLoading: string | null;
-  statusFilter: 'all' | 'pending' | 'completed' | 'cancelled';
   onToggleDetails: (id: string) => void;
   onApprove: (id: string) => void;
   onDeny: (id: string) => void;
@@ -38,7 +37,6 @@ const TradeInTable: React.FC<TradeInTableProps> = ({
   expandedTradeIn,
   loadingItems,
   actionLoading,
-  statusFilter,
   onToggleDetails,
   onApprove,
   onDeny,

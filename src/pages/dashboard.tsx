@@ -67,13 +67,13 @@ const Dashboard: React.FC = () => {
 
         {/* Dashboard Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Customer Tools Card */}
+          {/* Trade In Card (previously Customer Tools) */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center mb-4">
               <div className="p-3 bg-green-100 rounded-lg">
                 <Package className="h-6 w-6 text-green-600" />
               </div>
-              <h2 className="ml-3 text-xl font-semibold text-gray-900">Customer Tools</h2>
+              <h2 className="ml-3 text-xl font-semibold text-gray-900">Trade In</h2>
             </div>
             <p className="text-gray-600 mb-6">Manage trade-ins, check prices, and track orders</p>
             <Link 

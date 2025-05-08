@@ -52,7 +52,6 @@ const ManagerDashboard: React.FC = () => {
         expandedTradeIn={expandedTradeIn}
         loadingItems={loadingItems}
         actionLoading={actionLoading}
-        statusFilter={statusFilter}
         onToggleDetails={toggleTradeInDetails}
         onApprove={handleApproveTradeIn}
         onDeny={handleDenyTradeIn}
