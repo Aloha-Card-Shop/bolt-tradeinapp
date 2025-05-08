@@ -24,19 +24,7 @@ const MyTradeIns: React.FC = () => {
     setErrorMessage(null);
     
     try {
-      // First, get the customer profile associated with the user
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .single();
-      
-      if (profileError) {
-        console.error('Error fetching user profile:', profileError);
-        setErrorMessage('Error fetching your profile data');
-        setIsLoading(false);
-        return;
-      }
+      // We don't need to fetch the profile separately since we're using the user.id directly
       
       // Now fetch all trade-ins associated with this user
       const { data, error } = await supabase
