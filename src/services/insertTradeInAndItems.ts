@@ -51,12 +51,12 @@ export async function insertTradeInAndItems(
 
     items.forEach(item => {
       if (item.paymentType === 'cash') {
-        // Use the pre-calculated cash value from the hook
-        cashValue += item.cashValue ? item.cashValue * item.quantity : item.price * item.quantity;
+        // Use the pre-calculated cash value from the hook or item
+        cashValue += (item.cashValue !== undefined ? item.cashValue : item.price) * item.quantity;
         hasCashItems = true;
       } else if (item.paymentType === 'trade') {
-        // Use the pre-calculated trade value from the hook
-        tradeValue += item.tradeValue ? item.tradeValue * item.quantity : item.price * item.quantity;
+        // Use the pre-calculated trade value from the hook or item
+        tradeValue += (item.tradeValue !== undefined ? item.tradeValue : item.price) * item.quantity;
         hasTradeItems = true;
       }
     });

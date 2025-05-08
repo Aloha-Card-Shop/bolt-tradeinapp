@@ -38,13 +38,13 @@ export const useTradeInSubmission = ({
         // Use the trade value from itemValuesMap if available, otherwise fall back to item price
         const tradeValue = itemValues && itemValues.tradeValue !== undefined 
           ? itemValues.tradeValue
-          : item.price;
+          : (item.tradeValue || item.price);
         acc.totalTradeValue += tradeValue * item.quantity;
       } else {
         // Use the cash value from itemValuesMap if available, otherwise fall back to item price
         const cashValue = itemValues && itemValues.cashValue !== undefined 
           ? itemValues.cashValue
-          : item.price;
+          : (item.cashValue || item.price);
         acc.totalCashValue += cashValue * item.quantity;
       }
       

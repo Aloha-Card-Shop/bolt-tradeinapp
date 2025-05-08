@@ -12,6 +12,8 @@ export interface TradeInItem {
   paymentType: 'cash' | 'trade';
   isLoadingPrice?: boolean;
   error?: string;
+  cashValue?: number;
+  tradeValue?: number;
 }
 
 export const useTradeInList = () => {
