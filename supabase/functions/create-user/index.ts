@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 interface CreateUserRequest {
-  email: string;
+  email?: string;
   password: string;
   username?: string;
   role: 'admin' | 'manager' | 'user';
@@ -54,8 +54,8 @@ Deno.serve(async (req) => {
     const { email, password, username, role }: CreateUserRequest = await req.json();
 
     // Validate input
-    if (!email || !password || !role) {
-      throw new Error('Missing required fields');
+    if ((!email && !username) || !password || !role) {
+      throw new Error('Either email or username is required, and password and role are required');
     }
 
     if (!['admin', 'manager', 'user'].includes(role)) {
@@ -65,16 +65,21 @@ Deno.serve(async (req) => {
     if (password.length < 6) {
       throw new Error('Password must be at least 6 characters');
     }
+    
+    // Generate email from username if email is not provided
+    const actualEmail = email || `${username}@alohacardshop.com`;
 
     // Check if user already exists
-    const { data: existingUser } = await supabaseAdmin.auth.admin.getUserByEmail(email);
-    if (existingUser) {
-      throw new Error('User already exists');
+    if (email) {
+      const { data: existingUserByEmail } = await supabaseAdmin.auth.admin.getUserByEmail(email);
+      if (existingUserByEmail) {
+        throw new Error('User with this email already exists');
+      }
     }
 
     // Define user options
     const userOptions: any = {
-      email,
+      email: actualEmail,
       password,
       email_confirm: true,
       user_metadata: { role }

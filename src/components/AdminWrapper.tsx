@@ -22,9 +22,19 @@ export const useAdminApi = () => {
     return await response.json();
   };
   
-  const createUser = async (userData: any) => {
+  const createUser = async (userData: {
+    email?: string;
+    password: string;
+    username?: string;
+    role: 'admin' | 'manager' | 'user';
+  }) => {
     const authToken = await getAuthToken();
     if (!authToken) throw new Error('Authentication required');
+    
+    // Ensure either email or username is provided
+    if (!userData.email && !userData.username) {
+      throw new Error('Either email or username is required');
+    }
     
     const response = await fetch(`${supabaseUrl}/functions/v1/create-user`, {
       method: 'POST',

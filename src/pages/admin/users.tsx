@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, ArrowLeft, Loader2, AlertCircle, UserPlus } from 'lucide-react';
@@ -16,7 +17,7 @@ interface StaffUser {
 }
 
 interface NewStaffUser {
-  email: string;
+  email?: string;
   password: string;
   username?: string;
   role: 'admin' | 'manager' | 'user';
@@ -85,11 +86,13 @@ const UserManagementPage = () => {
       const supabaseUrl = getSupabaseUrl();
       const authToken = await getAuthToken();
       
-      // Prepare user data, optionally including username if provided
-      const userData = { ...newUser };
-      if (!userData.username) {
-        delete userData.username; // Remove empty username from payload
+      // Ensure either email or username is provided
+      if (!newUser.email && !newUser.username) {
+        throw new Error('Either email or username is required');
       }
+      
+      // Prepare user data
+      const userData = { ...newUser };
       
       const response = await fetch(`${supabaseUrl}/functions/v1/create-user`, {
         method: 'POST',

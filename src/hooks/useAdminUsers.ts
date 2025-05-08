@@ -12,7 +12,7 @@ interface StaffUser {
 }
 
 interface NewStaffUser {
-  email: string;
+  email?: string;
   password: string;
   username?: string;
   role: 'admin' | 'manager' | 'user';
@@ -61,10 +61,9 @@ export const useAdminUsers = () => {
       const supabaseUrl = getSupabaseUrl();
       const authToken = await getAuthToken();
       
-      // Prepare user data, optionally including username if provided
-      const userData = { ...newUser };
-      if (!userData.username) {
-        delete userData.username; // Remove empty username from payload
+      // Ensure either email or username is provided
+      if (!newUser.email && !newUser.username) {
+        throw new Error('Either email or username is required');
       }
       
       const response = await fetch(`${supabaseUrl}/functions/v1/create-user`, {
@@ -73,7 +72,7 @@ export const useAdminUsers = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`
         },
-        body: JSON.stringify(userData)
+        body: JSON.stringify(newUser)
       });
 
       if (!response.ok) {

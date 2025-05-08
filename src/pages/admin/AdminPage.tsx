@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, UserPlus } from 'lucide-react';
@@ -16,8 +17,9 @@ interface StaffUser {
 }
 
 interface NewStaffUser {
-  email: string;
+  email?: string;
   password: string;
+  username?: string;
   role: 'admin' | 'manager' | 'user';
 }
 
@@ -32,6 +34,7 @@ const AdminPage = () => {
   const [newUser, setNewUser] = useState<NewStaffUser>({
     email: '',
     password: '',
+    username: '',
     role: 'user'
   });
 
@@ -114,7 +117,7 @@ const AdminPage = () => {
   
   const handleCloseModal = () => {
     setShowCreateModal(false);
-    setNewUser({ email: '', password: '', role: 'user' });
+    setNewUser({ email: '', password: '', username: '', role: 'user' });
   };
 
   if (loading) {

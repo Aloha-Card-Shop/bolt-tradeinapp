@@ -1,9 +1,9 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface NewStaffUser {
-  email: string;
+  email?: string;
   password: string;
   username?: string;
   role: 'admin' | 'manager' | 'user';
@@ -22,6 +22,28 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
   onSubmit, 
   onClose 
 }) => {
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // Validate form data when either email or username changes
+  useEffect(() => {
+    if (!newUser.email && !newUser.username) {
+      setFormError('Either email or username is required');
+    } else {
+      setFormError(null);
+    }
+  }, [newUser.email, newUser.username]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newUser.email && !newUser.username) {
+      setFormError('Either email or username is required');
+      return;
+    }
+    
+    onSubmit(e);
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
@@ -35,32 +57,35 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={onSubmit}>
+        <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
+                Email (Optional if username is provided)
               </label>
               <input
                 type="email"
-                value={newUser.email}
-                onChange={(e) => onUserChange({ ...newUser, email: e.target.value })}
+                value={newUser.email || ''}
+                onChange={(e) => onUserChange({ ...newUser, email: e.target.value || undefined })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
+                placeholder="email@example.com (optional with username)"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Username (Optional)
+                Username (Required if email is not provided)
               </label>
               <input
                 type="text"
                 value={newUser.username || ''}
-                onChange={(e) => onUserChange({ ...newUser, username: e.target.value })}
+                onChange={(e) => onUserChange({ ...newUser, username: e.target.value || undefined })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Optional username for login"
+                placeholder="Username for login"
               />
+              <p className="mt-1 text-sm text-gray-500">
+                Either email or username is required
+              </p>
             </div>
 
             <div>
@@ -95,6 +120,12 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                 <option value="admin">Admin</option>
               </select>
             </div>
+
+            {formError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600">{formError}</p>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end mt-6">
@@ -108,6 +139,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
             <button
               type="submit"
               className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+              disabled={!newUser.password || (!newUser.email && !newUser.username)}
             >
               Create User
             </button>
