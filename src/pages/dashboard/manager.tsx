@@ -3,7 +3,11 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { ArrowRight, Clock, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react';
-import { Database } from '../../types/database';
+
+interface Customer {
+  first_name: string;
+  last_name: string;
+}
 
 interface TradeIn {
   id: string;
@@ -51,7 +55,8 @@ const ManagerDashboard = () => {
         const tradeInsWithCustomerName = data.map(tradeIn => ({
           ...tradeIn,
           customer_name: tradeIn.customers ? `${tradeIn.customers.first_name} ${tradeIn.customers.last_name}` : 'Unknown'
-        }));
+        })) as TradeIn[];
+        
         setTradeIns(tradeInsWithCustomerName);
       }
     } catch (err) {
