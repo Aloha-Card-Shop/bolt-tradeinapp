@@ -24,8 +24,8 @@ interface AdminPageContentProps {
   staffUsers: StaffUser[];
   isLoading: boolean;
   error: string | null;
-  onUpdateRole: (userId: string, newRole: 'admin' | 'manager' | 'user') => Promise<void>;
-  onDeleteUser: (userId: string) => Promise<void>;
+  onUpdateRole: (userId: string, newRole: 'admin' | 'manager' | 'user') => Promise<boolean>;
+  onDeleteUser: (userId: string) => Promise<boolean>;
   onCreateUser: (user: NewStaffUser) => Promise<boolean>;
 }
 

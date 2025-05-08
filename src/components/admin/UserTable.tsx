@@ -13,8 +13,8 @@ interface StaffUser {
 interface UserTableProps {
   isLoading: boolean;
   staffUsers: StaffUser[];
-  onUpdateRole: (userId: string, newRole: 'admin' | 'manager' | 'user') => Promise<void>;
-  onDeleteUser: (userId: string) => Promise<void>;
+  onUpdateRole: (userId: string, newRole: 'admin' | 'manager' | 'user') => Promise<boolean>;
+  onDeleteUser: (userId: string) => Promise<boolean>;
 }
 
 const UserTable: React.FC<UserTableProps> = ({ 

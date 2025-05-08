@@ -3,7 +3,11 @@ import React from 'react';
 import { ArrowLeft, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const AdminPageHeader: React.FC = () => {
+interface AdminPageHeaderProps {
+  onCreateUser?: () => void;
+}
+
+const AdminPageHeader: React.FC<AdminPageHeaderProps> = ({ onCreateUser }) => {
   const navigate = useNavigate();
   
   return (
