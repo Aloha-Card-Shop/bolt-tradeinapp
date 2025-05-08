@@ -66,14 +66,6 @@ const TradeInReview: React.FC<TradeInReviewProps> = ({
         </div>
       )}
 
-      <ReviewCustomerSection
-        customers={customers}
-        isLoadingCustomers={isLoadingCustomers}
-        selectedCustomer={selectedCustomer}
-        onCustomerSelect={onCustomerSelect}
-        onCustomerCreate={onCustomerCreate}
-      />
-
       <ReviewItemsSection
         items={items}
         onUpdateItem={onUpdateItem}
@@ -81,6 +73,14 @@ const TradeInReview: React.FC<TradeInReviewProps> = ({
         totalCashValue={totalCashValue}
         totalTradeValue={totalTradeValue}
         itemValues={itemValues}
+      />
+
+      <ReviewCustomerSection
+        customers={customers}
+        isLoadingCustomers={isLoadingCustomers}
+        selectedCustomer={selectedCustomer}
+        onCustomerSelect={onCustomerSelect}
+        onCustomerCreate={onCustomerCreate}
       />
 
       <div className="flex justify-end">
