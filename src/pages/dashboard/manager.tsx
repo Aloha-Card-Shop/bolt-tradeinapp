@@ -2,7 +2,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { ArrowRight, Clock, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowRight, Clock, AlertTriangle, CheckCircle, AlertCircle, Check, X, Trash2 } from 'lucide-react';
+import { formatCurrency } from '../../utils/formatters';
+import { deleteTradeIn } from '../../services/tradeInService';
 
 // Define the shape of a customer from the database
 interface Customer {
@@ -18,12 +20,16 @@ interface TradeIn {
   status: 'pending' | 'completed' | 'cancelled';
   customer_name?: string;
   customers?: Customer;  // Changed from array to single object
+  notes?: string | null;
+  payment_type?: string;
+  staff_notes?: string | null;
 }
 
 const ManagerDashboard = () => {
   const [tradeIns, setTradeIns] = useState<TradeIn[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTradeIns();
@@ -42,6 +48,9 @@ const ManagerDashboard = () => {
           trade_in_date, 
           total_value, 
           status,
+          notes,
+          payment_type,
+          staff_notes,
           customers (first_name, last_name)
         `)
         .order('trade_in_date', { ascending: false });
@@ -59,6 +68,9 @@ const ManagerDashboard = () => {
             trade_in_date: item.trade_in_date,
             total_value: item.total_value,
             status: item.status as 'pending' | 'completed' | 'cancelled',
+            notes: item.notes,
+            payment_type: item.payment_type,
+            staff_notes: item.staff_notes,
             // The customers field is actually an array with a single element
             // but our interface expects a single object, so we take the first item
             customers: item.customers && Array.isArray(item.customers) && item.customers.length > 0
@@ -81,6 +93,77 @@ const ManagerDashboard = () => {
       setErrorMessage('Failed to fetch trade-ins');
     } finally {
       setIsDataLoading(false);
+    }
+  };
+
+  const handleApproveTradeIn = async (tradeInId: string) => {
+    setActionLoading(tradeInId);
+    try {
+      const { error } = await supabase
+        .from('trade_ins')
+        .update({ 
+          status: 'completed',
+          handled_at: new Date().toISOString(),
+          handled_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .eq('id', tradeInId);
+
+      if (error) throw error;
+
+      // Update local state
+      setTradeIns(prev => prev.map(tradeIn => 
+        tradeIn.id === tradeInId ? {...tradeIn, status: 'completed'} : tradeIn
+      ));
+    } catch (err) {
+      console.error('Error approving trade-in:', err);
+      setErrorMessage(`Failed to approve trade-in: ${(err as Error).message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDenyTradeIn = async (tradeInId: string) => {
+    setActionLoading(tradeInId);
+    try {
+      const { error } = await supabase
+        .from('trade_ins')
+        .update({ 
+          status: 'cancelled',
+          handled_at: new Date().toISOString(),
+          handled_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .eq('id', tradeInId);
+
+      if (error) throw error;
+
+      // Update local state
+      setTradeIns(prev => prev.map(tradeIn => 
+        tradeIn.id === tradeInId ? {...tradeIn, status: 'cancelled'} : tradeIn
+      ));
+    } catch (err) {
+      console.error('Error denying trade-in:', err);
+      setErrorMessage(`Failed to deny trade-in: ${(err as Error).message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteTradeIn = async (tradeInId: string) => {
+    if (!confirm('Are you sure you want to delete this trade-in? This action cannot be undone.')) {
+      return;
+    }
+
+    setActionLoading(tradeInId);
+    try {
+      await deleteTradeIn(tradeInId);
+      
+      // Update local state
+      setTradeIns(prev => prev.filter(tradeIn => tradeIn.id !== tradeInId));
+    } catch (err) {
+      console.error('Error deleting trade-in:', err);
+      setErrorMessage(`Failed to delete trade-in: ${(err as Error).message}`);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -128,7 +211,13 @@ const ManagerDashboard = () => {
                   Value
                 </th>
                 <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Type
+                </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Status
+                </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Notes
                 </th>
                 <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Actions
@@ -139,7 +228,7 @@ const ManagerDashboard = () => {
               {tradeIns.map((tradeIn) => (
                 <tr key={tradeIn.id}>
                   <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                    <p className="text-gray-900 whitespace-no-wrap">{tradeIn.id}</p>
+                    <p className="text-gray-900 whitespace-no-wrap">{tradeIn.id.substring(0, 8)}...</p>
                   </td>
                   <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                     <p className="text-gray-900 whitespace-no-wrap">{tradeIn.customer_name}</p>
@@ -150,7 +239,10 @@ const ManagerDashboard = () => {
                     </p>
                   </td>
                   <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                    <p className="text-gray-900 whitespace-no-wrap">${tradeIn.total_value.toFixed(2)}</p>
+                    <p className="text-gray-900 whitespace-no-wrap">${formatCurrency(tradeIn.total_value)}</p>
+                  </td>
+                  <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                    <p className="text-gray-900 whitespace-no-wrap capitalize">{tradeIn.payment_type || 'Cash'}</p>
                   </td>
                   <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                     <span className="relative inline-block px-3 py-1 font-semibold text-gray-900 leading-tight">
@@ -162,14 +254,62 @@ const ManagerDashboard = () => {
                     </span>
                   </td>
                   <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                    <Link to={`/trade-in/${tradeIn.id}`} className="text-blue-500 hover:text-blue-700">
-                      View Details <ArrowRight className="inline-block h-4 w-4 ml-1" />
-                    </Link>
+                    <p className="text-gray-600 whitespace-no-wrap max-w-xs truncate">
+                      {tradeIn.notes || 'No customer notes'}
+                      {tradeIn.staff_notes && (
+                        <span className="block italic text-xs mt-1">
+                          Staff: {tradeIn.staff_notes}
+                        </span>
+                      )}
+                    </p>
+                  </td>
+                  <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                    <div className="flex items-center space-x-2">
+                      <Link to={`/trade-in/${tradeIn.id}`} className="text-blue-500 hover:text-blue-700">
+                        <ArrowRight className="inline-block h-4 w-4" />
+                      </Link>
+                      
+                      {tradeIn.status === 'pending' && (
+                        <>
+                          <button 
+                            onClick={() => handleApproveTradeIn(tradeIn.id)}
+                            disabled={actionLoading === tradeIn.id}
+                            className="p-1 bg-green-100 text-green-600 rounded-full hover:bg-green-200"
+                            title="Approve Trade-In"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDenyTradeIn(tradeIn.id)}
+                            disabled={actionLoading === tradeIn.id}
+                            className="p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200"
+                            title="Deny Trade-In"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
+                      
+                      <button 
+                        onClick={() => handleDeleteTradeIn(tradeIn.id)}
+                        disabled={actionLoading === tradeIn.id}
+                        className="p-1 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200"
+                        title="Delete Trade-In"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          
+          {tradeIns.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              No trade-ins found
+            </div>
+          )}
         </div>
       )}
     </div>
