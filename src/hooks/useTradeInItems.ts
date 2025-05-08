@@ -27,19 +27,39 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
       const items = data.map(item => {
         const cardName = item.cards ? (typeof item.cards === 'object' && item.cards !== null ? (item.cards as any).name : 'Unknown Card') : 'Unknown Card';
         
+        // Ensure attributes is an object with the expected properties
+        const attributes = item.attributes || {};
+        const isFirstEdition = !!attributes.isFirstEdition;
+        const isHolo = !!attributes.isHolo;
+        const paymentType = attributes.paymentType || 'cash';
+        
+        // Make sure cashValue and tradeValue are properly extracted and converted to numbers
+        let cashValue: number | undefined = undefined;
+        let tradeValue: number | undefined = undefined;
+        
+        if (attributes.cashValue !== undefined && attributes.cashValue !== null) {
+          cashValue = typeof attributes.cashValue === 'number' 
+            ? attributes.cashValue 
+            : parseFloat(attributes.cashValue);
+        }
+        
+        if (attributes.tradeValue !== undefined && attributes.tradeValue !== null) {
+          tradeValue = typeof attributes.tradeValue === 'number' 
+            ? attributes.tradeValue 
+            : parseFloat(attributes.tradeValue);
+        }
+        
         return {
           card_name: cardName,
           quantity: item.quantity,
           price: item.price,
           condition: item.condition,
           attributes: {
-            ...item.attributes,
-            // Ensure these values are properly typed
-            paymentType: item.attributes?.paymentType || 'cash',
-            isFirstEdition: !!item.attributes?.isFirstEdition,
-            isHolo: !!item.attributes?.isHolo,
-            cashValue: item.attributes?.cashValue ? Number(item.attributes.cashValue) : undefined,
-            tradeValue: item.attributes?.tradeValue ? Number(item.attributes.tradeValue) : undefined
+            isFirstEdition,
+            isHolo,
+            paymentType,
+            cashValue,
+            tradeValue
           }
         };
       });

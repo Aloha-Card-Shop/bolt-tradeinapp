@@ -9,6 +9,8 @@ interface TradeInDetailsPanelProps {
     id: string;
     trade_in_date: string;
     total_value: number;
+    cash_value: number;
+    trade_value: number;
     status: string;
     notes?: string | null;
     staff_notes?: string | null;
@@ -21,6 +23,8 @@ interface TradeInDetailsPanelProps {
         isFirstEdition?: boolean;
         isHolo?: boolean;
         paymentType?: 'cash' | 'trade';
+        cashValue?: number;
+        tradeValue?: number;
       };
     }>;
   };
@@ -47,6 +51,12 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({ tradeIn, load
               </p>
               <p className="text-sm text-gray-700">
                 <strong>Status:</strong> {tradeIn.status}
+              </p>
+              <p className="text-sm text-gray-700">
+                <strong>Cash Value:</strong> ${formatCurrency(tradeIn.cash_value)}
+              </p>
+              <p className="text-sm text-gray-700">
+                <strong>Trade Value:</strong> ${formatCurrency(tradeIn.trade_value)}
               </p>
             </div>
           </div>
@@ -84,7 +94,7 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({ tradeIn, load
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Card</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Condition</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Qty</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Price</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Value</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Type</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Total</th>
                   </tr>

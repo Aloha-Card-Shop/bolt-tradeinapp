@@ -31,18 +31,22 @@ const TradeInItemRow: React.FC<TradeInItemRowProps> = ({ item }) => {
     return conditionMap[condition] || condition;
   };
 
-  // Get the appropriate value based on payment type
+  // Get the item value based on payment type from attributes
   const getItemValue = () => {
     const paymentType = item.attributes?.paymentType || 'cash';
-    if (paymentType === 'trade' && item.attributes?.tradeValue !== undefined) {
-      return item.attributes.tradeValue;
-    } else if (paymentType === 'cash' && item.attributes?.cashValue !== undefined) {
+    
+    if (paymentType === 'cash' && item.attributes?.cashValue !== undefined) {
       return item.attributes.cashValue;
+    } else if (paymentType === 'trade' && item.attributes?.tradeValue !== undefined) {
+      return item.attributes.tradeValue;
     }
-    return item.price; // Fallback to market price if no specific value is available
+    
+    // Fallback to market price if specific values aren't available
+    return item.price;
   };
 
   const itemValue = getItemValue();
+  const paymentType = item.attributes?.paymentType || 'cash';
 
   return (
     <tr className="border-t border-gray-200">
@@ -61,7 +65,7 @@ const TradeInItemRow: React.FC<TradeInItemRowProps> = ({ item }) => {
       <td className="px-4 py-2 text-sm text-gray-700">{item.quantity}</td>
       <td className="px-4 py-2 text-sm text-gray-700">${formatCurrency(itemValue)}</td>
       <td className="px-4 py-2 text-sm">
-        {item.attributes?.paymentType === 'trade' ? (
+        {paymentType === 'trade' ? (
           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
             <Tag className="h-3 w-3 mr-1" />
             Trade
