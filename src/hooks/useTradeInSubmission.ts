@@ -10,6 +10,7 @@ interface UseTradeInSubmissionProps {
   itemValuesMap: Record<string, { tradeValue: number; cashValue: number }>;
   onRemoveItem: (index: number) => void;
   onSuccess?: () => void;
+  clearList?: () => void; // Added clear list function
 }
 
 export const useTradeInSubmission = ({
@@ -17,7 +18,8 @@ export const useTradeInSubmission = ({
   selectedCustomer,
   itemValuesMap,
   onRemoveItem,
-  onSuccess
+  onSuccess,
+  clearList
 }: UseTradeInSubmissionProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -114,7 +116,11 @@ export const useTradeInSubmission = ({
 
       await insertTradeInAndItems(tradeInData, itemsData);
 
-      items.forEach((_, idx) => onRemoveItem(idx));
+      // Use clearList instead of removing items one by one
+      if (clearList) {
+        clearList();
+      }
+      
       onSuccess?.();
     } catch (e) {
       console.error('Error submitting trade-in:', e);

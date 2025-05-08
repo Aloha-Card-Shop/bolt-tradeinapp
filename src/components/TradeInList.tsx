@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { TradeInItem as TradeInItemType } from '../hooks/useTradeInList';
 import { useCustomers } from '../hooks/useCustomers';
@@ -8,17 +9,20 @@ import { fetchCardPrices } from '../utils/scraper';
 import TradeInHeader from './TradeInHeader';
 import TradeInEmptyState from './TradeInEmptyState';
 import { useTradeInSubmission } from '../hooks/useTradeInSubmission';
+import { toast } from 'react-hot-toast'; // Import toast for notifications
 
 interface TradeInListProps {
   items: TradeInItemType[];
   onRemoveItem: (index: number) => void;
   onUpdateItem: (index: number, item: TradeInItemType) => void;
+  clearList: () => void; // Make sure this is passed in from parent
 }
 
 const TradeInList: React.FC<TradeInListProps> = ({
   items,
   onRemoveItem,
-  onUpdateItem
+  onUpdateItem,
+  clearList
 }) => {
   const [isReviewing, setIsReviewing] = useState(false);
   const { customers, isLoading: isLoadingCustomers, createCustomer } = useCustomers();
@@ -37,9 +41,11 @@ const TradeInList: React.FC<TradeInListProps> = ({
     selectedCustomer,
     itemValuesMap,
     onRemoveItem,
+    clearList, // Pass clearList to useTradeInSubmission
     onSuccess: () => {
       setIsReviewing(false);
       setSelectedCustomer(null);
+      toast.success('Trade-in submitted successfully!'); // Add success toast
     }
   });
 
