@@ -29,8 +29,6 @@ export const useTradeInSubmission = ({
 
   const { totalCashValue, totalTradeValue } = useMemo(() => {
     return validItems.reduce((acc, item) => {
-      const cardId = item.card.id || '';
-      
       if (item.paymentType === 'trade') {
         acc.totalTradeValue += item.price * item.quantity;
       } else {
