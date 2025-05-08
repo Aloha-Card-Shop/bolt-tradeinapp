@@ -43,6 +43,7 @@ export async function insertTradeInAndItems(
 
   try {
     // Calculate cash and trade values from items
+    // These should already be the calculated values based on the percentages
     let cashValue = 0;
     let tradeValue = 0;
     let hasCashItems = false;
@@ -50,10 +51,12 @@ export async function insertTradeInAndItems(
 
     items.forEach(item => {
       if (item.paymentType === 'cash') {
-        cashValue += item.price * item.quantity;
+        // Use the pre-calculated cash value from the hook
+        cashValue += item.cashValue ? item.cashValue * item.quantity : item.price * item.quantity;
         hasCashItems = true;
       } else if (item.paymentType === 'trade') {
-        tradeValue += item.price * item.quantity;
+        // Use the pre-calculated trade value from the hook
+        tradeValue += item.tradeValue ? item.tradeValue * item.quantity : item.price * item.quantity;
         hasTradeItems = true;
       }
     });
@@ -119,7 +122,9 @@ export async function insertTradeInAndItems(
       attributes: {
         isFirstEdition: item.isFirstEdition,
         isHolo: item.isHolo,
-        paymentType: item.paymentType
+        paymentType: item.paymentType,
+        cashValue: item.cashValue,
+        tradeValue: item.tradeValue
       }
     }));
 

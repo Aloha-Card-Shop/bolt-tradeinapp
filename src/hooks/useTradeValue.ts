@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { GameType } from '../types/card';
@@ -23,6 +24,7 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
     const calculateValues = async () => {
       setIsLoading(true);
       try {
+        // Query for matching trade value settings
         const { data: settings } = await supabase
           .from('trade_value_settings')
           .select('*')
@@ -34,12 +36,17 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
 
         if (settings?.[0]) {
           const setting = settings[0];
+          // Check if fixed values are provided
           if (setting.fixed_cash_value != null && setting.fixed_trade_value != null) {
+            // Use fixed values directly
             setCashValue(setting.fixed_cash_value);
             setTradeValue(setting.fixed_trade_value);
           } else {
-            setCashValue(baseValue * (setting.cash_percentage / 100));
-            setTradeValue(baseValue * (setting.trade_percentage / 100));
+            // Calculate based on percentages
+            const calculatedCashValue = baseValue * (setting.cash_percentage / 100);
+            const calculatedTradeValue = baseValue * (setting.trade_percentage / 100);
+            setCashValue(calculatedCashValue);
+            setTradeValue(calculatedTradeValue);
           }
         } else {
           // Default values if no setting found

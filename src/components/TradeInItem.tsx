@@ -28,10 +28,15 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
 }) => {
   const { cashValue, tradeValue, isLoading } = useTradeValue(item.card.game, item.price);
 
-  // When values change, notify the parent
+  // When values change, notify the parent and update the item with calculated values
   React.useEffect(() => {
-    onValueChange({ cashValue, tradeValue });
-  }, [cashValue, tradeValue, onValueChange]);
+    if (!isLoading && item.price > 0) {
+      // Store the calculated values in the item
+      onUpdate(index, { ...item, cashValue, tradeValue });
+      // Notify parent component about the value change
+      onValueChange({ cashValue, tradeValue });
+    }
+  }, [cashValue, tradeValue, isLoading, item.price, index, item, onUpdate, onValueChange]);
   
   const handleConditionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const condition = e.target.value;
@@ -54,6 +59,9 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   const handleToggleHolo = () => {
     onUpdate(index, { ...item, isHolo: !item.isHolo });
   };
+
+  // Calculate the display value based on payment type and quantity
+  const displayValue = (item.paymentType === 'cash' ? cashValue : tradeValue) * item.quantity;
 
   return (
     <div className="border border-gray-200 rounded-xl p-4 hover:border-blue-100 transition-colors duration-200">
@@ -101,7 +109,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
           label={item.paymentType === 'cash' ? 'Cash Value' : 'Trade Value'}
           isLoading={isLoading || item.isLoadingPrice || false}
           error={item.error}
-          value={(item.paymentType === 'cash' ? cashValue : tradeValue) * item.quantity}
+          value={displayValue}
         />
       </div>
     </div>

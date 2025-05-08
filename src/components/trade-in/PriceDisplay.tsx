@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { DollarSign, Loader2 } from 'lucide-react';
+import { formatCurrency } from '../../utils/formatters';
 
 interface PriceDisplayProps {
   label: string;
@@ -10,6 +11,11 @@ interface PriceDisplayProps {
 }
 
 const PriceDisplay: React.FC<PriceDisplayProps> = ({ label, isLoading, error, value }) => {
+  // Format the value for display
+  const displayValue = typeof value === 'number' 
+    ? formatCurrency(value) 
+    : value;
+
   return (
     <div>
       <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -28,7 +34,7 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({ label, isLoading, error, va
           ) : error ? (
             <span className="text-red-500 text-xs">{error || 'Error'}</span>
           ) : (
-            typeof value === 'number' ? value.toFixed(2) : value
+            displayValue
           )}
         </div>
       </div>
