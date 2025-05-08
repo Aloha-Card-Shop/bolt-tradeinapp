@@ -6,6 +6,7 @@ import { useSession } from '../../hooks/useSession';
 import { getSupabaseUrl, getAuthToken } from '../../lib/supabaseHelpers';
 import UserTable from '../../components/admin/UserTable';
 import CreateUserModal from '../../components/admin/CreateUserModal';
+import EditUserModal from '../../components/admin/EditUserModal';
 import { toast } from 'react-hot-toast';
 
 interface StaffUser {
@@ -30,6 +31,7 @@ const UserManagementPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<StaffUser | null>(null);
   const [newUser, setNewUser] = useState<NewStaffUser>({
     email: '',
     password: '',
@@ -189,6 +191,43 @@ const UserManagementPage = () => {
       return false;
     }
   };
+  
+  const handleEditUser = (user: StaffUser) => {
+    setUserToEdit(user);
+  };
+  
+  const handleUpdateUser = async (userId: string, userData: { username?: string; role: 'admin' | 'manager' | 'user' }): Promise<boolean> => {
+    try {
+      const supabaseUrl = getSupabaseUrl();
+      const authToken = await getAuthToken();
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/update-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ userId, ...userData })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update user');
+      }
+
+      setStaffUsers(prev => prev.map(user => 
+        user.id === userId ? { ...user, ...userData } : user
+      ));
+      toast.success('User updated successfully');
+      setError(null);
+      return true;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update user');
+      toast.error('Failed to update user');
+      return false;
+    }
+  };
 
   if (loading) {
     return (
@@ -244,6 +283,7 @@ const UserManagementPage = () => {
             staffUsers={staffUsers}
             onUpdateRole={handleUpdateRole}
             onDeleteUser={handleDeleteUser}
+            onEditUser={handleEditUser}
           />
         </div>
       </div>
@@ -258,6 +298,15 @@ const UserManagementPage = () => {
             setShowCreateModal(false);
             setNewUser({ email: '', password: '', username: '', role: 'user' });
           }}
+        />
+      )}
+      
+      {/* Edit Staff User Modal */}
+      {userToEdit && (
+        <EditUserModal
+          user={userToEdit}
+          onSave={handleUpdateUser}
+          onClose={() => setUserToEdit(null)}
         />
       )}
     </div>

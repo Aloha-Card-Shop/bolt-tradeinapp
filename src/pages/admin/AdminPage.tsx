@@ -8,10 +8,12 @@ import UserTable from '../../components/admin/UserTable';
 import CreateUserModal from '../../components/admin/CreateUserModal';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import ErrorMessage from '../../components/admin/ErrorMessage';
+import EditUserModal from '../../components/admin/EditUserModal';
 
 interface StaffUser {
   id: string;
   email: string;
+  username?: string;
   role: 'admin' | 'manager' | 'user';
   created_at: string;
 }
@@ -31,6 +33,7 @@ const AdminPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<StaffUser | null>(null);
   const [newUser, setNewUser] = useState<NewStaffUser>({
     email: '',
     password: '',
@@ -56,6 +59,7 @@ const AdminPage = () => {
       setStaffUsers(users.map((u: any) => ({
         id: u.id,
         email: u.email,
+        username: u.user_metadata?.username || null,
         role: u.user_metadata?.role || 'user',
         created_at: u.created_at
       })));
@@ -115,6 +119,25 @@ const AdminPage = () => {
     }
   };
   
+  const handleEditUser = (user: StaffUser) => {
+    setUserToEdit(user);
+  };
+
+  const handleUpdateUser = async (userId: string, userData: { username?: string; role: 'admin' | 'manager' | 'user' }) => {
+    try {
+      await adminApi.updateUser(userId, userData);
+      setStaffUsers(prev => prev.map(user => 
+        user.id === userId ? { ...user, ...userData } : user
+      ));
+      setError(null);
+      return true;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update user');
+      return false;
+    }
+  };
+
   const handleCloseModal = () => {
     setShowCreateModal(false);
     setNewUser({ email: '', password: '', username: '', role: 'user' });
@@ -155,6 +178,7 @@ const AdminPage = () => {
             staffUsers={staffUsers}
             onUpdateRole={handleUpdateRole}
             onDeleteUser={handleDeleteUser}
+            onEditUser={handleEditUser}
           />
         </div>
       </div>
@@ -165,6 +189,14 @@ const AdminPage = () => {
           onUserChange={setNewUser}
           onSubmit={handleCreateUser}
           onClose={handleCloseModal}
+        />
+      )}
+
+      {userToEdit && (
+        <EditUserModal
+          user={userToEdit}
+          onSave={handleUpdateUser}
+          onClose={() => setUserToEdit(null)}
         />
       )}
     </div>
