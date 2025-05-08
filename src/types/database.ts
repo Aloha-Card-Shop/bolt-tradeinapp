@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -97,24 +98,45 @@ export type Database = {
           customer_id: string
           trade_in_date: string
           total_value: number
+          cash_value: number
+          trade_value: number
           notes: string | null
           created_at: string
+          status: 'pending' | 'completed' | 'cancelled'
+          payment_type: 'cash' | 'trade' | 'mixed'
+          handled_by: string | null
+          handled_at: string | null
+          staff_notes: string | null
         }
         Insert: {
           id?: string
           customer_id: string
           trade_in_date?: string
           total_value?: number
+          cash_value?: number
+          trade_value?: number
           notes?: string | null
           created_at?: string
+          status?: 'pending' | 'completed' | 'cancelled'
+          payment_type?: 'cash' | 'trade' | 'mixed'
+          handled_by?: string | null
+          handled_at?: string | null
+          staff_notes?: string | null
         }
         Update: {
           id?: string
           customer_id?: string
           trade_in_date?: string
           total_value?: number
+          cash_value?: number
+          trade_value?: number
           notes?: string | null
           created_at?: string
+          status?: 'pending' | 'completed' | 'cancelled'
+          payment_type?: 'cash' | 'trade' | 'mixed'
+          handled_by?: string | null
+          handled_at?: string | null
+          staff_notes?: string | null
         }
       }
       trade_in_items: {

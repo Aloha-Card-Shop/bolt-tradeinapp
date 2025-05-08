@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { ArrowRight, Clock, AlertTriangle, CheckCircle, AlertCircle, Check, X, Trash2 } from 'lucide-react';
+import { ArrowRight, Clock, AlertTriangle, CheckCircle, AlertCircle, Check, X, Trash2, DollarSign, Tag } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import { deleteTradeIn } from '../../services/tradeInService';
 
@@ -17,11 +17,13 @@ interface TradeIn {
   customer_id: string;
   trade_in_date: string;
   total_value: number;
+  cash_value: number;
+  trade_value: number;
   status: 'pending' | 'completed' | 'cancelled';
   customer_name?: string;
-  customers?: Customer;  // Changed from array to single object
+  customers?: Customer;
   notes?: string | null;
-  payment_type?: string;
+  payment_type?: 'cash' | 'trade' | 'mixed';
   staff_notes?: string | null;
 }
 
@@ -47,6 +49,8 @@ const ManagerDashboard = () => {
           customer_id, 
           trade_in_date, 
           total_value, 
+          cash_value,
+          trade_value,
           status,
           notes,
           payment_type,
@@ -67,9 +71,11 @@ const ManagerDashboard = () => {
             customer_id: item.customer_id,
             trade_in_date: item.trade_in_date,
             total_value: item.total_value,
+            cash_value: item.cash_value || 0,
+            trade_value: item.trade_value || 0,
             status: item.status as 'pending' | 'completed' | 'cancelled',
             notes: item.notes,
-            payment_type: item.payment_type,
+            payment_type: item.payment_type as 'cash' | 'trade' | 'mixed',
             staff_notes: item.staff_notes,
             // The customers field is actually an array with a single element
             // but our interface expects a single object, so we take the first item
@@ -180,6 +186,24 @@ const ManagerDashboard = () => {
     }
   };
 
+  const getPaymentTypeIcon = (paymentType: string) => {
+    switch (paymentType) {
+      case 'cash':
+        return <DollarSign className="h-4 w-4 text-green-500" />;
+      case 'trade':
+        return <Tag className="h-4 w-4 text-blue-500" />;
+      case 'mixed':
+        return (
+          <div className="flex">
+            <DollarSign className="h-4 w-4 text-green-500 mr-1" />
+            <Tag className="h-4 w-4 text-blue-500" />
+          </div>
+        );
+      default:
+        return <DollarSign className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-semibold mb-4">Manager Dashboard</h1>
@@ -208,7 +232,10 @@ const ManagerDashboard = () => {
                   Date
                 </th>
                 <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Value
+                  Cash Value
+                </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Trade Value
                 </th>
                 <th className="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Type
@@ -239,10 +266,19 @@ const ManagerDashboard = () => {
                     </p>
                   </td>
                   <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                    <p className="text-gray-900 whitespace-no-wrap">${formatCurrency(tradeIn.total_value)}</p>
+                    <p className="text-gray-900 whitespace-no-wrap">${formatCurrency(tradeIn.cash_value)}</p>
                   </td>
                   <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                    <p className="text-gray-900 whitespace-no-wrap capitalize">{tradeIn.payment_type || 'Cash'}</p>
+                    <p className="text-gray-900 whitespace-no-wrap">${formatCurrency(tradeIn.trade_value)}</p>
+                  </td>
+                  <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                    <span className="relative inline-block px-3 py-1 font-semibold text-gray-900 leading-tight">
+                      <span aria-hidden className="absolute inset-0 bg-gray-200 opacity-50 rounded-full"></span>
+                      <span className="relative flex items-center space-x-2">
+                        {getPaymentTypeIcon(tradeIn.payment_type || 'cash')}
+                        <span className="capitalize">{tradeIn.payment_type || 'cash'}</span>
+                      </span>
+                    </span>
                   </td>
                   <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                     <span className="relative inline-block px-3 py-1 font-semibold text-gray-900 leading-tight">

@@ -61,10 +61,24 @@ export const useTradeInSubmission = ({
 
     setIsSubmitting(true);
     try {
+      // Determine payment type based on items
+      let paymentType: 'cash' | 'trade' | 'mixed' = 'cash';
+      const hasCashItems = validItems.some(item => item.paymentType === 'cash');
+      const hasTradeItems = validItems.some(item => item.paymentType === 'trade');
+      
+      if (hasCashItems && hasTradeItems) {
+        paymentType = 'mixed';
+      } else if (hasTradeItems) {
+        paymentType = 'trade';
+      }
+
       const tradeInData = {
         customer_id: selectedCustomer.id!,
         trade_in_date: new Date().toISOString(),
         total_value: totalCashValue + totalTradeValue,
+        cash_value: totalCashValue,
+        trade_value: totalTradeValue,
+        payment_type: paymentType,
         status: 'pending' as const
       };
 

@@ -9,9 +9,11 @@ interface TradeInData {
   customer_id: string;
   trade_in_date: string;
   total_value: number;
+  cash_value?: number;
+  trade_value?: number;
   notes?: string | null;
   status?: 'pending' | 'accepted' | 'rejected';
-  payment_type?: 'cash' | 'trade';
+  payment_type?: 'cash' | 'trade' | 'mixed';
 }
 
 interface TradeInResult {
@@ -19,8 +21,11 @@ interface TradeInResult {
   customer_id: string;
   trade_in_date: string;
   total_value: number;
+  cash_value: number;
+  trade_value: number;
   notes: string | null;
   status: 'pending' | 'accepted' | 'rejected';
+  payment_type: 'cash' | 'trade' | 'mixed';
   created_at: string;
 }
 
@@ -40,6 +45,30 @@ export async function insertTradeInAndItems(
   }
 
   try {
+    // Calculate cash and trade values from items
+    let cashValue = 0;
+    let tradeValue = 0;
+    let hasCashItems = false;
+    let hasTradeItems = false;
+
+    items.forEach(item => {
+      if (item.paymentType === 'cash') {
+        cashValue += item.price * item.quantity;
+        hasCashItems = true;
+      } else if (item.paymentType === 'trade') {
+        tradeValue += item.price * item.quantity;
+        hasTradeItems = true;
+      }
+    });
+
+    // Determine the overall payment type
+    let paymentType: 'cash' | 'trade' | 'mixed' = 'cash';
+    if (hasCashItems && hasTradeItems) {
+      paymentType = 'mixed';
+    } else if (hasTradeItems) {
+      paymentType = 'trade';
+    }
+
     // First, ensure all cards exist in the database
     const cardPromises = items.map(async (item, index) => {
       try {
@@ -56,11 +85,14 @@ export async function insertTradeInAndItems(
 
     const itemsWithCardIds = await Promise.all(cardPromises);
 
-    // Insert trade-in record
+    // Insert trade-in record with cash and trade values
     const { data: tradeIn, error: tradeInError } = await supabase
       .from('trade_ins')
       .insert({
         ...tradeInData,
+        cash_value: cashValue,
+        trade_value: tradeValue,
+        payment_type: paymentType,
         status: tradeInData.status || 'pending'
       })
       .select()
