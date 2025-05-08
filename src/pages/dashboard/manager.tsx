@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { ArrowRight, Clock, CheckSquare, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowRight, Clock, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react';
+import { Database } from '../../types/database';
 
 interface TradeIn {
   id: string;
@@ -10,6 +12,10 @@ interface TradeIn {
   total_value: number;
   status: 'pending' | 'completed' | 'cancelled';
   customer_name?: string;
+  customers?: {
+    first_name: string;
+    last_name: string;
+  };
 }
 
 const ManagerDashboard = () => {
@@ -27,7 +33,7 @@ const ManagerDashboard = () => {
 
     try {
       const { data, error } = await supabase
-        .from<TradeIn>('trade_ins')
+        .from('trade_ins')
         .select(`
           id, 
           customer_id, 
@@ -41,10 +47,10 @@ const ManagerDashboard = () => {
       if (error) {
         console.error('Error fetching trade-ins:', error);
         setErrorMessage(`Error fetching trade-ins: ${error.message}`);
-      } else {
+      } else if (data) {
         const tradeInsWithCustomerName = data.map(tradeIn => ({
           ...tradeIn,
-          customer_name: `${tradeIn.customers?.first_name} ${tradeIn.customers?.last_name}`
+          customer_name: tradeIn.customers ? `${tradeIn.customers.first_name} ${tradeIn.customers.last_name}` : 'Unknown'
         }));
         setTradeIns(tradeInsWithCustomerName);
       }

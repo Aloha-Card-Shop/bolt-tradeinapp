@@ -3,9 +3,8 @@ import { supabase } from './supabase';
 
 // Safely access supabaseUrl for use in admin pages
 export const getSupabaseUrl = (): string => {
-  // Using any to bypass TypeScript protection since supabaseUrl is needed
-  // but is protected in the SupabaseClient class
-  return (supabase as any).supabaseUrl || '';
+  // Using a hardcoded URL value instead of accessing the protected property
+  return 'https://qgsabaicokoynabxgdco.supabase.co';
 };
 
 // Helper function to get auth token from session

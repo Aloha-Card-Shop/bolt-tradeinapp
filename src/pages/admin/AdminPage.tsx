@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, UserPlus } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { useAdminApi } from '../../components/AdminWrapper';
 import UserTable from '../../components/admin/UserTable';

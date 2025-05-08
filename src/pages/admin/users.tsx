@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, ArrowLeft, Loader2, AlertCircle, UserPlus, Trash2, X } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { supabase } from '../../lib/supabase';
+import { getSupabaseUrl, getAuthToken } from '../../lib/supabaseHelpers';
 
 interface StaffUser {
   id: string;
@@ -44,9 +46,12 @@ const UserManagementPage = () => {
   const fetchStaffUsers = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/list-users`, {
+      const supabaseUrl = getSupabaseUrl();
+      const authToken = await getAuthToken();
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/list-users`, {
         headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          Authorization: `Bearer ${authToken}`
         }
       });
 
@@ -72,11 +77,14 @@ const UserManagementPage = () => {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/create-user`, {
+      const supabaseUrl = getSupabaseUrl();
+      const authToken = await getAuthToken();
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/create-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          Authorization: `Bearer ${authToken}`
         },
         body: JSON.stringify(newUser)
       });
@@ -98,11 +106,14 @@ const UserManagementPage = () => {
 
   const handleUpdateRole = async (userId: string, newRole: 'admin' | 'manager' | 'user') => {
     try {
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/update-user-role`, {
+      const supabaseUrl = getSupabaseUrl();
+      const authToken = await getAuthToken();
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/update-user-role`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          Authorization: `Bearer ${authToken}`
         },
         body: JSON.stringify({ userId, role: newRole })
       });
@@ -128,11 +139,14 @@ const UserManagementPage = () => {
     }
 
     try {
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/delete-user`, {
+      const supabaseUrl = getSupabaseUrl();
+      const authToken = await getAuthToken();
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/delete-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          Authorization: `Bearer ${authToken}`
         },
         body: JSON.stringify({ userId })
       });
