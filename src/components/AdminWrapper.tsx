@@ -1,6 +1,4 @@
 
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getSupabaseUrl, getAuthToken } from '../lib/supabaseHelpers';
 
 // Proxy component that makes admin API calls with proper URL access

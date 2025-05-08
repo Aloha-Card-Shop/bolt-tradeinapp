@@ -12,15 +12,13 @@ interface CardSearchProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   setOptions: SetOption[];
   isLoadingSets: boolean;
-  onCardSelect?: (card: CardDetails) => void;
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
   cardDetails, 
   onInputChange, 
   setOptions, 
-  isLoadingSets,
-  onCardSelect 
+  isLoadingSets 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   

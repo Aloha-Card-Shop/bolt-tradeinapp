@@ -36,8 +36,8 @@ export const buildTcgPlayerUrl = (productId: string, condition: string | undefin
 export const fetchCardPrices = async (
   productId: string,
   condition: string, 
-  isFirstEdition?: boolean,
-  isHolo?: boolean,
+  _isFirstEdition?: boolean,  // Prefixed with _ to indicate it's unused
+  _isHolo?: boolean,          // Prefixed with _ to indicate it's unused
   game?: string
 ): Promise<{ price: string }> => {
   try {
