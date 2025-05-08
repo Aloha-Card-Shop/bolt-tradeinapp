@@ -8,7 +8,8 @@ import {
   ClipboardList,
   DollarSign,
   Settings,
-  ChevronRight
+  ChevronRight,
+  Receipt
 } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
 import { supabase } from '../lib/supabase';
@@ -82,6 +83,24 @@ const Dashboard: React.FC = () => {
             >
               <span>Open Trade-In App</span>
               <ChevronRight className="h-5 w-5 text-green-500 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+
+          {/* My Trade-Ins Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center mb-4">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <Receipt className="h-6 w-6 text-purple-600" />
+              </div>
+              <h2 className="ml-3 text-xl font-semibold text-gray-900">My Trade-Ins</h2>
+            </div>
+            <p className="text-gray-600 mb-6">View your submitted trade-ins and their status</p>
+            <Link 
+              to="/my-trade-ins" 
+              className="group flex items-center justify-between px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg transition-colors"
+            >
+              <span>View Trade-Ins</span>
+              <ChevronRight className="h-5 w-5 text-purple-500 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
 

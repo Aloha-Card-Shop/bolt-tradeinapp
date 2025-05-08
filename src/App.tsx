@@ -9,6 +9,7 @@ import AdminUsers from './pages/admin/users';
 import TradeValues from './pages/admin/trade-values';
 import ManagerDashboard from './pages/dashboard/manager';
 import MainApp from './components/MainApp';
+import MyTradeIns from './pages/my-trade-ins';
 import AdminNav from './components/AdminNav';
 import AuthGuard from './components/AuthGuard';
 import { useSession } from './hooks/useSession';
@@ -30,6 +31,12 @@ function App() {
         <Route path="/dashboard" element={
           <AuthGuard allowedRoles={['admin', 'manager', 'user']}>
             <Dashboard />
+          </AuthGuard>
+        } />
+
+        <Route path="/my-trade-ins" element={
+          <AuthGuard allowedRoles={['admin', 'manager', 'user']}>
+            <MyTradeIns />
           </AuthGuard>
         } />
         
