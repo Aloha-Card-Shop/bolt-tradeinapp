@@ -53,6 +53,30 @@ export const useAdminApi = () => {
     return await response.json();
   };
   
+  const updateUser = async (userId: string, userData: {
+    username?: string;
+    role?: string;
+  }) => {
+    const authToken = await getAuthToken();
+    if (!authToken) throw new Error('Authentication required');
+    
+    const response = await fetch(`${supabaseUrl}/functions/v1/update-user`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ userId, ...userData })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update user');
+    }
+    
+    return await response.json();
+  };
+  
   const updateUserRole = async (userId: string, role: string) => {
     const authToken = await getAuthToken();
     if (!authToken) throw new Error('Authentication required');
@@ -98,6 +122,7 @@ export const useAdminApi = () => {
   return {
     listUsers,
     createUser,
+    updateUser,
     updateUserRole,
     deleteUser
   };
