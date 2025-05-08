@@ -17,7 +17,6 @@ interface UserTableProps {
   onDeleteUser: (userId: string) => Promise<boolean>;
   onEditUser: (user: StaffUser) => void;
   canEdit?: (role: 'admin' | 'manager' | 'user') => boolean;
-  currentViewRole?: 'admin' | 'manager' | 'user';
 }
 
 const UserTable: React.FC<UserTableProps> = ({ 
@@ -26,8 +25,7 @@ const UserTable: React.FC<UserTableProps> = ({
   onUpdateRole, 
   onDeleteUser,
   onEditUser,
-  canEdit = () => true,
-  currentViewRole = 'admin'
+  canEdit = () => true
 }) => {
   if (isLoading) {
     return (
@@ -85,14 +83,14 @@ const UserTable: React.FC<UserTableProps> = ({
                       <button
                         onClick={() => onEditUser(staffUser)}
                         className="p-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
-                        title="Edit user"
+                        aria-label="Edit user"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => onDeleteUser(staffUser.id)}
                         className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
-                        title="Delete user"
+                        aria-label="Delete user"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

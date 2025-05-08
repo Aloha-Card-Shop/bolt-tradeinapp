@@ -75,11 +75,11 @@ const AdminPageContent: React.FC<AdminPageContentProps> = ({
     
     // Manager view only shows users they have permission to see
     if (currentViewRole === 'manager') {
-      return user.role === 'user' || user.role === 'manager';
+      return (user.role === 'user' || user.role === 'manager') && viewPermissions.manager;
     }
     
     // User view only shows other users
-    return user.role === 'user';
+    return user.role === 'user' && viewPermissions.user;
   });
 
   const canEdit = (userRole: 'admin' | 'manager' | 'user') => {
@@ -144,7 +144,6 @@ const AdminPageContent: React.FC<AdminPageContentProps> = ({
         onDeleteUser={onDeleteUser}
         onEditUser={handleEditUser}
         canEdit={(role) => canEdit(role)}
-        currentViewRole={currentViewRole}
       />
 
       {showCreateModal && (

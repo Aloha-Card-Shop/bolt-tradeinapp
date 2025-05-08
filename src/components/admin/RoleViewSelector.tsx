@@ -91,7 +91,7 @@ const RoleViewSelector: React.FC<RoleViewSelectorProps> = ({
                     onChange={(e) => onTogglePermission('admin', 'view', e.target.checked)}
                     className="form-checkbox h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
                   />
-                  <Eye className="h-4 w-4 text-gray-500" title="View" />
+                  <Eye className="h-4 w-4 text-gray-500" aria-label="View permission" />
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
@@ -100,7 +100,7 @@ const RoleViewSelector: React.FC<RoleViewSelectorProps> = ({
                     onChange={(e) => onTogglePermission('admin', 'edit', e.target.checked)}
                     className="form-checkbox h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
                   />
-                  <Pencil className="h-4 w-4 text-gray-500" title="Edit" />
+                  <Pencil className="h-4 w-4 text-gray-500" aria-label="Edit permission" />
                 </label>
               </div>
             </div>
@@ -115,7 +115,7 @@ const RoleViewSelector: React.FC<RoleViewSelectorProps> = ({
                     onChange={(e) => onTogglePermission('manager', 'view', e.target.checked)}
                     className="form-checkbox h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
                   />
-                  <Eye className="h-4 w-4 text-gray-500" title="View" />
+                  <Eye className="h-4 w-4 text-gray-500" aria-label="View permission" />
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
@@ -124,7 +124,7 @@ const RoleViewSelector: React.FC<RoleViewSelectorProps> = ({
                     onChange={(e) => onTogglePermission('manager', 'edit', e.target.checked)}
                     className="form-checkbox h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
                   />
-                  <Pencil className="h-4 w-4 text-gray-500" title="Edit" />
+                  <Pencil className="h-4 w-4 text-gray-500" aria-label="Edit permission" />
                 </label>
               </div>
             </div>
@@ -139,7 +139,7 @@ const RoleViewSelector: React.FC<RoleViewSelectorProps> = ({
                     onChange={(e) => onTogglePermission('user', 'view', e.target.checked)}
                     className="form-checkbox h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
                   />
-                  <Eye className="h-4 w-4 text-gray-500" title="View" />
+                  <Eye className="h-4 w-4 text-gray-500" aria-label="View permission" />
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
@@ -148,7 +148,7 @@ const RoleViewSelector: React.FC<RoleViewSelectorProps> = ({
                     onChange={(e) => onTogglePermission('user', 'edit', e.target.checked)}
                     className="form-checkbox h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
                   />
-                  <Pencil className="h-4 w-4 text-gray-500" title="Edit" />
+                  <Pencil className="h-4 w-4 text-gray-500" aria-label="Edit permission" />
                 </label>
               </div>
             </div>
