@@ -2,15 +2,13 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  LogOut, 
-  Home, 
-  Users, 
-  ClipboardList, 
-  DollarSign, 
-  Settings,
-  ChevronRight, 
+  LogOut,
   Package,
-  UserCircle
+  UserCircle,
+  ClipboardList,
+  DollarSign,
+  Settings,
+  ChevronRight
 } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
 
@@ -32,48 +30,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex space-x-8">
-              <Link to="/dashboard" className="flex items-center px-3 py-2 text-sm font-medium text-blue-600 rounded-lg bg-blue-50">
-                <Home className="h-5 w-5 mr-2" />
-                Dashboard
-              </Link>
-              
-              {isStaff && (
-                <>
-                  <Link to="/admin/customers" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50">
-                    <Users className="h-5 w-5 mr-2" />
-                    Customers
-                  </Link>
-                  
-                  <Link to="/dashboard/manager" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50">
-                    <ClipboardList className="h-5 w-5 mr-2" />
-                    Trade-Ins
-                  </Link>
-                </>
-              )}
-              
-              {isAdmin && (
-                <>
-                  <Link to="/admin/trade-values" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50">
-                    <DollarSign className="h-5 w-5 mr-2" />
-                    Trade Values
-                  </Link>
-                  
-                  <Link to="/admin" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50">
-                    <Settings className="h-5 w-5 mr-2" />
-                    Settings
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* User Welcome Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8 flex items-center justify-between">
@@ -132,7 +88,7 @@ const Dashboard: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <div className="flex items-center mb-4">
                 <div className="p-3 bg-red-100 rounded-lg">
-                  <Users className="h-6 w-6 text-red-600" />
+                  <UserCircle className="h-6 w-6 text-red-600" />
                 </div>
                 <h2 className="ml-3 text-xl font-semibold text-gray-900">Customer Management</h2>
               </div>
