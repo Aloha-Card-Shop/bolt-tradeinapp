@@ -24,8 +24,6 @@ const MyTradeIns: React.FC = () => {
     setErrorMessage(null);
     
     try {
-      // We don't need to fetch the profile separately since we're using the user.id directly
-      
       // Now fetch all trade-ins associated with this user
       const { data, error } = await supabase
         .from('trade_ins')
@@ -65,7 +63,7 @@ const MyTradeIns: React.FC = () => {
             ? (typeof item.customers === 'object' 
               ? Array.isArray(item.customers)
                 ? `${item.customers[0]?.first_name || ''} ${item.customers[0]?.last_name || ''}` 
-                : `${item.customers.first_name || ''} ${item.customers.last_name || ''}`
+                : `${(item.customers as any).first_name || ''} ${(item.customers as any).last_name || ''}`
               : 'Unknown')
             : 'Unknown',
           customers: item.customers as any
