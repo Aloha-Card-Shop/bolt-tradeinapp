@@ -12,7 +12,7 @@ interface AuthGuardProps {
 
 const AuthGuard: React.FC<AuthGuardProps> = ({ children, allowedRoles }) => {
   const navigate = useNavigate();
-  const { user, loading, signOut } = useSession();
+  const { user, loading } = useSession();
 
   useEffect(() => {
     if (!loading) {
