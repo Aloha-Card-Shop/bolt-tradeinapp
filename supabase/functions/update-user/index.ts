@@ -11,6 +11,7 @@ interface UpdateUserRequest {
   userId: string;
   username?: string;
   role?: string;
+  password?: string; // Added password field
 }
 
 Deno.serve(async (req) => {
@@ -50,7 +51,7 @@ Deno.serve(async (req) => {
     );
 
     // Get request body
-    const { userId, username, role }: UpdateUserRequest = await req.json();
+    const { userId, username, role, password }: UpdateUserRequest = await req.json();
 
     // Validate input
     if (!userId) {
@@ -110,6 +111,18 @@ Deno.serve(async (req) => {
 
     if (updateError) {
       throw updateError;
+    }
+
+    // Handle password update separately if provided
+    if (password) {
+      const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
+        userId,
+        { password }
+      );
+
+      if (passwordError) {
+        throw passwordError;
+      }
     }
 
     return new Response(

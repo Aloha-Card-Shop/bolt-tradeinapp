@@ -13,6 +13,7 @@ interface StaffUser {
 interface EditUserData {
   username?: string;
   role: 'admin' | 'manager' | 'user';
+  password?: string; // Added password field
 }
 
 interface EditUserModalProps {
@@ -28,10 +29,12 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<EditUserData>({
     username: user.username,
-    role: user.role
+    role: user.role,
+    password: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showPasswordField, setShowPasswordField] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +42,13 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     setIsSubmitting(true);
     
     try {
-      const success = await onSave(user.id, formData);
+      // Only include password in the update if it has a value
+      const dataToUpdate = {
+        ...formData,
+        password: formData.password && formData.password.trim() !== '' ? formData.password : undefined
+      };
+      
+      const success = await onSave(user.id, dataToUpdate);
       if (success) {
         onClose();
       }
@@ -112,6 +121,37 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                 <option value="manager">Manager</option>
                 <option value="admin">Admin</option>
               </select>
+            </div>
+            
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <button 
+                  type="button" 
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                  onClick={() => setShowPasswordField(!showPasswordField)}
+                >
+                  {showPasswordField ? 'Cancel Password Change' : 'Reset Password'}
+                </button>
+              </div>
+              
+              {showPasswordField && (
+                <>
+                  <input
+                    type="password"
+                    value={formData.password || ''}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter new password"
+                    disabled={isSubmitting}
+                  />
+                  <p className="mt-1 text-sm text-gray-500">
+                    Leave blank to keep current password
+                  </p>
+                </>
+              )}
             </div>
 
             {formError && (
