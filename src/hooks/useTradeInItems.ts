@@ -49,6 +49,10 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
             : parseFloat(attributes.tradeValue);
         }
         
+        // If no specific values were saved, default to using the price
+        if (cashValue === undefined) cashValue = item.price;
+        if (tradeValue === undefined) tradeValue = item.price;
+        
         return {
           card_name: cardName,
           quantity: item.quantity,

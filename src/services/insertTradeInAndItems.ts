@@ -99,6 +99,7 @@ export async function insertTradeInAndItems(
         ...tradeInData,
         cash_value: cashValue,
         trade_value: tradeValue,
+        total_value: cashValue + tradeValue,
         payment_type: paymentType,
         status: tradeInData.status || 'pending'
       })

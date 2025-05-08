@@ -92,25 +92,40 @@ export const useTradeInSubmission = ({
 
       console.log('Submitting trade-in data:', tradeInData);
 
-      const itemsData = validItems.map(item => ({
-        card: {
-          id: item.card.id!,
-          name: item.card.name,
-          game: item.card.game,
-          productId: item.card.productId
-        },
-        quantity: item.quantity,
-        price: item.price,
-        condition: item.condition as
-          | 'near_mint'
-          | 'lightly_played'
-          | 'moderately_played'
-          | 'heavily_played'
-          | 'damaged',
-        isFirstEdition: item.isFirstEdition,
-        isHolo: item.isHolo,
-        paymentType: item.paymentType
-      }));
+      const itemsData = validItems.map(item => {
+        const itemValues = item.card.id && typeof itemValuesMap[item.card.id] === 'object' ? itemValuesMap[item.card.id] : null;
+        
+        // Get the correct cashValue and tradeValue for this item
+        const cashValue = item.paymentType === 'cash' && itemValues && itemValues.cashValue !== undefined
+          ? itemValues.cashValue
+          : (item.cashValue || item.price);
+          
+        const tradeValue = item.paymentType === 'trade' && itemValues && itemValues.tradeValue !== undefined
+          ? itemValues.tradeValue
+          : (item.tradeValue || item.price);
+          
+        return {
+          card: {
+            id: item.card.id!,
+            name: item.card.name,
+            game: item.card.game,
+            productId: item.card.productId
+          },
+          quantity: item.quantity,
+          price: item.price,
+          condition: item.condition as
+            | 'near_mint'
+            | 'lightly_played'
+            | 'moderately_played'
+            | 'heavily_played'
+            | 'damaged',
+          isFirstEdition: item.isFirstEdition,
+          isHolo: item.isHolo,
+          paymentType: item.paymentType,
+          cashValue,
+          tradeValue
+        };
+      });
 
       await insertTradeInAndItems(tradeInData, itemsData);
 
