@@ -65,22 +65,22 @@ const AdminPage = () => {
     }
   };
 
-  const handleCreateUser = async (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     try {
       await adminApi.createUser(newUser);
       await fetchStaffUsers();
       handleCloseModal();
       setError(null);
-      return true;
+      return;
     } catch (error) {
       console.error('Error creating user:', error);
       setError(error instanceof Error ? error.message : 'Failed to create user');
-      return false;
+      return;
     }
   };
 
-  const handleUpdateRole = async (userId: string, newRole: 'admin' | 'manager' | 'user') => {
+  const handleUpdateRole = async (userId: string, newRole: 'admin' | 'manager' | 'user'): Promise<boolean> => {
     try {
       await adminApi.updateUserRole(userId, newRole);
       setStaffUsers(prev => prev.map(user => 
@@ -95,7 +95,7 @@ const AdminPage = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
+  const handleDeleteUser = async (userId: string): Promise<boolean> => {
     if (!confirm('Are you sure you want to delete this staff user?')) {
       return false;
     }
@@ -131,7 +131,7 @@ const AdminPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="max-w-7xl mx-auto px-4 py-12">
-        <AdminPageHeader onCreateUser={() => setShowCreateModal(true)} />
+        <AdminPageHeader />
 
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           <div className="flex items-center justify-between mb-6">

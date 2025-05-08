@@ -79,7 +79,7 @@ const UserManagementPage = () => {
     }
   };
 
-  const handleCreateUser = async (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     try {
       const supabaseUrl = getSupabaseUrl();
@@ -110,16 +110,16 @@ const UserManagementPage = () => {
       setShowCreateModal(false);
       setNewUser({ email: '', password: '', username: '', role: 'user' });
       setError(null);
-      return true;
+      return;
     } catch (error) {
       console.error('Error creating user:', error);
       setError(error instanceof Error ? error.message : 'Failed to create user');
       toast.error('Failed to create user');
-      return false;
+      return;
     }
   };
 
-  const handleUpdateRole = async (userId: string, newRole: 'admin' | 'manager' | 'user') => {
+  const handleUpdateRole = async (userId: string, newRole: 'admin' | 'manager' | 'user'): Promise<boolean> => {
     try {
       const supabaseUrl = getSupabaseUrl();
       const authToken = await getAuthToken();
@@ -152,7 +152,7 @@ const UserManagementPage = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
+  const handleDeleteUser = async (userId: string): Promise<boolean> => {
     if (!confirm('Are you sure you want to delete this staff user?')) {
       return false;
     }
