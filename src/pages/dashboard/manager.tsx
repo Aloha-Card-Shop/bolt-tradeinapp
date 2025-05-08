@@ -103,25 +103,27 @@ const ManagerDashboard = () => {
           
           // Handle the customers object which may be returned as an object or an array with a single object
           if (item.customers) {
+            // First, check the type of item.customers and handle accordingly
             if (Array.isArray(item.customers)) {
-              // If it's an array, take the first customer
+              // If it's an array, take the first customer if available
               if (item.customers.length > 0) {
-                const customer = item.customers[0];
+                const customer = item.customers[0] as any;
                 tradeIn.customers = {
-                  first_name: customer.first_name,
-                  last_name: customer.last_name
+                  first_name: customer.first_name || '',
+                  last_name: customer.last_name || ''
                 };
-                tradeIn.customer_name = `${customer.first_name} ${customer.last_name}`;
+                tradeIn.customer_name = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Unknown';
               } else {
                 tradeIn.customer_name = 'Unknown';
               }
             } else {
-              // If it's an object, use it directly
+              // If it's an object, use it directly with type assertion
+              const customerData = item.customers as any;
               tradeIn.customers = {
-                first_name: item.customers.first_name,
-                last_name: item.customers.last_name
+                first_name: customerData.first_name || '',
+                last_name: customerData.last_name || ''
               };
-              tradeIn.customer_name = `${item.customers.first_name} ${item.customers.last_name}`;
+              tradeIn.customer_name = `${customerData.first_name || ''} ${customerData.last_name || ''}`.trim() || 'Unknown';
             }
           } else {
             tradeIn.customer_name = 'Unknown';
@@ -156,8 +158,9 @@ const ManagerDashboard = () => {
 
       if (error) throw error;
 
+      // Fix the type issue with cards.name
       const items = data.map(item => ({
-        card_name: item.cards?.name || 'Unknown Card',
+        card_name: item.cards ? (typeof item.cards === 'object' && item.cards !== null ? (item.cards as any).name : 'Unknown Card') : 'Unknown Card',
         quantity: item.quantity,
         price: item.price,
         condition: item.condition,
