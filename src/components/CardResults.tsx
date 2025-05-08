@@ -6,7 +6,6 @@ import { CardDetails, SavedCard } from '../types/card';
 interface CardResultsProps {
   results: CardDetails[];
   isLoading: boolean;
-  onSave?: (card: CardDetails) => void;
   onAddToList: (card: CardDetails | SavedCard, price: number) => void;
 }
 

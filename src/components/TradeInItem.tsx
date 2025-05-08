@@ -1,14 +1,14 @@
 
 import React from 'react';
 import { X, DollarSign, Loader2 } from 'lucide-react';
-import { TradeInItem } from '../hooks/useTradeInList';
+import type { TradeInItem as TradeInItemType } from '../hooks/useTradeInList';
 import { useTradeValue } from '../hooks/useTradeValue';
 
 interface TradeInItemProps {
-  item: TradeInItem;
+  item: TradeInItemType;
   index: number;
   onRemove: (index: number) => void;
-  onUpdate: (index: number, item: TradeInItem) => void;
+  onUpdate: (index: number, item: TradeInItemType) => void;
   onConditionChange: (condition: string) => void;
   onValueChange: (values: { tradeValue: number; cashValue: number }) => void;
 }

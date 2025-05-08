@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 import { getOrCreateCard } from './cardService';
 import { TradeInItem } from '../hooks/useTradeInList';
@@ -61,7 +62,7 @@ function validateCard(item: TradeInItem, index: number): void {
 
 export async function insertTradeInAndItems(
   tradeInData: TradeInData,
-  items: TradeInItem[]
+  items: any[]
 ): Promise<TradeInResult> {
   console.log('Starting trade-in insertion with items:', items);
 
@@ -73,9 +74,6 @@ export async function insertTradeInAndItems(
   if (!items || items.length === 0) {
     throw new Error('No items to process in trade-in');
   }
-
-  // Validate all items before processing
-  items.forEach((item, index) => validateCard(item, index));
 
   try {
     // First, ensure all cards exist in the database

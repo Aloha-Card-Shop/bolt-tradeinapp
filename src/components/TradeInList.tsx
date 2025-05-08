@@ -35,7 +35,7 @@ const TradeInList: React.FC<TradeInListProps> = ({
 
   const { totalCashValue, totalTradeValue } = useMemo(() => {
     return validItems.reduce((acc, item) => {
-      const values = itemValuesMap[item.card.id || ''] ?? { tradeValue: 0, cashValue: 0 };
+      const values = itemValuesMap[item.card.id || ''] || { tradeValue: 0, cashValue: 0 };
       const value = item.paymentType === 'trade' ? values.tradeValue : values.cashValue;
       
       if (item.paymentType === 'trade') {
@@ -121,11 +121,9 @@ const TradeInList: React.FC<TradeInListProps> = ({
           | 'moderately_played'
           | 'heavily_played'
           | 'damaged',
-        attributes: {
-          isFirstEdition: item.isFirstEdition,
-          isHolo: item.isHolo,
-          paymentType: item.paymentType
-        }
+        isFirstEdition: item.isFirstEdition,
+        isHolo: item.isHolo,
+        paymentType: item.paymentType
       }));
 
       await insertTradeInAndItems(tradeInData, itemsData);
@@ -191,13 +189,13 @@ const TradeInList: React.FC<TradeInListProps> = ({
           <div className="space-y-4">
             {items.map((item, idx) => (
               <TradeInItem
-                key={item.card.id}
+                key={item.card.id || idx}
                 item={item}
                 index={idx}
                 onRemove={onRemoveItem}
                 onUpdate={onUpdateItem}
                 onConditionChange={(cond) => handleConditionChange(idx, cond)}
-                onValueChange={(values) => handleValueChange(item.card.id!, values)}
+                onValueChange={(values) => handleValueChange(item.card.id || '', values)}
               />
             ))}
           </div>

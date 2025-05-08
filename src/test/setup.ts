@@ -1,19 +1,25 @@
 
 import '@testing-library/jest-dom/vitest';
+import { vi } from 'vitest';
 
 // Mock BroadcastChannel
-global.BroadcastChannel = class MockBroadcastChannel {
+class MockBroadcastChannel {
   name: string;
+  onmessage: ((this: BroadcastChannel, ev: MessageEvent) => any) | null = null;
+  onmessageerror: ((this: BroadcastChannel, ev: MessageEvent) => any) | null = null;
+
   constructor(name: string) {
     this.name = name;
-    return {
-      postMessage: () => {},
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      close: () => {}
-    };
   }
-} as unknown as typeof BroadcastChannel;
+  
+  postMessage(): void {}
+  addEventListener(): void {}
+  removeEventListener(): void {}
+  close(): void {}
+}
+
+// Assign the mock class to global
+(global.BroadcastChannel as any) = MockBroadcastChannel;
 
 // Mock Supabase auth
 vi.mock('@supabase/supabase-js', () => ({

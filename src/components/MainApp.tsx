@@ -12,7 +12,7 @@ import { SavedCard } from '../types/card';
 
 function MainApp() {
   const { cardDetails, searchResults, setOptions, isLoadingSets, isSearching, handleInputChange, resetSearch } = useCardSearch();
-  const { savedCards, saveCard, removeCard } = useSavedCards();
+  const { savedCards, removeCard } = useSavedCards();
   const { items, addItem, removeItem, updateItem } = useTradeInList();
 
   const handleCheckSavedCard = (card: SavedCard) => {
@@ -55,7 +55,13 @@ function MainApp() {
           <div className="lg:col-span-3 space-y-8">
             <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
               <CardSearch 
-                cardDetails={cardDetails}
+                cardDetails={{
+                  name: cardDetails.name,
+                  set: cardDetails.set || '',
+                  number: cardDetails.number || '',
+                  game: cardDetails.game,
+                  categoryId: cardDetails.categoryId
+                }}
                 onInputChange={handleInputChange}
                 setOptions={setOptions}
                 isLoadingSets={isLoadingSets}
