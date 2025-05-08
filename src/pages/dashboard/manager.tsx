@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { ArrowRight, Clock, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react';
 
+// Define the shape of a customer from the database
 interface Customer {
   first_name: string;
   last_name: string;
@@ -16,10 +17,7 @@ interface TradeIn {
   total_value: number;
   status: 'pending' | 'completed' | 'cancelled';
   customer_name?: string;
-  customers?: {
-    first_name: string;
-    last_name: string;
-  };
+  customers?: Customer;  // Changed from array to single object
 }
 
 const ManagerDashboard = () => {
@@ -52,10 +50,22 @@ const ManagerDashboard = () => {
         console.error('Error fetching trade-ins:', error);
         setErrorMessage(`Error fetching trade-ins: ${error.message}`);
       } else if (data) {
-        const tradeInsWithCustomerName = data.map(tradeIn => ({
-          ...tradeIn,
-          customer_name: tradeIn.customers ? `${tradeIn.customers.first_name} ${tradeIn.customers.last_name}` : 'Unknown'
-        })) as TradeIn[];
+        // Transform data to match our interface
+        const tradeInsWithCustomerName = data.map(item => {
+          // Create a properly typed object
+          const tradeIn: TradeIn = {
+            id: item.id,
+            customer_id: item.customer_id,
+            trade_in_date: item.trade_in_date,
+            total_value: item.total_value,
+            status: item.status as 'pending' | 'completed' | 'cancelled',
+            customers: item.customers as Customer,
+            customer_name: item.customers 
+              ? `${item.customers.first_name} ${item.customers.last_name}` 
+              : 'Unknown'
+          };
+          return tradeIn;
+        });
         
         setTradeIns(tradeInsWithCustomerName);
       }
