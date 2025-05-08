@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, ArrowLeft, Loader2, AlertCircle, UserPlus } from 'lucide-react';
@@ -111,10 +110,12 @@ const UserManagementPage = () => {
       setShowCreateModal(false);
       setNewUser({ email: '', password: '', username: '', role: 'user' });
       setError(null);
+      return true;
     } catch (error) {
       console.error('Error creating user:', error);
       setError(error instanceof Error ? error.message : 'Failed to create user');
       toast.error('Failed to create user');
+      return false;
     }
   };
 
@@ -142,16 +143,18 @@ const UserManagementPage = () => {
       ));
       toast.success('User role updated successfully');
       setError(null);
+      return true;
     } catch (error) {
       console.error('Error updating user role:', error);
       setError(error instanceof Error ? error.message : 'Failed to update user role');
       toast.error('Failed to update user role');
+      return false;
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this staff user?')) {
-      return;
+      return false;
     }
 
     try {
@@ -175,10 +178,12 @@ const UserManagementPage = () => {
       setStaffUsers(prev => prev.filter(user => user.id !== userId));
       toast.success('User deleted successfully');
       setError(null);
+      return true;
     } catch (error) {
       console.error('Error deleting user:', error);
       setError(error instanceof Error ? error.message : 'Failed to delete user');
       toast.error('Failed to delete user');
+      return false;
     }
   };
 
