@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, Settings, ClipboardList, UserCircle, DollarSign, LogOut } from 'lucide-react';
@@ -12,7 +11,7 @@ interface AdminNavProps {
 const AdminNav: React.FC<AdminNavProps> = ({ userRole }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useSession();
+  const {  } = useSession();
 
   if (userRole !== 'admin' && userRole !== 'manager') {
     return null;
