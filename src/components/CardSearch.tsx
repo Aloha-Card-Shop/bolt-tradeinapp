@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Package } from 'lucide-react';
-import { GAME_OPTIONS } from '../types/card';
+import { GAME_OPTIONS, GameType } from '../types/card';
 
 interface CardSearchProps {
   cardDetails: {

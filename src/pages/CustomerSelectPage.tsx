@@ -1,9 +1,25 @@
-import React, { useState } from 'react';
+
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, User } from 'lucide-react';
 import { Customer, useCustomers } from '../hooks/useCustomers';
 import CustomerSelect from '../components/CustomerSelect';
 import { insertTradeInAndItems } from '../services/insertTradeInAndItems';
+
+interface TradeInItem {
+  card: {
+    id: string;
+    name: string;
+    game: string;
+    productId?: string | null;
+  };
+  quantity: number;
+  price: number;
+  condition: string;
+  isFirstEdition: boolean;
+  isHolo: boolean;
+  paymentType: 'cash' | 'trade';
+}
 
 const CustomerSelectPage = () => {
   const navigate = useNavigate();
@@ -13,13 +29,15 @@ const CustomerSelectPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const totalValue = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const totalValue = items.reduce((sum: number, item: TradeInItem) => sum + (item.price * item.quantity), 0);
 
   const handleBack = () => {
     navigate('/trade-in/review', { state: { items } });
   };
 
-  const handleCustomerSelect = async (customer: Customer) => {
+  const handleCustomerSelect = async (customer: Customer | null) => {
+    if (!customer) return;
+    
     setIsSubmitting(true);
     setError(null);
 
@@ -31,7 +49,7 @@ const CustomerSelectPage = () => {
         status: 'pending' as const
       };
 
-      const itemsData = items.map(item => ({
+      const itemsData = items.map((item: TradeInItem) => ({
         card_id: item.card.id!,
         quantity: item.quantity,
         price: item.price,
@@ -49,6 +67,16 @@ const CustomerSelectPage = () => {
       setError(error instanceof Error ? error.message : 'Failed to submit trade-in');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateCustomer = async (firstName: string, lastName: string, email?: string, phone?: string): Promise<void> => {
+    try {
+      const newCustomer = await createCustomer(firstName, lastName, email, phone);
+      handleCustomerSelect(newCustomer);
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create customer');
     }
   };
 
@@ -88,7 +116,7 @@ const CustomerSelectPage = () => {
             customers={customers}
             isLoading={isLoadingCustomers}
             onSelect={handleCustomerSelect}
-            onCreateNew={createCustomer}
+            onCreateNew={handleCreateCustomer}
             isSubmitting={isSubmitting}
           />
         </div>

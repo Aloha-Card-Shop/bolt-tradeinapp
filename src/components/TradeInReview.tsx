@@ -223,7 +223,7 @@ const TradeInReview: React.FC<TradeInReviewProps> = ({
                           </span>
                           <input
                             type="text"
-                            value={currentValue?.toFixed(2) ?? '0.00'}
+                            value={(currentValue || 0) * item.quantity}
                             readOnly
                             className="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700"
                           />

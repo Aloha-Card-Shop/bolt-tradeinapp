@@ -3,7 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 
 // Mock BroadcastChannel
-class MockBroadcastChannel {
+class MockBroadcastChannel implements BroadcastChannel {
   name: string;
   onmessage: ((this: BroadcastChannel, ev: MessageEvent) => any) | null = null;
   onmessageerror: ((this: BroadcastChannel, ev: MessageEvent) => any) | null = null;

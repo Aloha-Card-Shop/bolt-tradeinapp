@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { X, DollarSign, Loader2 } from 'lucide-react';
-import type { TradeInItem as TradeInItemType } from '../hooks/useTradeInList';
+import { TradeInItem as TradeInItemType } from '../hooks/useTradeInList';
 import { useTradeValue } from '../hooks/useTradeValue';
 
 interface TradeInItemProps {

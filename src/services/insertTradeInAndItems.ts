@@ -22,44 +22,6 @@ interface TradeInResult {
   created_at: string;
 }
 
-function validateCard(item: TradeInItem, index: number): void {
-  if (!item) {
-    throw new Error(`Invalid item at index ${index}: item is undefined`);
-  }
-
-  if (!item.card) {
-    throw new Error(`Invalid item at index ${index}: missing card data`);
-  }
-
-  if (!item.card.name || typeof item.card.name !== 'string') {
-    throw new Error(`Invalid item at index ${index}: invalid or missing card name`);
-  }
-
-  if (!item.card.game) {
-    throw new Error(`Invalid item at index ${index}: missing game type`);
-  }
-
-  if (!item.condition) {
-    throw new Error(`Invalid item at index ${index}: missing condition`);
-  }
-
-  if (!item.quantity || item.quantity < 1) {
-    throw new Error(`Invalid item at index ${index}: invalid quantity`);
-  }
-
-  if (!item.price || item.price <= 0) {
-    throw new Error(`Invalid item at index ${index}: invalid price`);
-  }
-
-  if (item.isLoadingPrice) {
-    throw new Error(`Invalid item at index ${index}: price is still loading`);
-  }
-
-  if (item.error) {
-    throw new Error(`Invalid item at index ${index}: ${item.error}`);
-  }
-}
-
 export async function insertTradeInAndItems(
   tradeInData: TradeInData,
   items: any[]

@@ -1,193 +1,116 @@
-import React from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User, Settings, Users, ShoppingBag, ChevronRight, Loader2, ClipboardList, DollarSign } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import { useSession } from '../hooks/useSession';
+import { Card, ShoppingBag, Users, Settings, PieChart, BadgeDollarSign } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, loading } = useSession();
-
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      navigate('/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
+  const userRole = user?.user_metadata?.role || 'user';
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 text-blue-500 animate-spin mx-auto" />
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
-  if (!user) {
-    navigate('/login');
-    return null;
-  }
-
-  const userRole = user.user_metadata.role || 'user';
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-full">
-                <User className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Welcome back</p>
-                <div className="flex items-center space-x-2">
-                  <p className="font-medium text-gray-900">{user.email}</p>
-                  <span className="px-2 py-1 text-xs font-medium rounded-full capitalize" 
-                    style={{
-                      backgroundColor: 
-                        userRole === 'admin' ? 'rgb(220 38 38 / 0.1)' : 
-                        userRole === 'manager' ? 'rgb(37 99 235 / 0.1)' : 
-                        'rgb(22 163 74 / 0.1)',
-                      color: 
-                        userRole === 'admin' ? 'rgb(185 28 28)' : 
-                        userRole === 'manager' ? 'rgb(29 78 216)' : 
-                        'rgb(21 128 61)'
-                    }}
-                  >
-                    {userRole}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </header>
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Customer Tools - Available to all users */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <ShoppingBag className="h-6 w-6 text-green-600" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div 
+            className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => handleNavigation('/app')}
+          >
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Card className="h-6 w-6 text-blue-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">Customer Tools</h2>
+              <h2 className="text-xl font-semibold text-gray-800">Card Search</h2>
             </div>
-            <p className="text-gray-600 mb-4">
-              Manage trade-ins, check prices, and track orders
-            </p>
-            <button 
-              onClick={() => navigate('/app')}
-              className="flex items-center justify-between w-full px-4 py-2 text-sm text-green-700 bg-green-50 rounded-lg hover:bg-green-100 transition-colors duration-200"
-            >
-              Open Trade-In App
-              <ChevronRight className="h-4 w-4" />
-            </button>
+            <p className="text-gray-600">Search for card prices and check market values.</p>
           </div>
 
-          {/* Customer Management - Admin and Manager */}
           {(userRole === 'admin' || userRole === 'manager') && (
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <Users className="h-6 w-6 text-red-600" />
+            <div 
+              className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleNavigation('/admin/customers')}
+            >
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Users className="h-6 w-6 text-green-600" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">Customer Management</h2>
+                <h2 className="text-xl font-semibold text-gray-800">Customers</h2>
               </div>
-              <p className="text-gray-600 mb-4">
-                Manage customer accounts and information
-              </p>
-              <button 
-                onClick={() => navigate('/admin/customers')}
-                className="flex items-center justify-between w-full px-4 py-2 text-sm text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors duration-200"
-              >
-                Manage Customers
-                <ChevronRight className="h-4 w-4" />
-              </button>
+              <p className="text-gray-600">View and manage customer information.</p>
             </div>
           )}
 
-          {/* Trade Value Settings - Admin only */}
+          {(userRole === 'admin' || userRole === 'manager') && (
+            <div 
+              className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleNavigation('/dashboard/manager')}
+            >
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <ShoppingBag className="h-6 w-6 text-amber-600" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-800">Trade-In Management</h2>
+              </div>
+              <p className="text-gray-600">Review and process customer trade-ins.</p>
+            </div>
+          )}
+
           {userRole === 'admin' && (
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
-              <div className="flex items-center space-x-3 mb-4">
+            <div 
+              className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleNavigation('/admin/users')}
+            >
+              <div className="flex items-center space-x-4 mb-4">
                 <div className="p-2 bg-purple-100 rounded-lg">
-                  <DollarSign className="h-6 w-6 text-purple-600" />
+                  <Settings className="h-6 w-6 text-purple-600" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">Trade Values</h2>
+                <h2 className="text-xl font-semibold text-gray-800">User Management</h2>
               </div>
-              <p className="text-gray-600 mb-4">
-                Configure trade-in percentages and value ranges
-              </p>
-              <button 
-                onClick={() => navigate('/admin/trade-values')}
-                className="flex items-center justify-between w-full px-4 py-2 text-sm text-purple-700 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors duration-200"
-              >
-                Configure Values
-                <ChevronRight className="h-4 w-4" />
-              </button>
+              <p className="text-gray-600">Manage staff accounts and permissions.</p>
             </div>
           )}
 
-          {/* Admin Settings - Admin only */}
           {userRole === 'admin' && (
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Settings className="h-6 w-6 text-blue-600" />
+            <div 
+              className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleNavigation('/admin/trade-values')}
+            >
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <BadgeDollarSign className="h-6 w-6 text-red-600" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">Admin Settings</h2>
+                <h2 className="text-xl font-semibold text-gray-800">Trade Values</h2>
               </div>
-              <p className="text-gray-600 mb-4">
-                Configure system settings and preferences
-              </p>
-              <button 
-                onClick={() => navigate('/admin')}
-                className="flex items-center justify-between w-full px-4 py-2 text-sm text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors duration-200"
-              >
-                Open Settings
-                <ChevronRight className="h-4 w-4" />
-              </button>
+              <p className="text-gray-600">Configure the trade-in values for cards.</p>
             </div>
           )}
 
-          {/* Trade-In Management - Admin and Manager */}
-          {(userRole === 'admin' || userRole === 'manager') && (
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <ClipboardList className="h-6 w-6 text-blue-600" />
+          {userRole === 'admin' && (
+            <div 
+              className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleNavigation('/admin')}
+            >
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="p-2 bg-indigo-100 rounded-lg">
+                  <PieChart className="h-6 w-6 text-indigo-600" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">Trade-In Management</h2>
+                <h2 className="text-xl font-semibold text-gray-800">Analytics</h2>
               </div>
-              <p className="text-gray-600 mb-4">
-                Review and process customer trade-in requests
-              </p>
-              <button 
-                onClick={() => navigate('/dashboard/manager')}
-                className="flex items-center justify-between w-full px-4 py-2 text-sm text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors duration-200"
-              >
-                Manage Trade-Ins
-                <ChevronRight className="h-4 w-4" />
-              </button>
+              <p className="text-gray-600">View store performance and trade-in metrics.</p>
             </div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 };

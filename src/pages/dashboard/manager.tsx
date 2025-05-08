@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList, ArrowLeft, Loader2, AlertCircle, CheckCircle2, XCircle, Clock, Trash2 } from 'lucide-react';
+import { ClipboardList, ArrowLeft, Loader2, CheckCircle2, XCircle, Clock, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../hooks/useSession';
 import { useTradeValue } from '../../hooks/useTradeValue';
+import { GameType } from '../../types/card';
 
 interface TradeInItem {
   card_name: string;
@@ -44,7 +46,7 @@ const TradeInRow: React.FC<TradeInRowProps> = ({ tradeIn, processingId, onDelete
 
   // Calculate separate totals for cash and trade values
   const { totalCashValue, totalTradeValue } = tradeIn.items.reduce((acc, item) => {
-    const { tradeValue, cashValue } = useTradeValue(item.game, item.price);
+    const { tradeValue, cashValue } = useTradeValue(item.game as GameType, item.price);
     const value = item.attributes?.paymentType === 'trade' ? tradeValue : cashValue;
     
     if (item.attributes?.paymentType === 'trade') {
@@ -84,7 +86,7 @@ const TradeInRow: React.FC<TradeInRowProps> = ({ tradeIn, processingId, onDelete
       <div className="border-t border-gray-100 pt-4 mt-4">
         <h4 className="text-sm font-medium text-gray-700 mb-2">Items:</h4>
         {tradeIn.items.map((item, index) => {
-          const { tradeValue, cashValue } = useTradeValue(item.game, item.price);
+          const { tradeValue, cashValue } = useTradeValue(item.game as GameType, item.price);
           const value = item.attributes?.paymentType === 'trade' ? tradeValue : cashValue;
 
           return (
@@ -350,7 +352,7 @@ const ManagerDashboard = () => {
               {processedTradeIns.map(tradeIn => {
                 // Calculate separate totals for cash and trade values
                 const { totalCashValue, totalTradeValue } = tradeIn.items.reduce((acc, item) => {
-                  const { tradeValue, cashValue } = useTradeValue(item.game, item.price);
+                  const { tradeValue, cashValue } = useTradeValue(item.game as GameType, item.price);
                   const value = item.attributes?.paymentType === 'trade' ? tradeValue : cashValue;
                   
                   if (item.attributes?.paymentType === 'trade') {
@@ -415,7 +417,7 @@ const ManagerDashboard = () => {
                     <div className="border-t border-gray-200 pt-4 mt-4">
                       <h4 className="text-sm font-medium text-gray-700 mb-2">Items:</h4>
                       {tradeIn.items.map((item, index) => {
-                        const { tradeValue, cashValue } = useTradeValue(item.game, item.price);
+                        const { tradeValue, cashValue } = useTradeValue(item.game as GameType, item.price);
                         const value = item.attributes?.paymentType === 'trade' ? tradeValue : cashValue;
 
                         return (

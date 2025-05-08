@@ -8,7 +8,7 @@ import TradeInList from './TradeInList';
 import { useCardSearch } from '../hooks/useCardSearch';
 import { useSavedCards } from '../hooks/useSavedCards';
 import { useTradeInList } from '../hooks/useTradeInList';
-import { SavedCard } from '../types/card';
+import { CardDetails, SavedCard } from '../types/card';
 
 function MainApp() {
   const { cardDetails, searchResults, setOptions, isLoadingSets, isSearching, handleInputChange, resetSearch } = useCardSearch();
@@ -22,9 +22,17 @@ function MainApp() {
     handleInputChange(event);
   };
 
-  const handleAddToList = (card: SavedCard | any, price: number) => {
+  const handleAddToList = (card: CardDetails | SavedCard, price: number) => {
     addItem(card, price);
     resetSearch(); // Reset search after adding card
+  };
+
+  const cardDetailsForSearch = {
+    name: cardDetails.name,
+    set: cardDetails.set || '',
+    number: cardDetails.number || '',
+    game: cardDetails.game,
+    categoryId: cardDetails.categoryId
   };
 
   return (
@@ -55,13 +63,7 @@ function MainApp() {
           <div className="lg:col-span-3 space-y-8">
             <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
               <CardSearch 
-                cardDetails={{
-                  name: cardDetails.name,
-                  set: cardDetails.set || '',
-                  number: cardDetails.number || '',
-                  game: cardDetails.game,
-                  categoryId: cardDetails.categoryId
-                }}
+                cardDetails={cardDetailsForSearch}
                 onInputChange={handleInputChange}
                 setOptions={setOptions}
                 isLoadingSets={isLoadingSets}

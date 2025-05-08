@@ -1,38 +1,36 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+
+import { useState } from 'react';
 import { CardDetails } from '../types/card';
+import { supabase } from '../lib/supabase';
 
 export const useCardSuggestions = () => {
   const [suggestions, setSuggestions] = useState<CardDetails[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchSuggestions = async (searchTerm: string, game: string) => {
-    if (!searchTerm || searchTerm.length < 2) {
+  const fetchSuggestions = async (query: string, game: string) => {
+    if (!query || query.length < 3) {
       setSuggestions([]);
       return;
     }
 
     setIsLoading(true);
+    setError(null);
+
     try {
       const { data, error } = await supabase
         .from('cards')
-        .select('name, set_name, card_number, game')
+        .select('*')
         .eq('game', game)
-        .ilike('name', `%${searchTerm}%`)
-        .limit(10)
-        .order('name');
+        .ilike('name', `%${query}%`)
+        .limit(10);
 
       if (error) throw error;
 
-      setSuggestions(data.map(card => ({
-        name: card.name,
-        set: card.set_name || '',
-        number: card.card_number || '',
-        game: card.game
-      })));
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
-      setSuggestions([]);
+      setSuggestions(data || []);
+    } catch (err) {
+      console.error('Error fetching suggestions:', err);
+      setError('Failed to load suggestions');
     } finally {
       setIsLoading(false);
     }
@@ -41,6 +39,7 @@ export const useCardSuggestions = () => {
   return {
     suggestions,
     isLoading,
+    error,
     fetchSuggestions
   };
 };
