@@ -63,9 +63,10 @@ const MyTradeIns: React.FC = () => {
           staff_notes: item.staff_notes,
           customer_name: item.customers 
             ? (typeof item.customers === 'object' 
-               ? Array.isArray(item.customers)
-                 ? `${item.customers[0]?.first_name || ''} ${item.customers[0]?.last_name || ''}` 
-                 : `${item.customers.first_name || ''} ${item.customers.last_name || ''}`)
+              ? Array.isArray(item.customers)
+                ? `${item.customers[0]?.first_name || ''} ${item.customers[0]?.last_name || ''}` 
+                : `${item.customers.first_name || ''} ${item.customers.last_name || ''}`
+              : 'Unknown')
             : 'Unknown',
           customers: item.customers as any
         }));
