@@ -44,13 +44,6 @@ const TradeInTable: React.FC<TradeInTableProps> = ({
   onDeny,
   onDelete
 }) => {
-  const getFilteredTradeIns = () => {
-    if (statusFilter === 'all') {
-      return tradeIns;
-    }
-    return tradeIns.filter(tradeIn => tradeIn.status === statusFilter);
-  };
-
   if (isLoading) {
     return (
       <div className="text-center py-8">
@@ -60,14 +53,12 @@ const TradeInTable: React.FC<TradeInTableProps> = ({
     );
   }
 
-  const filteredTradeIns = getFilteredTradeIns();
-
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full leading-normal">
         <TradeInTableHeader />
         <tbody>
-          {filteredTradeIns.map((tradeIn) => (
+          {tradeIns.map((tradeIn) => (
             <TradeInRow
               key={tradeIn.id}
               tradeIn={tradeIn}
@@ -83,9 +74,9 @@ const TradeInTable: React.FC<TradeInTableProps> = ({
         </tbody>
       </table>
       
-      {filteredTradeIns.length === 0 && (
+      {tradeIns.length === 0 && (
         <div className="text-center py-8 text-gray-500">
-          No trade-ins found matching the current filter
+          No trade-ins found matching the current criteria
         </div>
       )}
     </div>

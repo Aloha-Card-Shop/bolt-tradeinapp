@@ -3,6 +3,7 @@ import React from 'react';
 import ErrorDisplay from '../../components/dashboard/ErrorDisplay';
 import TradeInStatusFilter from '../../components/dashboard/TradeInStatusFilter';
 import TradeInTable from '../../components/dashboard/TradeInTable';
+import SearchBar from '../../components/dashboard/SearchBar';
 import { useTradeInManager } from '../../hooks/useTradeInManager';
 
 const ManagerDashboard: React.FC = () => {
@@ -14,7 +15,9 @@ const ManagerDashboard: React.FC = () => {
     expandedTradeIn,
     loadingItems,
     statusFilter,
+    searchQuery,
     setStatusFilter,
+    setSearchQuery,
     toggleTradeInDetails,
     handleApproveTradeIn,
     handleDenyTradeIn,
@@ -27,11 +30,20 @@ const ManagerDashboard: React.FC = () => {
 
       <ErrorDisplay message={errorMessage} />
 
-      {/* Status Filter */}
-      <TradeInStatusFilter 
-        statusFilter={statusFilter} 
-        setStatusFilter={setStatusFilter} 
-      />
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4">
+        {/* Search Bar */}
+        <SearchBar 
+          searchQuery={searchQuery} 
+          setSearchQuery={setSearchQuery} 
+          placeholder="Search by customer, ID, value, status..."
+        />
+        
+        {/* Status Filter */}
+        <TradeInStatusFilter 
+          statusFilter={statusFilter} 
+          setStatusFilter={setStatusFilter} 
+        />
+      </div>
 
       {/* Trade-in Table */}
       <TradeInTable 
