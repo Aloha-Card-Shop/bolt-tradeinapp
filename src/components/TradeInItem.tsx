@@ -32,7 +32,12 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   React.useEffect(() => {
     if (!isLoading && item.price > 0) {
       // Store the calculated values in the item
-      onUpdate(index, { ...item, cashValue, tradeValue });
+      onUpdate(index, { 
+        ...item, 
+        cashValue: cashValue,
+        tradeValue: tradeValue 
+      });
+      
       // Notify parent component about the value change
       onValueChange({ cashValue, tradeValue });
     }
@@ -61,7 +66,9 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   };
 
   // Calculate the display value based on payment type and quantity
-  const displayValue = (item.paymentType === 'cash' ? cashValue : tradeValue) * item.quantity;
+  const displayValue = item.paymentType === 'cash' 
+    ? (item.cashValue !== undefined ? item.cashValue : cashValue) * item.quantity 
+    : (item.tradeValue !== undefined ? item.tradeValue : tradeValue) * item.quantity;
 
   return (
     <div className="border border-gray-200 rounded-xl p-4 hover:border-blue-100 transition-colors duration-200">

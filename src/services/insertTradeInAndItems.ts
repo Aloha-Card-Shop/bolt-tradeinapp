@@ -51,13 +51,17 @@ export async function insertTradeInAndItems(
 
     items.forEach(item => {
       if (item.paymentType === 'cash') {
-        // Use the pre-calculated cash value from the hook or item
-        cashValue += (item.cashValue !== undefined ? item.cashValue : item.price) * item.quantity;
+        // Use the pre-calculated cash value from the item
+        const itemCashValue = item.cashValue !== undefined ? item.cashValue : item.price;
+        cashValue += itemCashValue * item.quantity;
         hasCashItems = true;
+        console.log(`Cash item: ${item.card.name}, cashValue: ${itemCashValue}, quantity: ${item.quantity}`);
       } else if (item.paymentType === 'trade') {
-        // Use the pre-calculated trade value from the hook or item
-        tradeValue += (item.tradeValue !== undefined ? item.tradeValue : item.price) * item.quantity;
+        // Use the pre-calculated trade value from the item
+        const itemTradeValue = item.tradeValue !== undefined ? item.tradeValue : item.price;
+        tradeValue += itemTradeValue * item.quantity;
         hasTradeItems = true;
+        console.log(`Trade item: ${item.card.name}, tradeValue: ${itemTradeValue}, quantity: ${item.quantity}`);
       }
     });
 
@@ -123,8 +127,8 @@ export async function insertTradeInAndItems(
         isFirstEdition: item.isFirstEdition,
         isHolo: item.isHolo,
         paymentType: item.paymentType,
-        cashValue: item.cashValue,
-        tradeValue: item.tradeValue
+        cashValue: item.cashValue !== undefined ? item.cashValue : null,
+        tradeValue: item.tradeValue !== undefined ? item.tradeValue : null
       }
     }));
 
