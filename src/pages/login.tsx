@@ -49,14 +49,15 @@ const Login = () => {
         });
       } else {
         // Login with username
-        // First get all users with this username from our profiles
+        // First get email associated with this username from profiles table
         const { data: userData, error: fetchError } = await supabase
           .from('profiles')
           .select('email')
           .eq('username', identifier)
-          .single();
+          .maybeSingle();
         
-        if (fetchError || !userData) {
+        if (fetchError || !userData || !userData.email) {
+          console.error('Username lookup error:', fetchError || 'Username not found');
           throw new Error('Invalid username or password');
         }
         
