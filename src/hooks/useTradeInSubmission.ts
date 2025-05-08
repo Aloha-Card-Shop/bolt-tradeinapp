@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from 'react';
 import { TradeInItem } from './useTradeInList';
 import { Customer } from './useCustomers';
@@ -31,7 +30,6 @@ export const useTradeInSubmission = ({
   const { totalCashValue, totalTradeValue } = useMemo(() => {
     return validItems.reduce((acc, item) => {
       const cardId = item.card.id || '';
-      const values = itemValuesMap[cardId] || { tradeValue: 0, cashValue: 0 };
       
       if (item.paymentType === 'trade') {
         acc.totalTradeValue += item.price * item.quantity;
