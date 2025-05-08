@@ -56,10 +56,17 @@ const Login = () => {
           .eq('username', identifier)
           .maybeSingle();
         
-        if (fetchError || !userData || !userData.email) {
-          console.error('Username lookup error:', fetchError || 'Username not found');
+        if (fetchError) {
+          console.error('Username lookup error:', fetchError);
+          throw new Error('Error looking up username');
+        }
+        
+        if (!userData || !userData.email) {
+          console.error('Username not found:', identifier);
           throw new Error('Invalid username or password');
         }
+        
+        console.log('Found email for username:', userData.email);
         
         // Now login with the retrieved email
         result = await supabase.auth.signInWithPassword({
@@ -69,6 +76,7 @@ const Login = () => {
       }
 
       if (result.error) {
+        console.error('Auth error:', result.error);
         throw result.error;
       }
 
