@@ -34,6 +34,17 @@ interface AdminPageContentProps {
   onDeleteUser: (userId: string) => Promise<boolean>;
   onCreateUser: (user: NewStaffUser) => Promise<boolean>;
   onUpdateUser: (userId: string, userData: UpdateStaffUser) => Promise<boolean>;
+  currentViewRole?: 'admin' | 'manager' | 'user';
+  viewPermissions?: {
+    admin: boolean;
+    manager: boolean;
+    user: boolean;
+  };
+  editPermissions?: {
+    admin: boolean;
+    manager: boolean;
+    user: boolean;
+  };
 }
 
 const AdminPageContent: React.FC<AdminPageContentProps> = ({
@@ -43,7 +54,10 @@ const AdminPageContent: React.FC<AdminPageContentProps> = ({
   onUpdateRole,
   onDeleteUser,
   onCreateUser,
-  onUpdateUser
+  onUpdateUser,
+  currentViewRole = 'admin',
+  viewPermissions = { admin: true, manager: true, user: false },
+  editPermissions = { admin: true, manager: false, user: false }
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newUser, setNewUser] = useState<NewStaffUser>({
@@ -53,6 +67,31 @@ const AdminPageContent: React.FC<AdminPageContentProps> = ({
     role: 'user'
   });
   const [userToEdit, setUserToEdit] = useState<StaffUser | null>(null);
+
+  // Filter users based on current view role and permissions
+  const filteredUsers = staffUsers.filter(user => {
+    // Admin view shows all users
+    if (currentViewRole === 'admin') return true;
+    
+    // Manager view only shows users they have permission to see
+    if (currentViewRole === 'manager') {
+      return user.role === 'user' || user.role === 'manager';
+    }
+    
+    // User view only shows other users
+    return user.role === 'user';
+  });
+
+  const canEdit = (userRole: 'admin' | 'manager' | 'user') => {
+    return editPermissions[currentViewRole] && (
+      // Admin can edit anyone
+      (currentViewRole === 'admin') || 
+      // Manager can edit users but not admins
+      (currentViewRole === 'manager' && userRole !== 'admin') ||
+      // Users can only edit themselves - not implemented in this context
+      false
+    );
+  };
 
   const handleCreateUser = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -72,7 +111,9 @@ const AdminPageContent: React.FC<AdminPageContentProps> = ({
   };
 
   const handleEditUser = (user: StaffUser) => {
-    setUserToEdit(user);
+    if (canEdit(user.role)) {
+      setUserToEdit(user);
+    }
   };
 
   const handleCloseEditModal = () => {
@@ -83,23 +124,27 @@ const AdminPageContent: React.FC<AdminPageContentProps> = ({
     <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-gray-900">Staff Users</h2>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-        >
-          <UserPlus className="h-5 w-5 mr-2" />
-          Add Staff User
-        </button>
+        {editPermissions[currentViewRole] && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+          >
+            <UserPlus className="h-5 w-5 mr-2" />
+            Add Staff User
+          </button>
+        )}
       </div>
 
       <ErrorMessage message={error} />
       
       <UserTable 
         isLoading={isLoading}
-        staffUsers={staffUsers}
+        staffUsers={filteredUsers}
         onUpdateRole={onUpdateRole}
         onDeleteUser={onDeleteUser}
         onEditUser={handleEditUser}
+        canEdit={(role) => canEdit(role)}
+        currentViewRole={currentViewRole}
       />
 
       {showCreateModal && (

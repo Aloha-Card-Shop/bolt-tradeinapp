@@ -16,6 +16,8 @@ interface UserTableProps {
   onUpdateRole: (userId: string, newRole: 'admin' | 'manager' | 'user') => Promise<boolean>;
   onDeleteUser: (userId: string) => Promise<boolean>;
   onEditUser: (user: StaffUser) => void;
+  canEdit?: (role: 'admin' | 'manager' | 'user') => boolean;
+  currentViewRole?: 'admin' | 'manager' | 'user';
 }
 
 const UserTable: React.FC<UserTableProps> = ({ 
@@ -23,7 +25,9 @@ const UserTable: React.FC<UserTableProps> = ({
   staffUsers, 
   onUpdateRole, 
   onDeleteUser,
-  onEditUser
+  onEditUser,
+  canEdit = () => true,
+  currentViewRole = 'admin'
 }) => {
   if (isLoading) {
     return (
@@ -55,15 +59,19 @@ const UserTable: React.FC<UserTableProps> = ({
                 )}
               </td>
               <td className="py-3 px-4">
-                <select
-                  value={staffUser.role}
-                  onChange={(e) => onUpdateRole(staffUser.id, e.target.value as 'admin' | 'manager' | 'user')}
-                  className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="user">User</option>
-                  <option value="manager">Manager</option>
-                  <option value="admin">Admin</option>
-                </select>
+                {canEdit(staffUser.role) ? (
+                  <select
+                    value={staffUser.role}
+                    onChange={(e) => onUpdateRole(staffUser.id, e.target.value as 'admin' | 'manager' | 'user')}
+                    className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="user">User</option>
+                    <option value="manager">Manager</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                ) : (
+                  <span className="px-2 py-1 text-sm capitalize">{staffUser.role}</span>
+                )}
               </td>
               <td className="py-3 px-4">
                 <p className="text-gray-600">
@@ -72,20 +80,24 @@ const UserTable: React.FC<UserTableProps> = ({
               </td>
               <td className="py-3 px-4">
                 <div className="flex items-center justify-end space-x-2">
-                  <button
-                    onClick={() => onEditUser(staffUser)}
-                    className="p-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
-                    title="Edit user"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => onDeleteUser(staffUser.id)}
-                    className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
-                    title="Delete user"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {canEdit(staffUser.role) && (
+                    <>
+                      <button
+                        onClick={() => onEditUser(staffUser)}
+                        className="p-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
+                        title="Edit user"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => onDeleteUser(staffUser.id)}
+                        className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
+                        title="Delete user"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </td>
             </tr>
