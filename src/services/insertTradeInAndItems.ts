@@ -1,9 +1,6 @@
 
-// Fix unused import
 import { supabase } from '../lib/supabase';
 import { getOrCreateCard } from './cardService';
-// Remove unused imports
-// import { TradeInItem } from '../hooks/useTradeInList';
 
 interface TradeInData {
   customer_id: string;

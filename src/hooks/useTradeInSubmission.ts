@@ -32,12 +32,11 @@ export const useTradeInSubmission = ({
     return validItems.reduce((acc, item) => {
       const cardId = item.card.id || '';
       const values = itemValuesMap[cardId] || { tradeValue: 0, cashValue: 0 };
-      const value = item.paymentType === 'trade' ? values.tradeValue : values.cashValue;
       
       if (item.paymentType === 'trade') {
-        acc.totalTradeValue += value * item.quantity;
+        acc.totalTradeValue += item.price * item.quantity;
       } else {
-        acc.totalCashValue += value * item.quantity;
+        acc.totalCashValue += item.price * item.quantity;
       }
       
       return acc;

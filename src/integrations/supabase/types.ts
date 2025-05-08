@@ -247,6 +247,7 @@ export type Database = {
       }
       trade_ins: {
         Row: {
+          cash_value: number
           created_at: string | null
           customer_id: string
           handled_at: string | null
@@ -258,8 +259,10 @@ export type Database = {
           status: string
           total_value: number
           trade_in_date: string | null
+          trade_value: number
         }
         Insert: {
+          cash_value?: number
           created_at?: string | null
           customer_id: string
           handled_at?: string | null
@@ -271,8 +274,10 @@ export type Database = {
           status?: string
           total_value?: number
           trade_in_date?: string | null
+          trade_value?: number
         }
         Update: {
+          cash_value?: number
           created_at?: string | null
           customer_id?: string
           handled_at?: string | null
@@ -284,6 +289,7 @@ export type Database = {
           status?: string
           total_value?: number
           trade_in_date?: string | null
+          trade_value?: number
         }
         Relationships: [
           {
