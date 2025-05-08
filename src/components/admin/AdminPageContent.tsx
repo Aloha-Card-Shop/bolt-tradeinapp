@@ -4,6 +4,7 @@ import { UserPlus } from 'lucide-react';
 import ErrorMessage from './ErrorMessage';
 import UserTable from './UserTable';
 import CreateUserModal from './CreateUserModal';
+import EditUserModal from './EditUserModal';
 
 interface StaffUser {
   id: string;
@@ -14,8 +15,13 @@ interface StaffUser {
 }
 
 interface NewStaffUser {
-  email?: string; // Make email optional to match other definitions
+  email?: string; 
   password: string;
+  username?: string;
+  role: 'admin' | 'manager' | 'user';
+}
+
+interface UpdateStaffUser {
   username?: string;
   role: 'admin' | 'manager' | 'user';
 }
@@ -27,6 +33,7 @@ interface AdminPageContentProps {
   onUpdateRole: (userId: string, newRole: 'admin' | 'manager' | 'user') => Promise<boolean>;
   onDeleteUser: (userId: string) => Promise<boolean>;
   onCreateUser: (user: NewStaffUser) => Promise<boolean>;
+  onUpdateUser: (userId: string, userData: UpdateStaffUser) => Promise<boolean>;
 }
 
 const AdminPageContent: React.FC<AdminPageContentProps> = ({
@@ -35,7 +42,8 @@ const AdminPageContent: React.FC<AdminPageContentProps> = ({
   error,
   onUpdateRole,
   onDeleteUser,
-  onCreateUser
+  onCreateUser,
+  onUpdateUser
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newUser, setNewUser] = useState<NewStaffUser>({
@@ -44,6 +52,7 @@ const AdminPageContent: React.FC<AdminPageContentProps> = ({
     username: '',
     role: 'user'
   });
+  const [userToEdit, setUserToEdit] = useState<StaffUser | null>(null);
 
   const handleCreateUser = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -60,6 +69,14 @@ const AdminPageContent: React.FC<AdminPageContentProps> = ({
 
   const handleUserChange = (user: NewStaffUser) => {
     setNewUser(user);
+  };
+
+  const handleEditUser = (user: StaffUser) => {
+    setUserToEdit(user);
+  };
+
+  const handleCloseEditModal = () => {
+    setUserToEdit(null);
   };
 
   return (
@@ -82,6 +99,7 @@ const AdminPageContent: React.FC<AdminPageContentProps> = ({
         staffUsers={staffUsers}
         onUpdateRole={onUpdateRole}
         onDeleteUser={onDeleteUser}
+        onEditUser={handleEditUser}
       />
 
       {showCreateModal && (
@@ -90,6 +108,14 @@ const AdminPageContent: React.FC<AdminPageContentProps> = ({
           onUserChange={handleUserChange}
           onSubmit={handleCreateUser}
           onClose={handleCloseModal}
+        />
+      )}
+
+      {userToEdit && (
+        <EditUserModal
+          user={userToEdit}
+          onSave={onUpdateUser}
+          onClose={handleCloseEditModal}
         />
       )}
     </div>

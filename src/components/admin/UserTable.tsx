@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, Edit } from 'lucide-react';
 
 interface StaffUser {
   id: string;
@@ -15,13 +15,15 @@ interface UserTableProps {
   staffUsers: StaffUser[];
   onUpdateRole: (userId: string, newRole: 'admin' | 'manager' | 'user') => Promise<boolean>;
   onDeleteUser: (userId: string) => Promise<boolean>;
+  onEditUser: (user: StaffUser) => void;
 }
 
 const UserTable: React.FC<UserTableProps> = ({ 
   isLoading, 
   staffUsers, 
   onUpdateRole, 
-  onDeleteUser 
+  onDeleteUser,
+  onEditUser
 }) => {
   if (isLoading) {
     return (
@@ -70,6 +72,13 @@ const UserTable: React.FC<UserTableProps> = ({
               </td>
               <td className="py-3 px-4">
                 <div className="flex items-center justify-end space-x-2">
+                  <button
+                    onClick={() => onEditUser(staffUser)}
+                    className="p-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
+                    title="Edit user"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
                   <button
                     onClick={() => onDeleteUser(staffUser.id)}
                     className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"

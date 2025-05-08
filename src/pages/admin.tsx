@@ -16,6 +16,7 @@ const AdminPage: React.FC = () => {
     error, 
     fetchStaffUsers, 
     createUser, 
+    updateUser,
     updateUserRole, 
     deleteUser 
   } = useAdminUsers();
@@ -53,6 +54,7 @@ const AdminPage: React.FC = () => {
           onUpdateRole={updateUserRole}
           onDeleteUser={deleteUser}
           onCreateUser={createUser}
+          onUpdateUser={updateUser}
         />
       </div>
     </div>

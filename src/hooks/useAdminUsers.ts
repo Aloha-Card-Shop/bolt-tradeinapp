@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { getSupabaseUrl, getAuthToken } from '../lib/supabaseHelpers';
 import { toast } from 'react-hot-toast';
@@ -14,6 +13,11 @@ interface StaffUser {
 interface NewStaffUser {
   email?: string;
   password: string;
+  username?: string;
+  role: 'admin' | 'manager' | 'user';
+}
+
+interface UpdateStaffUser {
   username?: string;
   role: 'admin' | 'manager' | 'user';
 }
@@ -92,6 +96,39 @@ export const useAdminUsers = () => {
     }
   };
 
+  const updateUser = async (userId: string, userData: UpdateStaffUser) => {
+    try {
+      const supabaseUrl = getSupabaseUrl();
+      const authToken = await getAuthToken();
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/update-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ userId, ...userData })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update user');
+      }
+
+      setStaffUsers(prev => prev.map(user => 
+        user.id === userId ? { ...user, ...userData } : user
+      ));
+      toast.success('User updated successfully');
+      setError(null);
+      return true;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update user');
+      toast.error('Failed to update user');
+      return false;
+    }
+  };
+
   const updateUserRole = async (userId: string, newRole: 'admin' | 'manager' | 'user') => {
     try {
       const supabaseUrl = getSupabaseUrl();
@@ -166,6 +203,7 @@ export const useAdminUsers = () => {
     error,
     fetchStaffUsers,
     createUser,
+    updateUser,
     updateUserRole,
     deleteUser
   };
