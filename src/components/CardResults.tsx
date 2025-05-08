@@ -1,14 +1,16 @@
+
 import React from 'react';
 import { Loader2, ImageOff, PlusCircle } from 'lucide-react';
-import { CardDetails } from '../types/card';
+import { CardDetails, SavedCard } from '../types/card';
 
 interface CardResultsProps {
   results: CardDetails[];
   isLoading: boolean;
-  onAddToList: (card: CardDetails, price: number) => void;
+  onSave?: (card: CardDetails) => void;
+  onAddToList: (card: CardDetails | SavedCard, price: number) => void;
 }
 
-const CardResults: React.FC<CardResultsProps> = ({ results, isLoading, onAddToList }) => {
+const CardResults: React.FC<CardResultsProps> = ({ results, isLoading, onSave, onAddToList }) => {
   if (isLoading) {
     return (
       <div className="p-8 flex items-center justify-center">

@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, ClipboardList, UserCircle, DollarSign } from 'lucide-react';
+import { Home, Settings, ClipboardList, UserCircle, DollarSign } from 'lucide-react';
 
 interface AdminNavProps {
   userRole: 'admin' | 'manager' | 'user';
