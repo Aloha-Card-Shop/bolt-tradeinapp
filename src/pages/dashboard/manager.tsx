@@ -5,7 +5,6 @@ import TradeInStatusFilter from '../../components/dashboard/TradeInStatusFilter'
 import TradeInTable from '../../components/dashboard/TradeInTable';
 import SearchBar from '../../components/dashboard/SearchBar';
 import { useTradeInManager } from '../../hooks/useTradeInManager';
-import { StatusFilter } from '../../types/tradeIn';
 
 const ManagerDashboard: React.FC = () => {
   const {
