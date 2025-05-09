@@ -25,18 +25,26 @@ const ItemTypeToggle: React.FC<ItemTypeToggleProps> = ({
         Card Type
       </label>
       <div className="space-y-2">
-        <div 
-          onClick={onToggleFirstEdition}
-          className="flex items-center justify-between p-2 bg-gray-50 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors duration-200"
-        >
-          <span className="text-sm font-medium">
-            {isFirstEdition ? '1st Edition' : 'Unlimited'}
-          </span>
-          {isFirstEdition ? (
-            <ToggleRight className="h-6 w-6 text-blue-600" />
-          ) : (
-            <ToggleLeft className="h-6 w-6 text-gray-400" />
-          )}
+        <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+          <div className="text-sm font-medium">Edition</div>
+          <div className="flex items-center p-1 bg-gray-200 rounded-lg">
+            <button 
+              className={`px-3 py-1 text-sm transition-colors ${!isFirstEdition 
+                ? 'bg-white text-gray-800 shadow rounded' 
+                : 'text-gray-600'}`}
+              onClick={!isFirstEdition ? undefined : onToggleFirstEdition}
+            >
+              Unlimited
+            </button>
+            <button
+              className={`px-3 py-1 text-sm transition-colors ${isFirstEdition 
+                ? 'bg-white text-gray-800 shadow rounded' 
+                : 'text-gray-600'}`}
+              onClick={isFirstEdition ? undefined : onToggleFirstEdition}
+            >
+              1st Edition
+            </button>
+          </div>
         </div>
         
         <div 

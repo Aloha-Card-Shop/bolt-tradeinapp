@@ -42,13 +42,29 @@ export const buildTcgPlayerUrl = (
   // Add printing parameters
   if (isFirstEdition) {
     url += '&Printing=1st+Edition';
+  } else {
+    // Explicitly add Unlimited when not first edition
+    url += '&Printing=Unlimited';
   }
   
-  // Add treatment parameters - Holo and Reverse Holo are mutually exclusive
+  // Add treatment parameters for holo
   if (isHolo) {
-    url += '&Treatment=Holofoil';
+    // Combine printing with holofoil treatment when needed
+    if (isFirstEdition) {
+      // First edition already added
+      url += '+Holofoil';
+    } else {
+      // For unlimited cards
+      url += '+Holofoil';
+    }
   } else if (isReverseHolo) {
-    url += '&Printing=Reverse+Holofoil';
+    // Replace printing parameter since reverse holo is a different printing type
+    if (isFirstEdition) {
+      // Remove the last printing parameter and add the reverse holo
+      url = url.replace('&Printing=1st+Edition', '&Printing=1st+Edition+Reverse+Holofoil');
+    } else {
+      url = url.replace('&Printing=Unlimited', '&Printing=Reverse+Holofoil');
+    }
   }
   
   return url;
