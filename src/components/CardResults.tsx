@@ -76,10 +76,12 @@ const CardResults: React.FC<CardResultsProps> = ({
   // Function to handle adding card to the trade-in list
   const handleAddToList = (card: CardDetails) => {
     if (!card.productId) {
+      console.error("Card missing productId:", card);
       toast.error("Cannot add card without a product ID");
       return;
     }
     
+    console.log("Adding card with productId:", card.productId, card);
     onAddToList(card, 0);
     toast.success(`Added ${card.name} to list`);
   };
@@ -167,8 +169,13 @@ const CardResults: React.FC<CardResultsProps> = ({
                       </div>
                       <button
                         onClick={() => handleAddToList(card)}
-                        className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors duration-200"
-                        title="Add to trade-in list"
+                        className={`p-2 rounded-lg transition-colors duration-200 ${
+                          card.productId 
+                            ? 'text-gray-400 hover:text-green-500 hover:bg-green-50' 
+                            : 'text-gray-300 cursor-not-allowed'
+                        }`}
+                        disabled={!card.productId}
+                        title={card.productId ? "Add to trade-in list" : "Cannot add - missing product ID"}
                       >
                         <PlusCircle className="h-5 w-5" />
                       </button>

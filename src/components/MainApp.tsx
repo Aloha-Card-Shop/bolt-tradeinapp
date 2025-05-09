@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DatabaseIcon, Sparkles } from 'lucide-react';
 import { Toaster } from 'react-hot-toast'; // Import Toaster for notifications
@@ -10,6 +9,7 @@ import { useCardSearch } from '../hooks/useCardSearch';
 import { useSavedCards } from '../hooks/useSavedCards';
 import { useTradeInList } from '../hooks/useTradeInList';
 import { CardDetails, SavedCard } from '../types/card';
+import { toast } from 'react-hot-toast';
 
 function MainApp() {
   const { 
@@ -52,8 +52,16 @@ function MainApp() {
 
   const handleAddToList = (card: CardDetails | SavedCard, price: number) => {
     console.log('Adding card to trade-in list:', card);
+    
+    // Check if card has a productId
+    if (!card.productId) {
+      toast.error(`Cannot add ${card.name || 'card'} without a product ID`);
+      return;
+    }
+    
     addItem(card, price);
     resetSearch(); // Reset search after adding card
+    toast.success(`Added ${card.name} to trade-in list`);
   };
 
   return (
