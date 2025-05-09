@@ -2,7 +2,7 @@
 import React from 'react';
 import { Receipt } from 'lucide-react';
 import { TradeInItem } from '../../hooks/useTradeInList';
-import ReviewItemCard from './ReviewItemCard';
+import ReviewItemCard from './review-item-card';
 import { formatCurrency } from '../../utils/formatters';
 
 interface ReviewItemsSectionProps {
