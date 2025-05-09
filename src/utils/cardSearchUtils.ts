@@ -89,10 +89,14 @@ export const createSearchFilters = (searchTerms: string[], formattedNumber?: str
     cardNumberFilters.push(`attributes->>'card_number'.ilike.${formattedNumber}/%`);
     cardNumberFilters.push(`attributes->>'Number'.ilike.${formattedNumber}/%`);
     
-    // Add new filters to match the number before the slash
-    // For example, if the card number is "167/159", this will match a search for "167"
+    // Improved: Add specific filters to match numbers before the slash
+    // This will better handle cases like searching for "167" to find "167/159"
     cardNumberFilters.push(`attributes->>'card_number'.ilike.${formattedNumber}/%`);
     cardNumberFilters.push(`attributes->>'Number'.ilike.${formattedNumber}/%`);
+    
+    // Additional filter to try matching the number as the start of a card number
+    cardNumberFilters.push(`attributes->>'card_number'.ilike.${formattedNumber}%`);
+    cardNumberFilters.push(`attributes->>'Number'.ilike.${formattedNumber}%`);
     
     // Combine all card number filters with OR logic
     filters.push(`or(${cardNumberFilters.join(',')})`);

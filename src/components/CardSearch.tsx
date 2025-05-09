@@ -1,7 +1,9 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { CardDetails, GAME_OPTIONS, CardNumberObject } from '../types/card';
 import { Package, Search, Clock, X } from 'lucide-react';
 import { SetOption } from '../hooks/useSetOptions';
+import { getCardNumberString } from '../utils/cardSearchUtils';
 
 interface CardSearchProps {
   cardDetails: CardDetails;
@@ -103,17 +105,6 @@ const CardSearch: React.FC<CardSearchProps> = ({
     setPotentialCardNumber(null);
   };
 
-  // Function to safely get the string value from a CardNumberObject or string
-  const getCardNumberValue = (cardNumber: string | CardNumberObject | undefined): string => {
-    if (!cardNumber) return '';
-    
-    if (typeof cardNumber === 'object') {
-      return cardNumber.displayName || cardNumber.value || '';
-    }
-    
-    return cardNumber;
-  };
-
   return (
     <div className="p-6">
       <div className="flex items-center mb-4">
@@ -210,7 +201,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
                         <div className="font-medium">{suggestion.name}</div>
                         {suggestion.number && (
                           <div className="text-xs text-gray-500">
-                            #{getCardNumberValue(suggestion.number)}
+                            #{getCardNumberString(suggestion.number)}
                           </div>
                         )}
                       </div>
@@ -289,7 +280,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
             id="card-number"
             type="text"
             name="number"
-            value={getCardNumberValue(cardDetails.number)}
+            value={getCardNumberString(cardDetails.number)}
             onChange={onInputChange}
             placeholder="e.g. 12 or 12/107"
             className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"

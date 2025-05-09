@@ -166,18 +166,29 @@ export const useCardSearchQuery = () => {
       if (numberBeforeSlash && numberBeforeSlash !== formattedNumber) {
         const slashFilters = [
           `attributes->>'card_number'.ilike.${numberBeforeSlash}/%`,
-          `attributes->>'Number'.ilike.${numberBeforeSlash}/%`
+          `attributes->>'Number'.ilike.${numberBeforeSlash}/%`,
+          // Additional filters for more robust search
+          `attributes->>'card_number'.ilike.${numberBeforeSlash}%`,
+          `attributes->>'Number'.ilike.${numberBeforeSlash}%`
         ];
         filters.push(`or(${slashFilters.join(',')})`);
+        
+        // Log that we're looking for a card with this specific number pattern
+        console.log(`Searching for card number that starts with ${numberBeforeSlash}`);
       }
       
       // If user entered just a number in name field, also search as a card number
       if (possibleCardNumberInName) {
         const nameAsNumberFilters = [
           `attributes->>'card_number'.ilike.${searchTerms[0]}/%`,
-          `attributes->>'Number'.ilike.${searchTerms[0]}/%`
+          `attributes->>'Number'.ilike.${searchTerms[0]}/%`,
+          `attributes->>'card_number'.ilike.${searchTerms[0]}%`,
+          `attributes->>'Number'.ilike.${searchTerms[0]}%`
         ];
         filters.push(`or(${nameAsNumberFilters.join(',')})`);
+        
+        // Log this special search case
+        console.log(`Also searching for card number using name field: ${searchTerms[0]}`);
       }
       
       // Combine all filters
@@ -216,6 +227,11 @@ export const useCardSearchQuery = () => {
         } else {
           cardNumber = String(rawCardNumber);
         }
+      }
+      
+      // Add logging to show what's being found in the search
+      if (cardDetails.number && cardNumber.includes(cardDetails.number as string)) {
+        console.log(`Found matching card: ${product.name} with number ${cardNumber}`);
       }
       
       return {
