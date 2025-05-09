@@ -1,8 +1,18 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { CardDetails, GAME_OPTIONS } from '../types/card';
-import { Package, Search, Clock, X } from 'lucide-react';
+import { CardDetails } from '../types/card';
+import { Package } from 'lucide-react';
 import { SetOption } from '../hooks/useSetOptions';
-import { getCardNumberString } from '../utils/cardSearchUtils';
+import { isLikelyCardNumber } from '../utils/cardSearchUtils';
+
+// Import the smaller component pieces
+import SearchGameSelect from './card-search/SearchGameSelect';
+import SearchNameInput from './card-search/SearchNameInput';
+import SearchSuggestionsList from './card-search/SearchSuggestionsList';
+import CardNumberSuggestion from './card-search/CardNumberSuggestion';
+import SearchHistory from './card-search/SearchHistory';
+import SearchSetSelect from './card-search/SearchSetSelect';
+import CardNumberInput from './card-search/CardNumberInput';
 
 interface CardSearchProps {
   cardDetails: CardDetails;
@@ -45,15 +55,12 @@ const CardSearch: React.FC<CardSearchProps> = ({
 
   // Check if the search term might be a card number
   useEffect(() => {
-    // Look for patterns like just numbers (e.g., "167")
-    const isJustNumber = /^\d+$/.test(searchTerm.trim());
-    
-    if (isJustNumber && searchTerm.trim().length > 0) {
+    if (isLikelyCardNumber(searchTerm) && !cardDetails.number) {
       setPotentialCardNumber(searchTerm.trim());
     } else {
       setPotentialCardNumber(null);
     }
-  }, [searchTerm]);
+  }, [searchTerm, cardDetails.number]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -115,58 +122,25 @@ const CardSearch: React.FC<CardSearchProps> = ({
       
       <div className="space-y-4">
         {/* Game Selection */}
-        <div>
-          <label htmlFor="game-select" className="block mb-1 text-sm font-medium text-gray-700">
-            Game <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="game-select"
-            name="game"
-            value={cardDetails.game}
-            onChange={onInputChange}
-            className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {GAME_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SearchGameSelect 
+          selectedGame={cardDetails.game} 
+          onChange={onInputChange} 
+        />
 
         {/* Card Name Input with Search Suggestions */}
         <div className="relative">
-          <label htmlFor="card-name" className="block mb-1 text-sm font-medium text-gray-700">
-            Card Name <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <input
-              id="card-name"
-              type="text"
-              ref={searchInputRef}
-              placeholder="Start typing to search..."
-              value={searchTerm}
-              onChange={handleInputChange}
-              onFocus={handleFocus}
-              className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-          </div>
+          <SearchNameInput 
+            value={searchTerm}
+            onChange={handleInputChange}
+            onFocus={handleFocus}
+            inputRef={searchInputRef}
+          />
           
           {/* Card number suggestion */}
-          {potentialCardNumber && !cardDetails.number && (
-            <div className="mt-1 p-2 bg-blue-50 text-sm rounded-md flex items-center justify-between">
-              <span>Looking for card #{potentialCardNumber}?</span>
-              <button 
-                onClick={handleUseAsCardNumber}
-                className="text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Search by number
-              </button>
-            </div>
-          )}
+          <CardNumberSuggestion 
+            potentialCardNumber={potentialCardNumber}
+            onUseAsCardNumber={handleUseAsCardNumber}
+          />
           
           {/* Suggestions dropdown */}
           {showSuggestions && (searchTerm.length >= 2 || suggestions.length > 0) && (
@@ -174,120 +148,37 @@ const CardSearch: React.FC<CardSearchProps> = ({
               ref={suggestionsRef}
               className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto"
             >
-              {isLoadingSuggestions ? (
-                <div className="px-4 py-2 text-sm text-gray-500">Loading suggestions...</div>
-              ) : suggestions.length > 0 ? (
-                <ul>
-                  {suggestions.map((suggestion, index) => (
-                    <li 
-                      key={`${suggestion.name}-${index}`}
-                      className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex items-center"
-                      onClick={() => onSelectSuggestion(suggestion)}
-                    >
-                      {suggestion.imageUrl && (
-                        <div className="w-8 h-8 mr-2 flex-shrink-0">
-                          <img 
-                            src={suggestion.imageUrl} 
-                            alt={suggestion.name}
-                            className="w-full h-full object-contain rounded"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        </div>
-                      )}
-                      <div>
-                        <div className="font-medium">{suggestion.name}</div>
-                        {suggestion.number && (
-                          <div className="text-xs text-gray-500">
-                            #{getCardNumberString(suggestion.number)}
-                          </div>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : searchTerm.length >= 2 ? (
-                <div className="px-4 py-2 text-sm text-gray-500">No suggestions found</div>
-              ) : null}
+              <SearchSuggestionsList 
+                suggestions={suggestions}
+                isLoading={isLoadingSuggestions}
+                onSelectSuggestion={onSelectSuggestion}
+                searchTerm={searchTerm}
+              />
             </div>
           )}
         </div>
         
         {/* Recent Searches */}
-        {searchHistory.length > 0 && (
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center text-sm text-gray-600">
-                <Clock className="h-4 w-4 mr-1" />
-                <span>Recent Searches</span>
-              </div>
-              <button 
-                onClick={onClearHistory}
-                className="text-xs text-gray-500 hover:text-gray-700"
-              >
-                Clear All
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {searchHistory.slice(0, 5).map((item, index) => (
-                <button
-                  key={index}
-                  className="bg-white text-gray-700 text-xs px-2 py-1 rounded border hover:bg-gray-100 flex items-center"
-                  onClick={() => onSelectHistoryItem(item)}
-                >
-                  {item}
-                  <X className="h-3 w-3 ml-1 text-gray-400" />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        <SearchHistory 
+          searchHistory={searchHistory}
+          onSelectHistoryItem={onSelectHistoryItem}
+          onClearHistory={onClearHistory}
+        />
         
         {/* Set Selection */}
-        <div>
-          <label htmlFor="set-select" className="block mb-1 text-sm font-medium text-gray-700">
-            Set Name
-          </label>
-          {isLoadingSets ? (
-            <div className="py-2 text-sm text-gray-500">Loading sets...</div>
-          ) : (
-            <select 
-              id="set-select"
-              name="set"
-              value={cardDetails.set || ''}
-              onChange={onInputChange}
-              disabled={!cardDetails.name || setOptions.length === 0}
-              className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:opacity-70"
-            >
-              <option value="">Select a set</option>
-              {setOptions.map((set) => (
-                <option key={set.id} value={set.name}>
-                  {set.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+        <SearchSetSelect 
+          selectedSet={cardDetails.set || ''}
+          setOptions={setOptions}
+          isLoading={isLoadingSets}
+          disabled={!cardDetails.name}
+          onChange={onInputChange}
+        />
 
         {/* Card Number Input */}
-        <div>
-          <label htmlFor="card-number" className="block mb-1 text-sm font-medium text-gray-700">
-            Card Number
-          </label>
-          <input
-            id="card-number"
-            type="text"
-            name="number"
-            value={getCardNumberString(cardDetails.number)}
-            onChange={onInputChange}
-            placeholder="e.g. 12 or 12/107"
-            className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <p className="mt-1 text-xs text-gray-500">
-            Enter full or partial card number (with or without set number)
-          </p>
-        </div>
+        <CardNumberInput 
+          cardNumber={cardDetails.number} 
+          onChange={onInputChange} 
+        />
       </div>
     </div>
   );

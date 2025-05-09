@@ -35,6 +35,42 @@ export const extractNumberBeforeSlash = (cardNumber: string | CardNumberObject |
 };
 
 /**
+ * Creates card number filters for both exact and partial matches with improved handling
+ * @param cardNumber The card number to search for
+ * @returns Array of filter strings specifically for card number search
+ */
+export const createCardNumberFilters = (cardNumber: string): string[] => {
+  if (!cardNumber) return [];
+  
+  const filters = [];
+  const numberBeforeSlash = extractNumberBeforeSlash(cardNumber);
+  
+  // Handle exact matches (highest priority)
+  filters.push(`attributes->>'card_number'.eq.${cardNumber}`);
+  filters.push(`attributes->>'Number'.eq.${cardNumber}`);
+  
+  // Handle where card number might be a prefix (with slash)
+  filters.push(`attributes->>'card_number'.ilike.${cardNumber}/%`);
+  filters.push(`attributes->>'Number'.ilike.${cardNumber}/%`);
+  
+  // Handle partial matches where the number appears at the beginning
+  filters.push(`attributes->>'card_number'.ilike.${cardNumber}%`);
+  filters.push(`attributes->>'Number'.ilike.${cardNumber}%`);
+  
+  // Always look for the number before slash to handle cases like "167" finding "167/159"
+  if (numberBeforeSlash !== cardNumber) {
+    filters.push(`attributes->>'card_number'.ilike.${numberBeforeSlash}/%`);
+    filters.push(`attributes->>'Number'.ilike.${numberBeforeSlash}/%`);
+  }
+  
+  // Add general contains matches (lowest priority)
+  filters.push(`attributes->>'card_number'.ilike.%${cardNumber}%`);
+  filters.push(`attributes->>'Number'.ilike.%${cardNumber}%`);
+  
+  return filters;
+};
+
+/**
  * Creates filters for the card search query with improved ranking
  * @param searchTerms Array of search terms for card name
  * @param formattedNumber Formatted card number (if any)
@@ -73,36 +109,31 @@ export const createSearchFilters = (searchTerms: string[], formattedNumber?: str
     }
   }
   
-  // Add card number filter if present
+  // Add card number filter if present using the improved method
   if (formattedNumber) {
-    let cardNumberFilters = [];
-    
-    // Exact match first (highest priority)
-    cardNumberFilters.push(`attributes->>'card_number'.eq.${formattedNumber}`);
-    cardNumberFilters.push(`attributes->>'Number'.eq.${formattedNumber}`);
-    
-    // Then partial matches
-    cardNumberFilters.push(`attributes->>'card_number'.ilike.%${formattedNumber}%`);
-    cardNumberFilters.push(`attributes->>'Number'.ilike.%${formattedNumber}%`);
-    
-    // Handle cases where number might be a prefix
-    cardNumberFilters.push(`attributes->>'card_number'.ilike.${formattedNumber}/%`);
-    cardNumberFilters.push(`attributes->>'Number'.ilike.${formattedNumber}/%`);
-    
-    // Improved: Add specific filters to match numbers before the slash
-    // This will better handle cases like searching for "167" to find "167/159"
-    cardNumberFilters.push(`attributes->>'card_number'.ilike.${formattedNumber}/%`);
-    cardNumberFilters.push(`attributes->>'Number'.ilike.${formattedNumber}/%`);
-    
-    // Additional filter to try matching the number as the start of a card number
-    cardNumberFilters.push(`attributes->>'card_number'.ilike.${formattedNumber}%`);
-    cardNumberFilters.push(`attributes->>'Number'.ilike.${formattedNumber}%`);
+    const cardNumberFilters = createCardNumberFilters(formattedNumber);
     
     // Combine all card number filters with OR logic
-    filters.push(`or(${cardNumberFilters.join(',')})`);
+    if (cardNumberFilters.length > 0) {
+      filters.push(`or(${cardNumberFilters.join(',')})`);
+    }
   }
   
   return filters;
+};
+
+/**
+ * Check if a search term is likely to be a card number
+ * @param searchTerm The search term to check
+ * @returns True if the term appears to be a card number
+ */
+export const isLikelyCardNumber = (searchTerm: string): boolean => {
+  // Basic check: Contains only digits
+  const isJustNumber = /^\d+$/.test(searchTerm.trim());
+  
+  // More advanced checks could be added here
+  
+  return isJustNumber && searchTerm.trim().length > 0;
 };
 
 /**

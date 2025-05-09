@@ -1,12 +1,8 @@
 
 import { useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { CardDetails, CardNumberObject } from '../types/card';
+import { CardDetails } from '../types/card';
 import { SetOption } from './useSetOptions';
-import { createSearchFilters, formatCardNumberForSearch, extractNumberBeforeSlash } from '../utils/cardSearchUtils';
-
-// Number of results to fetch per page
-const RESULTS_PER_PAGE = 15;
+import { buildSearchQuery, formatResultsToCardDetails, RESULTS_PER_PAGE } from '../utils/searchQueryBuilder';
 
 export const useCardSearchQuery = () => {
   const [searchResults, setSearchResults] = useState<CardDetails[]>([]);
@@ -45,10 +41,8 @@ export const useCardSearchQuery = () => {
     });
     
     try {
-      // Build query
+      // Build and execute query using the new utility function
       const { query, foundSetIds } = await buildSearchQuery(cardDetails, setOptions, 0);
-
-      // Execute query with pagination
       const { data, error, count } = await query;
 
       if (error) throw error;
@@ -66,7 +60,7 @@ export const useCardSearchQuery = () => {
         set: cardDetails.set
       });
 
-      // Important: Convert the search results to CardDetails objects
+      // Format the search results using the new utility function
       const foundCards = formatResultsToCardDetails(data || [], setOptions, cardDetails);
       setSearchResults(foundCards);
 
@@ -90,7 +84,7 @@ export const useCardSearchQuery = () => {
     setIsSearching(true);
     
     try {
-      // Build query for the next page
+      // Build query for the next page using the new utility function
       const { query } = await buildSearchQuery(
         lastSearchParams.cardDetails,
         lastSearchParams.setOptions,
@@ -121,129 +115,6 @@ export const useCardSearchQuery = () => {
     } finally {
       setIsSearching(false);
     }
-  };
-
-  // Helper function to build search query
-  const buildSearchQuery = async (
-    cardDetails: CardDetails,
-    setOptions: SetOption[],
-    page: number
-  ) => {
-    let query = supabase
-      .from('unified_products')
-      .select('*', { count: 'exact' })
-      .eq('category_id', cardDetails.categoryId as number);
-
-    // Add set filter if specified
-    if (cardDetails.set) {
-      const setOption = setOptions.find(s => s.name === cardDetails.set);
-      if (setOption) {
-        query = query.eq('group_id', setOption.id);
-      }
-    }
-
-    // Split search terms and create individual filters
-    const searchTerms = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
-    
-    const foundSetIds = new Set<number>();
-    
-    if (searchTerms.length > 0 || cardDetails.number) {
-      // Format card number for search if provided
-      const formattedNumber = cardDetails.number ? 
-        formatCardNumberForSearch(cardDetails.number) : undefined;
-      
-      // Also get the number before the slash for additional searching
-      const numberBeforeSlash = cardDetails.number ?
-        extractNumberBeforeSlash(cardDetails.number) : undefined;
-      
-      // Check if the user entered just a number in the name field (might be looking for a card number)
-      const possibleCardNumberInName = searchTerms.length === 1 && /^\d+$/.test(searchTerms[0]);
-      
-      // Create filters for the query
-      let filters = createSearchFilters(searchTerms, formattedNumber);
-      
-      // Add specific filter for searching by number before slash if applicable
-      if (numberBeforeSlash && numberBeforeSlash !== formattedNumber) {
-        const slashFilters = [
-          `attributes->>'card_number'.ilike.${numberBeforeSlash}/%`,
-          `attributes->>'Number'.ilike.${numberBeforeSlash}/%`,
-          // Additional filters for more robust search
-          `attributes->>'card_number'.ilike.${numberBeforeSlash}%`,
-          `attributes->>'Number'.ilike.${numberBeforeSlash}%`
-        ];
-        filters.push(`or(${slashFilters.join(',')})`);
-        
-        // Log that we're looking for a card with this specific number pattern
-        console.log(`Searching for card number that starts with ${numberBeforeSlash}`);
-      }
-      
-      // If user entered just a number in name field, also search as a card number
-      if (possibleCardNumberInName) {
-        const nameAsNumberFilters = [
-          `attributes->>'card_number'.ilike.${searchTerms[0]}/%`,
-          `attributes->>'Number'.ilike.${searchTerms[0]}/%`,
-          `attributes->>'card_number'.ilike.${searchTerms[0]}%`,
-          `attributes->>'Number'.ilike.${searchTerms[0]}%`
-        ];
-        filters.push(`or(${nameAsNumberFilters.join(',')})`);
-        
-        // Log this special search case
-        console.log(`Also searching for card number using name field: ${searchTerms[0]}`);
-      }
-      
-      // Combine all filters
-      const finalFilter = filters.length > 1 ? `and(${filters.join(',')})` : filters[0];
-      
-      if (finalFilter) {
-        query = query.or(finalFilter);
-      }
-    }
-
-    // Add pagination
-    query = query
-      .order('name')
-      .range(page * RESULTS_PER_PAGE, (page + 1) * RESULTS_PER_PAGE - 1);
-
-    return { query, foundSetIds };
-  };
-
-  // Helper function to format API results to CardDetails objects
-  const formatResultsToCardDetails = (
-    results: any[], 
-    setOptions: SetOption[],
-    cardDetails: CardDetails
-  ): CardDetails[] => {
-    return results.map(product => {
-      // Extract card number carefully to avoid returning objects
-      let cardNumber = '';
-      if (product.attributes) {
-        const rawCardNumber = product.attributes.card_number || product.attributes.Number || '';
-        
-        // Handle case when card number is an object with displayName or value
-        if (typeof rawCardNumber === 'object' && rawCardNumber !== null) {
-          // Type assertion to tell TypeScript that rawCardNumber is a CardNumberObject
-          const numberObj = rawCardNumber as CardNumberObject;
-          cardNumber = numberObj.displayName || numberObj.value || '';
-        } else {
-          cardNumber = String(rawCardNumber);
-        }
-      }
-      
-      // Add logging to show what's being found in the search
-      if (cardDetails.number && cardNumber.includes(cardDetails.number as string)) {
-        console.log(`Found matching card: ${product.name} with number ${cardNumber}`);
-      }
-      
-      return {
-        name: product.name,
-        set: product.group_id ? setOptions.find(s => s.id === product.group_id)?.name || '' : '',
-        number: cardNumber,
-        game: cardDetails.game,
-        categoryId: cardDetails.categoryId,
-        imageUrl: product.image_url || null,
-        productId: product.attributes?.tcgplayer_product_id || product.attributes?.product_id?.toString() || null
-      };
-    });
   };
 
   return {
