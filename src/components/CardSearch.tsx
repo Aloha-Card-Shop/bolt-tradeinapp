@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { CardDetails } from '../types/card';
-import { Package, Search } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { SetOption } from '../hooks/useSetOptions';
 
 // Import the smaller component pieces
@@ -29,7 +29,6 @@ interface CardSearchProps {
   searchInputRef?: React.RefObject<HTMLInputElement>;
   potentialCardNumber?: string | null;
   onUseAsCardNumber?: () => void;
-  onSearch?: () => void;  // New prop for search button
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
@@ -47,8 +46,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
   onClearHistory = () => {},
   searchInputRef,
   potentialCardNumber = null,
-  onUseAsCardNumber = () => {},
-  onSearch = () => {}  // Default empty function
+  onUseAsCardNumber = () => {}
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -94,7 +92,6 @@ const CardSearch: React.FC<CardSearchProps> = ({
     if (e.key === 'Enter') {
       e.preventDefault();
       setShowSuggestions(false);
-      onSearch();
     }
   };
 
@@ -116,24 +113,13 @@ const CardSearch: React.FC<CardSearchProps> = ({
 
         {/* Card Name Input with Search Suggestions */}
         <div className="relative">
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <SearchNameInput 
-                value={searchTerm}
-                onChange={handleInputChange}
-                onFocus={handleFocus}
-                onKeyDown={handleKeyDown}
-                inputRef={searchInputRef}
-              />
-            </div>
-            <button 
-              onClick={onSearch}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors h-[42px] mt-7 flex items-center justify-center"
-              aria-label="Search"
-            >
-              <Search className="h-5 w-5" />
-            </button>
-          </div>
+          <SearchNameInput 
+            value={searchTerm}
+            onChange={handleInputChange}
+            onFocus={handleFocus}
+            onKeyDown={handleKeyDown}
+            inputRef={searchInputRef}
+          />
           
           {/* Card number suggestion */}
           <CardNumberSuggestion 

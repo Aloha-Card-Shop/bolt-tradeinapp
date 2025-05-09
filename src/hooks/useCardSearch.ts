@@ -6,6 +6,10 @@ import { useCardSuggestions } from './useCardSuggestions';
 import { isLikelyCardNumber } from '../utils/cardSearchUtils';
 import toast from 'react-hot-toast';
 
+// Debounce timeout duration for search
+const SEARCH_DEBOUNCE_MS = 500;
+const SUGGESTION_DEBOUNCE_MS = 300;
+
 export const useCardSearch = () => {
   const [cardDetails, setCardDetails] = useState<CardDetails>({
     name: '',
@@ -20,6 +24,10 @@ export const useCardSearch = () => {
   
   // Track if a search should be performed automatically
   const [shouldSearch, setShouldSearch] = useState(false);
+  
+  // Ref to store debounce timer IDs
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const suggestionDebounceRef = useRef<NodeJS.Timeout | null>(null);
   
   const { setOptions, filteredSetOptions, isLoadingSets, filterSetOptions } = useSetOptions(
     cardDetails.game,
@@ -88,12 +96,16 @@ export const useCardSearch = () => {
     }
   }, [shouldSearch, cardDetails, searchCards, setOptions, filterSetOptions, addToRecentSearches]);
 
-  // Debounced search for card suggestions and filtering sets
+  // Debounced search for card suggestions and automatic search
   useEffect(() => {
-    // Debounce the search to avoid too many requests
-    const timer = setTimeout(async () => {
-      // For suggestions, even shorter debounce
-      if (cardDetails.name && cardDetails.name.length >= 2) {
+    // Clear previous suggestion debounce
+    if (suggestionDebounceRef.current) {
+      clearTimeout(suggestionDebounceRef.current);
+    }
+    
+    // For suggestions, shorter debounce time
+    if (cardDetails.name && cardDetails.name.length >= 2) {
+      suggestionDebounceRef.current = setTimeout(() => {
         // Make sure categoryId is provided and is a number
         const categoryIdToUse = cardDetails.categoryId ?? GAME_OPTIONS[0].categoryId;
         fetchSuggestions(cardDetails.name, cardDetails.game, categoryIdToUse);
@@ -104,14 +116,33 @@ export const useCardSearch = () => {
         } else {
           setPotentialCardNumber(null);
         }
-      } else {
-        // If name is cleared, reset potential card number
-        setPotentialCardNumber(null);
-      }
-    }, 300);
+      }, SUGGESTION_DEBOUNCE_MS);
+    } else {
+      // If name is cleared, reset potential card number
+      setPotentialCardNumber(null);
+    }
     
-    return () => clearTimeout(timer);
-  }, [cardDetails.name, cardDetails.game, cardDetails.categoryId, fetchSuggestions]);
+    // Clear previous search debounce
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    
+    // Only perform full search if name has 3+ characters or if number/set is specified
+    if ((cardDetails.name && cardDetails.name.length >= 3) || cardDetails.number || cardDetails.set) {
+      searchDebounceRef.current = setTimeout(() => {
+        setShouldSearch(true);
+      }, SEARCH_DEBOUNCE_MS);
+    }
+    
+    return () => {
+      if (suggestionDebounceRef.current) {
+        clearTimeout(suggestionDebounceRef.current);
+      }
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [cardDetails.name, cardDetails.number, cardDetails.set, cardDetails.game, cardDetails.categoryId, fetchSuggestions]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -136,13 +167,6 @@ export const useCardSearch = () => {
       }
     } else {
       setCardDetails(prev => ({ ...prev, [name]: value }));
-      
-      // If changing the card number or set, trigger a search automatically
-      if (name === 'number' || name === 'set') {
-        if (value || (cardDetails.name && cardDetails.name.length >= 2)) {
-          setShouldSearch(true);
-        }
-      }
     }
   };
 
@@ -156,9 +180,6 @@ export const useCardSearch = () => {
       number: potentialCardNumber
     }));
     setPotentialCardNumber(null);
-    
-    // Trigger a search with the new card number
-    setShouldSearch(true);
     
     // Focus back on the name input for better UX
     if (searchInputRef.current) {
@@ -202,9 +223,6 @@ export const useCardSearch = () => {
       name: item,
       number: '' // Clear number field when selecting from history
     }));
-    
-    // Trigger a search with the history item
-    setShouldSearch(true);
     
     // Focus the search input after selecting history item
     if (searchInputRef.current) {
@@ -257,6 +275,6 @@ export const useCardSearch = () => {
     loadMoreResults,
     totalResults,
     handleUseAsCardNumber,
-    performSearch  // Export the new manual search function
+    performSearch
   };
 };

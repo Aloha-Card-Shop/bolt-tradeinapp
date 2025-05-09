@@ -34,7 +34,7 @@ function MainApp() {
     loadMoreResults,
     totalResults,
     handleUseAsCardNumber,
-    performSearch // New function to trigger manual search
+    performSearch
   } = useCardSearch();
   
   const { savedCards, removeCard } = useSavedCards();
@@ -99,7 +99,6 @@ function MainApp() {
                 searchInputRef={searchInputRef}
                 potentialCardNumber={potentialCardNumber}
                 onUseAsCardNumber={handleUseAsCardNumber}
-                onSearch={performSearch} // Add the search button functionality
               />
             </div>
             
