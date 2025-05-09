@@ -2,11 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { CardDetails, GAME_OPTIONS } from '../types/card';
 import { Package } from 'lucide-react';
-
-interface SetOption {
-  id: number;
-  name: string;
-}
+import { SetOption } from '../hooks/useSetOptions';
 
 interface CardSearchProps {
   cardDetails: CardDetails;
@@ -42,11 +38,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
     onInputChange(event);
   };
 
-  // Sort set options alphabetically by name
-  const sortedSetOptions = [...setOptions].sort((a, b) => 
-    a.name.localeCompare(b.name)
-  );
-
+  // All sorted set options are now handled in useSetOptions
   return (
     <div className="p-6">
       <div className="flex items-center mb-4">
@@ -105,11 +97,11 @@ const CardSearch: React.FC<CardSearchProps> = ({
               name="set"
               value={cardDetails.set || ''}
               onChange={onInputChange}
-              disabled={!cardDetails.name || sortedSetOptions.length === 0}
+              disabled={!cardDetails.name || setOptions.length === 0}
               className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:opacity-70"
             >
               <option value="">Select a set</option>
-              {sortedSetOptions.map((set) => (
+              {setOptions.map((set) => (
                 <option key={set.id} value={set.name}>
                   {set.name}
                 </option>

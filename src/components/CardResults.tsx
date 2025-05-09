@@ -70,7 +70,9 @@ const CardResults: React.FC<CardResultsProps> = ({ results, isLoading, onAddToLi
                       <h3 className="font-medium text-gray-900">
                         {card.name}
                         {card.number && (
-                          <span className="ml-2 text-sm text-gray-500">#{card.number}</span>
+                          <span className="ml-2 text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                            #{card.number}
+                          </span>
                         )}
                       </h3>
                       {card.set && (
