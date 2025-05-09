@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { CardDetails, GAME_OPTIONS, CardNumberObject } from '../types/card';
 import { Package, Search, Clock, X } from 'lucide-react';
 import { SetOption } from '../hooks/useSetOptions';
+import { extractNumberBeforeSlash } from '../utils/cardSearchUtils';
 
 interface CardSearchProps {
   cardDetails: CardDetails;
@@ -36,11 +37,24 @@ const CardSearch: React.FC<CardSearchProps> = ({
   searchInputRef
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [potentialCardNumber, setPotentialCardNumber] = useState<string | null>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     setSearchTerm(cardDetails.name || '');
   }, [cardDetails.name]);
+
+  // Check if the search term might be a card number
+  useEffect(() => {
+    // Look for patterns like just numbers (e.g., "167")
+    const isJustNumber = /^\d+$/.test(searchTerm.trim());
+    
+    if (isJustNumber && searchTerm.trim().length > 0) {
+      setPotentialCardNumber(searchTerm.trim());
+    } else {
+      setPotentialCardNumber(null);
+    }
+  }, [searchTerm]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -73,6 +87,22 @@ const CardSearch: React.FC<CardSearchProps> = ({
     if (searchTerm && searchTerm.length >= 2) {
       setShowSuggestions(true);
     }
+  };
+  
+  // Move potential card number to card number field
+  const handleUseAsCardNumber = () => {
+    if (!potentialCardNumber) return;
+    
+    // Create a synthetic event for the card number field
+    const event = {
+      target: {
+        name: 'number',
+        value: potentialCardNumber
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    onInputChange(event);
+    setPotentialCardNumber(null);
   };
 
   // Function to safely get the string value from a CardNumberObject or string
@@ -137,6 +167,19 @@ const CardSearch: React.FC<CardSearchProps> = ({
             </div>
           </div>
           
+          {/* Card number suggestion */}
+          {potentialCardNumber && !cardDetails.number && (
+            <div className="mt-1 p-2 bg-blue-50 text-sm rounded-md flex items-center justify-between">
+              <span>Looking for card #{potentialCardNumber}?</span>
+              <button 
+                onClick={handleUseAsCardNumber}
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Search by number
+              </button>
+            </div>
+          )}
+          
           {/* Suggestions dropdown */}
           {showSuggestions && (searchTerm.length >= 2 || suggestions.length > 0) && (
             <div 
@@ -157,7 +200,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
                         <div className="w-8 h-8 mr-2 flex-shrink-0">
                           <img 
                             src={suggestion.imageUrl} 
-                            alt={suggestion.name} 
+                            alt={suggestion.name}
                             className="w-full h-full object-contain rounded"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';

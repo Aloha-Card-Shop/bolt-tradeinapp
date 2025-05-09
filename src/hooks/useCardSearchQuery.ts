@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { CardDetails, CardNumberObject } from '../types/card';
 import { SetOption } from './useSetOptions';
-import { createSearchFilters, formatCardNumberForSearch } from '../utils/cardSearchUtils';
+import { createSearchFilters, formatCardNumberForSearch, extractNumberBeforeSlash } from '../utils/cardSearchUtils';
 
 // Number of results to fetch per page
 const RESULTS_PER_PAGE = 15;
@@ -152,8 +152,33 @@ export const useCardSearchQuery = () => {
       const formattedNumber = cardDetails.number ? 
         formatCardNumberForSearch(cardDetails.number) : undefined;
       
+      // Also get the number before the slash for additional searching
+      const numberBeforeSlash = cardDetails.number ?
+        extractNumberBeforeSlash(cardDetails.number) : undefined;
+      
+      // Check if the user entered just a number in the name field (might be looking for a card number)
+      const possibleCardNumberInName = searchTerms.length === 1 && /^\d+$/.test(searchTerms[0]);
+      
       // Create filters for the query
-      const filters = createSearchFilters(searchTerms, formattedNumber);
+      let filters = createSearchFilters(searchTerms, formattedNumber);
+      
+      // Add specific filter for searching by number before slash if applicable
+      if (numberBeforeSlash && numberBeforeSlash !== formattedNumber) {
+        const slashFilters = [
+          `attributes->>'card_number'.ilike.${numberBeforeSlash}/%`,
+          `attributes->>'Number'.ilike.${numberBeforeSlash}/%`
+        ];
+        filters.push(`or(${slashFilters.join(',')})`);
+      }
+      
+      // If user entered just a number in name field, also search as a card number
+      if (possibleCardNumberInName) {
+        const nameAsNumberFilters = [
+          `attributes->>'card_number'.ilike.${searchTerms[0]}/%`,
+          `attributes->>'Number'.ilike.${searchTerms[0]}/%`
+        ];
+        filters.push(`or(${nameAsNumberFilters.join(',')})`);
+      }
       
       // Combine all filters
       const finalFilter = filters.length > 1 ? `and(${filters.join(',')})` : filters[0];

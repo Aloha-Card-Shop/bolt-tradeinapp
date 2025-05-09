@@ -2,7 +2,7 @@
 import { CardNumberObject } from '../types/card';
 
 /**
- * Format card number for better search matching
+ * Format card number for search matching
  * @param cardNumber The card number to format
  * @returns Formatted card number
  */
@@ -18,6 +18,20 @@ export const formatCardNumberForSearch = (cardNumber: string | CardNumberObject 
   const cleanNumber = String(cardNumber).trim().toLowerCase();
   
   return cleanNumber;
+};
+
+/**
+ * Extract the number before the slash in a card number
+ * @param cardNumber The card number string or object
+ * @returns Just the number before the slash, or the full number if no slash is present
+ */
+export const extractNumberBeforeSlash = (cardNumber: string | CardNumberObject | undefined): string => {
+  const numberStr = getCardNumberString(cardNumber);
+  if (!numberStr) return '';
+  
+  // Extract the part before the slash if it exists
+  const match = numberStr.match(/^(\d+)/);
+  return match ? match[1] : numberStr;
 };
 
 /**
@@ -72,6 +86,11 @@ export const createSearchFilters = (searchTerms: string[], formattedNumber?: str
     cardNumberFilters.push(`attributes->>'Number'.ilike.%${formattedNumber}%`);
     
     // Handle cases where number might be a prefix
+    cardNumberFilters.push(`attributes->>'card_number'.ilike.${formattedNumber}/%`);
+    cardNumberFilters.push(`attributes->>'Number'.ilike.${formattedNumber}/%`);
+    
+    // Add new filters to match the number before the slash
+    // For example, if the card number is "167/159", this will match a search for "167"
     cardNumberFilters.push(`attributes->>'card_number'.ilike.${formattedNumber}/%`);
     cardNumberFilters.push(`attributes->>'Number'.ilike.${formattedNumber}/%`);
     

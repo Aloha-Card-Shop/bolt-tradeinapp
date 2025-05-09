@@ -1,7 +1,7 @@
-
 import React, { useEffect, useRef, useCallback } from 'react';
 import { Loader2, ImageOff, PlusCircle, Search } from 'lucide-react';
 import { CardDetails, SavedCard, CardNumberObject } from '../types/card';
+import { extractNumberBeforeSlash, getCardNumberString } from '../utils/cardSearchUtils';
 
 interface CardResultsProps {
   results: CardDetails[];
@@ -23,17 +23,6 @@ const CardResults: React.FC<CardResultsProps> = ({
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
-  // Helper function to safely get string from card number
-  const getCardNumberString = (cardNumber: string | CardNumberObject | undefined): string => {
-    if (!cardNumber) return '';
-    
-    if (typeof cardNumber === 'object') {
-      return cardNumber.displayName || cardNumber.value || '';
-    }
-    
-    return cardNumber;
-  };
-
   // Setup intersection observer for infinite scrolling
   const lastCardElementRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -60,6 +49,27 @@ const CardResults: React.FC<CardResultsProps> = ({
       }
     };
   }, []);
+
+  // Helper function to display card number with pre-slash highlight
+  const renderCardNumber = (cardNumber: string | CardNumberObject | undefined) => {
+    if (!cardNumber) return null;
+    
+    const fullNumber = getCardNumberString(cardNumber);
+    const beforeSlash = extractNumberBeforeSlash(cardNumber);
+    
+    // If there's no slash, just show the number
+    if (fullNumber === beforeSlash || !fullNumber.includes('/')) {
+      return <span className="text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded">#{fullNumber}</span>;
+    }
+    
+    // Otherwise, highlight the part before the slash
+    return (
+      <span className="text-sm bg-gray-100 px-2 py-0.5 rounded flex items-center">
+        #<span className="font-medium text-blue-600">{beforeSlash}</span>
+        <span className="text-gray-500">{fullNumber.substring(beforeSlash.length)}</span>
+      </span>
+    );
+  };
 
   if (isLoading && results.length === 0) {
     return (
@@ -97,9 +107,6 @@ const CardResults: React.FC<CardResultsProps> = ({
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {results.map((card, index) => {
-            // Get string representation of card number
-            const cardNumber = getCardNumberString(card.number);
-            
             // Add ref to last element for infinite scrolling
             const isLastElement = index === results.length - 1;
               
@@ -117,7 +124,7 @@ const CardResults: React.FC<CardResultsProps> = ({
                         alt={card.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          e.currentTarget.src = 'https://placehold.co/96x128?text=No+Image';
+                          e.currentTarget.style.display = 'none';
                         }}
                       />
                     ) : (
@@ -132,9 +139,9 @@ const CardResults: React.FC<CardResultsProps> = ({
                       <div>
                         <h3 className="font-medium text-gray-900">
                           {card.name}
-                          {cardNumber && (
-                            <span className="ml-2 text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                              #{cardNumber}
+                          {card.number && (
+                            <span className="ml-2">
+                              {renderCardNumber(card.number)}
                             </span>
                           )}
                         </h3>
