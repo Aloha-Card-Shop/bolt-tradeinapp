@@ -5,7 +5,6 @@ import { Search } from 'lucide-react';
 interface SearchNameInputProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onFocus: () => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;
   inputRef?: React.RefObject<HTMLInputElement>;
 }
@@ -13,7 +12,6 @@ interface SearchNameInputProps {
 const SearchNameInput: React.FC<SearchNameInputProps> = ({ 
   value, 
   onChange, 
-  onFocus,
   onKeyDown,
   inputRef 
 }) => {

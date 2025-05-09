@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DatabaseIcon, Sparkles } from 'lucide-react';
 import { Toaster } from 'react-hot-toast'; // Import Toaster for notifications
@@ -18,14 +19,9 @@ function MainApp() {
     setOptions, 
     isLoadingSets, 
     isSearching, 
-    suggestions,
-    isLoadingSuggestions,
-    showSuggestions,
-    setShowSuggestions,
     searchHistory,
     potentialCardNumber,
     handleInputChange, 
-    selectSuggestion,
     selectHistoryItem,
     clearSearchHistory,
     resetSearch,
@@ -115,11 +111,6 @@ function MainApp() {
                 onInputChange={handleInputChange}
                 setOptions={setOptions}
                 isLoadingSets={isLoadingSets}
-                suggestions={suggestions}
-                isLoadingSuggestions={isLoadingSuggestions}
-                showSuggestions={showSuggestions}
-                setShowSuggestions={setShowSuggestions}
-                onSelectSuggestion={selectSuggestion}
                 searchHistory={searchHistory}
                 onSelectHistoryItem={selectHistoryItem}
                 onClearHistory={clearSearchHistory}

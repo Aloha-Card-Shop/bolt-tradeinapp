@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CardDetails } from '../types/card';
 import { Package } from 'lucide-react';
 import { SetOption } from '../hooks/useSetOptions';
@@ -16,11 +16,6 @@ interface CardSearchProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   setOptions: SetOption[];
   isLoadingSets: boolean;
-  suggestions?: CardDetails[];
-  isLoadingSuggestions?: boolean;
-  showSuggestions?: boolean;
-  setShowSuggestions?: (show: boolean) => void;
-  onSelectSuggestion?: (suggestion: CardDetails) => void;
   searchHistory?: string[];
   onSelectHistoryItem?: (item: string) => void;
   onClearHistory?: () => void;
@@ -34,11 +29,6 @@ const CardSearch: React.FC<CardSearchProps> = ({
   onInputChange, 
   setOptions, 
   isLoadingSets,
-  suggestions = [],
-  isLoadingSuggestions = false,
-  showSuggestions = false,
-  setShowSuggestions = () => {},
-  onSelectSuggestion = () => {},
   searchHistory = [],
   onSelectHistoryItem = () => {},
   onClearHistory = () => {},
@@ -95,7 +85,6 @@ const CardSearch: React.FC<CardSearchProps> = ({
           <SearchNameInput 
             value={searchTerm}
             onChange={handleInputChange}
-            onFocus={() => {}} // Empty function, we don't show dropdown on focus anymore
             onKeyDown={handleKeyDown}
             inputRef={searchInputRef}
           />
