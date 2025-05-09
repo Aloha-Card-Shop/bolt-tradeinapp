@@ -39,7 +39,7 @@ export const useCardSearch = () => {
           .from('groups')
           .select('groupid, name')
           .eq('categoryid', gameOption.categoryId)
-          .order('publishedon', { ascending: false });
+          .order('name', { ascending: true }); // Sort alphabetically at the database level
 
         if (groupsError) throw groupsError;
 
@@ -168,6 +168,9 @@ export const useCardSearch = () => {
         if (filteredOptions.length === 0 && foundSetIds.size > 0) {
           filteredOptions = setOptions.filter(option => foundSetIds.has(option.id));
         }
+
+        // Always sort filtered options alphabetically
+        filteredOptions = [...filteredOptions].sort((a, b) => a.name.localeCompare(b.name));
 
         setFilteredSetOptions(filteredOptions.length > 0 ? filteredOptions : setOptions);
       } catch (error) {
