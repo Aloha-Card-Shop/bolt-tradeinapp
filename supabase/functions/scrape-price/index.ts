@@ -11,9 +11,9 @@ const corsHeaders = {
 const priceCache = new Map<string, { price: string; timestamp: number }>();
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
 
-// Concurrency control settings
-const MAX_CONCURRENT_REQUESTS = 10;
-const REQUEST_DELAY_MS = 1000; // 1 second between requests
+// Concurrency control settings - Increased from 10 to 20
+const MAX_CONCURRENT_REQUESTS = 20;
+const REQUEST_DELAY_MS = 800; // slightly reduced from 1000ms to 800ms
 let currentConcurrentRequests = 0;
 const requestQueue: Array<() => Promise<void>> = [];
 

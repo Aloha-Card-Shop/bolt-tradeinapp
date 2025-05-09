@@ -1,3 +1,4 @@
+
 import { chromium } from 'playwright-core';
 import * as cheerio from 'cheerio';
 
@@ -13,8 +14,8 @@ interface ScrapeRequest {
 const priceCache = new Map<string, { price: string; timestamp: number }>();
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours (increased from 5 minutes)
 
-// Concurrency control
-const MAX_CONCURRENT_REQUESTS = 8;
+// Concurrency control - Increased from 8 to 15
+const MAX_CONCURRENT_REQUESTS = 15;
 let currentConcurrentRequests = 0;
 const requestQueue: Array<{
   resolve: (value: Response | PromiseLike<Response>) => void,
