@@ -34,12 +34,20 @@ export const formatCardNumberForSearch = (cardNumber: string | CardNumberObject 
 export const createSearchFilters = (searchTerms: string[], formattedNumber?: string) => {
   let filters = [];
   
-  // Add name filters
+  // Add name filters with enhanced search capabilities
   if (searchTerms.length > 0) {
-    const nameFilters = searchTerms.map(term => 
-      `name.ilike.%${term}%`
-    );
-    // Combine name filters with AND logic
+    const nameFilters = searchTerms.map(term => {
+      const termFilters = [
+        // Search in the regular name field
+        `name.ilike.%${term}%`,
+        // Also search in clean_name field which typically has no special characters
+        `clean_name.ilike.%${term}%`
+      ];
+      // Combine each term's filters with OR logic
+      return `or(${termFilters.join(',')})`;
+    });
+    
+    // Combine name filters with AND logic (each term must be found in either name or clean_name)
     filters.push(`and(${nameFilters.join(',')})`);
   }
   
