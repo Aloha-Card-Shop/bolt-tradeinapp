@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useCallback } from 'react';
-import { Loader2, ImageOff, PlusCircle, Search, AlertCircle } from 'lucide-react';
+import { Loader2, ImageOff, PlusCircle, Search, AlertCircle, Info } from 'lucide-react';
 import { CardDetails, SavedCard, CardNumberObject } from '../types/card';
 import { extractNumberBeforeSlash, getCardNumberString } from '../utils/cardSearchUtils';
 import { toast } from 'react-hot-toast';
@@ -75,23 +75,15 @@ const CardResults: React.FC<CardResultsProps> = ({
 
   // Function to handle adding card to the trade-in list
   const handleAddToList = (card: CardDetails) => {
-    // Perform more detailed console logging to debug product ID issues
-    console.log("Attempting to add card:", card);
-    console.log("Product ID check:", {
-      productId: card.productId,
-      id: card.id,
-      name: card.name
-    });
-
+    // Enhanced product ID checking with better error messages
     if (!card.productId) {
       console.error("Card missing productId:", card);
-      toast.error("Cannot add card without a product ID");
+      toast.error(`Cannot add "${card.name}" - Missing product ID`);
       return;
     }
     
     console.log("Adding card with productId:", card.productId, card);
     onAddToList(card, 0);
-    toast.success(`Added ${card.name} to list`);
   };
 
   if (isLoading && results.length === 0) {
@@ -136,8 +128,8 @@ const CardResults: React.FC<CardResultsProps> = ({
               
             return (
               <div 
-                key={`${card.name}-${index}`}
-                className={`bg-white rounded-xl border ${hasProductId ? 'border-gray-200' : 'border-orange-200'} p-4 hover:border-blue-200 hover:shadow-md transition duration-200`}
+                key={`${card.name}-${card.productId || index}`}
+                className={`bg-white rounded-xl border ${hasProductId ? 'border-gray-200' : 'border-red-200'} p-4 hover:border-blue-200 hover:shadow-md transition duration-200`}
                 ref={isLastElement ? lastCardElementRef : null}
               >
                 <div className="flex items-start space-x-4">
@@ -175,7 +167,7 @@ const CardResults: React.FC<CardResultsProps> = ({
                         {card.productId ? (
                           <p className="text-xs text-gray-400 mt-1">ID: {card.productId}</p>
                         ) : (
-                          <div className="flex items-center text-xs text-orange-600 mt-1">
+                          <div className="flex items-center text-xs text-red-600 mt-1 font-medium">
                             <AlertCircle className="h-3 w-3 mr-1" />
                             Missing product ID
                           </div>
@@ -211,6 +203,16 @@ const CardResults: React.FC<CardResultsProps> = ({
               ) : (
                 <p className="text-sm text-gray-500">Scroll for more results</p>
               )}
+            </div>
+          )}
+          
+          {/* Information message about product IDs */}
+          {results.some(card => !card.productId) && (
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 flex items-center">
+              <Info className="h-4 w-4 mr-2 flex-shrink-0" />
+              <p className="text-xs">
+                Some cards are missing product IDs and cannot be added to your trade-in list. Try searching by card number instead.
+              </p>
             </div>
           )}
         </div>

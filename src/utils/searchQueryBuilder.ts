@@ -70,18 +70,17 @@ export const formatResultsToCardDetails = (
       cardNumber = cardNumber.value || cardNumber.displayName || '';
     }
     
-    // Extract product ID with more robust fallbacks
-    // First try direct fields, then check attributes object
-    const productId = 
-      item.tcgplayer_product_id?.toString() || 
-      item.product_id?.toString() || 
-      item.id?.toString() || 
-      (item.attributes?.tcgplayer_product_id?.toString()) ||
-      (item.attributes?.product_id?.toString()) ||
-      searchCriteria.productId || 
-      null;
+    // Extract product ID with improved priority hierarchy
+    const productId = extractProductId(item);
     
-    console.log('Extracted product ID:', productId, 'for card:', item.name);
+    // Debug output to trace productId extraction
+    console.log(`Card: ${item.name}, Extracted ID: ${productId}, Raw ID sources:`, {
+      direct_id: item.id,
+      tcgplayer_id: item.tcgplayer_product_id,
+      product_id: item.product_id,
+      attrs_tcgplayer: item.attributes?.tcgplayer_product_id,
+      attrs_product: item.attributes?.product_id
+    });
 
     return {
       name: item.name || item.clean_name || '',
@@ -95,3 +94,35 @@ export const formatResultsToCardDetails = (
     };
   });
 };
+
+// Helper function to extract product ID using a more robust approach
+function extractProductId(item: any): string | null {
+  // Check each possible location for product ID in order of preference
+  // 1. Direct tcgplayer_product_id field
+  if (item.tcgplayer_product_id) {
+    return String(item.tcgplayer_product_id);
+  }
+  
+  // 2. In attributes object as tcgplayer_product_id
+  if (item.attributes?.tcgplayer_product_id) {
+    return String(item.attributes.tcgplayer_product_id);
+  }
+  
+  // 3. Direct product_id field
+  if (item.product_id) {
+    return String(item.product_id);
+  }
+  
+  // 4. In attributes object as product_id
+  if (item.attributes?.product_id) {
+    return String(item.attributes.product_id);
+  }
+  
+  // 5. Fallback to item.id
+  if (item.id) {
+    return String(item.id);
+  }
+  
+  // If none found
+  return null;
+}

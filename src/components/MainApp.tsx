@@ -55,21 +55,21 @@ function MainApp() {
     
     // Enhanced productId validation with better logging
     if (!card.productId) {
-      console.error(`Cannot add ${card.name} - Missing product ID`, card);
-      toast.error(`Cannot add ${card.name || 'card'} without a product ID`);
+      console.error(`Cannot add ${card.name} - Card has no productId`, card);
+      toast.error(`Cannot add ${card.name || 'card'} - Missing product ID`);
       return;
     }
     
-    // Additional validation to ensure productId is a string (not undefined or null)
+    // Additional validation to ensure productId is a valid string
     const productId = String(card.productId);
-    if (!productId || productId === 'undefined' || productId === 'null') {
+    if (productId === 'undefined' || productId === 'null' || productId === '') {
       console.error(`Invalid product ID for ${card.name}:`, productId);
-      toast.error(`Cannot add ${card.name || 'card'} - invalid product ID`);
+      toast.error(`Cannot add ${card.name || 'card'} - Invalid product ID`);
       return;
     }
     
-    // If we reach here, the productId is valid
-    console.log('Valid product ID found:', productId, 'for card:', card.name);
+    // Log valid product ID for debugging
+    console.log(`Valid product ID found: ${productId} for card: ${card.name}`, card);
     
     // Create a new card object with the validated productId
     const cardToAdd = {
