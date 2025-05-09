@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CardDetails, GameType, GAME_OPTIONS } from '../types/card';
 import { useSetOptions } from './useSetOptions';
@@ -20,6 +19,7 @@ export const useCardSearch = () => {
     categoryId: GAME_OPTIONS[0].categoryId
   });
   
+  // Always keep suggestions hidden - we're disabling the dropdown
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   
@@ -97,14 +97,14 @@ export const useCardSearch = () => {
     }
   }, [shouldSearch, cardDetails, searchCards, setOptions, filterSetOptions, addToRecentSearches]);
 
-  // Debounced search for card suggestions and automatic search
+  // Modified search behavior: Now we just do the main search and skip showing suggestions dropdown
   useEffect(() => {
     // Clear previous suggestion debounce
     if (suggestionDebounceRef.current) {
       clearTimeout(suggestionDebounceRef.current);
     }
     
-    // For suggestions, shorter debounce time
+    // Still fetch suggestions for historical data, but don't show the dropdown
     if (cardDetails.name && cardDetails.name.length >= 2) {
       suggestionDebounceRef.current = setTimeout(() => {
         // Make sure categoryId is provided and is a number
@@ -158,12 +158,12 @@ export const useCardSearch = () => {
       }));
     } else if (name === 'name') {
       setCardDetails(prev => ({ ...prev, [name]: value }));
-      setShowSuggestions(value.length >= 2);
+      // Keep suggestions hidden - we never show them now
+      setShowSuggestions(false);
       
       // Reset set selection if name is cleared
       if (!value) {
         setCardDetails(prev => ({ ...prev, set: '', name: '', number: '' }));
-        setShowSuggestions(false);
         setPotentialCardNumber(null);
       }
     } else {

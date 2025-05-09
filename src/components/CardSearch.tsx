@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { CardDetails } from '../types/card';
 import { Package } from 'lucide-react';
@@ -7,7 +6,6 @@ import { SetOption } from '../hooks/useSetOptions';
 // Import the smaller component pieces
 import SearchGameSelect from './card-search/SearchGameSelect';
 import SearchNameInput from './card-search/SearchNameInput';
-import SearchSuggestionsList from './card-search/SearchSuggestionsList';
 import CardNumberSuggestion from './card-search/CardNumberSuggestion';
 import SearchHistory from './card-search/SearchHistory';
 import SearchSetSelect from './card-search/SearchSetSelect';
@@ -49,23 +47,10 @@ const CardSearch: React.FC<CardSearchProps> = ({
   onUseAsCardNumber = () => {}
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const suggestionsRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     setSearchTerm(cardDetails.name || '');
   }, [cardDetails.name]);
-
-  // Close suggestions when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
-    }
-    
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [setShowSuggestions]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -82,16 +67,10 @@ const CardSearch: React.FC<CardSearchProps> = ({
     onInputChange(event);
   };
 
-  const handleFocus = () => {
-    if (searchTerm && searchTerm.length >= 2) {
-      setShowSuggestions(true);
-    }
-  };
-
+  // Simplified keyboard handler - we don't need to manage dropdown visibility anymore
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      setShowSuggestions(false);
     }
   };
 
@@ -111,39 +90,24 @@ const CardSearch: React.FC<CardSearchProps> = ({
           onChange={onInputChange} 
         />
 
-        {/* Card Name Input with Search Suggestions */}
+        {/* Card Name Input - removed suggestions dropdown */}
         <div className="relative">
           <SearchNameInput 
             value={searchTerm}
             onChange={handleInputChange}
-            onFocus={handleFocus}
+            onFocus={() => {}} // Empty function, we don't show dropdown on focus anymore
             onKeyDown={handleKeyDown}
             inputRef={searchInputRef}
           />
           
-          {/* Card number suggestion */}
+          {/* Card number suggestion - keep this feature */}
           <CardNumberSuggestion 
             potentialCardNumber={potentialCardNumber}
             onUseAsCardNumber={onUseAsCardNumber}
           />
-          
-          {/* Suggestions dropdown */}
-          {showSuggestions && (searchTerm.length >= 2 || suggestions.length > 0) && (
-            <div 
-              ref={suggestionsRef}
-              className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-72 overflow-y-auto"
-            >
-              <SearchSuggestionsList 
-                suggestions={suggestions}
-                isLoading={isLoadingSuggestions}
-                onSelectSuggestion={onSelectSuggestion}
-                searchTerm={searchTerm}
-              />
-            </div>
-          )}
         </div>
         
-        {/* Recent Searches */}
+        {/* Recent Searches - keep this feature */}
         <SearchHistory 
           searchHistory={searchHistory}
           onSelectHistoryItem={onSelectHistoryItem}

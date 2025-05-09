@@ -30,7 +30,6 @@ const SearchNameInput: React.FC<SearchNameInputProps> = ({
           placeholder="Start typing to search..."
           value={value}
           onChange={onChange}
-          onFocus={onFocus}
           onKeyDown={onKeyDown}
           className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
