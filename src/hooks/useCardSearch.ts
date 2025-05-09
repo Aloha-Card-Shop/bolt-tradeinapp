@@ -62,6 +62,17 @@ export const useCardSearch = () => {
     fetchSetOptions();
   }, [cardDetails.game]);
 
+  // Format card number for better search matching
+  const formatCardNumberForSearch = (cardNumber: string): string => {
+    // Clean the card number to remove spaces and convert to lowercase
+    const cleanNumber = cardNumber.trim().toLowerCase();
+    
+    // Log the card number before and after formatting for debugging
+    console.log('Original card number:', cardNumber, 'Formatted:', cleanNumber);
+    
+    return cleanNumber;
+  };
+
   // Search for cards and filter sets
   useEffect(() => {
     const searchCards = async () => {
@@ -101,9 +112,34 @@ export const useCardSearch = () => {
             filters.push(`and(${nameFilters.join(',')})`);
           }
           
-          // Add number filter if present
+          // Add enhanced card number filter if present
           if (cardDetails.number) {
-            filters.push(`or(attributes->>'card_number'.ilike.%${cardDetails.number}%,clean_name.ilike.%${cardDetails.number}%)`);
+            const formattedNumber = formatCardNumberForSearch(cardDetails.number);
+            
+            // Create a more comprehensive card number search
+            // This searches both card_number and Number fields in attributes
+            // It also handles partial matches better
+            let cardNumberFilters = [];
+            
+            // Search in attributes->>'card_number'
+            cardNumberFilters.push(`attributes->>'card_number'.ilike.%${formattedNumber}%`);
+            
+            // Also search in attributes->>'Number' (some records use this field)
+            cardNumberFilters.push(`attributes->>'Number'.ilike.%${formattedNumber}%`);
+            
+            // Search in clean_name which may contain the number
+            cardNumberFilters.push(`clean_name.ilike.%${formattedNumber}%`);
+            
+            // Handle cases where number might be a prefix
+            // This helps find cards like "12/107" when searching for "12"
+            cardNumberFilters.push(`attributes->>'card_number'.ilike.${formattedNumber}/%`);
+            cardNumberFilters.push(`attributes->>'Number'.ilike.${formattedNumber}/%`);
+            
+            // Combine all card number filters with OR logic
+            filters.push(`or(${cardNumberFilters.join(',')})`);
+            
+            // Log the card number search filters for debugging
+            console.log('Card number search filters:', cardNumberFilters);
           }
           
           // Combine all filters
@@ -113,15 +149,31 @@ export const useCardSearch = () => {
 
         const { data, error } = await query
           .order('name')
-          .limit(10);
+          .limit(20); // Increased limit to help find more matches
 
         if (error) throw error;
 
+        // Log the number of results found
+        console.log(`Found ${data?.length || 0} results for card search`, { 
+          name: cardDetails.name, 
+          number: cardDetails.number,
+          set: cardDetails.set
+        });
+
+        if (data && data.length > 0) {
+          // Log the first few results to help understand what's being found
+          console.log('Sample search results:', data.slice(0, 3).map(item => ({
+            name: item.name,
+            card_number: item.attributes?.card_number || item.attributes?.Number,
+            set_id: item.group_id
+          })));
+        }
+
         // Important: First convert the search results to CardDetails objects
-        const foundCards = data.map(product => ({
+        const foundCards = (data || []).map(product => ({
           name: product.name,
           set: product.group_id ? setOptions.find(s => s.id === product.group_id)?.name || '' : '',
-          number: product.attributes?.card_number || '',
+          number: product.attributes?.card_number || product.attributes?.Number || '',
           game: cardDetails.game,
           categoryId: cardDetails.categoryId,
           imageUrl: product.image_url || null,
@@ -130,9 +182,9 @@ export const useCardSearch = () => {
 
         setSearchResults(foundCards);
 
-        // FIX: Include sets from search results in our filtered sets
+        // Include sets from search results in our filtered sets
         const foundSetIds = new Set<number>();
-        data.forEach(product => {
+        (data || []).forEach(product => {
           if (product.group_id) {
             foundSetIds.add(product.group_id);
           }

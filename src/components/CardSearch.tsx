@@ -129,9 +129,12 @@ const CardSearch: React.FC<CardSearchProps> = ({
             name="number"
             value={cardDetails.number || ''}
             onChange={onInputChange}
-            placeholder="e.g. 269/19"
+            placeholder="e.g. 12 or 12/107"
             className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          <p className="mt-1 text-xs text-gray-500">
+            Enter full or partial card number (with or without set number)
+          </p>
         </div>
       </div>
     </div>
