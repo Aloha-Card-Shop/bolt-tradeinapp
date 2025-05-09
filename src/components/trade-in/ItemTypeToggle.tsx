@@ -58,7 +58,7 @@ const ItemTypeToggle: React.FC<ItemTypeToggleProps> = ({
             }`}
             disabled={isHolo && !isReverseHolo}
           >
-            {isReverseHolo ? 'Reverse Holo' : 'Standard'}
+            {isReverseHolo ? 'Reverse Holo' : 'Non-Reverse'}
           </button>
         )}
       </div>
