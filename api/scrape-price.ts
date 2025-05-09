@@ -11,7 +11,7 @@ interface ScrapeRequest {
 
 // Cache for storing price data
 const priceCache = new Map<string, { price: string; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours (increased from 5 minutes)
 
 export default async function handler(req: Request) {
   // Handle CORS

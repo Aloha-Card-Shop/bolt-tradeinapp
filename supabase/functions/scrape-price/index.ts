@@ -1,3 +1,4 @@
+
 import { DOMParser } from "npm:linkedom@0.16.11";
 
 const corsHeaders = {
@@ -5,6 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization"
 };
+
+// Add caching mechanism with 12-hour TTL
+const priceCache = new Map<string, { price: string; timestamp: number }>();
+const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
 
 interface ScrapeRequest {
   url: string;
@@ -61,6 +66,27 @@ Deno.serve(async (req) => {
     if (!url || !productId || !url.includes("tcgplayer.com/product")) {
       console.error('[Scraper] Invalid parameters:', { url, productId });
       throw new Error("Invalid request parameters");
+    }
+
+    // Check cache first
+    const cacheKey = url;
+    const cachedData = priceCache.get(cacheKey);
+    if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_TTL) {
+      console.log('[Scraper] Returning cached price data for:', url);
+      return new Response(
+        JSON.stringify({ 
+          price: cachedData.price,
+          productId,
+          cached: true
+        }),
+        {
+          status: 200,
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          }
+        }
+      );
     }
 
     console.log('[Scraper] Fetching TCGPlayer page:', url);
@@ -125,6 +151,20 @@ Deno.serve(async (req) => {
       raw: price,
       cleaned: cleanPrice
     });
+
+    // Store in cache
+    priceCache.set(cacheKey, {
+      price: `$${cleanPrice}`,
+      timestamp: Date.now()
+    });
+
+    // Clean up old cache entries
+    const now = Date.now();
+    for (const [key, entry] of priceCache.entries()) {
+      if (now - entry.timestamp > CACHE_TTL) {
+        priceCache.delete(key);
+      }
+    }
 
     return new Response(JSON.stringify({ 
       price: `$${cleanPrice}`,

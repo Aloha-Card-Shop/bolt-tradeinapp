@@ -5,7 +5,7 @@ interface CacheEntry {
 }
 
 const SCRAPER_URL = 'https://tcgplayer-scraper-production.up.railway.app/scrape-price';
-const CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
+const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours (increased from 4 hours)
 const CACHE_CLEANUP_INTERVAL = 30 * 60 * 1000; // 30 minutes
 const priceCache = new Map<string, CacheEntry>();
 
