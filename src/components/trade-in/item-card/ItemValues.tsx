@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import PriceDisplay from '../../trade-in/PriceDisplay';
 import MarketPriceInput from './MarketPriceInput';
 
