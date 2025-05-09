@@ -32,6 +32,7 @@ export interface TradeIn {
   payment_type?: 'cash' | 'trade' | 'mixed';
   staff_notes?: string | null;
   items?: TradeInItem[];
+  submitter_email?: string; // Added submitter email field
 }
 
 export type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected';

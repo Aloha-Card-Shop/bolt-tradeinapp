@@ -26,7 +26,8 @@ export const useTradeInFetch = (statusFilter: StatusFilter) => {
           notes,
           payment_type,
           staff_notes,
-          customers (first_name, last_name)
+          customers (first_name, last_name),
+          profiles:auth.users!handled_by (email)
         `);
 
       // Apply status filter if not showing all
@@ -54,6 +55,7 @@ export const useTradeInFetch = (statusFilter: StatusFilter) => {
             notes: item.notes,
             payment_type: item.payment_type as 'cash' | 'trade' | 'mixed',
             staff_notes: item.staff_notes,
+            submitter_email: item.profiles?.email || null
           };
           
           // Handle the customers object which may be returned as an object or an array with a single object

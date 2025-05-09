@@ -29,7 +29,7 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({ tradeIn, load
   return (
     <td colSpan={7} className="px-5 py-5 border-b border-gray-200 bg-gray-50">
       <div className="pl-6">
-        {/* Customer information - Added section to show customer name more prominently */}
+        {/* Customer information */}
         <div className="mb-4">
           <h3 className="text-sm font-medium text-gray-900 mb-2">Customer Information</h3>
           <p className="text-sm text-gray-700">
@@ -45,6 +45,9 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({ tradeIn, load
               <p className="text-sm text-gray-700"><strong>ID:</strong> {tradeIn.id}</p>
               <p className="text-sm text-gray-700">
                 <strong>Date:</strong> {new Date(tradeIn.trade_in_date).toLocaleString()}
+              </p>
+              <p className="text-sm text-gray-700">
+                <strong>Submitted by:</strong> {tradeIn.submitter_email || 'Unknown Staff'}
               </p>
             </div>
             <div>

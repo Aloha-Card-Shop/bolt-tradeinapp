@@ -36,7 +36,8 @@ export const useMyTradeIns = () => {
           notes,
           payment_type,
           staff_notes,
-          customers (first_name, last_name)
+          customers (first_name, last_name),
+          profiles:auth.users!handled_by (email)
         `)
         .eq('customer_id', user.id) // Show only trade-ins created by the current user
         .order('trade_in_date', { ascending: false });
@@ -64,7 +65,8 @@ export const useMyTradeIns = () => {
                 : `${(item.customers as any).first_name || ''} ${(item.customers as any).last_name || ''}`
               : 'Unknown')
             : 'Unknown',
-          customers: item.customers as any
+          customers: item.customers as any,
+          submitter_email: item.profiles?.email || null
         }));
         
         setTradeIns(transformedData);
