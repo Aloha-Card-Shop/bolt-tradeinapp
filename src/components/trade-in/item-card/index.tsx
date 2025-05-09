@@ -68,7 +68,6 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
       />
       
       <ItemControls
-        index={index}
         condition={item.condition}
         quantity={item.quantity}
         isFirstEdition={item.isFirstEdition}
