@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { CardDetails, GAME_OPTIONS, CardNumberObject } from '../types/card';
+import { CardDetails, GAME_OPTIONS } from '../types/card';
 import { Package, Search, Clock, X } from 'lucide-react';
 import { SetOption } from '../hooks/useSetOptions';
 import { getCardNumberString } from '../utils/cardSearchUtils';
