@@ -73,15 +73,27 @@ export const useCardSearchQuery = () => {
       }
 
       // Important: First convert the search results to CardDetails objects
-      const foundCards = (data || []).map(product => ({
-        name: product.name,
-        set: product.group_id ? setOptions.find(s => s.id === product.group_id)?.name || '' : '',
-        number: product.attributes?.card_number || product.attributes?.Number || '',
-        game: cardDetails.game,
-        categoryId: cardDetails.categoryId,
-        imageUrl: product.image_url || null,
-        productId: product.tcgplayer_product_id || product.product_id?.toString() || null
-      }));
+      const foundCards = (data || []).map(product => {
+        // Extract card number carefully to avoid returning objects
+        let cardNumber = '';
+        if (product.attributes) {
+          cardNumber = product.attributes.card_number || product.attributes.Number || '';
+          // Ensure we're not returning an object for card number
+          if (typeof cardNumber === 'object') {
+            cardNumber = cardNumber.displayName || cardNumber.value || '';
+          }
+        }
+        
+        return {
+          name: product.name,
+          set: product.group_id ? setOptions.find(s => s.id === product.group_id)?.name || '' : '',
+          number: cardNumber,
+          game: cardDetails.game,
+          categoryId: cardDetails.categoryId,
+          imageUrl: product.image_url || null,
+          productId: product.tcgplayer_product_id || product.product_id?.toString() || null
+        };
+      });
 
       setSearchResults(foundCards);
 

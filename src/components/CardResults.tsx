@@ -41,60 +41,67 @@ const CardResults: React.FC<CardResultsProps> = ({ results, isLoading, onAddToLi
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {results.map((card, index) => (
-            <div 
-              key={`${card.name}-${index}`}
-              className="bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-200 hover:shadow-md transition duration-200"
-            >
-              <div className="flex items-start space-x-4">
-                <div className="w-24 h-32 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
-                  {card.imageUrl ? (
-                    <img 
-                      src={card.imageUrl} 
-                      alt={card.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://placehold.co/96x128?text=No+Image';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                      <ImageOff className="h-8 w-8 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex-1">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-medium text-gray-900">
-                        {card.name}
-                        {card.number && (
-                          <span className="ml-2 text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                            #{card.number}
-                          </span>
+          {results.map((card, index) => {
+            // Make sure we're not rendering any object directly
+            const cardNumber = typeof card.number === 'object' ? 
+              (card.number.displayName || card.number.value || '') : 
+              card.number || '';
+              
+            return (
+              <div 
+                key={`${card.name}-${index}`}
+                className="bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-200 hover:shadow-md transition duration-200"
+              >
+                <div className="flex items-start space-x-4">
+                  <div className="w-24 h-32 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                    {card.imageUrl ? (
+                      <img 
+                        src={card.imageUrl} 
+                        alt={card.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://placehold.co/96x128?text=No+Image';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <ImageOff className="h-8 w-8 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-medium text-gray-900">
+                          {card.name}
+                          {cardNumber && (
+                            <span className="ml-2 text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                              #{cardNumber}
+                            </span>
+                          )}
+                        </h3>
+                        {card.set && (
+                          <p className="text-sm text-gray-600 mt-1">{card.set}</p>
                         )}
-                      </h3>
-                      {card.set && (
-                        <p className="text-sm text-gray-600 mt-1">{card.set}</p>
-                      )}
-                      {card.productId && (
-                        <p className="text-xs text-gray-400 mt-1">ID: {card.productId}</p>
-                      )}
+                        {card.productId && (
+                          <p className="text-xs text-gray-400 mt-1">ID: {card.productId}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => onAddToList(card, 0)}
+                        className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors duration-200"
+                        title="Add to trade-in list"
+                        disabled={!card.productId}
+                      >
+                        <PlusCircle className="h-5 w-5" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => onAddToList(card, 0)}
-                      className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors duration-200"
-                      title="Add to trade-in list"
-                      disabled={!card.productId}
-                    >
-                      <PlusCircle className="h-5 w-5" />
-                    </button>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

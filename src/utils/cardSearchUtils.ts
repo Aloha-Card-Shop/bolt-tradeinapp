@@ -6,9 +6,14 @@
  * @param cardNumber The card number to format
  * @returns Formatted card number
  */
-export const formatCardNumberForSearch = (cardNumber: string): string => {
+export const formatCardNumberForSearch = (cardNumber: string | any): string => {
+  // Check if cardNumber is an object and extract the value safely
+  if (typeof cardNumber === 'object' && cardNumber !== null) {
+    cardNumber = cardNumber.value || cardNumber.displayName || '';
+  }
+
   // Clean the card number to remove spaces and convert to lowercase
-  const cleanNumber = cardNumber.trim().toLowerCase();
+  const cleanNumber = String(cardNumber).trim().toLowerCase();
   
   // Log the card number before and after formatting for debugging
   console.log('Original card number:', cardNumber, 'Formatted:', cleanNumber);

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { TrendingUp, AlertCircle, ArrowUpRight, Heart, Loader2, DollarSign, TrendingDown } from 'lucide-react';
 import { PriceData, CardDetails } from '../types/card';
@@ -44,6 +45,11 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({
     return null;
   }
 
+  // Ensure we have string values for display
+  const cardNumber = typeof cardDetails.number === 'object' ? 
+    (cardDetails.number.displayName || cardDetails.number.value || '') : 
+    cardDetails.number;
+
   // Calculate price trends (mock data for demonstration)
   const priceTrend = Math.random() > 0.5 ? 'up' : 'down';
   const trendPercentage = ((Math.random() * 5) + 1).toFixed(1);
@@ -54,8 +60,8 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({
         <div>
           <h2 className="text-2xl font-bold text-gray-800">
             {cardDetails.name}
-            {cardDetails.number && (
-              <span className="ml-2 text-lg text-gray-500">#{cardDetails.number}</span>
+            {cardNumber && (
+              <span className="ml-2 text-lg text-gray-500">#{cardNumber}</span>
             )}
           </h2>
           {cardDetails.set && (
