@@ -13,24 +13,44 @@ interface ScrapeRequest {
 const priceCache = new Map<string, { price: string; timestamp: number }>();
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours (increased from 5 minutes)
 
-export default async function handler(req: Request) {
-  // Handle CORS
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      }
-    });
+// Concurrency control
+const MAX_CONCURRENT_REQUESTS = 8;
+let currentConcurrentRequests = 0;
+const requestQueue: Array<{
+  resolve: (value: Response | PromiseLike<Response>) => void,
+  reject: (reason?: any) => void,
+  request: ScrapeRequest
+}> = [];
+
+// Process the queue periodically
+setInterval(() => {
+  processQueue();
+}, 1000);
+
+async function processQueue() {
+  if (requestQueue.length === 0 || currentConcurrentRequests >= MAX_CONCURRENT_REQUESTS) {
+    return;
   }
 
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
+  const nextRequest = requestQueue.shift();
+  if (nextRequest) {
+    const { resolve, reject, request } = nextRequest;
+    
+    currentConcurrentRequests++;
+    try {
+      const response = await handleScrapeRequest(request);
+      resolve(response);
+    } catch (error) {
+      reject(error);
+    } finally {
+      currentConcurrentRequests--;
+    }
   }
+}
 
+async function handleScrapeRequest(requestData: ScrapeRequest): Promise<Response> {
   try {
-    const { productId, condition, language, isFirstEdition, isHolo } = await req.json() as ScrapeRequest;
+    const { productId, condition, language, isFirstEdition, isHolo } = requestData;
 
     // Generate cache key
     const cacheKey = `${productId}-${condition}-${language}-${isFirstEdition}-${isHolo}`;
@@ -143,6 +163,63 @@ export default async function handler(req: Request) {
       JSON.stringify({
         error: error instanceof Error ? error.message : 'Unknown error',
         details: 'Failed to scrape price data'
+      }),
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      }
+    );
+  }
+}
+
+export default async function handler(req: Request) {
+  // Handle CORS
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      }
+    });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405 });
+  }
+
+  try {
+    const requestData = await req.json() as ScrapeRequest;
+    
+    // If we're at capacity, queue the request
+    if (currentConcurrentRequests >= MAX_CONCURRENT_REQUESTS) {
+      console.log(`[Scraper] Max concurrency reached (${MAX_CONCURRENT_REQUESTS}), queuing request`);
+      return new Promise<Response>((resolve, reject) => {
+        requestQueue.push({
+          resolve,
+          reject,
+          request: requestData
+        });
+      });
+    }
+    
+    // Otherwise, process immediately
+    currentConcurrentRequests++;
+    try {
+      return await handleScrapeRequest(requestData);
+    } finally {
+      currentConcurrentRequests--;
+    }
+  } catch (error) {
+    console.error('Request handling error:', error);
+    
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: 'Failed to process request'
       }),
       {
         status: 500,

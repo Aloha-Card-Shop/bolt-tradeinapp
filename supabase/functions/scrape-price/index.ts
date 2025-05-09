@@ -11,6 +11,12 @@ const corsHeaders = {
 const priceCache = new Map<string, { price: string; timestamp: number }>();
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
 
+// Concurrency control settings
+const MAX_CONCURRENT_REQUESTS = 10;
+const REQUEST_DELAY_MS = 1000; // 1 second between requests
+let currentConcurrentRequests = 0;
+const requestQueue: Array<() => Promise<void>> = [];
+
 interface ScrapeRequest {
   url: string;
   productId: string;
@@ -18,6 +24,44 @@ interface ScrapeRequest {
   language: string;
   isFirstEdition?: boolean;
   isHolo?: boolean;
+}
+
+async function processQueue() {
+  if (requestQueue.length === 0 || currentConcurrentRequests >= MAX_CONCURRENT_REQUESTS) {
+    return;
+  }
+
+  // Process next request if we have capacity
+  const nextRequest = requestQueue.shift();
+  if (nextRequest) {
+    currentConcurrentRequests++;
+    
+    try {
+      await nextRequest();
+    } finally {
+      currentConcurrentRequests--;
+      
+      // Delay slightly before processing next request to avoid hammering the server
+      setTimeout(() => {
+        processQueue();
+      }, REQUEST_DELAY_MS);
+    }
+  }
+}
+
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 30000): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    return response;
+  } finally {
+    clearTimeout(id);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -89,16 +133,80 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('[Scraper] Fetching TCGPlayer page:', url);
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Mobile/15E148 Safari/604.1",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Cache-Control": "no-cache",
-        "Pragma": "no-cache"
+    // If we've reached the concurrency limit, add this request to the queue
+    if (currentConcurrentRequests >= MAX_CONCURRENT_REQUESTS) {
+      console.log(`[Scraper] Max concurrency reached (${MAX_CONCURRENT_REQUESTS}), queuing request for ${url}`);
+      
+      // Create a promise for this queued request
+      const responsePromise = new Promise<Response>((resolve) => {
+        requestQueue.push(async () => {
+          try {
+            const response = await processScrapeRequest(url, productId);
+            resolve(response);
+          } catch (error) {
+            console.error('[Scraper] Error in queued request:', error);
+            resolve(new Response(
+              JSON.stringify({ 
+                error: error instanceof Error ? error.message : "Unknown error", 
+                details: "Failed to scrape price data" 
+              }), 
+              {
+                status: 500,
+                headers: { 
+                  "Content-Type": "application/json",
+                  ...corsHeaders
+                }
+              }
+            ));
+          }
+        });
+      });
+      
+      // Trigger queue processing
+      processQueue();
+      
+      return responsePromise;
+    } else {
+      currentConcurrentRequests++;
+      try {
+        return await processScrapeRequest(url, productId);
+      } finally {
+        currentConcurrentRequests--;
+        // Process any queued requests
+        processQueue();
+      }
+    }
+  } catch (err) {
+    console.error('[Scraper] Error:', err);
+    return new Response(JSON.stringify({ 
+      error: err instanceof Error ? err.message : "Unknown error",
+      details: "Failed to scrape price data"
+    }), {
+      status: 500,
+      headers: { 
+        "Content-Type": "application/json",
+        ...corsHeaders
       }
     });
+  }
+});
+
+async function processScrapeRequest(url: string, productId: string): Promise<Response> {
+  console.log('[Scraper] Fetching TCGPlayer page:', url);
+  try {
+    const res = await fetchWithTimeout(
+      url, 
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Mobile/15E148 Safari/604.1",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.5",
+          "Cache-Control": "no-cache",
+          "Pragma": "no-cache"
+        }
+      },
+      30000 // 30 second timeout
+    );
 
     if (!res.ok) {
       console.error('[Scraper] Failed to fetch page:', {
@@ -153,7 +261,7 @@ Deno.serve(async (req) => {
     });
 
     // Store in cache
-    priceCache.set(cacheKey, {
+    priceCache.set(url, {
       price: `$${cleanPrice}`,
       timestamp: Date.now()
     });
@@ -177,16 +285,6 @@ Deno.serve(async (req) => {
       }
     });
   } catch (err) {
-    console.error('[Scraper] Error:', err);
-    return new Response(JSON.stringify({ 
-      error: err instanceof Error ? err.message : "Unknown error",
-      details: "Failed to scrape price data"
-    }), {
-      status: 500,
-      headers: { 
-        "Content-Type": "application/json",
-        ...corsHeaders
-      }
-    });
+    throw err; // Let the caller handle the error
   }
-});
+}
