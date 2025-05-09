@@ -12,6 +12,7 @@ interface TradeInItemRowProps {
     attributes?: {
       isFirstEdition?: boolean;
       isHolo?: boolean;
+      isReverseHolo?: boolean;
       paymentType?: 'cash' | 'trade';
       cashValue?: number;
       tradeValue?: number;
@@ -52,12 +53,17 @@ const TradeInItemRow: React.FC<TradeInItemRowProps> = ({ item }) => {
     <tr className="border-t border-gray-200">
       <td className="px-4 py-2 text-sm">
         <p className="font-medium text-gray-900">{item.card_name}</p>
-        {item.attributes?.isHolo && (
-          <span className="text-xs bg-yellow-100 text-yellow-800 px-1 rounded">Holo</span>
-        )}
-        {item.attributes?.isFirstEdition && (
-          <span className="text-xs bg-purple-100 text-purple-800 px-1 rounded ml-1">1st Ed</span>
-        )}
+        <div className="flex flex-wrap gap-1 mt-1">
+          {item.attributes?.isHolo && (
+            <span className="text-xs bg-yellow-100 text-yellow-800 px-1 rounded">Holo</span>
+          )}
+          {item.attributes?.isReverseHolo && (
+            <span className="text-xs bg-green-100 text-green-800 px-1 rounded">Reverse Holo</span>
+          )}
+          {item.attributes?.isFirstEdition && (
+            <span className="text-xs bg-purple-100 text-purple-800 px-1 rounded">1st Ed</span>
+          )}
+        </div>
       </td>
       <td className="px-4 py-2 text-sm text-gray-700">
         {getConditionDisplay(item.condition)}

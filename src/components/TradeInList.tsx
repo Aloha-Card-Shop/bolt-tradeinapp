@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { TradeInItem as TradeInItemType } from '../hooks/useTradeInList';
 import { useCustomers } from '../hooks/useCustomers';
@@ -15,7 +14,7 @@ interface TradeInListProps {
   items: TradeInItemType[];
   onRemoveItem: (index: number) => void;
   onUpdateItem: (index: number, item: TradeInItemType) => void;
-  clearList: () => void; // Make sure this is passed in from parent
+  clearList: () => void;
 }
 
 const TradeInList: React.FC<TradeInListProps> = ({
@@ -72,7 +71,8 @@ const TradeInList: React.FC<TradeInListProps> = ({
         cond,
         item.isFirstEdition,
         item.isHolo,
-        item.card.game
+        item.card.game,
+        item.isReverseHolo
       );
       onUpdateItem(i, { ...item, condition: cond as any, price: parseFloat(data.price), isLoadingPrice: false });
     } catch (e) {

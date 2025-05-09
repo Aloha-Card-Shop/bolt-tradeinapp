@@ -8,6 +8,7 @@ export interface TradeInItem {
   condition: 'near_mint' | 'lightly_played' | 'moderately_played' | 'heavily_played' | 'damaged' | '';
   isFirstEdition: boolean;
   isHolo: boolean;
+  isReverseHolo?: boolean;
   price: number;
   paymentType: 'cash' | 'trade';
   isLoadingPrice?: boolean;
@@ -33,6 +34,7 @@ export const useTradeInList = () => {
       condition: '',
       isFirstEdition: false,
       isHolo: true,
+      isReverseHolo: false,
       price: price || 0,
       paymentType: 'cash',
       isLoadingPrice: false,

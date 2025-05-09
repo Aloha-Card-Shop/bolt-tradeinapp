@@ -62,7 +62,23 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   };
 
   const handleToggleHolo = () => {
-    onUpdate(index, { ...item, isHolo: !item.isHolo });
+    // Toggle holo and ensure reverse holo is off when holo is on
+    const newIsHolo = !item.isHolo;
+    onUpdate(index, { 
+      ...item, 
+      isHolo: newIsHolo, 
+      isReverseHolo: newIsHolo ? false : item.isReverseHolo 
+    });
+  };
+
+  const handleToggleReverseHolo = () => {
+    // Toggle reverse holo and ensure holo is off when reverse holo is on
+    const newIsReverseHolo = !item.isReverseHolo;
+    onUpdate(index, { 
+      ...item, 
+      isReverseHolo: newIsReverseHolo, 
+      isHolo: newIsReverseHolo ? false : item.isHolo 
+    });
   };
 
   // Calculate the display value based on payment type and quantity
@@ -94,8 +110,10 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
         <ItemTypeToggle 
           isFirstEdition={item.isFirstEdition}
           isHolo={item.isHolo}
+          isReverseHolo={item.isReverseHolo}
           onToggleFirstEdition={handleToggleFirstEdition}
           onToggleHolo={handleToggleHolo}
+          onToggleReverseHolo={handleToggleReverseHolo}
         />
 
         <PaymentTypeSelector

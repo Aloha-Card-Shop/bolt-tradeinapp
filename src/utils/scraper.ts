@@ -19,7 +19,14 @@ setInterval(() => {
   }
 }, CACHE_CLEANUP_INTERVAL);
 
-export const buildTcgPlayerUrl = (productId: string, condition: string | undefined, language: string = 'English'): string => {
+export const buildTcgPlayerUrl = (
+  productId: string, 
+  condition: string | undefined, 
+  language: string = 'English',
+  isFirstEdition: boolean = false,
+  isHolo: boolean = false,
+  isReverseHolo: boolean = false
+): string => {
   if (!productId) {
     throw new Error('Product ID is required');
   }
@@ -30,15 +37,30 @@ export const buildTcgPlayerUrl = (productId: string, condition: string | undefin
         .join(' ')
     : 'Near Mint';
 
-  return `https://www.tcgplayer.com/product/${productId}?page=1&Language=${language}&Condition=${formattedCondition}`;
+  let url = `https://www.tcgplayer.com/product/${productId}?page=1&Language=${language}&Condition=${formattedCondition}`;
+  
+  // Add printing parameters
+  if (isFirstEdition) {
+    url += '&Printing=1st+Edition';
+  }
+  
+  // Add treatment parameters - Holo and Reverse Holo are mutually exclusive
+  if (isHolo) {
+    url += '&Treatment=Holofoil';
+  } else if (isReverseHolo) {
+    url += '&Printing=Reverse+Holofoil';
+  }
+  
+  return url;
 };
 
 export const fetchCardPrices = async (
   productId: string,
   condition: string, 
-  _isFirstEdition?: boolean,  // Prefixed with _ to indicate it's unused
-  _isHolo?: boolean,          // Prefixed with _ to indicate it's unused
-  game?: string
+  isFirstEdition?: boolean,
+  isHolo?: boolean,
+  game?: string,
+  isReverseHolo?: boolean
 ): Promise<{ price: string }> => {
   try {
     if (!productId) {
@@ -46,7 +68,14 @@ export const fetchCardPrices = async (
     }
 
     const language = game === 'japanese-pokemon' ? 'Japanese' : 'English';
-    const url = buildTcgPlayerUrl(productId, condition, language);
+    const url = buildTcgPlayerUrl(
+      productId, 
+      condition, 
+      language, 
+      isFirstEdition, 
+      isHolo,
+      isReverseHolo
+    );
 
     // Check cache first
     const cachedEntry = priceCache.get(url);

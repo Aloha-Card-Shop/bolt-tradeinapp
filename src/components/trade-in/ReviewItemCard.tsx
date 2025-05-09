@@ -141,11 +141,11 @@ const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Card Type
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => onUpdateItem(index, { ...item, isFirstEdition: !item.isFirstEdition })}
-                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                  className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors duration-200 ${
                     item.isFirstEdition
                       ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -155,14 +155,35 @@ const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onUpdateItem(index, { ...item, isHolo: !item.isHolo })}
-                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                    item.isHolo
+                  onClick={() => onUpdateItem(index, { 
+                    ...item, 
+                    isHolo: !item.isHolo,
+                    isReverseHolo: item.isHolo ? item.isReverseHolo : false
+                  })}
+                  className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors duration-200 ${
+                    item.isHolo && !item.isReverseHolo
                       ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
+                  disabled={item.isReverseHolo}
                 >
-                  {item.isHolo ? 'Holo' : 'Non-Holo'}
+                  {item.isHolo && !item.isReverseHolo ? 'Holo' : 'Non-Holo'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onUpdateItem(index, { 
+                    ...item, 
+                    isReverseHolo: !item.isReverseHolo,
+                    isHolo: item.isReverseHolo ? item.isHolo : false 
+                  })}
+                  className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors duration-200 ${
+                    item.isReverseHolo
+                      ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  disabled={item.isHolo && !item.isReverseHolo}
+                >
+                  {item.isReverseHolo ? 'Reverse Holo' : 'Standard'}
                 </button>
               </div>
             </div>
