@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
@@ -6,21 +5,10 @@ import TradeInRowActions from './TradeInRowActions';
 import StatusBadge from './StatusBadge';
 import PaymentTypeBadge from './PaymentTypeBadge';
 import TradeInDetailsPanel from './TradeInDetailsPanel';
+import { TradeIn } from '../../types/tradeIn';
 
 interface TradeInRowProps {
-  tradeIn: {
-    id: string;
-    customer_name?: string;
-    trade_in_date: string;
-    cash_value: number;
-    trade_value: number;
-    payment_type?: string;
-    status: string;
-    total_value: number;
-    notes?: string | null;
-    staff_notes?: string | null;
-    items?: any[];
-  };
+  tradeIn: TradeIn;
   isExpanded: boolean;
   loadingItems: string | null;
   actionLoading: string | null;

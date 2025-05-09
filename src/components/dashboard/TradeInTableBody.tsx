@@ -1,21 +1,7 @@
 
 import React from 'react';
 import TradeInRow from './TradeInRow';
-
-interface TradeIn {
-  id: string;
-  customer_id: string;
-  trade_in_date: string;
-  total_value: number;
-  cash_value: number;
-  trade_value: number;
-  status: 'pending' | 'completed' | 'cancelled';
-  customer_name?: string;
-  notes?: string | null;
-  payment_type?: 'cash' | 'trade' | 'mixed';
-  staff_notes?: string | null;
-  items?: any[];
-}
+import { TradeIn } from '../../types/tradeIn';
 
 interface TradeInTableBodyProps {
   tradeIns: TradeIn[];

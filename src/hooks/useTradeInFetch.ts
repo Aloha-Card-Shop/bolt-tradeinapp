@@ -50,7 +50,7 @@ export const useTradeInFetch = (statusFilter: StatusFilter) => {
             total_value: item.total_value,
             cash_value: item.cash_value || 0,
             trade_value: item.trade_value || 0,
-            status: item.status as 'pending' | 'completed' | 'cancelled',
+            status: item.status as 'pending' | 'accepted' | 'rejected',
             notes: item.notes,
             payment_type: item.payment_type as 'cash' | 'trade' | 'mixed',
             staff_notes: item.staff_notes,

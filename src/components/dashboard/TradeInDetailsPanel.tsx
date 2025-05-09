@@ -1,33 +1,11 @@
-
 import React from 'react';
 import { formatCurrency } from '../../utils/formatters';
 import { Loader2 } from 'lucide-react';
 import TradeInItemRow from './TradeInItemRow';
+import { TradeIn } from '../../types/tradeIn';
 
 interface TradeInDetailsPanelProps {
-  tradeIn: {
-    id: string;
-    trade_in_date: string;
-    total_value: number;
-    cash_value: number;
-    trade_value: number;
-    status: string;
-    notes?: string | null;
-    staff_notes?: string | null;
-    items?: Array<{
-      card_name: string;
-      quantity: number;
-      price: number;
-      condition: string;
-      attributes?: {
-        isFirstEdition?: boolean;
-        isHolo?: boolean;
-        paymentType?: 'cash' | 'trade';
-        cashValue?: number;
-        tradeValue?: number;
-      };
-    }>;
-  };
+  tradeIn: TradeIn;
   loadingItems: string | null;
 }
 

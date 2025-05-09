@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { Filter } from 'lucide-react';
+import { StatusFilter } from '../../types/tradeIn';
 
 interface TradeInStatusFilterProps {
-  statusFilter: 'all' | 'pending' | 'completed' | 'cancelled';
-  setStatusFilter: (status: 'all' | 'pending' | 'completed' | 'cancelled') => void;
+  statusFilter: StatusFilter;
+  setStatusFilter: (status: StatusFilter) => void;
 }
 
 const TradeInStatusFilter: React.FC<TradeInStatusFilterProps> = ({ 
@@ -33,20 +34,20 @@ const TradeInStatusFilter: React.FC<TradeInStatusFilterProps> = ({
           Pending
         </button>
         <button
-          onClick={() => setStatusFilter('completed')}
+          onClick={() => setStatusFilter('accepted')}
           className={`px-3 py-1 text-sm rounded-full ${
-            statusFilter === 'completed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+            statusFilter === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
           }`}
         >
-          Completed
+          Accepted
         </button>
         <button
-          onClick={() => setStatusFilter('cancelled')}
+          onClick={() => setStatusFilter('rejected')}
           className={`px-3 py-1 text-sm rounded-full ${
-            statusFilter === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+            statusFilter === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
           }`}
         >
-          Cancelled
+          Rejected
         </button>
       </div>
     </div>

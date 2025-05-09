@@ -4,21 +4,7 @@ import TradeInTableHeader from './TradeInTableHeader';
 import TradeInTableBody from './TradeInTableBody';
 import TradeInTableLoading from './TradeInTableLoading';
 import TradeInEmptyState from './TradeInEmptyState';
-
-interface TradeIn {
-  id: string;
-  customer_id: string;
-  trade_in_date: string;
-  total_value: number;
-  cash_value: number;
-  trade_value: number;
-  status: 'pending' | 'completed' | 'cancelled';
-  customer_name?: string;
-  notes?: string | null;
-  payment_type?: 'cash' | 'trade' | 'mixed';
-  staff_notes?: string | null;
-  items?: any[];
-}
+import { TradeIn } from '../../types/tradeIn';
 
 interface TradeInTableProps {
   tradeIns: TradeIn[];
