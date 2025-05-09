@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { TrendingUp, AlertCircle, ArrowUpRight, Heart, Loader2, DollarSign, TrendingDown } from 'lucide-react';
 import { PriceData, CardDetails, CardNumberObject } from '../types/card';
@@ -44,17 +45,19 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({
     return null;
   }
 
-  // Ensure we have string values for display
-  let cardNumber = '';
-  if (cardDetails.number) {
-    if (typeof cardDetails.number === 'object') {
-      // Type assertion to tell TypeScript that cardDetails.number is a CardNumberObject
-      const numberObj = cardDetails.number as CardNumberObject;
-      cardNumber = numberObj.displayName || numberObj.value || '';
-    } else {
-      cardNumber = cardDetails.number;
+  // Helper function to safely get string from card number
+  const getCardNumberString = (cardNumber: string | CardNumberObject | undefined): string => {
+    if (!cardNumber) return '';
+    
+    if (typeof cardNumber === 'object') {
+      return cardNumber.displayName || cardNumber.value || '';
     }
-  }
+    
+    return cardNumber;
+  };
+
+  // Get string representation of card number
+  const cardNumber = getCardNumberString(cardDetails.number);
 
   // Calculate price trends (mock data for demonstration)
   const priceTrend = Math.random() > 0.5 ? 'up' : 'down';

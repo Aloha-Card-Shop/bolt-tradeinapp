@@ -10,6 +10,17 @@ interface CardResultsProps {
 }
 
 const CardResults: React.FC<CardResultsProps> = ({ results, isLoading, onAddToList }) => {
+  // Helper function to safely get string from card number
+  const getCardNumberString = (cardNumber: string | CardNumberObject | undefined): string => {
+    if (!cardNumber) return '';
+    
+    if (typeof cardNumber === 'object') {
+      return cardNumber.displayName || cardNumber.value || '';
+    }
+    
+    return cardNumber;
+  };
+
   if (isLoading) {
     return (
       <div className="p-8 flex items-center justify-center">
@@ -42,17 +53,8 @@ const CardResults: React.FC<CardResultsProps> = ({ results, isLoading, onAddToLi
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {results.map((card, index) => {
-            // Make sure we're not rendering any object directly
-            let cardNumber = '';
-            if (card.number) {
-              if (typeof card.number === 'object') {
-                // Type assertion to tell TypeScript that card.number is a CardNumberObject
-                const numberObj = card.number as CardNumberObject;
-                cardNumber = numberObj.displayName || numberObj.value || '';
-              } else {
-                cardNumber = card.number;
-              }
-            }
+            // Get string representation of card number
+            const cardNumber = getCardNumberString(card.number);
               
             return (
               <div 

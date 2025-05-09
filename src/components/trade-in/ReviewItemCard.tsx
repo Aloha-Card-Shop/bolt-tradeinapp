@@ -4,6 +4,7 @@ import { X, ImageOff, DollarSign } from 'lucide-react';
 import { TradeInItem } from '../../hooks/useTradeInList';
 import { CONDITIONS, PAYMENT_TYPES } from '../../constants/tradeInConstants';
 import { formatCurrency } from '../../utils/formatters';
+import { CardNumberObject } from '../../types/card';
 
 interface ReviewItemCardProps {
   item: TradeInItem;
@@ -22,6 +23,17 @@ const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
 }) => {
   const currentValue = item.paymentType === 'trade' ? itemValue?.tradeValue : itemValue?.cashValue;
   
+  // Helper function to safely get string from card number
+  const getCardNumberString = (cardNumber: string | CardNumberObject | undefined): string => {
+    if (!cardNumber) return '';
+    
+    if (typeof cardNumber === 'object') {
+      return cardNumber.displayName || cardNumber.value || '';
+    }
+    
+    return cardNumber;
+  };
+
   return (
     <div className="border border-gray-200 rounded-xl p-4">
       <div className="flex items-start space-x-4">
@@ -48,7 +60,7 @@ const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
               <h4 className="font-medium text-gray-900">
                 {item.card.name}
                 {item.card.number && (
-                  <span className="ml-2 text-sm text-gray-500">#{item.card.number}</span>
+                  <span className="ml-2 text-sm text-gray-500">#{getCardNumberString(item.card.number)}</span>
                 )}
               </h4>
               {item.card.set && (

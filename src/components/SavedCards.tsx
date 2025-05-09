@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Trash2, RefreshCw, BookmarkIcon } from 'lucide-react';
-import { SavedCard } from '../types/card';
+import { SavedCard, CardNumberObject } from '../types/card';
 
 interface SavedCardsProps {
   savedCards: SavedCard[];
@@ -16,6 +17,17 @@ const SavedCards: React.FC<SavedCardsProps> = ({
   if (savedCards.length === 0) {
     return null;
   }
+
+  // Helper function to safely get string from card number
+  const getCardNumberString = (cardNumber: string | CardNumberObject | undefined): string => {
+    if (!cardNumber) return '';
+    
+    if (typeof cardNumber === 'object') {
+      return cardNumber.displayName || cardNumber.value || '';
+    }
+    
+    return cardNumber;
+  };
 
   return (
     <div className="p-6">
@@ -38,7 +50,9 @@ const SavedCards: React.FC<SavedCardsProps> = ({
                   <h3 className="font-medium text-gray-900 truncate">
                     {card.name}
                     {card.number && (
-                      <span className="ml-2 text-sm text-gray-500">#{card.number}</span>
+                      <span className="ml-2 text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                        #{getCardNumberString(card.number)}
+                      </span>
                     )}
                   </h3>
                   {card.set && (

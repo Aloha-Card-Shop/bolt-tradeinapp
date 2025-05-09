@@ -67,3 +67,18 @@ export const createSearchFilters = (searchTerms: string[], formattedNumber?: str
   
   return filters;
 };
+
+/**
+ * Safely get string value from a card number that might be an object
+ * @param cardNumber The card number which might be string or object
+ * @returns String representation of the card number
+ */
+export const getCardNumberString = (cardNumber: string | CardNumberObject | undefined): string => {
+  if (!cardNumber) return '';
+  
+  if (typeof cardNumber === 'object') {
+    return cardNumber.displayName || cardNumber.value || '';
+  }
+  
+  return cardNumber;
+};

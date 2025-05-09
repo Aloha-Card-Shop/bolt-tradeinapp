@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { CardDetails, GAME_OPTIONS } from '../types/card';
+import { CardDetails, GAME_OPTIONS, CardNumberObject } from '../types/card';
 import { Package } from 'lucide-react';
 import { SetOption } from '../hooks/useSetOptions';
 
@@ -36,6 +36,17 @@ const CardSearch: React.FC<CardSearchProps> = ({
     } as React.ChangeEvent<HTMLInputElement>;
     
     onInputChange(event);
+  };
+
+  // Function to safely get the string value from a CardNumberObject or string
+  const getCardNumberValue = (): string => {
+    if (!cardDetails.number) return '';
+    
+    if (typeof cardDetails.number === 'object') {
+      return cardDetails.number.displayName || cardDetails.number.value || '';
+    }
+    
+    return cardDetails.number;
   };
 
   // All sorted set options are now handled in useSetOptions
@@ -119,7 +130,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
             id="card-number"
             type="text"
             name="number"
-            value={cardDetails.number || ''}
+            value={getCardNumberValue()}
             onChange={onInputChange}
             placeholder="e.g. 12 or 12/107"
             className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
