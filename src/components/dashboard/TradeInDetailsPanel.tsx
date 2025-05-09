@@ -25,6 +25,9 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({ tradeIn, load
   };
 
   const statusMessage = getStatusMessage(tradeIn.status);
+  
+  // Format the handled date if available
+  const formattedHandledDate = tradeIn.handled_at ? new Date(tradeIn.handled_at).toLocaleString() : 'Not processed yet';
 
   return (
     <td colSpan={7} className="px-5 py-5 border-b border-gray-200 bg-gray-50">
@@ -37,6 +40,19 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({ tradeIn, load
           </p>
         </div>
         
+        {/* Submission information - Added prominent section */}
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+          <h3 className="text-sm font-medium text-gray-900 mb-2">Submission Information</h3>
+          <div className="grid grid-cols-2 gap-2">
+            <p className="text-sm text-gray-700">
+              <strong>Submitted by:</strong> {tradeIn.submitter_email || 'Unknown Staff'}
+            </p>
+            <p className="text-sm text-gray-700">
+              <strong>Processed on:</strong> {formattedHandledDate}
+            </p>
+          </div>
+        </div>
+        
         {/* Trade-in details */}
         <div className="mb-4">
           <h3 className="text-sm font-medium text-gray-900 mb-2">Trade-In Details</h3>
@@ -45,9 +61,6 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({ tradeIn, load
               <p className="text-sm text-gray-700"><strong>ID:</strong> {tradeIn.id}</p>
               <p className="text-sm text-gray-700">
                 <strong>Date:</strong> {new Date(tradeIn.trade_in_date).toLocaleString()}
-              </p>
-              <p className="text-sm text-gray-700">
-                <strong>Submitted by:</strong> {tradeIn.submitter_email || 'Unknown Staff'}
               </p>
             </div>
             <div>
