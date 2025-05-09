@@ -128,6 +128,8 @@ export const createSearchFilters = (searchTerms: string[], formattedNumber?: str
  * @returns True if the term appears to be a card number
  */
 export const isLikelyCardNumber = (searchTerm: string): boolean => {
+  if (!searchTerm) return false;
+  
   // Basic check: Contains only digits
   const isJustNumber = /^\d+$/.test(searchTerm.trim());
   
@@ -156,8 +158,9 @@ export const getCardNumberString = (cardNumber: string | CardNumberObject | unde
  * @param key The localStorage key
  * @param term The search term to add
  * @param maxItems Maximum number of items to store
+ * @returns The updated history array
  */
-export const addToSearchHistory = (key: string, term: string, maxItems: number = 10) => {
+export const addToSearchHistory = (key: string, term: string, maxItems: number = 10): string[] => {
   try {
     const savedHistory = localStorage.getItem(key);
     let history: string[] = [];

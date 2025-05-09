@@ -1,13 +1,10 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { CardDetails, GameType, GAME_OPTIONS } from '../types/card';
 import { useSetOptions } from './useSetOptions';
 import { useCardSearchQuery } from './useCardSearchQuery';
 import { useCardSuggestions } from './useCardSuggestions';
-
-// Store search history in localStorage
-const SEARCH_HISTORY_KEY = 'card_search_history';
-const MAX_HISTORY_ITEMS = 10;
+import { isLikelyCardNumber } from '../utils/cardSearchUtils';
 
 export const useCardSearch = () => {
   const [cardDetails, setCardDetails] = useState<CardDetails>({
@@ -19,7 +16,6 @@ export const useCardSearch = () => {
   });
   
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   
   const { setOptions, filteredSetOptions, isLoadingSets, filterSetOptions } = useSetOptions(
@@ -27,34 +23,31 @@ export const useCardSearch = () => {
     cardDetails.categoryId
   );
   
-  const { searchResults, isSearching, searchCards, hasMoreResults, loadMoreResults } = useCardSearchQuery();
+  const { 
+    searchResults, 
+    isSearching, 
+    searchCards, 
+    hasMoreResults, 
+    loadMoreResults,
+    totalResults
+  } = useCardSearchQuery();
   
   const { 
     suggestions, 
     isLoading: isLoadingSuggestions, 
     fetchSuggestions,
-    addToRecentSearches
+    addToRecentSearches,
+    recentSearches,
+    clearRecentSearches
   } = useCardSuggestions();
 
-  // Load search history from localStorage on mount
-  useEffect(() => {
-    const savedHistory = localStorage.getItem(SEARCH_HISTORY_KEY);
-    if (savedHistory) {
-      try {
-        setSearchHistory(JSON.parse(savedHistory));
-      } catch (e) {
-        console.error('Failed to parse search history:', e);
-        localStorage.removeItem(SEARCH_HISTORY_KEY);
-      }
-    }
-  }, []);
+  // Detect potentially abandoned searches (like a card number in the name field)
+  const [potentialCardNumber, setPotentialCardNumber] = useState<string | null>(null);
 
-  // Save search history to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(searchHistory));
-  }, [searchHistory]);
+  // Store the last search query to avoid duplicate searches
+  const lastSearchRef = useRef<string>('');
 
-  // Search for cards and filter sets when search criteria changes
+  // Debounced search for card suggestions and filtering sets
   useEffect(() => {
     // Debounce the search to avoid too many requests
     const timer = setTimeout(async () => {
@@ -63,13 +56,30 @@ export const useCardSearch = () => {
         // Make sure categoryId is provided and is a number
         const categoryIdToUse = cardDetails.categoryId ?? GAME_OPTIONS[0].categoryId;
         fetchSuggestions(cardDetails.name, cardDetails.game, categoryIdToUse);
+        
+        // Check if input might be a card number
+        if (isLikelyCardNumber(cardDetails.name) && !cardDetails.number) {
+          setPotentialCardNumber(cardDetails.name.trim());
+        } else {
+          setPotentialCardNumber(null);
+        }
+      } else {
+        // If name is cleared, reset potential card number
+        setPotentialCardNumber(null);
       }
       
       // Get search terms for filtering sets
       const searchTerms = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
       
-      // Only perform the search if we have a meaningful query
-      if (searchTerms.length > 0 || cardDetails.number || cardDetails.set) {
+      // Create a search signature to check against previous searches
+      const searchSignature = `${cardDetails.name}|${cardDetails.number}|${cardDetails.set}|${cardDetails.game}`;
+      
+      // Only perform the search if we have a meaningful query and it's different from the last one
+      if ((searchTerms.length > 0 || cardDetails.number || cardDetails.set) && 
+          searchSignature !== lastSearchRef.current) {
+        
+        lastSearchRef.current = searchSignature;
+        
         // Search cards and get set IDs from results
         const foundSetIds = await searchCards(cardDetails, setOptions);
         
@@ -77,8 +87,7 @@ export const useCardSearch = () => {
         filterSetOptions(searchTerms, foundSetIds);
 
         // Add to search history if it's a meaningful search
-        if (cardDetails.name && cardDetails.name.length >= 3 && !searchHistory.includes(cardDetails.name)) {
-          addToSearchHistory(cardDetails.name);
+        if (cardDetails.name && cardDetails.name.length >= 3) {
           addToRecentSearches(cardDetails.name);
         }
       }
@@ -104,64 +113,75 @@ export const useCardSearch = () => {
       
       // Reset set selection if name is cleared
       if (!value) {
-        setCardDetails(prev => ({ ...prev, set: '', name: '' }));
+        setCardDetails(prev => ({ ...prev, set: '', name: '', number: '' }));
         setShowSuggestions(false);
+        setPotentialCardNumber(null);
       }
     } else {
       setCardDetails(prev => ({ ...prev, [name]: value }));
     }
   };
 
-  const selectSuggestion = (suggestion: CardDetails) => {
+  // Use potential card number as actual card number
+  const handleUseAsCardNumber = useCallback(() => {
+    if (!potentialCardNumber) return;
+    
+    setCardDetails(prev => ({
+      ...prev,
+      name: '',
+      number: potentialCardNumber
+    }));
+    setPotentialCardNumber(null);
+    
+    // Focus back on the name input for better UX
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [potentialCardNumber]);
+
+  const selectSuggestion = useCallback((suggestion: CardDetails) => {
     setCardDetails(prev => ({
       ...prev,
       name: suggestion.name,
-      productId: suggestion.productId
+      productId: suggestion.productId,
+      number: suggestion.number || prev.number
     }));
     setShowSuggestions(false);
     
     // Add to search history
     if (suggestion.name && suggestion.name.length >= 3) {
-      addToSearchHistory(suggestion.name);
       addToRecentSearches(suggestion.name);
     }
-  };
+  }, [addToRecentSearches]);
 
-  const selectHistoryItem = (item: string) => {
+  const selectHistoryItem = useCallback((item: string) => {
     setCardDetails(prev => ({
       ...prev,
-      name: item
+      name: item,
+      number: '' // Clear number field when selecting from history
     }));
-  };
+    
+    // Focus the search input after selecting history item
+    if (searchInputRef.current) {
+      setTimeout(() => {
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
+      }, 100);
+    }
+  }, []);
 
-  const addToSearchHistory = (term: string) => {
-    setSearchHistory(prev => {
-      // Remove the term if it already exists to avoid duplicates
-      const filtered = prev.filter(item => item !== term);
-      
-      // Add the new term to the beginning
-      const updated = [term, ...filtered];
-      
-      // Limit the number of items
-      return updated.slice(0, MAX_HISTORY_ITEMS);
-    });
-  };
-
-  const clearSearchHistory = () => {
-    setSearchHistory([]);
-    localStorage.removeItem(SEARCH_HISTORY_KEY);
-  };
-
-  const resetSearch = () => {
-    setCardDetails({
+  const resetSearch = useCallback(() => {
+    setCardDetails(prev => ({
       name: '',
       set: '',
       number: '',
-      game: cardDetails.game,
-      categoryId: cardDetails.categoryId
-    });
+      game: prev.game,
+      categoryId: prev.categoryId
+    }));
     setShowSuggestions(false);
-  };
+    setPotentialCardNumber(null);
+  }, []);
 
   return {
     cardDetails,
@@ -173,14 +193,17 @@ export const useCardSearch = () => {
     isLoadingSuggestions,
     showSuggestions,
     setShowSuggestions,
-    searchHistory,
+    searchHistory: recentSearches,
+    potentialCardNumber,
     handleInputChange,
     selectSuggestion,
     selectHistoryItem,
-    clearSearchHistory,
+    clearSearchHistory: clearRecentSearches,
     resetSearch,
     searchInputRef,
     hasMoreResults,
-    loadMoreResults
+    loadMoreResults,
+    totalResults,
+    handleUseAsCardNumber
   };
 };

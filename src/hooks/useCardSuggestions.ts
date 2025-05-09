@@ -1,18 +1,33 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CardDetails, GameType } from '../types/card';
 import { supabase } from '../lib/supabase';
+import { addToSearchHistory, getSearchHistory } from '../utils/cardSearchUtils';
+
+// Local storage key for search history
+const SEARCH_HISTORY_KEY = 'card_search_history';
 
 // Maximum number of suggestions to show
 const MAX_SUGGESTIONS = 7;
+
+// Maximum number of history items to store
+const MAX_HISTORY_ITEMS = 10;
 
 export const useCardSuggestions = () => {
   const [suggestions, setSuggestions] = useState<CardDetails[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Store recent searches in memory during the session
-  const [recentSearches, setRecentSearches] = useState<Set<string>>(new Set());
+  // Store recent searches using both state and localStorage
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  // Load search history from localStorage on mount
+  useEffect(() => {
+    const savedHistory = getSearchHistory(SEARCH_HISTORY_KEY);
+    if (savedHistory.length > 0) {
+      setRecentSearches(savedHistory);
+    }
+  }, []);
 
   // Fetch suggestions based on query and game
   const fetchSuggestions = async (query: string, game: GameType, categoryId: number) => {
@@ -75,23 +90,24 @@ export const useCardSuggestions = () => {
     }
   };
 
-  // Add a search term to recent searches
+  // Add a search term to recent searches - now using both state and localStorage
   const addToRecentSearches = (term: string) => {
-    setRecentSearches(prev => {
-      const updated = new Set(prev);
-      updated.add(term);
-      return updated;
-    });
+    if (!term || term.length < 2) return;
+    
+    // Update state and localStorage
+    const updatedHistory = addToSearchHistory(SEARCH_HISTORY_KEY, term, MAX_HISTORY_ITEMS);
+    setRecentSearches(updatedHistory);
   };
 
   // Get recent searches as an array
   const getRecentSearches = (): string[] => {
-    return Array.from(recentSearches);
+    return recentSearches;
   };
 
-  // Clear all recent searches
+  // Clear all recent searches from both state and localStorage
   const clearRecentSearches = () => {
-    setRecentSearches(new Set());
+    setRecentSearches([]);
+    localStorage.removeItem(SEARCH_HISTORY_KEY);
   };
 
   return {
@@ -101,6 +117,7 @@ export const useCardSuggestions = () => {
     fetchSuggestions,
     addToRecentSearches,
     getRecentSearches,
+    recentSearches, // Directly expose recentSearches array
     clearRecentSearches
   };
 };

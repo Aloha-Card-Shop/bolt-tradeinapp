@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { CardDetails } from '../types/card';
 import { Package } from 'lucide-react';
 import { SetOption } from '../hooks/useSetOptions';
-import { isLikelyCardNumber } from '../utils/cardSearchUtils';
 
 // Import the smaller component pieces
 import SearchGameSelect from './card-search/SearchGameSelect';
@@ -28,6 +27,8 @@ interface CardSearchProps {
   onSelectHistoryItem?: (item: string) => void;
   onClearHistory?: () => void;
   searchInputRef?: React.RefObject<HTMLInputElement>;
+  potentialCardNumber?: string | null;
+  onUseAsCardNumber?: () => void;
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
@@ -43,24 +44,16 @@ const CardSearch: React.FC<CardSearchProps> = ({
   searchHistory = [],
   onSelectHistoryItem = () => {},
   onClearHistory = () => {},
-  searchInputRef
+  searchInputRef,
+  potentialCardNumber = null,
+  onUseAsCardNumber = () => {}
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [potentialCardNumber, setPotentialCardNumber] = useState<string | null>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     setSearchTerm(cardDetails.name || '');
   }, [cardDetails.name]);
-
-  // Check if the search term might be a card number
-  useEffect(() => {
-    if (isLikelyCardNumber(searchTerm) && !cardDetails.number) {
-      setPotentialCardNumber(searchTerm.trim());
-    } else {
-      setPotentialCardNumber(null);
-    }
-  }, [searchTerm, cardDetails.number]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -94,22 +87,6 @@ const CardSearch: React.FC<CardSearchProps> = ({
       setShowSuggestions(true);
     }
   };
-  
-  // Move potential card number to card number field
-  const handleUseAsCardNumber = () => {
-    if (!potentialCardNumber) return;
-    
-    // Create a synthetic event for the card number field
-    const event = {
-      target: {
-        name: 'number',
-        value: potentialCardNumber
-      }
-    } as React.ChangeEvent<HTMLInputElement>;
-    
-    onInputChange(event);
-    setPotentialCardNumber(null);
-  };
 
   return (
     <div className="p-6">
@@ -139,7 +116,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
           {/* Card number suggestion */}
           <CardNumberSuggestion 
             potentialCardNumber={potentialCardNumber}
-            onUseAsCardNumber={handleUseAsCardNumber}
+            onUseAsCardNumber={onUseAsCardNumber}
           />
           
           {/* Suggestions dropdown */}
@@ -170,7 +147,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
           selectedSet={cardDetails.set || ''}
           setOptions={setOptions}
           isLoading={isLoadingSets}
-          disabled={!cardDetails.name}
+          disabled={!cardDetails.name && !cardDetails.number}
           onChange={onInputChange}
         />
 

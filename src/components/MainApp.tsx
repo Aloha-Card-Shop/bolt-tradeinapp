@@ -23,6 +23,7 @@ function MainApp() {
     showSuggestions,
     setShowSuggestions,
     searchHistory,
+    potentialCardNumber,
     handleInputChange, 
     selectSuggestion,
     selectHistoryItem,
@@ -30,7 +31,9 @@ function MainApp() {
     resetSearch,
     searchInputRef,
     hasMoreResults,
-    loadMoreResults
+    loadMoreResults,
+    totalResults,
+    handleUseAsCardNumber
   } = useCardSearch();
   
   const { savedCards, removeCard } = useSavedCards();
@@ -90,6 +93,8 @@ function MainApp() {
                 onSelectHistoryItem={selectHistoryItem}
                 onClearHistory={clearSearchHistory}
                 searchInputRef={searchInputRef}
+                potentialCardNumber={potentialCardNumber}
+                onUseAsCardNumber={handleUseAsCardNumber}
               />
             </div>
             
@@ -112,6 +117,7 @@ function MainApp() {
                 onAddToList={handleAddToList}
                 hasMoreResults={hasMoreResults}
                 loadMoreResults={loadMoreResults}
+                totalResults={totalResults}
               />
             </div>
           </div>
