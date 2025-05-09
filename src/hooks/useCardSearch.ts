@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { CardDetails, GameType, GAME_OPTIONS } from '../types/card';
 import { supabase } from '../lib/supabase';
@@ -116,19 +117,8 @@ export const useCardSearch = () => {
 
         if (error) throw error;
 
-        // Filter sets based on search terms
-        const searchTermsForSets = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
-        const filteredOptions = setOptions.filter(option => {
-          const setName = option.name.toLowerCase();
-          // Match if any search term appears anywhere in the set name
-          return !searchTermsForSets.length || searchTermsForSets.every(term => 
-            setName.includes(term.toLowerCase())
-          );
-        });
-
-        setFilteredSetOptions(filteredOptions.length > 0 ? filteredOptions : setOptions);
-
-        setSearchResults(data.map(product => ({
+        // Important: First convert the search results to CardDetails objects
+        const foundCards = data.map(product => ({
           name: product.name,
           set: product.group_id ? setOptions.find(s => s.id === product.group_id)?.name || '' : '',
           number: product.attributes?.card_number || '',
@@ -136,7 +126,50 @@ export const useCardSearch = () => {
           categoryId: cardDetails.categoryId,
           imageUrl: product.image_url || null,
           productId: product.tcgplayer_product_id || product.product_id?.toString() || null
-        })));
+        }));
+
+        setSearchResults(foundCards);
+
+        // FIX: Include sets from search results in our filtered sets
+        const foundSetIds = new Set<number>();
+        data.forEach(product => {
+          if (product.group_id) {
+            foundSetIds.add(product.group_id);
+          }
+        });
+
+        // Filter sets based on search terms OR if they contain any of the found cards
+        const searchTermsForSets = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
+        let filteredOptions = setOptions;
+        
+        // Only filter by search terms if the user is specifically searching for a set name
+        if (searchTermsForSets.length > 0) {
+          filteredOptions = setOptions.filter(option => {
+            const setName = option.name.toLowerCase();
+            // Match if any search term appears anywhere in the set name
+            // OR if this set contains any of our found cards
+            return searchTermsForSets.every(term => setName.includes(term.toLowerCase())) ||
+                   foundSetIds.has(option.id);
+          });
+        }
+
+        // If we're filtering by card number, ensure sets containing matching cards are included
+        if (cardDetails.number && filteredOptions.length > 0) {
+          // Add any sets that contain our found cards but might have been filtered out
+          const additionalSets = Array.from(foundSetIds)
+            .map(id => setOptions.find(s => s.id === id))
+            .filter(Boolean) as SetOption[];
+          
+          // Combine and deduplicate sets
+          filteredOptions = Array.from(new Set([...filteredOptions, ...additionalSets]));
+        }
+
+        // If we still have no options but have found cards, use their sets
+        if (filteredOptions.length === 0 && foundSetIds.size > 0) {
+          filteredOptions = setOptions.filter(option => foundSetIds.has(option.id));
+        }
+
+        setFilteredSetOptions(filteredOptions.length > 0 ? filteredOptions : setOptions);
       } catch (error) {
         console.error('Error searching cards:', error);
         setSearchResults([]);
