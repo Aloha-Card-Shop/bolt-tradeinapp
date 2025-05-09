@@ -31,7 +31,7 @@ const ItemTypeToggle: React.FC<ItemTypeToggleProps> = ({
           <div className="text-sm font-medium">Edition</div>
           <div className="flex items-center p-1 bg-gray-200 rounded-lg">
             <button 
-              className={`px-3 py-1 text-sm transition-colors ${!isFirstEdition && isFirstEdition !== undefined
+              className={`px-3 py-1 text-sm transition-colors ${isFirstEdition === false
                 ? 'bg-white text-gray-800 shadow rounded' 
                 : 'text-gray-600'}`}
               onClick={onToggleFirstEdition}
@@ -40,7 +40,7 @@ const ItemTypeToggle: React.FC<ItemTypeToggleProps> = ({
               Unlimited
             </button>
             <button
-              className={`px-3 py-1 text-sm transition-colors ${isFirstEdition 
+              className={`px-3 py-1 text-sm transition-colors ${isFirstEdition === true
                 ? 'bg-white text-gray-800 shadow rounded' 
                 : 'text-gray-600'}`}
               onClick={onToggleFirstEdition}

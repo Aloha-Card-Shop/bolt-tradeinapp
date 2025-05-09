@@ -1,4 +1,3 @@
-
 interface CacheEntry {
   price: number;
   timestamp: number;
@@ -37,35 +36,36 @@ export const buildTcgPlayerUrl = (
         .join(' ')
     : 'Near Mint';
 
+  // Build base URL with condition and language
   let url = `https://www.tcgplayer.com/product/${productId}?page=1&Language=${language}&Condition=${formattedCondition}`;
   
-  // Add printing parameters
+  // Add printing parameter (First Edition or Unlimited)
   if (isFirstEdition) {
     url += '&Printing=1st+Edition';
-  } else {
-    // Explicitly add Unlimited when not first edition
-    url += '&Printing=Unlimited';
   }
   
-  // Add treatment parameters for holo
+  // Add treatment parameter for holo cards
   if (isHolo) {
-    // Combine printing with holofoil treatment when needed
+    url += '&Treatment=Holofoil';
+    
+    // Special case for 1st Edition Holo (needs different format than just appending both params)
     if (isFirstEdition) {
-      // First edition already added
-      url += '+Holofoil';
-    } else {
-      // For unlimited cards
-      url += '+Holofoil';
+      // Fix: Replace the existing printing parameter with combined version
+      url = url.replace('&Printing=1st+Edition', '&Printing=1st+Edition+Holofoil');
     }
   } else if (isReverseHolo) {
-    // Replace printing parameter since reverse holo is a different printing type
+    // Handle reverse holo (which is mutually exclusive with regular holo)
     if (isFirstEdition) {
-      // Remove the last printing parameter and add the reverse holo
       url = url.replace('&Printing=1st+Edition', '&Printing=1st+Edition+Reverse+Holofoil');
     } else {
-      url = url.replace('&Printing=Unlimited', '&Printing=Reverse+Holofoil');
+      url += '&Printing=Reverse+Holofoil';
     }
   }
+  
+  // Add debugging to help diagnose URL construction
+  console.log('Price fetch URL:', url, {
+    productId, condition, language, isFirstEdition, isHolo, isReverseHolo
+  });
   
   return url;
 };

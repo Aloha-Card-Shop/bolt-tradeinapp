@@ -1,5 +1,4 @@
-
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { TradeInItem as TradeInItemType } from '../../../hooks/useTradeInList';
 import { useTradeValue } from '../../../hooks/useTradeValue';
 import CardHeader from './CardHeader';
@@ -26,20 +25,32 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
 }) => {
   const { cashValue, tradeValue, isLoading } = useTradeValue(item.card.game, item.price);
 
-  // When values change, notify the parent and update the item with calculated values
-  useEffect(() => {
+  // Use callback to avoid recreating this function on every render
+  const updateValues = useCallback(() => {
     if (!isLoading && item.price > 0) {
-      // Store the calculated values in the item
-      onUpdate(index, { 
-        ...item, 
-        cashValue: cashValue,
-        tradeValue: tradeValue 
-      });
-      
-      // Notify parent component about the value change
-      onValueChange({ cashValue, tradeValue });
+      // Only update values that have changed to avoid infinite loop
+      const hasValueChanged = 
+        item.cashValue !== cashValue || 
+        item.tradeValue !== tradeValue;
+        
+      if (hasValueChanged) {
+        // Store the calculated values in the item
+        onUpdate(index, { 
+          ...item, 
+          cashValue: cashValue,
+          tradeValue: tradeValue 
+        });
+        
+        // Notify parent component about the value change
+        onValueChange({ cashValue, tradeValue });
+      }
     }
-  }, [cashValue, tradeValue, isLoading, item.price, index, item, onUpdate, onValueChange]);
+  }, [cashValue, tradeValue, isLoading, item, index, onUpdate, onValueChange]);
+  
+  // Effect to update values when price or calculated values change
+  useEffect(() => {
+    updateValues();
+  }, [updateValues]);
   
   const handleConditionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const condition = e.target.value;
