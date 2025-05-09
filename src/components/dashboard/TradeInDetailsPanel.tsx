@@ -29,6 +29,14 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({ tradeIn, load
   return (
     <td colSpan={7} className="px-5 py-5 border-b border-gray-200 bg-gray-50">
       <div className="pl-6">
+        {/* Customer information - Added section to show customer name more prominently */}
+        <div className="mb-4">
+          <h3 className="text-sm font-medium text-gray-900 mb-2">Customer Information</h3>
+          <p className="text-sm text-gray-700">
+            <strong>Name:</strong> {tradeIn.customer_name || 'Unknown Customer'}
+          </p>
+        </div>
+        
         {/* Trade-in details */}
         <div className="mb-4">
           <h3 className="text-sm font-medium text-gray-900 mb-2">Trade-In Details</h3>
