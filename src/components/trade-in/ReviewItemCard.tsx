@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, ImageOff, DollarSign } from 'lucide-react';
+import { X, ImageOff, DollarSign, ToggleLeft, ToggleRight } from 'lucide-react';
 import { TradeInItem } from '../../hooks/useTradeInList';
 import { CONDITIONS, PAYMENT_TYPES } from '../../constants/tradeInConstants';
 import { formatCurrency } from '../../utils/formatters';
@@ -153,50 +153,62 @@ const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Card Type
               </label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
+              
+              <div className="space-y-2">
+                {/* First Edition Toggle */}
+                <div 
                   onClick={() => onUpdateItem(index, { ...item, isFirstEdition: !item.isFirstEdition })}
-                  className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors duration-200 ${
-                    item.isFirstEdition
-                      ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  className="flex items-center justify-between p-2 bg-gray-50 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors duration-200"
                 >
-                  {item.isFirstEdition ? '1st Edition' : 'Unlimited'}
-                </button>
-                <button
-                  type="button"
+                  <span className="text-sm font-medium">
+                    {item.isFirstEdition ? '1st Edition' : 'Unlimited'}
+                  </span>
+                  {item.isFirstEdition ? (
+                    <ToggleRight className="h-6 w-6 text-blue-600" />
+                  ) : (
+                    <ToggleLeft className="h-6 w-6 text-gray-400" />
+                  )}
+                </div>
+                
+                {/* Holo Toggle */}
+                <div 
                   onClick={() => onUpdateItem(index, { 
                     ...item, 
                     isHolo: !item.isHolo,
-                    isReverseHolo: item.isHolo ? item.isReverseHolo : false
+                    isReverseHolo: item.isHolo ? item.isReverseHolo : false 
                   })}
-                  className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors duration-200 ${
-                    item.isHolo && !item.isReverseHolo
-                      ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                  disabled={item.isReverseHolo}
+                  className={`flex items-center justify-between p-2 ${item.isReverseHolo ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 cursor-pointer'} bg-gray-50 rounded-lg transition-colors duration-200`}
+                  aria-disabled={item.isReverseHolo}
                 >
-                  {item.isHolo && !item.isReverseHolo ? 'Holo' : 'Non-Holo'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onUpdateItem(index, { 
-                    ...item, 
-                    isReverseHolo: !item.isReverseHolo,
-                    isHolo: item.isReverseHolo ? item.isHolo : false 
-                  })}
-                  className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors duration-200 ${
-                    item.isReverseHolo
-                      ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                  disabled={item.isHolo && !item.isReverseHolo}
+                  <span className="text-sm font-medium">Holo</span>
+                  {item.isHolo && !item.isReverseHolo ? (
+                    <ToggleRight className="h-6 w-6 text-purple-600" />
+                  ) : (
+                    <ToggleLeft className="h-6 w-6 text-gray-400" />
+                  )}
+                </div>
+                
+                {/* Reverse Holo Toggle */}
+                <div 
+                  onClick={() => {
+                    if (!item.isHolo) {
+                      onUpdateItem(index, { 
+                        ...item, 
+                        isReverseHolo: !item.isReverseHolo,
+                        isHolo: item.isReverseHolo ? item.isHolo : false 
+                      });
+                    }
+                  }}
+                  className={`flex items-center justify-between p-2 ${item.isHolo && !item.isReverseHolo ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 cursor-pointer'} bg-gray-50 rounded-lg transition-colors duration-200`}
+                  aria-disabled={item.isHolo && !item.isReverseHolo}
                 >
-                  {item.isReverseHolo ? 'Reverse Holo' : 'Standard'}
-                </button>
+                  <span className="text-sm font-medium">Reverse Holo</span>
+                  {item.isReverseHolo ? (
+                    <ToggleRight className="h-6 w-6 text-yellow-600" />
+                  ) : (
+                    <ToggleLeft className="h-6 w-6 text-gray-400" />
+                  )}
+                </div>
               </div>
             </div>
           </div>
