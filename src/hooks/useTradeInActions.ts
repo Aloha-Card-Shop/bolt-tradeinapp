@@ -14,7 +14,7 @@ export const useTradeInActions = (setTradeIns: React.Dispatch<React.SetStateActi
       const { error } = await supabase
         .from('trade_ins')
         .update({ 
-          status: 'completed',
+          status: 'accepted',
           handled_at: new Date().toISOString(),
           handled_by: (await supabase.auth.getUser()).data.user?.id
         })
@@ -24,7 +24,7 @@ export const useTradeInActions = (setTradeIns: React.Dispatch<React.SetStateActi
 
       // Update local state
       setTradeIns(prev => prev.map(tradeIn => 
-        tradeIn.id === tradeInId ? {...tradeIn, status: 'completed'} : tradeIn
+        tradeIn.id === tradeInId ? {...tradeIn, status: 'accepted'} : tradeIn
       ));
     } catch (err) {
       console.error('Error approving trade-in:', err);
@@ -40,7 +40,7 @@ export const useTradeInActions = (setTradeIns: React.Dispatch<React.SetStateActi
       const { error } = await supabase
         .from('trade_ins')
         .update({ 
-          status: 'cancelled',
+          status: 'rejected', // Changed from 'cancelled' to 'rejected' to match the allowed values
           handled_at: new Date().toISOString(),
           handled_by: (await supabase.auth.getUser()).data.user?.id
         })
@@ -50,7 +50,7 @@ export const useTradeInActions = (setTradeIns: React.Dispatch<React.SetStateActi
 
       // Update local state
       setTradeIns(prev => prev.map(tradeIn => 
-        tradeIn.id === tradeInId ? {...tradeIn, status: 'cancelled'} : tradeIn
+        tradeIn.id === tradeInId ? {...tradeIn, status: 'rejected'} : tradeIn
       ));
     } catch (err) {
       console.error('Error denying trade-in:', err);

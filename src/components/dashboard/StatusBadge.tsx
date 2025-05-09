@@ -11,9 +11,9 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
     switch (status) {
       case 'pending':
         return <Clock className="h-4 w-4 text-gray-500" />;
-      case 'completed':
+      case 'accepted':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'cancelled':
+      case 'rejected':
         return <AlertCircle className="h-4 w-4 text-red-500" />;
       default:
         return <AlertCircle className="h-4 w-4 text-yellow-500" />;

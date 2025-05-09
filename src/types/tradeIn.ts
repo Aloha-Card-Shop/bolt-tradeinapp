@@ -25,7 +25,7 @@ export interface TradeIn {
   total_value: number;
   cash_value: number;
   trade_value: number;
-  status: 'pending' | 'completed' | 'cancelled';
+  status: 'pending' | 'accepted' | 'rejected';
   customer_name?: string;
   customers?: Customer;
   notes?: string | null;
@@ -34,4 +34,4 @@ export interface TradeIn {
   items?: TradeInItem[];
 }
 
-export type StatusFilter = 'all' | 'pending' | 'completed' | 'cancelled';
+export type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected';
