@@ -1,8 +1,6 @@
 
 import { CardNumberObject } from '../types/card';
 
-// Card search utility functions
-
 /**
  * Format card number for better search matching
  * @param cardNumber The card number to format
@@ -13,64 +11,67 @@ export const formatCardNumberForSearch = (cardNumber: string | CardNumberObject 
   if (typeof cardNumber === 'object' && cardNumber !== null) {
     // Type assertion to tell TypeScript that cardNumber is a CardNumberObject
     const numberObj = cardNumber as CardNumberObject;
-    cardNumber = numberObj.value || numberObj.displayName || '';
+    cardNumber = numberObj.displayName || numberObj.value || '';
   }
 
   // Clean the card number to remove spaces and convert to lowercase
   const cleanNumber = String(cardNumber).trim().toLowerCase();
   
-  // Log the card number before and after formatting for debugging
-  console.log('Original card number:', cardNumber, 'Formatted:', cleanNumber);
-  
   return cleanNumber;
 };
 
 /**
- * Creates filters for the card search query
+ * Creates filters for the card search query with improved ranking
  * @param searchTerms Array of search terms for card name
  * @param formattedNumber Formatted card number (if any)
- * @returns Object containing filter strings for the query
+ * @returns Array of filter strings for the query
  */
 export const createSearchFilters = (searchTerms: string[], formattedNumber?: string) => {
   let filters = [];
   
-  // Add name filters with enhanced search capabilities
+  // Add name filters with enhanced search capabilities and ranking
   if (searchTerms.length > 0) {
+    // Create exact match filters first (higher priority)
+    const exactMatchFilters = searchTerms.map(term => {
+      return `name.ilike.${term}%`; // Starts with term (highest priority)
+    });
+    
+    if (exactMatchFilters.length > 0) {
+      filters.push(`or(${exactMatchFilters.join(',')})`);
+    }
+    
+    // Then add partial match filters (lower priority)
     const nameFilters = searchTerms.map(term => {
       const termFilters = [
-        // Search in the regular name field - make it more flexible with case insensitivity
+        // Search in the regular name field
         `name.ilike.%${term}%`,
         
         // Also search in clean_name field which typically has no special characters
-        `clean_name.ilike.%${term}%`,
-        
-        // Add additional filter to catch names with prefixes like "M" separately
-        // This helps with cards like "M Charizard EX"
-        `name.ilike.${term}%`
+        `clean_name.ilike.%${term}%`
       ];
       // Combine each term's filters with OR logic
       return `or(${termFilters.join(',')})`;
     });
     
     // Combine name filters with AND logic (each term must be found in either name or clean_name)
-    filters.push(`and(${nameFilters.join(',')})`);
+    if (nameFilters.length > 0) {
+      filters.push(`and(${nameFilters.join(',')})`);
+    }
   }
   
   // Add card number filter if present
   if (formattedNumber) {
     let cardNumberFilters = [];
     
-    // Search in attributes->>'card_number'
-    cardNumberFilters.push(`attributes->>'card_number'.ilike.%${formattedNumber}%`);
+    // Exact match first (highest priority)
+    cardNumberFilters.push(`attributes->>'card_number'.eq.${formattedNumber}`);
+    cardNumberFilters.push(`attributes->>'Number'.eq.${formattedNumber}`);
     
-    // Also search in attributes->>'Number' (some records use this field)
+    // Then partial matches
+    cardNumberFilters.push(`attributes->>'card_number'.ilike.%${formattedNumber}%`);
     cardNumberFilters.push(`attributes->>'Number'.ilike.%${formattedNumber}%`);
     
-    // Search in clean_name which may contain the number
-    cardNumberFilters.push(`clean_name.ilike.%${formattedNumber}%`);
-    
     // Handle cases where number might be a prefix
-    // This helps find cards like "12/107" when searching for "12"
     cardNumberFilters.push(`attributes->>'card_number'.ilike.${formattedNumber}/%`);
     cardNumberFilters.push(`attributes->>'Number'.ilike.${formattedNumber}/%`);
     
@@ -94,4 +95,52 @@ export const getCardNumberString = (cardNumber: string | CardNumberObject | unde
   }
   
   return cardNumber;
+};
+
+/**
+ * Store search history in localStorage
+ * @param key The localStorage key
+ * @param term The search term to add
+ * @param maxItems Maximum number of items to store
+ */
+export const addToSearchHistory = (key: string, term: string, maxItems: number = 10) => {
+  try {
+    const savedHistory = localStorage.getItem(key);
+    let history: string[] = [];
+    
+    if (savedHistory) {
+      history = JSON.parse(savedHistory);
+    }
+    
+    // Remove if already exists
+    history = history.filter(item => item !== term);
+    
+    // Add to the beginning
+    history.unshift(term);
+    
+    // Limit the number of items
+    history = history.slice(0, maxItems);
+    
+    localStorage.setItem(key, JSON.stringify(history));
+    
+    return history;
+  } catch (e) {
+    console.error('Error storing search history:', e);
+    return [];
+  }
+};
+
+/**
+ * Get search history from localStorage
+ * @param key The localStorage key
+ * @returns Array of search history items
+ */
+export const getSearchHistory = (key: string): string[] => {
+  try {
+    const savedHistory = localStorage.getItem(key);
+    return savedHistory ? JSON.parse(savedHistory) : [];
+  } catch (e) {
+    console.error('Error retrieving search history:', e);
+    return [];
+  }
 };

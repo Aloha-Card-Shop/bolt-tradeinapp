@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DatabaseIcon, Sparkles } from 'lucide-react';
 import { Toaster } from 'react-hot-toast'; // Import Toaster for notifications
@@ -17,8 +18,19 @@ function MainApp() {
     setOptions, 
     isLoadingSets, 
     isSearching, 
+    suggestions,
+    isLoadingSuggestions,
+    showSuggestions,
+    setShowSuggestions,
+    searchHistory,
     handleInputChange, 
-    resetSearch 
+    selectSuggestion,
+    selectHistoryItem,
+    clearSearchHistory,
+    resetSearch,
+    searchInputRef,
+    hasMoreResults,
+    loadMoreResults
   } = useCardSearch();
   
   const { savedCards, removeCard } = useSavedCards();
@@ -69,6 +81,15 @@ function MainApp() {
                 onInputChange={handleInputChange}
                 setOptions={setOptions}
                 isLoadingSets={isLoadingSets}
+                suggestions={suggestions}
+                isLoadingSuggestions={isLoadingSuggestions}
+                showSuggestions={showSuggestions}
+                setShowSuggestions={setShowSuggestions}
+                onSelectSuggestion={selectSuggestion}
+                searchHistory={searchHistory}
+                onSelectHistoryItem={selectHistoryItem}
+                onClearHistory={clearSearchHistory}
+                searchInputRef={searchInputRef}
               />
             </div>
             
@@ -89,6 +110,8 @@ function MainApp() {
                 results={searchResults}
                 isLoading={isSearching}
                 onAddToList={handleAddToList}
+                hasMoreResults={hasMoreResults}
+                loadMoreResults={loadMoreResults}
               />
             </div>
           </div>
@@ -99,7 +122,7 @@ function MainApp() {
                 items={items}
                 onRemoveItem={removeItem}
                 onUpdateItem={updateItem}
-                clearList={clearList} // Pass clearList function here
+                clearList={clearList}
               />
             </div>
           </div>
