@@ -38,10 +38,15 @@ export const createSearchFilters = (searchTerms: string[], formattedNumber?: str
   if (searchTerms.length > 0) {
     const nameFilters = searchTerms.map(term => {
       const termFilters = [
-        // Search in the regular name field
+        // Search in the regular name field - make it more flexible with case insensitivity
         `name.ilike.%${term}%`,
+        
         // Also search in clean_name field which typically has no special characters
-        `clean_name.ilike.%${term}%`
+        `clean_name.ilike.%${term}%`,
+        
+        // Add additional filter to catch names with prefixes like "M" separately
+        // This helps with cards like "M Charizard EX"
+        `name.ilike.${term}%`
       ];
       // Combine each term's filters with OR logic
       return `or(${termFilters.join(',')})`;
