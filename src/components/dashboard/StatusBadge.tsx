@@ -1,32 +1,47 @@
 
 import React from 'react';
-import { Clock, AlertCircle, CheckCircle } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle, HelpCircle } from 'lucide-react';
 
 interface StatusBadgeProps {
   status: string;
 }
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  const getStatusIcon = (status: string) => {
-    switch (status) {
+  const getStatusConfig = (status: string) => {
+    switch (status.toLowerCase()) {
       case 'pending':
-        return <Clock className="h-4 w-4 text-gray-500" />;
+        return {
+          icon: <Clock className="h-4 w-4 text-amber-500" />,
+          bgColor: 'bg-amber-100',
+          textColor: 'text-amber-800'
+        };
       case 'accepted':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return {
+          icon: <CheckCircle className="h-4 w-4 text-green-500" />,
+          bgColor: 'bg-green-100',
+          textColor: 'text-green-800'
+        };
       case 'rejected':
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
+        return {
+          icon: <AlertCircle className="h-4 w-4 text-red-500" />,
+          bgColor: 'bg-red-100',
+          textColor: 'text-red-800'
+        };
       default:
-        return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+        return {
+          icon: <HelpCircle className="h-4 w-4 text-gray-500" />,
+          bgColor: 'bg-gray-100',
+          textColor: 'text-gray-800'
+        };
     }
   };
 
+  const { icon, bgColor, textColor } = getStatusConfig(status);
+
   return (
-    <span className="relative inline-block px-3 py-1 font-semibold text-gray-900 leading-tight">
-      <span aria-hidden className="absolute inset-0 bg-gray-200 opacity-50 rounded-full"></span>
-      <span className="relative flex items-center space-x-1">
-        {getStatusIcon(status)}
-        <span>{status}</span>
-      </span>
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-medium text-xs ${bgColor} ${textColor}`}>
+      {icon}
+      <span className="capitalize">{status}</span>
     </span>
   );
 };

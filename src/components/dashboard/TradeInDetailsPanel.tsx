@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { formatCurrency } from '../../utils/formatters';
 import { Loader2 } from 'lucide-react';
@@ -10,6 +11,21 @@ interface TradeInDetailsPanelProps {
 }
 
 const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({ tradeIn, loadingItems }) => {
+  const getStatusMessage = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return "Your trade-in is currently being reviewed by our staff. We'll notify you once a decision has been made.";
+      case 'accepted':
+        return "Great news! Your trade-in has been accepted. You can visit our store to complete the transaction.";
+      case 'rejected':
+        return "Unfortunately, your trade-in request has been declined. Please check the staff notes for more information.";
+      default:
+        return "";
+    }
+  };
+
+  const statusMessage = getStatusMessage(tradeIn.status);
+
   return (
     <td colSpan={7} className="px-5 py-5 border-b border-gray-200 bg-gray-50">
       <div className="pl-6">
@@ -38,6 +54,18 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({ tradeIn, load
               </p>
             </div>
           </div>
+
+          {/* Status Message */}
+          {statusMessage && (
+            <div className={`mt-3 p-3 rounded-md ${
+              tradeIn.status === 'accepted' ? 'bg-green-50 border border-green-100' : 
+              tradeIn.status === 'rejected' ? 'bg-red-50 border border-red-100' : 
+              'bg-amber-50 border border-amber-100'
+            }`}>
+              <p className="text-sm">{statusMessage}</p>
+            </div>
+          )}
+          
           {tradeIn.notes && (
             <div className="mt-2">
               <p className="text-sm text-gray-700"><strong>Customer Notes:</strong></p>
