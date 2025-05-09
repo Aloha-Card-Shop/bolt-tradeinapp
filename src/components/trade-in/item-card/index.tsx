@@ -1,12 +1,11 @@
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { TradeInItem as TradeInItemType } from '../../../hooks/useTradeInList';
-import { useTradeValue } from '../../../hooks/useTradeValue';
 import CardHeader from './CardHeader';
 import ItemControls from './ItemControls';
 import ItemValues from './ItemValues';
-import { fetchCardPrices } from '../../../utils/scraper';
-import { toast } from 'react-hot-toast';
+import { useItemPrice } from '../../../hooks/trade-in/useItemPrice';
+import { useCardAttributes } from '../../../hooks/trade-in/useCardAttributes';
 
 interface TradeInItemProps {
   item: TradeInItemType;
@@ -25,282 +24,40 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   onConditionChange,
   onValueChange
 }) => {
-  const { cashValue, tradeValue, isLoading } = useTradeValue(item.card.game, item.price);
+  // Handle updates to the item
+  const handleUpdate = useCallback((updates: Partial<TradeInItemType>) => {
+    onUpdate(index, { ...item, ...updates });
+  }, [index, item, onUpdate]);
 
-  // Use callback to avoid recreating this function on every render
-  const updateValues = useCallback(() => {
-    if (!isLoading && item.price > 0) {
-      // Only update values that have changed to avoid infinite loop
-      const hasValueChanged = 
-        item.cashValue !== cashValue || 
-        item.tradeValue !== tradeValue;
-        
-      if (hasValueChanged) {
-        // Store the calculated values in the item
-        onUpdate(index, { 
-          ...item, 
-          cashValue: cashValue,
-          tradeValue: tradeValue 
-        });
-        
-        // Notify parent component about the value change
-        onValueChange({ cashValue, tradeValue });
-      }
+  // Notify parent about condition changes
+  const handleConditionChangeWrapper = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    onConditionChange(e.target.value);
+  }, [onConditionChange]);
+
+  // Handle price and value calculations
+  const { displayValue, isCalculating, refreshPrice, handlePriceChange, cashValue, tradeValue } = useItemPrice({
+    item,
+    onUpdate: handleUpdate
+  });
+
+  // Notify parent when values change
+  React.useEffect(() => {
+    if (cashValue !== undefined && tradeValue !== undefined) {
+      onValueChange({ cashValue, tradeValue });
     }
-  }, [cashValue, tradeValue, isLoading, item, index, onUpdate, onValueChange]);
-  
-  // Effect to update values when price or calculated values change
-  useEffect(() => {
-    updateValues();
-  }, [updateValues]);
-  
-  const handleConditionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const condition = e.target.value;
-    onConditionChange(condition);
-  };
+  }, [cashValue, tradeValue, onValueChange]);
 
-  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const quantity = Math.max(1, parseInt(e.target.value) || 1);
-    onUpdate(index, { ...item, quantity });
-  };
-  
-  const handlePaymentTypeChange = (type: 'cash' | 'trade') => {
-    onUpdate(index, { ...item, paymentType: type });
-  };
-
-  const handleToggleFirstEdition = async () => {
-    const newIsFirstEdition = !item.isFirstEdition;
-    onUpdate(index, { ...item, isFirstEdition: newIsFirstEdition, isLoadingPrice: true, error: undefined, isPriceUnavailable: false });
-    
-    // Re-fetch price when edition changes
-    if (item.card.productId && item.condition) {
-      try {
-        const data = await fetchCardPrices(
-          item.card.productId,
-          item.condition,
-          newIsFirstEdition,
-          item.isHolo,
-          item.card.game,
-          item.isReverseHolo
-        );
-        
-        if (data.unavailable) {
-          onUpdate(index, { 
-            ...item, 
-            isFirstEdition: newIsFirstEdition, 
-            price: 0, 
-            isLoadingPrice: false,
-            isPriceUnavailable: true
-          });
-          toast.error("No price available for this card configuration");
-        } else {
-          onUpdate(index, { 
-            ...item, 
-            isFirstEdition: newIsFirstEdition, 
-            price: parseFloat(data.price), 
-            isLoadingPrice: false,
-            isPriceUnavailable: false
-          });
-        }
-      } catch (e) {
-        onUpdate(index, { 
-          ...item, 
-          isFirstEdition: newIsFirstEdition,
-          isLoadingPrice: false, 
-          error: (e as Error).message,
-          isPriceUnavailable: false
-        });
-      }
-    } else {
-      // If no product ID or condition, just toggle without fetching
-      onUpdate(index, { ...item, isFirstEdition: newIsFirstEdition, isLoadingPrice: false });
-    }
-  };
-
-  const handleToggleHolo = async () => {
-    // Toggle holo and ensure reverse holo is off when holo is on
-    const newIsHolo = !item.isHolo;
-    onUpdate(index, { 
-      ...item, 
-      isHolo: newIsHolo, 
-      isReverseHolo: newIsHolo ? false : item.isReverseHolo,
-      isLoadingPrice: true,
-      error: undefined,
-      isPriceUnavailable: false
-    });
-    
-    // Re-fetch price when holo status changes
-    if (item.card.productId && item.condition) {
-      try {
-        const data = await fetchCardPrices(
-          item.card.productId,
-          item.condition,
-          item.isFirstEdition,
-          newIsHolo,
-          item.card.game,
-          newIsHolo ? false : item.isReverseHolo
-        );
-        
-        if (data.unavailable) {
-          onUpdate(index, { 
-            ...item, 
-            isHolo: newIsHolo, 
-            isReverseHolo: newIsHolo ? false : item.isReverseHolo,
-            price: 0,
-            isLoadingPrice: false,
-            isPriceUnavailable: true
-          });
-          toast.error("No price available for this card configuration");
-        } else {
-          onUpdate(index, { 
-            ...item, 
-            isHolo: newIsHolo, 
-            isReverseHolo: newIsHolo ? false : item.isReverseHolo,
-            price: parseFloat(data.price),
-            isLoadingPrice: false,
-            isPriceUnavailable: false
-          });
-        }
-      } catch (e) {
-        onUpdate(index, { 
-          ...item, 
-          isHolo: newIsHolo, 
-          isReverseHolo: newIsHolo ? false : item.isReverseHolo,
-          isLoadingPrice: false, 
-          error: (e as Error).message,
-          isPriceUnavailable: false
-        });
-      }
-    } else {
-      // If no product ID or condition, just toggle without fetching
-      onUpdate(index, { 
-        ...item, 
-        isHolo: newIsHolo, 
-        isReverseHolo: newIsHolo ? false : item.isReverseHolo,
-        isLoadingPrice: false 
-      });
-    }
-  };
-
-  const handleToggleReverseHolo = async () => {
-    // Toggle reverse holo and ensure holo is off when reverse holo is on
-    const newIsReverseHolo = !item.isReverseHolo;
-    onUpdate(index, { 
-      ...item, 
-      isReverseHolo: newIsReverseHolo, 
-      isHolo: newIsReverseHolo ? false : item.isHolo,
-      isLoadingPrice: true,
-      error: undefined,
-      isPriceUnavailable: false
-    });
-    
-    // Re-fetch price when reverse holo status changes
-    if (item.card.productId && item.condition) {
-      try {
-        const data = await fetchCardPrices(
-          item.card.productId,
-          item.condition,
-          item.isFirstEdition,
-          newIsReverseHolo ? false : item.isHolo,
-          item.card.game,
-          newIsReverseHolo
-        );
-        
-        if (data.unavailable) {
-          onUpdate(index, { 
-            ...item, 
-            isReverseHolo: newIsReverseHolo, 
-            isHolo: newIsReverseHolo ? false : item.isHolo,
-            price: 0,
-            isLoadingPrice: false,
-            isPriceUnavailable: true
-          });
-          toast.error("No price available for this card configuration");
-        } else {
-          onUpdate(index, { 
-            ...item, 
-            isReverseHolo: newIsReverseHolo, 
-            isHolo: newIsReverseHolo ? false : item.isHolo,
-            price: parseFloat(data.price),
-            isLoadingPrice: false,
-            isPriceUnavailable: false
-          });
-        }
-      } catch (e) {
-        onUpdate(index, { 
-          ...item, 
-          isReverseHolo: newIsReverseHolo, 
-          isHolo: newIsReverseHolo ? false : item.isHolo,
-          isLoadingPrice: false, 
-          error: (e as Error).message,
-          isPriceUnavailable: false
-        });
-      }
-    } else {
-      // If no product ID or condition, just toggle without fetching
-      onUpdate(index, { 
-        ...item, 
-        isReverseHolo: newIsReverseHolo, 
-        isHolo: newIsReverseHolo ? false : item.isHolo,
-        isLoadingPrice: false 
-      });
-    }
-  };
-
-  // Handle price change
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newPrice = parseFloat(e.target.value) || 0;
-    onUpdate(index, { ...item, price: newPrice });
-  };
-
-  // New function to refresh price data
-  const handleRefreshPrice = async () => {
-    if (!item.card.productId || !item.condition) {
-      return; // Can't refresh without product ID and condition
-    }
-    
-    onUpdate(index, { ...item, isLoadingPrice: true, error: undefined, isPriceUnavailable: false });
-    
-    try {
-      const data = await fetchCardPrices(
-        item.card.productId,
-        item.condition,
-        item.isFirstEdition,
-        item.isHolo,
-        item.card.game,
-        item.isReverseHolo
-      );
-      
-      if (data.unavailable) {
-        onUpdate(index, { 
-          ...item, 
-          price: 0, 
-          isLoadingPrice: false,
-          isPriceUnavailable: true
-        });
-        toast.error("No price available for this card configuration");
-      } else {
-        onUpdate(index, { 
-          ...item, 
-          price: parseFloat(data.price), 
-          isLoadingPrice: false,
-          isPriceUnavailable: false
-        });
-      }
-    } catch (e) {
-      onUpdate(index, { 
-        ...item, 
-        isLoadingPrice: false, 
-        error: (e as Error).message,
-        isPriceUnavailable: false
-      });
-    }
-  };
-
-  // Calculate the display value based on payment type and quantity
-  const displayValue = item.paymentType === 'cash' 
-    ? (item.cashValue !== undefined ? item.cashValue : cashValue) * item.quantity 
-    : (item.tradeValue !== undefined ? item.tradeValue : tradeValue) * item.quantity;
+  // Handle card attribute changes
+  const {
+    toggleFirstEdition,
+    toggleHolo,
+    toggleReverseHolo,
+    updatePaymentType,
+    updateQuantity
+  } = useCardAttributes({
+    item,
+    onUpdate: handleUpdate
+  });
 
   return (
     <div className="border border-gray-200 rounded-xl p-4 hover:border-blue-100 transition-colors duration-200">
@@ -319,23 +76,23 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
         isReverseHolo={item.isReverseHolo || false}
         paymentType={item.paymentType}
         isLoadingPrice={item.isLoadingPrice}
-        onConditionChange={handleConditionChange}
-        onQuantityChange={handleQuantityChange}
-        onToggleFirstEdition={handleToggleFirstEdition}
-        onToggleHolo={handleToggleHolo}
-        onToggleReverseHolo={handleToggleReverseHolo}
-        onPaymentTypeChange={handlePaymentTypeChange}
+        onConditionChange={handleConditionChangeWrapper}
+        onQuantityChange={updateQuantity}
+        onToggleFirstEdition={toggleFirstEdition}
+        onToggleHolo={toggleHolo}
+        onToggleReverseHolo={toggleReverseHolo}
+        onPaymentTypeChange={updatePaymentType}
       />
 
       <ItemValues
         price={item.price}
         paymentType={item.paymentType}
         displayValue={displayValue}
-        isLoading={isLoading}
+        isLoading={isCalculating}
         isLoadingPrice={item.isLoadingPrice}
         error={item.error}
         onPriceChange={handlePriceChange}
-        onRefreshPrice={handleRefreshPrice}
+        onRefreshPrice={refreshPrice}
         isPriceUnavailable={item.isPriceUnavailable}
       />
     </div>

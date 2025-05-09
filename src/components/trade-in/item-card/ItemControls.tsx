@@ -1,9 +1,9 @@
 
 import React from 'react';
-import ItemConditionSelect from '../ItemConditionSelect';
-import ItemQuantityInput from '../ItemQuantityInput';
-import ItemTypeToggle from '../ItemTypeToggle';
-import PaymentTypeSelector from '../PaymentTypeSelector';
+import ConditionSelect from '../shared/ConditionSelect';
+import QuantityInput from '../shared/QuantityInput';
+import CardAttributes from '../shared/CardAttributes';
+import PaymentTypeSelector from '../shared/PaymentTypeSelector';
 
 interface ItemControlsProps {
   index: number;
@@ -40,19 +40,19 @@ const ItemControls: React.FC<ItemControlsProps> = ({
 }) => {
   return (
     <div className="grid grid-cols-2 gap-4 mt-4">
-      <ItemConditionSelect 
-        id={`condition-${index}`}
-        value={condition}
+      <ConditionSelect 
+        condition={condition}
         onChange={onConditionChange}
+        disabled={isLoadingPrice}
       />
 
-      <ItemQuantityInput
-        id={`quantity-${index}`}
-        value={quantity}
+      <QuantityInput
+        quantity={quantity}
         onChange={onQuantityChange}
+        disabled={isLoadingPrice}
       />
 
-      <ItemTypeToggle 
+      <CardAttributes 
         isFirstEdition={isFirstEdition}
         isHolo={isHolo}
         isReverseHolo={isReverseHolo}
@@ -65,6 +65,7 @@ const ItemControls: React.FC<ItemControlsProps> = ({
       <PaymentTypeSelector
         paymentType={paymentType}
         onSelect={onPaymentTypeChange}
+        disabled={isLoadingPrice}
       />
     </div>
   );

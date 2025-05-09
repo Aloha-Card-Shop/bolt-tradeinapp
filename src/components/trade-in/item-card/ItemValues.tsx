@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Loader2 } from 'lucide-react';
-import PriceDisplay from '../../trade-in/PriceDisplay';
-import MarketPriceInput from './MarketPriceInput';
+import PriceInput from '../shared/PriceInput';
+import ValueDisplay from '../shared/ValueDisplay';
 
 interface ItemValuesProps {
   price: number;
@@ -29,7 +29,7 @@ const ItemValues: React.FC<ItemValuesProps> = ({
 }) => {
   return (
     <div className="mt-4 grid md:grid-cols-3 gap-4">
-      <MarketPriceInput 
+      <PriceInput 
         price={price}
         isLoading={isLoadingPrice}
         onChange={onPriceChange}
@@ -38,7 +38,7 @@ const ItemValues: React.FC<ItemValuesProps> = ({
         isPriceUnavailable={isPriceUnavailable}
       />
       
-      <PriceDisplay 
+      <ValueDisplay 
         label={paymentType === 'cash' ? 'Cash Value' : 'Trade Value'} 
         value={displayValue} 
         isLoading={isLoading || isLoadingPrice || false}
