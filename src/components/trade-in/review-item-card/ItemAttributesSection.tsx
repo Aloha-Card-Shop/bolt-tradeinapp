@@ -20,8 +20,7 @@ interface ItemAttributesSectionProps {
 const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({ 
   item, 
   index, 
-  onUpdateItem,
-  itemValue 
+  onUpdateItem
 }) => {
   // Handle updates to the item
   const handleUpdate = React.useCallback((updates: Partial<TradeInItem>) => {
@@ -43,8 +42,7 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
 
   // Use our shared price hook
   const { 
-    displayValue, 
-    handlePriceChange 
+    displayValue
   } = useItemPrice({
     item,
     onUpdate: handleUpdate
@@ -55,16 +53,25 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
     handleUpdate({ price, isPriceUnavailable: false });
   };
 
+  // Create adapter functions to match the expected types
+  const handleConditionChange = (condition: string) => {
+    updateCondition({ target: { value: condition } } as React.ChangeEvent<HTMLSelectElement>);
+  };
+
+  const handleQuantityChange = (quantity: number) => {
+    updateQuantity({ target: { value: quantity.toString() } } as React.ChangeEvent<HTMLInputElement>);
+  };
+
   return (
     <div className="grid grid-cols-2 gap-4 mt-4">
       <CardCondition 
         condition={item.condition}
-        onChange={updateCondition}
+        onChange={handleConditionChange}
       />
 
       <CardQuantity 
         quantity={item.quantity} 
-        onChange={updateQuantity}
+        onChange={handleQuantityChange}
       />
 
       <CardAttributes

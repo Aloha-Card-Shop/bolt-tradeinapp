@@ -6,7 +6,6 @@ import CardAttributes from '../shared/CardAttributes';
 import PaymentTypeSelector from '../shared/PaymentTypeSelector';
 
 interface ItemControlsProps {
-  index: number;
   condition: string;
   quantity: number;
   isFirstEdition: boolean;
@@ -23,7 +22,6 @@ interface ItemControlsProps {
 }
 
 const ItemControls: React.FC<ItemControlsProps> = ({
-  index,
   condition,
   quantity,
   isFirstEdition,
