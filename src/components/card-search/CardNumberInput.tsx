@@ -1,9 +1,10 @@
 
 import React from 'react';
+import { CardNumberObject } from '../../types/card';
 import { getCardNumberString } from '../../utils/cardSearchUtils';
 
 interface CardNumberInputProps {
-  cardNumber: string | undefined;
+  cardNumber: string | CardNumberObject | undefined;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
