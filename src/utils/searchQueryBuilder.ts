@@ -1,5 +1,6 @@
+
 import { supabase } from '../lib/supabase';
-import { CardDetails, GameType } from '../types/card';
+import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
 
 // Define the number of results per page
@@ -69,12 +70,18 @@ export const formatResultsToCardDetails = (
       cardNumber = cardNumber.value || cardNumber.displayName || '';
     }
     
-    // Use existing productId if available, otherwise use the one from the search results
-    const productId = item.tcgplayer_product_id || 
-                     item.product_id?.toString() || 
-                     item.productId ||
-                     searchCriteria.productId || 
-                     null;
+    // Extract product ID with more robust fallbacks
+    // First try direct fields, then check attributes object
+    const productId = 
+      item.tcgplayer_product_id?.toString() || 
+      item.product_id?.toString() || 
+      item.id?.toString() || 
+      (item.attributes?.tcgplayer_product_id?.toString()) ||
+      (item.attributes?.product_id?.toString()) ||
+      searchCriteria.productId || 
+      null;
+    
+    console.log('Extracted product ID:', productId, 'for card:', item.name);
 
     return {
       name: item.name || item.clean_name || '',

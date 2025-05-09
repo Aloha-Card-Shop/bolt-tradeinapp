@@ -51,15 +51,33 @@ function MainApp() {
   };
 
   const handleAddToList = (card: CardDetails | SavedCard, price: number) => {
-    console.log('Adding card to trade-in list:', card);
+    console.log('Adding card to trade-in list with details:', card);
     
-    // Check if card has a productId
+    // Enhanced productId validation with better logging
     if (!card.productId) {
+      console.error(`Cannot add ${card.name} - Missing product ID`, card);
       toast.error(`Cannot add ${card.name || 'card'} without a product ID`);
       return;
     }
     
-    addItem(card, price);
+    // Additional validation to ensure productId is a string (not undefined or null)
+    const productId = String(card.productId);
+    if (!productId || productId === 'undefined' || productId === 'null') {
+      console.error(`Invalid product ID for ${card.name}:`, productId);
+      toast.error(`Cannot add ${card.name || 'card'} - invalid product ID`);
+      return;
+    }
+    
+    // If we reach here, the productId is valid
+    console.log('Valid product ID found:', productId, 'for card:', card.name);
+    
+    // Create a new card object with the validated productId
+    const cardToAdd = {
+      ...card,
+      productId: productId,
+    };
+    
+    addItem(cardToAdd, price);
     resetSearch(); // Reset search after adding card
     toast.success(`Added ${card.name} to trade-in list`);
   };

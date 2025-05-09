@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useCallback } from 'react';
-import { Loader2, ImageOff, PlusCircle, Search } from 'lucide-react';
+import { Loader2, ImageOff, PlusCircle, Search, AlertCircle } from 'lucide-react';
 import { CardDetails, SavedCard, CardNumberObject } from '../types/card';
 import { extractNumberBeforeSlash, getCardNumberString } from '../utils/cardSearchUtils';
 import { toast } from 'react-hot-toast';
@@ -75,6 +75,14 @@ const CardResults: React.FC<CardResultsProps> = ({
 
   // Function to handle adding card to the trade-in list
   const handleAddToList = (card: CardDetails) => {
+    // Perform more detailed console logging to debug product ID issues
+    console.log("Attempting to add card:", card);
+    console.log("Product ID check:", {
+      productId: card.productId,
+      id: card.id,
+      name: card.name
+    });
+
     if (!card.productId) {
       console.error("Card missing productId:", card);
       toast.error("Cannot add card without a product ID");
@@ -124,11 +132,12 @@ const CardResults: React.FC<CardResultsProps> = ({
           {results.map((card, index) => {
             // Add ref to last element for infinite scrolling
             const isLastElement = index === results.length - 1;
+            const hasProductId = Boolean(card.productId);
               
             return (
               <div 
                 key={`${card.name}-${index}`}
-                className="bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-200 hover:shadow-md transition duration-200"
+                className={`bg-white rounded-xl border ${hasProductId ? 'border-gray-200' : 'border-orange-200'} p-4 hover:border-blue-200 hover:shadow-md transition duration-200`}
                 ref={isLastElement ? lastCardElementRef : null}
               >
                 <div className="flex items-start space-x-4">
@@ -163,19 +172,24 @@ const CardResults: React.FC<CardResultsProps> = ({
                         {card.set && (
                           <p className="text-sm text-gray-600 mt-1">{card.set}</p>
                         )}
-                        {card.productId && (
+                        {card.productId ? (
                           <p className="text-xs text-gray-400 mt-1">ID: {card.productId}</p>
+                        ) : (
+                          <div className="flex items-center text-xs text-orange-600 mt-1">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Missing product ID
+                          </div>
                         )}
                       </div>
                       <button
                         onClick={() => handleAddToList(card)}
                         className={`p-2 rounded-lg transition-colors duration-200 ${
-                          card.productId 
+                          hasProductId 
                             ? 'text-gray-400 hover:text-green-500 hover:bg-green-50' 
                             : 'text-gray-300 cursor-not-allowed'
                         }`}
-                        disabled={!card.productId}
-                        title={card.productId ? "Add to trade-in list" : "Cannot add - missing product ID"}
+                        disabled={!hasProductId}
+                        title={hasProductId ? "Add to trade-in list" : "Cannot add - missing product ID"}
                       >
                         <PlusCircle className="h-5 w-5" />
                       </button>

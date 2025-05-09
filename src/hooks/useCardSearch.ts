@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CardDetails, GameType, GAME_OPTIONS } from '../types/card';
 import { useSetOptions } from './useSetOptions';
@@ -191,11 +192,15 @@ export const useCardSearch = () => {
   const selectSuggestion = useCallback((suggestion: CardDetails) => {
     console.log('Selected suggestion:', suggestion);
     
+    // Make sure the productId is properly extracted
+    const productId = suggestion.productId || null;
+    console.log('Using product ID from suggestion:', productId);
+    
     // Update card details with selected suggestion
     setCardDetails(prev => ({
       ...prev,
       name: suggestion.name,
-      productId: suggestion.productId,
+      productId: productId,
       number: suggestion.number || prev.number,
       // If suggestion has an image URL, keep it for reference
       imageUrl: suggestion.imageUrl || prev.imageUrl
