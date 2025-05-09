@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { DollarSign, Loader2, RefreshCw } from 'lucide-react';
+import { DollarSign, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 
 interface MarketPriceInputProps {
   price: number;
@@ -8,6 +8,7 @@ interface MarketPriceInputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   error?: string;
   onRefreshPrice?: () => void;
+  isPriceUnavailable?: boolean;
 }
 
 const MarketPriceInput: React.FC<MarketPriceInputProps> = ({ 
@@ -15,7 +16,8 @@ const MarketPriceInput: React.FC<MarketPriceInputProps> = ({
   isLoading, 
   onChange, 
   error,
-  onRefreshPrice
+  onRefreshPrice,
+  isPriceUnavailable
 }) => {
   return (
     <div>
@@ -51,11 +53,19 @@ const MarketPriceInput: React.FC<MarketPriceInputProps> = ({
           onChange={onChange}
           min="0"
           step="0.01"
-          className={`w-full pl-8 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 ${error ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+          className={`w-full pl-8 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 ${
+            error ? 'border-red-300 bg-red-50' : isPriceUnavailable ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300'
+          }`}
           placeholder="0.00"
           disabled={isLoading}
         />
         {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+        {!error && isPriceUnavailable && (
+          <div className="mt-1 text-xs text-yellow-600 flex items-center">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            No price available. Enter price manually.
+          </div>
+        )}
       </div>
     </div>
   );

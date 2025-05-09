@@ -1,3 +1,4 @@
+
 import React, { useEffect, useCallback } from 'react';
 import { TradeInItem as TradeInItemType } from '../../../hooks/useTradeInList';
 import { useTradeValue } from '../../../hooks/useTradeValue';
@@ -5,6 +6,7 @@ import CardHeader from './CardHeader';
 import ItemControls from './ItemControls';
 import ItemValues from './ItemValues';
 import { fetchCardPrices } from '../../../utils/scraper';
+import { toast } from 'react-hot-toast';
 
 interface TradeInItemProps {
   item: TradeInItemType;
@@ -68,7 +70,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
 
   const handleToggleFirstEdition = async () => {
     const newIsFirstEdition = !item.isFirstEdition;
-    onUpdate(index, { ...item, isFirstEdition: newIsFirstEdition, isLoadingPrice: true, error: undefined });
+    onUpdate(index, { ...item, isFirstEdition: newIsFirstEdition, isLoadingPrice: true, error: undefined, isPriceUnavailable: false });
     
     // Re-fetch price when edition changes
     if (item.card.productId && item.condition) {
@@ -81,18 +83,32 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
           item.card.game,
           item.isReverseHolo
         );
-        onUpdate(index, { 
-          ...item, 
-          isFirstEdition: newIsFirstEdition, 
-          price: parseFloat(data.price), 
-          isLoadingPrice: false 
-        });
+        
+        if (data.unavailable) {
+          onUpdate(index, { 
+            ...item, 
+            isFirstEdition: newIsFirstEdition, 
+            price: 0, 
+            isLoadingPrice: false,
+            isPriceUnavailable: true
+          });
+          toast.error("No price available for this card configuration");
+        } else {
+          onUpdate(index, { 
+            ...item, 
+            isFirstEdition: newIsFirstEdition, 
+            price: parseFloat(data.price), 
+            isLoadingPrice: false,
+            isPriceUnavailable: false
+          });
+        }
       } catch (e) {
         onUpdate(index, { 
           ...item, 
           isFirstEdition: newIsFirstEdition,
           isLoadingPrice: false, 
-          error: (e as Error).message 
+          error: (e as Error).message,
+          isPriceUnavailable: false
         });
       }
     } else {
@@ -109,7 +125,8 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
       isHolo: newIsHolo, 
       isReverseHolo: newIsHolo ? false : item.isReverseHolo,
       isLoadingPrice: true,
-      error: undefined
+      error: undefined,
+      isPriceUnavailable: false
     });
     
     // Re-fetch price when holo status changes
@@ -123,20 +140,35 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
           item.card.game,
           newIsHolo ? false : item.isReverseHolo
         );
-        onUpdate(index, { 
-          ...item, 
-          isHolo: newIsHolo, 
-          isReverseHolo: newIsHolo ? false : item.isReverseHolo,
-          price: parseFloat(data.price),
-          isLoadingPrice: false
-        });
+        
+        if (data.unavailable) {
+          onUpdate(index, { 
+            ...item, 
+            isHolo: newIsHolo, 
+            isReverseHolo: newIsHolo ? false : item.isReverseHolo,
+            price: 0,
+            isLoadingPrice: false,
+            isPriceUnavailable: true
+          });
+          toast.error("No price available for this card configuration");
+        } else {
+          onUpdate(index, { 
+            ...item, 
+            isHolo: newIsHolo, 
+            isReverseHolo: newIsHolo ? false : item.isReverseHolo,
+            price: parseFloat(data.price),
+            isLoadingPrice: false,
+            isPriceUnavailable: false
+          });
+        }
       } catch (e) {
         onUpdate(index, { 
           ...item, 
           isHolo: newIsHolo, 
           isReverseHolo: newIsHolo ? false : item.isReverseHolo,
           isLoadingPrice: false, 
-          error: (e as Error).message 
+          error: (e as Error).message,
+          isPriceUnavailable: false
         });
       }
     } else {
@@ -158,7 +190,8 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
       isReverseHolo: newIsReverseHolo, 
       isHolo: newIsReverseHolo ? false : item.isHolo,
       isLoadingPrice: true,
-      error: undefined
+      error: undefined,
+      isPriceUnavailable: false
     });
     
     // Re-fetch price when reverse holo status changes
@@ -172,20 +205,35 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
           item.card.game,
           newIsReverseHolo
         );
-        onUpdate(index, { 
-          ...item, 
-          isReverseHolo: newIsReverseHolo, 
-          isHolo: newIsReverseHolo ? false : item.isHolo,
-          price: parseFloat(data.price),
-          isLoadingPrice: false
-        });
+        
+        if (data.unavailable) {
+          onUpdate(index, { 
+            ...item, 
+            isReverseHolo: newIsReverseHolo, 
+            isHolo: newIsReverseHolo ? false : item.isHolo,
+            price: 0,
+            isLoadingPrice: false,
+            isPriceUnavailable: true
+          });
+          toast.error("No price available for this card configuration");
+        } else {
+          onUpdate(index, { 
+            ...item, 
+            isReverseHolo: newIsReverseHolo, 
+            isHolo: newIsReverseHolo ? false : item.isHolo,
+            price: parseFloat(data.price),
+            isLoadingPrice: false,
+            isPriceUnavailable: false
+          });
+        }
       } catch (e) {
         onUpdate(index, { 
           ...item, 
           isReverseHolo: newIsReverseHolo, 
           isHolo: newIsReverseHolo ? false : item.isHolo,
           isLoadingPrice: false, 
-          error: (e as Error).message 
+          error: (e as Error).message,
+          isPriceUnavailable: false
         });
       }
     } else {
@@ -211,7 +259,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
       return; // Can't refresh without product ID and condition
     }
     
-    onUpdate(index, { ...item, isLoadingPrice: true, error: undefined });
+    onUpdate(index, { ...item, isLoadingPrice: true, error: undefined, isPriceUnavailable: false });
     
     try {
       const data = await fetchCardPrices(
@@ -223,16 +271,28 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
         item.isReverseHolo
       );
       
-      onUpdate(index, { 
-        ...item, 
-        price: parseFloat(data.price), 
-        isLoadingPrice: false 
-      });
+      if (data.unavailable) {
+        onUpdate(index, { 
+          ...item, 
+          price: 0, 
+          isLoadingPrice: false,
+          isPriceUnavailable: true
+        });
+        toast.error("No price available for this card configuration");
+      } else {
+        onUpdate(index, { 
+          ...item, 
+          price: parseFloat(data.price), 
+          isLoadingPrice: false,
+          isPriceUnavailable: false
+        });
+      }
     } catch (e) {
       onUpdate(index, { 
         ...item, 
         isLoadingPrice: false, 
-        error: (e as Error).message 
+        error: (e as Error).message,
+        isPriceUnavailable: false
       });
     }
   };
@@ -276,6 +336,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
         error={item.error}
         onPriceChange={handlePriceChange}
         onRefreshPrice={handleRefreshPrice}
+        isPriceUnavailable={item.isPriceUnavailable}
       />
     </div>
   );

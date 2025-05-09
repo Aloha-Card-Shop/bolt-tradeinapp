@@ -15,6 +15,7 @@ export interface TradeInItem {
   error?: string;
   cashValue?: number;
   tradeValue?: number;
+  isPriceUnavailable?: boolean;
 }
 
 export const useTradeInList = () => {
@@ -38,7 +39,8 @@ export const useTradeInList = () => {
       price: price || 0,
       paymentType: 'cash',
       isLoadingPrice: false,
-      error: undefined
+      error: undefined,
+      isPriceUnavailable: false
     }]);
   };
 

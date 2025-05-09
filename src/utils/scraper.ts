@@ -1,3 +1,4 @@
+
 interface CacheEntry {
   price: number;
   timestamp: number;
@@ -77,7 +78,7 @@ export const fetchCardPrices = async (
   isHolo?: boolean,
   game?: string,
   isReverseHolo?: boolean
-): Promise<{ price: string }> => {
+): Promise<{ price: string; unavailable?: boolean }> => {
   try {
     if (!productId) {
       throw new Error('Product ID is required');
@@ -120,8 +121,21 @@ export const fetchCardPrices = async (
       throw new Error(data.error);
     }
     
+    // Handle case where price is not available
     if (!data.price && data.price !== 0) {
-      throw new Error('Price not found in response');
+      console.log('Price not found for this item configuration');
+      return { price: "0.00", unavailable: true };
+    }
+
+    // Check for indicators of unavailable prices
+    if (typeof data.price === 'string' && 
+        (data.price === '-' || 
+         data.price === 'N/A' || 
+         data.price === '$-' || 
+         data.price === '$0.00' ||
+         data.price.includes('unavailable'))) {
+      console.log('Price not available for this item');
+      return { price: "0.00", unavailable: true };
     }
 
     // Improved price cleaning - handle different formats more robustly
@@ -135,14 +149,14 @@ export const fetchCardPrices = async (
       priceValue = parseFloat(priceString);
       if (isNaN(priceValue) || !isFinite(priceValue)) {
         console.error('Invalid price format received:', data.price);
-        priceValue = 0;
+        return { price: "0.00", unavailable: true };
       }
     } else if (typeof data.price === 'number') {
       // If price is already a number, just use it
       priceValue = data.price;
     } else {
       console.error('Unexpected price format:', typeof data.price, data.price);
-      priceValue = 0;
+      return { price: "0.00", unavailable: true };
     }
 
     // Cache the cleaned price
@@ -154,6 +168,6 @@ export const fetchCardPrices = async (
     return { price: priceValue.toFixed(2) };
   } catch (error) {
     console.error('Error fetching price:', error);
-    throw error instanceof Error ? error : new Error('Failed to fetch price data');
+    return { price: "0.00", unavailable: true };
   }
 };

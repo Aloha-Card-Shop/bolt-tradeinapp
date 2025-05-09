@@ -8,6 +8,7 @@ import PaymentTypeSelect from './PaymentTypeSelect';
 import PriceInput from './PriceInput';
 import ValueDisplay from './ValueDisplay';
 import { fetchCardPrices } from '../../../utils/scraper';
+import { toast } from 'react-hot-toast';
 
 interface ItemAttributesSectionProps {
   item: TradeInItem;
@@ -41,13 +42,13 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
 
   // Handle price change
   const handlePriceChange = (price: number) => {
-    onUpdateItem(index, { ...item, price });
+    onUpdateItem(index, { ...item, price, isPriceUnavailable: false });
   };
 
   // Handle first edition toggle with price refetch
   const handleToggleFirstEdition = async () => {
     const newIsFirstEdition = !item.isFirstEdition;
-    onUpdateItem(index, { ...item, isFirstEdition: newIsFirstEdition, isLoadingPrice: true, error: undefined });
+    onUpdateItem(index, { ...item, isFirstEdition: newIsFirstEdition, isLoadingPrice: true, error: undefined, isPriceUnavailable: false });
     
     // Re-fetch price when edition changes
     if (item.card.productId && item.condition) {
@@ -60,23 +61,41 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
           item.card.game,
           item.isReverseHolo
         );
-        onUpdateItem(index, { 
-          ...item, 
-          isFirstEdition: newIsFirstEdition, 
-          price: parseFloat(data.price), 
-          isLoadingPrice: false 
-        });
+        
+        if (data.unavailable) {
+          onUpdateItem(index, { 
+            ...item, 
+            isFirstEdition: newIsFirstEdition, 
+            price: 0, 
+            isLoadingPrice: false,
+            isPriceUnavailable: true
+          });
+          toast.error("No price available for this card configuration");
+        } else {
+          onUpdateItem(index, { 
+            ...item, 
+            isFirstEdition: newIsFirstEdition, 
+            price: parseFloat(data.price), 
+            isLoadingPrice: false,
+            isPriceUnavailable: false
+          });
+        }
       } catch (e) {
         onUpdateItem(index, { 
           ...item, 
           isFirstEdition: newIsFirstEdition,
           isLoadingPrice: false, 
-          error: (e as Error).message 
+          error: (e as Error).message,
+          isPriceUnavailable: false
         });
       }
     } else {
       // If no product ID or condition, just toggle without fetching
-      onUpdateItem(index, { ...item, isFirstEdition: newIsFirstEdition, isLoadingPrice: false });
+      onUpdateItem(index, { 
+        ...item, 
+        isFirstEdition: newIsFirstEdition, 
+        isLoadingPrice: false 
+      });
     }
   };
 
@@ -88,7 +107,8 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
       isHolo: newIsHolo, 
       isReverseHolo: newIsHolo ? false : item.isReverseHolo,
       isLoadingPrice: true,
-      error: undefined
+      error: undefined,
+      isPriceUnavailable: false
     });
     
     // Re-fetch price when holo status changes
@@ -102,20 +122,35 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
           item.card.game,
           newIsHolo ? false : item.isReverseHolo
         );
-        onUpdateItem(index, { 
-          ...item, 
-          isHolo: newIsHolo, 
-          isReverseHolo: newIsHolo ? false : item.isReverseHolo,
-          price: parseFloat(data.price),
-          isLoadingPrice: false
-        });
+        
+        if (data.unavailable) {
+          onUpdateItem(index, { 
+            ...item, 
+            isHolo: newIsHolo, 
+            isReverseHolo: newIsHolo ? false : item.isReverseHolo,
+            price: 0,
+            isLoadingPrice: false,
+            isPriceUnavailable: true
+          });
+          toast.error("No price available for this card configuration");
+        } else {
+          onUpdateItem(index, { 
+            ...item, 
+            isHolo: newIsHolo, 
+            isReverseHolo: newIsHolo ? false : item.isReverseHolo,
+            price: parseFloat(data.price),
+            isLoadingPrice: false,
+            isPriceUnavailable: false
+          });
+        }
       } catch (e) {
         onUpdateItem(index, { 
           ...item, 
           isHolo: newIsHolo, 
           isReverseHolo: newIsHolo ? false : item.isReverseHolo,
           isLoadingPrice: false, 
-          error: (e as Error).message 
+          error: (e as Error).message,
+          isPriceUnavailable: false
         });
       }
     } else {
@@ -136,7 +171,8 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
       isReverseHolo: newIsReverseHolo, 
       isHolo: newIsReverseHolo ? false : item.isHolo,
       isLoadingPrice: true,
-      error: undefined
+      error: undefined,
+      isPriceUnavailable: false
     });
     
     // Re-fetch price when reverse holo status changes
@@ -150,20 +186,35 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
           item.card.game,
           newIsReverseHolo
         );
-        onUpdateItem(index, { 
-          ...item, 
-          isReverseHolo: newIsReverseHolo, 
-          isHolo: newIsReverseHolo ? false : item.isHolo,
-          price: parseFloat(data.price),
-          isLoadingPrice: false
-        });
+        
+        if (data.unavailable) {
+          onUpdateItem(index, { 
+            ...item, 
+            isReverseHolo: newIsReverseHolo, 
+            isHolo: newIsReverseHolo ? false : item.isHolo,
+            price: 0,
+            isLoadingPrice: false,
+            isPriceUnavailable: true
+          });
+          toast.error("No price available for this card configuration");
+        } else {
+          onUpdateItem(index, { 
+            ...item, 
+            isReverseHolo: newIsReverseHolo, 
+            isHolo: newIsReverseHolo ? false : item.isHolo,
+            price: parseFloat(data.price),
+            isLoadingPrice: false,
+            isPriceUnavailable: false
+          });
+        }
       } catch (e) {
         onUpdateItem(index, { 
           ...item, 
           isReverseHolo: newIsReverseHolo, 
           isHolo: newIsReverseHolo ? false : item.isHolo,
           isLoadingPrice: false, 
-          error: (e as Error).message 
+          error: (e as Error).message,
+          isPriceUnavailable: false
         });
       }
     } else {
@@ -207,6 +258,7 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
         price={item.price}
         onChange={handlePriceChange}
         error={item.error}
+        isPriceUnavailable={item.isPriceUnavailable}
       />
 
       <ValueDisplay

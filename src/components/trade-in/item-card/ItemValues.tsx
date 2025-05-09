@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 import PriceDisplay from '../../trade-in/PriceDisplay';
@@ -12,6 +13,7 @@ interface ItemValuesProps {
   error?: string;
   onPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRefreshPrice?: () => void;
+  isPriceUnavailable?: boolean;
 }
 
 const ItemValues: React.FC<ItemValuesProps> = ({
@@ -23,6 +25,7 @@ const ItemValues: React.FC<ItemValuesProps> = ({
   error,
   onPriceChange,
   onRefreshPrice,
+  isPriceUnavailable,
 }) => {
   return (
     <div className="mt-4 grid md:grid-cols-3 gap-4">
@@ -32,6 +35,7 @@ const ItemValues: React.FC<ItemValuesProps> = ({
         onChange={onPriceChange}
         error={error}
         onRefreshPrice={onRefreshPrice}
+        isPriceUnavailable={isPriceUnavailable}
       />
       
       <PriceDisplay 
