@@ -1,6 +1,7 @@
 
 import React from 'react';
-import PriceDisplay from '../PriceDisplay';
+import { Loader2, RefreshCw } from 'lucide-react';
+import PriceDisplay from '../../trade-in/PriceDisplay';
 import MarketPriceInput from './MarketPriceInput';
 
 interface ItemValuesProps {
@@ -8,37 +9,47 @@ interface ItemValuesProps {
   paymentType: 'cash' | 'trade';
   displayValue: number;
   isLoading: boolean;
-  isLoadingPrice?: boolean;
+  isLoadingPrice: boolean | undefined;
   error?: string;
   onPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onRefreshPrice?: () => void;
 }
 
-const ItemValues: React.FC<ItemValuesProps> = ({ 
-  price, 
-  paymentType, 
+const ItemValues: React.FC<ItemValuesProps> = ({
+  price,
+  paymentType,
   displayValue,
   isLoading,
   isLoadingPrice,
   error,
-  onPriceChange
+  onPriceChange,
+  onRefreshPrice,
 }) => {
   return (
-    <div className="mt-4 grid grid-cols-2 gap-2">
-      {/* Editable Market Price */}
-      <MarketPriceInput
+    <div className="mt-4 grid md:grid-cols-3 gap-4">
+      <MarketPriceInput 
         price={price}
-        isLoading={isLoadingPrice || false}
-        error={error}
+        isLoading={isLoadingPrice}
         onChange={onPriceChange}
+        error={error}
+        onRefreshPrice={onRefreshPrice}
       />
       
-      {/* Trade/Cash Value */}
-      <PriceDisplay
-        label={paymentType === 'cash' ? 'Cash Value' : 'Trade Value'}
+      <PriceDisplay 
+        label={paymentType === 'cash' ? 'Cash Value' : 'Trade Value'} 
+        value={displayValue} 
         isLoading={isLoading || isLoadingPrice || false}
         error={error}
-        value={displayValue}
       />
+
+      <div className="flex items-end">
+        {(isLoadingPrice || isLoading) && (
+          <div className="text-xs text-blue-600 flex items-center ml-2">
+            <Loader2 className="h-3 w-3 animate-spin mr-1" /> 
+            Calculating value...
+          </div>
+        )}
+      </div>
     </div>
   );
 };

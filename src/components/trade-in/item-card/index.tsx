@@ -194,6 +194,38 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     onUpdate(index, { ...item, price: newPrice });
   };
 
+  // New function to refresh price data
+  const handleRefreshPrice = async () => {
+    if (!item.card.productId || !item.condition) {
+      return; // Can't refresh without product ID and condition
+    }
+    
+    onUpdate(index, { ...item, isLoadingPrice: true, error: undefined });
+    
+    try {
+      const data = await fetchCardPrices(
+        item.card.productId,
+        item.condition,
+        item.isFirstEdition,
+        item.isHolo,
+        item.card.game,
+        item.isReverseHolo
+      );
+      
+      onUpdate(index, { 
+        ...item, 
+        price: parseFloat(data.price), 
+        isLoadingPrice: false 
+      });
+    } catch (e) {
+      onUpdate(index, { 
+        ...item, 
+        isLoadingPrice: false, 
+        error: (e as Error).message 
+      });
+    }
+  };
+
   // Calculate the display value based on payment type and quantity
   const displayValue = item.paymentType === 'cash' 
     ? (item.cashValue !== undefined ? item.cashValue : cashValue) * item.quantity 
@@ -232,6 +264,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
         isLoadingPrice={item.isLoadingPrice}
         error={item.error}
         onPriceChange={handlePriceChange}
+        onRefreshPrice={handleRefreshPrice}
       />
     </div>
   );
