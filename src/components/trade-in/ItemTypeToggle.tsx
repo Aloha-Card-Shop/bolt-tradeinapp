@@ -34,7 +34,7 @@ const ItemTypeToggle: React.FC<ItemTypeToggleProps> = ({
               className={`px-3 py-1 text-sm transition-colors ${!isFirstEdition 
                 ? 'bg-white text-gray-800 shadow rounded' 
                 : 'text-gray-600'}`}
-              onClick={!isFirstEdition ? undefined : onToggleFirstEdition}
+              onClick={onToggleFirstEdition}
               disabled={isLoading}
             >
               Unlimited
@@ -43,7 +43,7 @@ const ItemTypeToggle: React.FC<ItemTypeToggleProps> = ({
               className={`px-3 py-1 text-sm transition-colors ${isFirstEdition 
                 ? 'bg-white text-gray-800 shadow rounded' 
                 : 'text-gray-600'}`}
-              onClick={isFirstEdition ? undefined : onToggleFirstEdition}
+              onClick={onToggleFirstEdition}
               disabled={isLoading}
             >
               1st Edition
