@@ -12,9 +12,15 @@ interface PriceDisplayProps {
 
 const PriceDisplay: React.FC<PriceDisplayProps> = ({ label, isLoading, error, value }) => {
   // Format the value for display
-  const displayValue = typeof value === 'number' 
-    ? formatCurrency(value) 
-    : value;
+  let displayValue: string;
+  
+  if (typeof value === 'number') {
+    displayValue = formatCurrency(value);
+  } else if (typeof value === 'string' && !isNaN(parseFloat(value))) {
+    displayValue = formatCurrency(parseFloat(value));
+  } else {
+    displayValue = value as string;
+  }
 
   return (
     <div>
@@ -34,7 +40,7 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({ label, isLoading, error, va
           ) : error ? (
             <span className="text-red-500 text-xs">{error || 'Error'}</span>
           ) : (
-            displayValue
+            displayValue || '$0.00'
           )}
         </div>
       </div>

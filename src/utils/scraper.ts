@@ -101,18 +101,35 @@ export const fetchCardPrices = async (
       throw new Error('Price not found in response');
     }
 
-    // Clean the price and cache it
-    const cleanPrice = parseFloat(data.price.replace(/[^0-9.]/g, ''));
-    if (isNaN(cleanPrice)) {
+    // Improved price cleaning - handle different formats more robustly
+    let priceString = data.price;
+    if (typeof priceString === 'string') {
+      // Remove any currency symbol and non-numeric characters except decimal point
+      priceString = priceString.replace(/[^\d.]/g, '');
+      
+      // Check if we have a valid number format
+      const cleanPrice = parseFloat(priceString);
+      if (isNaN(cleanPrice)) {
+        throw new Error('Invalid price format received');
+      }
+
+      // Cache the cleaned price
+      priceCache.set(url, {
+        price: cleanPrice,
+        timestamp: Date.now()
+      });
+
+      return { price: cleanPrice.toFixed(2) };
+    } else if (typeof data.price === 'number') {
+      // If price is already a number, just format it
+      priceCache.set(url, {
+        price: data.price,
+        timestamp: Date.now()
+      });
+      return { price: data.price.toFixed(2) };
+    } else {
       throw new Error('Invalid price format received');
     }
-
-    priceCache.set(url, {
-      price: cleanPrice,
-      timestamp: Date.now()
-    });
-
-    return { price: cleanPrice.toFixed(2) };
   } catch (error) {
     console.error('Error fetching price:', error);
     throw error instanceof Error ? error : new Error('Failed to fetch price data');
