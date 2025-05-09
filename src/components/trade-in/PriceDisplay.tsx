@@ -14,12 +14,22 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({ label, isLoading, error, va
   // Format the value for display
   let displayValue: string;
   
-  if (typeof value === 'number') {
-    displayValue = formatCurrency(value);
-  } else if (typeof value === 'string' && !isNaN(parseFloat(value))) {
-    displayValue = formatCurrency(parseFloat(value));
-  } else {
-    displayValue = value as string;
+  try {
+    if (typeof value === 'number') {
+      displayValue = formatCurrency(value);
+    } else if (typeof value === 'string') {
+      // Handle string values that may or may not be numbers
+      if (value.startsWith('Error:') || value.includes('error')) {
+        displayValue = '0.00';
+      } else {
+        displayValue = formatCurrency(value);
+      }
+    } else {
+      displayValue = '0.00';
+    }
+  } catch (e) {
+    console.error('Error formatting price display value:', e, value);
+    displayValue = '0.00';
   }
 
   return (
@@ -40,7 +50,7 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({ label, isLoading, error, va
           ) : error ? (
             <span className="text-red-500 text-xs">{error || 'Error'}</span>
           ) : (
-            displayValue || '$0.00'
+            displayValue
           )}
         </div>
       </div>

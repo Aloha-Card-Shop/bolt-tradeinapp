@@ -83,6 +83,8 @@ export const fetchCardPrices = async (
       return { price: cachedEntry.price.toFixed(2) };
     }
 
+    console.log('Fetching price from:', url);
+    
     const response = await fetch(SCRAPER_URL, {
       method: 'POST',
       headers: {
@@ -96,40 +98,44 @@ export const fetchCardPrices = async (
     }
 
     const data = await response.json();
+    console.log('Price data received:', data);
     
-    if (!data.price) {
+    if (data.error) {
+      throw new Error(data.error);
+    }
+    
+    if (!data.price && data.price !== 0) {
       throw new Error('Price not found in response');
     }
 
     // Improved price cleaning - handle different formats more robustly
-    let priceString = data.price;
-    if (typeof priceString === 'string') {
+    let priceValue: number;
+    
+    if (typeof data.price === 'string') {
       // Remove any currency symbol and non-numeric characters except decimal point
-      priceString = priceString.replace(/[^\d.]/g, '');
+      const priceString = data.price.trim().replace(/[^\d.]/g, '');
       
       // Check if we have a valid number format
-      const cleanPrice = parseFloat(priceString);
-      if (isNaN(cleanPrice)) {
-        throw new Error('Invalid price format received');
+      priceValue = parseFloat(priceString);
+      if (isNaN(priceValue) || !isFinite(priceValue)) {
+        console.error('Invalid price format received:', data.price);
+        priceValue = 0;
       }
-
-      // Cache the cleaned price
-      priceCache.set(url, {
-        price: cleanPrice,
-        timestamp: Date.now()
-      });
-
-      return { price: cleanPrice.toFixed(2) };
     } else if (typeof data.price === 'number') {
-      // If price is already a number, just format it
-      priceCache.set(url, {
-        price: data.price,
-        timestamp: Date.now()
-      });
-      return { price: data.price.toFixed(2) };
+      // If price is already a number, just use it
+      priceValue = data.price;
     } else {
-      throw new Error('Invalid price format received');
+      console.error('Unexpected price format:', typeof data.price, data.price);
+      priceValue = 0;
     }
+
+    // Cache the cleaned price
+    priceCache.set(url, {
+      price: priceValue,
+      timestamp: Date.now()
+    });
+
+    return { price: priceValue.toFixed(2) };
   } catch (error) {
     console.error('Error fetching price:', error);
     throw error instanceof Error ? error : new Error('Failed to fetch price data');
