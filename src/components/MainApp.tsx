@@ -33,7 +33,8 @@ function MainApp() {
     hasMoreResults,
     loadMoreResults,
     totalResults,
-    handleUseAsCardNumber
+    handleUseAsCardNumber,
+    performSearch // New function to trigger manual search
   } = useCardSearch();
   
   const { savedCards, removeCard } = useSavedCards();
@@ -44,6 +45,9 @@ function MainApp() {
       target: { name: 'name', value: card.name }
     } as React.ChangeEvent<HTMLInputElement>;
     handleInputChange(event);
+    
+    // Also trigger a search when clicking a saved card
+    setTimeout(performSearch, 100);
   };
 
   const handleAddToList = (card: CardDetails | SavedCard, price: number) => {
@@ -95,6 +99,7 @@ function MainApp() {
                 searchInputRef={searchInputRef}
                 potentialCardNumber={potentialCardNumber}
                 onUseAsCardNumber={handleUseAsCardNumber}
+                onSearch={performSearch} // Add the search button functionality
               />
             </div>
             

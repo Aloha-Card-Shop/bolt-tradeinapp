@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { CardDetails } from '../types/card';
-import { Package } from 'lucide-react';
+import { Package, Search } from 'lucide-react';
 import { SetOption } from '../hooks/useSetOptions';
 
 // Import the smaller component pieces
@@ -29,6 +29,7 @@ interface CardSearchProps {
   searchInputRef?: React.RefObject<HTMLInputElement>;
   potentialCardNumber?: string | null;
   onUseAsCardNumber?: () => void;
+  onSearch?: () => void;  // New prop for search button
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
@@ -46,7 +47,8 @@ const CardSearch: React.FC<CardSearchProps> = ({
   onClearHistory = () => {},
   searchInputRef,
   potentialCardNumber = null,
-  onUseAsCardNumber = () => {}
+  onUseAsCardNumber = () => {},
+  onSearch = () => {}  // Default empty function
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -88,6 +90,14 @@ const CardSearch: React.FC<CardSearchProps> = ({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      setShowSuggestions(false);
+      onSearch();
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="flex items-center mb-4">
@@ -106,12 +116,24 @@ const CardSearch: React.FC<CardSearchProps> = ({
 
         {/* Card Name Input with Search Suggestions */}
         <div className="relative">
-          <SearchNameInput 
-            value={searchTerm}
-            onChange={handleInputChange}
-            onFocus={handleFocus}
-            inputRef={searchInputRef}
-          />
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <SearchNameInput 
+                value={searchTerm}
+                onChange={handleInputChange}
+                onFocus={handleFocus}
+                onKeyDown={handleKeyDown}
+                inputRef={searchInputRef}
+              />
+            </div>
+            <button 
+              onClick={onSearch}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors h-[42px] mt-7 flex items-center justify-center"
+              aria-label="Search"
+            >
+              <Search className="h-5 w-5" />
+            </button>
+          </div>
           
           {/* Card number suggestion */}
           <CardNumberSuggestion 
@@ -123,7 +145,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
           {showSuggestions && (searchTerm.length >= 2 || suggestions.length > 0) && (
             <div 
               ref={suggestionsRef}
-              className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto"
+              className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-72 overflow-y-auto"
             >
               <SearchSuggestionsList 
                 suggestions={suggestions}

@@ -1,10 +1,10 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CardDetails, GameType, GAME_OPTIONS } from '../types/card';
 import { useSetOptions } from './useSetOptions';
 import { useCardSearchQuery } from './useCardSearchQuery';
 import { useCardSuggestions } from './useCardSuggestions';
 import { isLikelyCardNumber } from '../utils/cardSearchUtils';
+import toast from 'react-hot-toast';
 
 export const useCardSearch = () => {
   const [cardDetails, setCardDetails] = useState<CardDetails>({
@@ -17,6 +17,9 @@ export const useCardSearch = () => {
   
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  
+  // Track if a search should be performed automatically
+  const [shouldSearch, setShouldSearch] = useState(false);
   
   const { setOptions, filteredSetOptions, isLoadingSets, filterSetOptions } = useSetOptions(
     cardDetails.game,
@@ -47,6 +50,44 @@ export const useCardSearch = () => {
   // Store the last search query to avoid duplicate searches
   const lastSearchRef = useRef<string>('');
 
+  // Perform search when shouldSearch is true
+  useEffect(() => {
+    if (shouldSearch) {
+      const performSearch = async () => {
+        // Create a search signature to check against previous searches
+        const searchSignature = `${cardDetails.name}|${cardDetails.number}|${cardDetails.set}|${cardDetails.game}`;
+        
+        if (searchSignature !== lastSearchRef.current) {
+          lastSearchRef.current = searchSignature;
+          
+          console.log('Executing search with criteria:', {
+            name: cardDetails.name,
+            number: cardDetails.number,
+            set: cardDetails.set,
+            game: cardDetails.game,
+            categoryId: cardDetails.categoryId
+          });
+          
+          // Search cards and get set IDs from results
+          const foundSetIds = await searchCards(cardDetails, setOptions);
+          
+          // Filter set options based on search results
+          const searchTerms = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
+          filterSetOptions(searchTerms, foundSetIds);
+
+          // Add to search history if it's a meaningful search
+          if (cardDetails.name && cardDetails.name.length >= 3) {
+            addToRecentSearches(cardDetails.name);
+          }
+        }
+        
+        setShouldSearch(false);
+      };
+      
+      performSearch();
+    }
+  }, [shouldSearch, cardDetails, searchCards, setOptions, filterSetOptions, addToRecentSearches]);
+
   // Debounced search for card suggestions and filtering sets
   useEffect(() => {
     // Debounce the search to avoid too many requests
@@ -67,34 +108,10 @@ export const useCardSearch = () => {
         // If name is cleared, reset potential card number
         setPotentialCardNumber(null);
       }
-      
-      // Get search terms for filtering sets
-      const searchTerms = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
-      
-      // Create a search signature to check against previous searches
-      const searchSignature = `${cardDetails.name}|${cardDetails.number}|${cardDetails.set}|${cardDetails.game}`;
-      
-      // Only perform the search if we have a meaningful query and it's different from the last one
-      if ((searchTerms.length > 0 || cardDetails.number || cardDetails.set) && 
-          searchSignature !== lastSearchRef.current) {
-        
-        lastSearchRef.current = searchSignature;
-        
-        // Search cards and get set IDs from results
-        const foundSetIds = await searchCards(cardDetails, setOptions);
-        
-        // Filter set options based on search results
-        filterSetOptions(searchTerms, foundSetIds);
-
-        // Add to search history if it's a meaningful search
-        if (cardDetails.name && cardDetails.name.length >= 3) {
-          addToRecentSearches(cardDetails.name);
-        }
-      }
     }, 300);
     
     return () => clearTimeout(timer);
-  }, [cardDetails.name, cardDetails.game, cardDetails.set, cardDetails.number, cardDetails.categoryId, setOptions]);
+  }, [cardDetails.name, cardDetails.game, cardDetails.categoryId, fetchSuggestions]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -119,6 +136,13 @@ export const useCardSearch = () => {
       }
     } else {
       setCardDetails(prev => ({ ...prev, [name]: value }));
+      
+      // If changing the card number or set, trigger a search automatically
+      if (name === 'number' || name === 'set') {
+        if (value || (cardDetails.name && cardDetails.name.length >= 2)) {
+          setShouldSearch(true);
+        }
+      }
     }
   };
 
@@ -133,33 +157,54 @@ export const useCardSearch = () => {
     }));
     setPotentialCardNumber(null);
     
+    // Trigger a search with the new card number
+    setShouldSearch(true);
+    
     // Focus back on the name input for better UX
     if (searchInputRef.current) {
       searchInputRef.current.focus();
     }
   }, [potentialCardNumber]);
 
+  // Handle selection of a suggestion with immediate search
   const selectSuggestion = useCallback((suggestion: CardDetails) => {
+    console.log('Selected suggestion:', suggestion);
+    
+    // Update card details with selected suggestion
     setCardDetails(prev => ({
       ...prev,
       name: suggestion.name,
       productId: suggestion.productId,
-      number: suggestion.number || prev.number
+      number: suggestion.number || prev.number,
+      // If suggestion has an image URL, keep it for reference
+      imageUrl: suggestion.imageUrl || prev.imageUrl
     }));
+    
+    // Hide suggestions
     setShowSuggestions(false);
+    
+    // Trigger a search immediately with the selected suggestion
+    setShouldSearch(true);
     
     // Add to search history
     if (suggestion.name && suggestion.name.length >= 3) {
       addToRecentSearches(suggestion.name);
     }
+    
+    // Show a toast notification
+    toast.success(`Searching for ${suggestion.name}`);
   }, [addToRecentSearches]);
 
+  // Select history item and search
   const selectHistoryItem = useCallback((item: string) => {
     setCardDetails(prev => ({
       ...prev,
       name: item,
       number: '' // Clear number field when selecting from history
     }));
+    
+    // Trigger a search with the history item
+    setShouldSearch(true);
     
     // Focus the search input after selecting history item
     if (searchInputRef.current) {
@@ -170,6 +215,13 @@ export const useCardSearch = () => {
       }, 100);
     }
   }, []);
+
+  // Perform a manual search (e.g., from a search button)
+  const performSearch = useCallback(() => {
+    if (cardDetails.name || cardDetails.number || cardDetails.set) {
+      setShouldSearch(true);
+    }
+  }, [cardDetails]);
 
   const resetSearch = useCallback(() => {
     setCardDetails(prev => ({
@@ -204,6 +256,7 @@ export const useCardSearch = () => {
     hasMoreResults,
     loadMoreResults,
     totalResults,
-    handleUseAsCardNumber
+    handleUseAsCardNumber,
+    performSearch  // Export the new manual search function
   };
 };

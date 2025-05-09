@@ -43,7 +43,7 @@ export const useCardSuggestions = () => {
       // First check for exact matches
       const { data: exactMatches, error: exactError } = await supabase
         .from('unified_products')
-        .select('name, group_id, attributes, image_url')
+        .select('name, group_id, attributes, image_url, id, product_id')
         .eq('category_id', categoryId)
         .ilike('name', `${query}%`) // Starts with the query
         .limit(MAX_SUGGESTIONS);
@@ -56,7 +56,7 @@ export const useCardSuggestions = () => {
       if (allMatches.length < MAX_SUGGESTIONS) {
         const { data: partialMatches, error: partialError } = await supabase
           .from('unified_products')
-          .select('name, group_id, attributes, image_url')
+          .select('name, group_id, attributes, image_url, id, product_id')
           .eq('category_id', categoryId)
           .ilike('name', `%${query}%`) // Contains the query
           .not('name', 'ilike', `${query}%`) // Exclude the exactMatches we already have
@@ -75,12 +75,15 @@ export const useCardSuggestions = () => {
         game,
         categoryId,
         imageUrl: product.image_url || null,
-        productId: product.attributes?.tcgplayer_product_id || product.attributes?.product_id?.toString() || null,
+        productId: product.id?.toString() || product.product_id?.toString() || product.attributes?.tcgplayer_product_id || product.attributes?.product_id?.toString() || null,
         set: '',
         number: product.attributes?.card_number || product.attributes?.Number || ''
       }));
 
       setSuggestions(suggestions);
+      
+      // Log the suggestions for debugging
+      console.log(`Found ${suggestions.length} suggestions for query: ${query}`, suggestions);
     } catch (err) {
       console.error('Error fetching suggestions:', err);
       setError('Failed to load suggestions');
