@@ -43,7 +43,6 @@ const ItemTypeToggle: React.FC<ItemTypeToggleProps> = ({
               ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
-          disabled={isReverseHolo}
         >
           {isHolo && !isReverseHolo ? 'Holo' : 'Non-Holo'}
         </button>
@@ -56,7 +55,6 @@ const ItemTypeToggle: React.FC<ItemTypeToggleProps> = ({
                 ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
-            disabled={isHolo && !isReverseHolo}
           >
             Reverse Holo
           </button>
