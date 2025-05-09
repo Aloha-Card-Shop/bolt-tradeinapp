@@ -76,14 +76,14 @@ const CardSearch: React.FC<CardSearchProps> = ({
   };
 
   // Function to safely get the string value from a CardNumberObject or string
-  const getCardNumberValue = (): string => {
-    if (!cardDetails.number) return '';
+  const getCardNumberValue = (cardNumber: string | CardNumberObject | undefined): string => {
+    if (!cardNumber) return '';
     
-    if (typeof cardDetails.number === 'object') {
-      return cardDetails.number.displayName || cardDetails.number.value || '';
+    if (typeof cardNumber === 'object') {
+      return cardNumber.displayName || cardNumber.value || '';
     }
     
-    return cardDetails.number;
+    return cardNumber;
   };
 
   return (
@@ -169,9 +169,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
                         <div className="font-medium">{suggestion.name}</div>
                         {suggestion.number && (
                           <div className="text-xs text-gray-500">
-                            #{typeof suggestion.number === 'object' 
-                              ? suggestion.number.displayName || suggestion.number.value || ''
-                              : suggestion.number}
+                            #{getCardNumberValue(suggestion.number)}
                           </div>
                         )}
                       </div>
@@ -250,7 +248,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
             id="card-number"
             type="text"
             name="number"
-            value={getCardNumberValue()}
+            value={getCardNumberValue(cardDetails.number)}
             onChange={onInputChange}
             placeholder="e.g. 12 or 12/107"
             className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
