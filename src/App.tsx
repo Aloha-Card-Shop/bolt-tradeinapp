@@ -12,6 +12,7 @@ import MainApp from './components/MainApp';
 import MyTradeIns from './pages/my-trade-ins';
 import AdminNav from './components/AdminNav';
 import AuthGuard from './components/AuthGuard';
+import HomeNavigation from './components/common/HomeNavigation';
 import { useSession } from './hooks/useSession';
 
 function App() {
@@ -25,6 +26,12 @@ function App() {
       {!loading && user && (userRole === 'admin' || userRole === 'manager') && (
         <AdminNav userRole={userRole as 'admin' | 'manager' | 'user'} />
       )}
+      
+      {/* Add HomeNavigation for authenticated users */}
+      {!loading && user && userRole && userRole !== 'admin' && userRole !== 'manager' && (
+        <HomeNavigation />
+      )}
+      
       <Routes>
         <Route path="/login" element={<Login />} />
         
