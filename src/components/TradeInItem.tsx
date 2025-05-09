@@ -9,6 +9,7 @@ import ItemTypeToggle from './trade-in/ItemTypeToggle';
 import PaymentTypeSelector from './trade-in/PaymentTypeSelector';
 import PriceDisplay from './trade-in/PriceDisplay';
 import { ImageOff } from 'lucide-react';
+import { fetchCardPrices } from '../utils/scraper';
 
 interface TradeInItemProps {
   item: TradeInItemType;
@@ -58,28 +59,137 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     onUpdate(index, { ...item, paymentType: type });
   };
 
-  const handleToggleFirstEdition = () => {
-    onUpdate(index, { ...item, isFirstEdition: !item.isFirstEdition });
+  const handleToggleFirstEdition = async () => {
+    const newIsFirstEdition = !item.isFirstEdition;
+    onUpdate(index, { ...item, isFirstEdition: newIsFirstEdition, isLoadingPrice: true, error: undefined });
+    
+    // Re-fetch price when edition changes
+    if (item.card.productId && item.condition) {
+      try {
+        const data = await fetchCardPrices(
+          item.card.productId,
+          item.condition,
+          newIsFirstEdition,
+          item.isHolo,
+          item.card.game,
+          item.isReverseHolo
+        );
+        onUpdate(index, { 
+          ...item, 
+          isFirstEdition: newIsFirstEdition, 
+          price: parseFloat(data.price), 
+          isLoadingPrice: false 
+        });
+      } catch (e) {
+        onUpdate(index, { 
+          ...item, 
+          isFirstEdition: newIsFirstEdition,
+          isLoadingPrice: false, 
+          error: (e as Error).message 
+        });
+      }
+    } else {
+      // If no product ID or condition, just toggle without fetching
+      onUpdate(index, { ...item, isFirstEdition: newIsFirstEdition, isLoadingPrice: false });
+    }
   };
 
-  const handleToggleHolo = () => {
+  const handleToggleHolo = async () => {
     // Toggle holo and ensure reverse holo is off when holo is on
     const newIsHolo = !item.isHolo;
     onUpdate(index, { 
       ...item, 
       isHolo: newIsHolo, 
-      isReverseHolo: newIsHolo ? false : item.isReverseHolo 
+      isReverseHolo: newIsHolo ? false : item.isReverseHolo,
+      isLoadingPrice: true,
+      error: undefined
     });
+    
+    // Re-fetch price when holo status changes
+    if (item.card.productId && item.condition) {
+      try {
+        const data = await fetchCardPrices(
+          item.card.productId,
+          item.condition,
+          item.isFirstEdition,
+          newIsHolo,
+          item.card.game,
+          newIsHolo ? false : item.isReverseHolo
+        );
+        onUpdate(index, { 
+          ...item, 
+          isHolo: newIsHolo, 
+          isReverseHolo: newIsHolo ? false : item.isReverseHolo,
+          price: parseFloat(data.price),
+          isLoadingPrice: false
+        });
+      } catch (e) {
+        onUpdate(index, { 
+          ...item, 
+          isHolo: newIsHolo, 
+          isReverseHolo: newIsHolo ? false : item.isReverseHolo,
+          isLoadingPrice: false, 
+          error: (e as Error).message 
+        });
+      }
+    } else {
+      // If no product ID or condition, just toggle without fetching
+      onUpdate(index, { 
+        ...item, 
+        isHolo: newIsHolo, 
+        isReverseHolo: newIsHolo ? false : item.isReverseHolo,
+        isLoadingPrice: false 
+      });
+    }
   };
 
-  const handleToggleReverseHolo = () => {
+  const handleToggleReverseHolo = async () => {
     // Toggle reverse holo and ensure holo is off when reverse holo is on
     const newIsReverseHolo = !item.isReverseHolo;
     onUpdate(index, { 
       ...item, 
       isReverseHolo: newIsReverseHolo, 
-      isHolo: newIsReverseHolo ? false : item.isHolo 
+      isHolo: newIsReverseHolo ? false : item.isHolo,
+      isLoadingPrice: true,
+      error: undefined
     });
+    
+    // Re-fetch price when reverse holo status changes
+    if (item.card.productId && item.condition) {
+      try {
+        const data = await fetchCardPrices(
+          item.card.productId,
+          item.condition,
+          item.isFirstEdition,
+          newIsReverseHolo ? false : item.isHolo,
+          item.card.game,
+          newIsReverseHolo
+        );
+        onUpdate(index, { 
+          ...item, 
+          isReverseHolo: newIsReverseHolo, 
+          isHolo: newIsReverseHolo ? false : item.isHolo,
+          price: parseFloat(data.price),
+          isLoadingPrice: false
+        });
+      } catch (e) {
+        onUpdate(index, { 
+          ...item, 
+          isReverseHolo: newIsReverseHolo, 
+          isHolo: newIsReverseHolo ? false : item.isHolo,
+          isLoadingPrice: false, 
+          error: (e as Error).message 
+        });
+      }
+    } else {
+      // If no product ID or condition, just toggle without fetching
+      onUpdate(index, { 
+        ...item, 
+        isReverseHolo: newIsReverseHolo, 
+        isHolo: newIsReverseHolo ? false : item.isHolo,
+        isLoadingPrice: false 
+      });
+    }
   };
 
   // Handle price change

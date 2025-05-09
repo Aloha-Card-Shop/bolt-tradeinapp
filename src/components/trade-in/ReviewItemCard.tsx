@@ -6,6 +6,7 @@ import { CONDITIONS, PAYMENT_TYPES } from '../../constants/tradeInConstants';
 import { formatCurrency } from '../../utils/formatters';
 import { CardNumberObject } from '../../types/card';
 import ItemTypeToggle from './ItemTypeToggle';
+import { fetchCardPrices } from '../../utils/scraper';
 
 interface ReviewItemCardProps {
   item: TradeInItem;
@@ -39,6 +40,138 @@ const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPrice = parseFloat(e.target.value) || 0;
     onUpdateItem(index, { ...item, price: newPrice });
+  };
+
+  // Handle first edition toggle with price refetch
+  const handleToggleFirstEdition = async () => {
+    const newIsFirstEdition = !item.isFirstEdition;
+    onUpdateItem(index, { ...item, isFirstEdition: newIsFirstEdition, isLoadingPrice: true, error: undefined });
+    
+    // Re-fetch price when edition changes
+    if (item.card.productId && item.condition) {
+      try {
+        const data = await fetchCardPrices(
+          item.card.productId,
+          item.condition,
+          newIsFirstEdition,
+          item.isHolo,
+          item.card.game,
+          item.isReverseHolo
+        );
+        onUpdateItem(index, { 
+          ...item, 
+          isFirstEdition: newIsFirstEdition, 
+          price: parseFloat(data.price), 
+          isLoadingPrice: false 
+        });
+      } catch (e) {
+        onUpdateItem(index, { 
+          ...item, 
+          isFirstEdition: newIsFirstEdition,
+          isLoadingPrice: false, 
+          error: (e as Error).message 
+        });
+      }
+    } else {
+      // If no product ID or condition, just toggle without fetching
+      onUpdateItem(index, { ...item, isFirstEdition: newIsFirstEdition, isLoadingPrice: false });
+    }
+  };
+
+  // Handle holo toggle with price refetch
+  const handleToggleHolo = async () => {
+    const newIsHolo = !item.isHolo;
+    onUpdateItem(index, { 
+      ...item, 
+      isHolo: newIsHolo, 
+      isReverseHolo: newIsHolo ? false : item.isReverseHolo,
+      isLoadingPrice: true,
+      error: undefined
+    });
+    
+    // Re-fetch price when holo status changes
+    if (item.card.productId && item.condition) {
+      try {
+        const data = await fetchCardPrices(
+          item.card.productId,
+          item.condition,
+          item.isFirstEdition,
+          newIsHolo,
+          item.card.game,
+          newIsHolo ? false : item.isReverseHolo
+        );
+        onUpdateItem(index, { 
+          ...item, 
+          isHolo: newIsHolo, 
+          isReverseHolo: newIsHolo ? false : item.isReverseHolo,
+          price: parseFloat(data.price),
+          isLoadingPrice: false
+        });
+      } catch (e) {
+        onUpdateItem(index, { 
+          ...item, 
+          isHolo: newIsHolo, 
+          isReverseHolo: newIsHolo ? false : item.isReverseHolo,
+          isLoadingPrice: false, 
+          error: (e as Error).message 
+        });
+      }
+    } else {
+      onUpdateItem(index, { 
+        ...item, 
+        isHolo: newIsHolo, 
+        isReverseHolo: newIsHolo ? false : item.isReverseHolo,
+        isLoadingPrice: false 
+      });
+    }
+  };
+
+  // Handle reverse holo toggle with price refetch
+  const handleToggleReverseHolo = async () => {
+    const newIsReverseHolo = !item.isReverseHolo;
+    onUpdateItem(index, { 
+      ...item, 
+      isReverseHolo: newIsReverseHolo, 
+      isHolo: newIsReverseHolo ? false : item.isHolo,
+      isLoadingPrice: true,
+      error: undefined
+    });
+    
+    // Re-fetch price when reverse holo status changes
+    if (item.card.productId && item.condition) {
+      try {
+        const data = await fetchCardPrices(
+          item.card.productId,
+          item.condition,
+          item.isFirstEdition,
+          newIsReverseHolo ? false : item.isHolo,
+          item.card.game,
+          newIsReverseHolo
+        );
+        onUpdateItem(index, { 
+          ...item, 
+          isReverseHolo: newIsReverseHolo, 
+          isHolo: newIsReverseHolo ? false : item.isHolo,
+          price: parseFloat(data.price),
+          isLoadingPrice: false
+        });
+      } catch (e) {
+        onUpdateItem(index, { 
+          ...item, 
+          isReverseHolo: newIsReverseHolo, 
+          isHolo: newIsReverseHolo ? false : item.isHolo,
+          isLoadingPrice: false, 
+          error: (e as Error).message 
+        });
+      }
+    } else {
+      onUpdateItem(index, { 
+        ...item, 
+        isReverseHolo: newIsReverseHolo, 
+        isHolo: newIsReverseHolo ? false : item.isHolo,
+        isLoadingPrice: false 
+      });
+    }
   };
 
   return (
@@ -156,29 +289,18 @@ const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
                   className="w-full pl-8 pr-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
+              {item.error && (
+                <p className="mt-1 text-xs text-red-500">{item.error}</p>
+              )}
             </div>
 
             <ItemTypeToggle
               isFirstEdition={item.isFirstEdition}
               isHolo={item.isHolo}
               isReverseHolo={item.isReverseHolo || false}
-              onToggleFirstEdition={() => onUpdateItem(index, { ...item, isFirstEdition: !item.isFirstEdition })}
-              onToggleHolo={() => {
-                const newIsHolo = !item.isHolo;
-                onUpdateItem(index, { 
-                  ...item, 
-                  isHolo: newIsHolo, 
-                  isReverseHolo: newIsHolo ? false : item.isReverseHolo 
-                });
-              }}
-              onToggleReverseHolo={() => {
-                const newIsReverseHolo = !item.isReverseHolo;
-                onUpdateItem(index, { 
-                  ...item, 
-                  isReverseHolo: newIsReverseHolo, 
-                  isHolo: newIsReverseHolo ? false : item.isHolo 
-                });
-              }}
+              onToggleFirstEdition={handleToggleFirstEdition}
+              onToggleHolo={handleToggleHolo}
+              onToggleReverseHolo={handleToggleReverseHolo}
             />
             
             <div>
