@@ -1,7 +1,9 @@
+
 import React, { useEffect, useRef, useCallback } from 'react';
 import { Loader2, ImageOff, PlusCircle, Search } from 'lucide-react';
 import { CardDetails, SavedCard, CardNumberObject } from '../types/card';
 import { extractNumberBeforeSlash, getCardNumberString } from '../utils/cardSearchUtils';
+import { toast } from 'react-hot-toast';
 
 interface CardResultsProps {
   results: CardDetails[];
@@ -69,6 +71,17 @@ const CardResults: React.FC<CardResultsProps> = ({
         <span className="text-gray-500">{fullNumber.substring(beforeSlash.length)}</span>
       </span>
     );
+  };
+
+  // Function to handle adding card to the trade-in list
+  const handleAddToList = (card: CardDetails) => {
+    if (!card.productId) {
+      toast.error("Cannot add card without a product ID");
+      return;
+    }
+    
+    onAddToList(card, 0);
+    toast.success(`Added ${card.name} to list`);
   };
 
   if (isLoading && results.length === 0) {
@@ -153,10 +166,9 @@ const CardResults: React.FC<CardResultsProps> = ({
                         )}
                       </div>
                       <button
-                        onClick={() => onAddToList(card, 0)}
+                        onClick={() => handleAddToList(card)}
                         className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors duration-200"
                         title="Add to trade-in list"
-                        disabled={!card.productId}
                       >
                         <PlusCircle className="h-5 w-5" />
                       </button>

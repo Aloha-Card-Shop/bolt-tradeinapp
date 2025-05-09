@@ -51,6 +51,7 @@ function MainApp() {
   };
 
   const handleAddToList = (card: CardDetails | SavedCard, price: number) => {
+    console.log('Adding card to trade-in list:', card);
     addItem(card, price);
     resetSearch(); // Reset search after adding card
   };
