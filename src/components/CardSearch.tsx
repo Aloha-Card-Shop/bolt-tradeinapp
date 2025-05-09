@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { CardDetails, GAME_OPTIONS } from '../types/card';
+import { CardDetails, GAME_OPTIONS, CardNumberObject } from '../types/card';
 import { Package, Search, Clock, X } from 'lucide-react';
 import { SetOption } from '../hooks/useSetOptions';
 
@@ -168,7 +168,11 @@ const CardSearch: React.FC<CardSearchProps> = ({
                       <div>
                         <div className="font-medium">{suggestion.name}</div>
                         {suggestion.number && (
-                          <div className="text-xs text-gray-500">#{suggestion.number}</div>
+                          <div className="text-xs text-gray-500">
+                            #{typeof suggestion.number === 'object' 
+                              ? suggestion.number.displayName || suggestion.number.value || ''
+                              : suggestion.number}
+                          </div>
                         )}
                       </div>
                     </li>

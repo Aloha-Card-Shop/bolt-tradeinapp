@@ -60,7 +60,9 @@ export const useCardSearch = () => {
     const timer = setTimeout(async () => {
       // For suggestions, even shorter debounce
       if (cardDetails.name && cardDetails.name.length >= 2) {
-        fetchSuggestions(cardDetails.name, cardDetails.game, cardDetails.categoryId);
+        // Make sure categoryId is provided and is a number
+        const categoryIdToUse = cardDetails.categoryId ?? GAME_OPTIONS[0].categoryId;
+        fetchSuggestions(cardDetails.name, cardDetails.game, categoryIdToUse);
       }
       
       // Get search terms for filtering sets

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { CardDetails, GameType } from '../types/card';
 import { supabase } from '../lib/supabase';
 
