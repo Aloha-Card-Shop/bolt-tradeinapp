@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { CardDetails } from '../types/card';
+import { CardDetails, CardNumberObject } from '../types/card';
 import { SetOption } from './useSetOptions';
 import { createSearchFilters, formatCardNumberForSearch } from '../utils/cardSearchUtils';
 
@@ -77,10 +77,15 @@ export const useCardSearchQuery = () => {
         // Extract card number carefully to avoid returning objects
         let cardNumber = '';
         if (product.attributes) {
-          cardNumber = product.attributes.card_number || product.attributes.Number || '';
-          // Ensure we're not returning an object for card number
-          if (typeof cardNumber === 'object') {
-            cardNumber = cardNumber.displayName || cardNumber.value || '';
+          const rawCardNumber = product.attributes.card_number || product.attributes.Number || '';
+          
+          // Handle case when card number is an object with displayName or value
+          if (typeof rawCardNumber === 'object' && rawCardNumber !== null) {
+            // Type assertion to tell TypeScript that rawCardNumber is a CardNumberObject
+            const numberObj = rawCardNumber as CardNumberObject;
+            cardNumber = numberObj.displayName || numberObj.value || '';
+          } else {
+            cardNumber = String(rawCardNumber);
           }
         }
         

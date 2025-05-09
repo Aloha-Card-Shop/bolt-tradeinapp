@@ -1,9 +1,17 @@
+
 export type GameType = 'pokemon' | 'japanese-pokemon' | 'magic';
+
+// Define a type for card numbers that might be objects
+export interface CardNumberObject {
+  value?: string;
+  displayName?: string;
+  [key: string]: any;
+}
 
 export interface CardDetails {
   name: string;
   set?: string;
-  number?: string;
+  number?: string | CardNumberObject;
   url?: string;
   game: GameType;
   categoryId?: number;

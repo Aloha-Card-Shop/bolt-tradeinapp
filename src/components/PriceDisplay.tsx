@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { TrendingUp, AlertCircle, ArrowUpRight, Heart, Loader2, DollarSign, TrendingDown } from 'lucide-react';
-import { PriceData, CardDetails } from '../types/card';
+import { PriceData, CardDetails, CardNumberObject } from '../types/card';
 
 interface PriceDisplayProps {
   priceData: PriceData;
@@ -46,9 +45,16 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({
   }
 
   // Ensure we have string values for display
-  const cardNumber = typeof cardDetails.number === 'object' ? 
-    (cardDetails.number.displayName || cardDetails.number.value || '') : 
-    cardDetails.number;
+  let cardNumber = '';
+  if (cardDetails.number) {
+    if (typeof cardDetails.number === 'object') {
+      // Type assertion to tell TypeScript that cardDetails.number is a CardNumberObject
+      const numberObj = cardDetails.number as CardNumberObject;
+      cardNumber = numberObj.displayName || numberObj.value || '';
+    } else {
+      cardNumber = cardDetails.number;
+    }
+  }
 
   // Calculate price trends (mock data for demonstration)
   const priceTrend = Math.random() > 0.5 ? 'up' : 'down';
@@ -76,7 +82,7 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({
           <Heart className="h-6 w-6" />
         </button>
       </div>
-
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
           <div className="flex items-center justify-between mb-4">

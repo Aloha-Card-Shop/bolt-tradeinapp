@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Loader2, ImageOff, PlusCircle, Search } from 'lucide-react';
-import { CardDetails, SavedCard } from '../types/card';
+import { CardDetails, SavedCard, CardNumberObject } from '../types/card';
 
 interface CardResultsProps {
   results: CardDetails[];
@@ -43,9 +43,16 @@ const CardResults: React.FC<CardResultsProps> = ({ results, isLoading, onAddToLi
         <div className="grid grid-cols-1 gap-4">
           {results.map((card, index) => {
             // Make sure we're not rendering any object directly
-            const cardNumber = typeof card.number === 'object' ? 
-              (card.number.displayName || card.number.value || '') : 
-              card.number || '';
+            let cardNumber = '';
+            if (card.number) {
+              if (typeof card.number === 'object') {
+                // Type assertion to tell TypeScript that card.number is a CardNumberObject
+                const numberObj = card.number as CardNumberObject;
+                cardNumber = numberObj.displayName || numberObj.value || '';
+              } else {
+                cardNumber = card.number;
+              }
+            }
               
             return (
               <div 

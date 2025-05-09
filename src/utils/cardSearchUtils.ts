@@ -1,4 +1,6 @@
 
+import { CardNumberObject } from '../types/card';
+
 // Card search utility functions
 
 /**
@@ -6,10 +8,12 @@
  * @param cardNumber The card number to format
  * @returns Formatted card number
  */
-export const formatCardNumberForSearch = (cardNumber: string | any): string => {
+export const formatCardNumberForSearch = (cardNumber: string | CardNumberObject | any): string => {
   // Check if cardNumber is an object and extract the value safely
   if (typeof cardNumber === 'object' && cardNumber !== null) {
-    cardNumber = cardNumber.value || cardNumber.displayName || '';
+    // Type assertion to tell TypeScript that cardNumber is a CardNumberObject
+    const numberObj = cardNumber as CardNumberObject;
+    cardNumber = numberObj.value || numberObj.displayName || '';
   }
 
   // Clean the card number to remove spaces and convert to lowercase
