@@ -8,6 +8,7 @@ import ItemQuantityInput from './trade-in/ItemQuantityInput';
 import ItemTypeToggle from './trade-in/ItemTypeToggle';
 import PaymentTypeSelector from './trade-in/PaymentTypeSelector';
 import PriceDisplay from './trade-in/PriceDisplay';
+import { ImageOff } from 'lucide-react';
 
 interface TradeInItemProps {
   item: TradeInItemType;
@@ -81,6 +82,12 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     });
   };
 
+  // Handle price change
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPrice = parseFloat(e.target.value) || 0;
+    onUpdate(index, { ...item, price: newPrice });
+  };
+
   // Calculate the display value based on payment type and quantity
   const displayValue = item.paymentType === 'cash' 
     ? (item.cashValue !== undefined ? item.cashValue : cashValue) * item.quantity 
@@ -88,54 +95,94 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
 
   return (
     <div className="border border-gray-200 rounded-xl p-4 hover:border-blue-100 transition-colors duration-200">
-      <ItemDetails 
-        name={item.card.name}
-        set={item.card.set}
-        onRemove={() => onRemove(index)}
-      />
-      
-      <div className="grid grid-cols-2 gap-4 mt-4">
-        <ItemConditionSelect 
-          id={`condition-${index}`}
-          value={item.condition}
-          onChange={handleConditionChange}
-        />
-
-        <ItemQuantityInput
-          id={`quantity-${index}`}
-          value={item.quantity}
-          onChange={handleQuantityChange}
-        />
-
-        <ItemTypeToggle 
-          isFirstEdition={item.isFirstEdition}
-          isHolo={item.isHolo}
-          isReverseHolo={item.isReverseHolo}
-          onToggleFirstEdition={handleToggleFirstEdition}
-          onToggleHolo={handleToggleHolo}
-          onToggleReverseHolo={handleToggleReverseHolo}
-        />
-
-        <PaymentTypeSelector
-          paymentType={item.paymentType}
-          onSelect={handlePaymentTypeChange}
-        />
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <PriceDisplay
-          label="Market Price"
-          isLoading={item.isLoadingPrice || false}
-          error={item.error}
-          value={item.price}
-        />
+      <div className="flex items-start space-x-4">
+        {/* Card Thumbnail */}
+        <div className="w-16 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+          {item.card.imageUrl ? (
+            <img 
+              src={item.card.imageUrl} 
+              alt={item.card.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = 'https://placehold.co/64x80?text=No+Image';
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <ImageOff className="h-5 w-5 text-gray-400" />
+            </div>
+          )}
+        </div>
         
-        <PriceDisplay
-          label={item.paymentType === 'cash' ? 'Cash Value' : 'Trade Value'}
-          isLoading={isLoading || item.isLoadingPrice || false}
-          error={item.error}
-          value={displayValue}
-        />
+        <div className="flex-1">
+          <ItemDetails 
+            name={item.card.name}
+            set={item.card.set}
+            onRemove={() => onRemove(index)}
+          />
+          
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <ItemConditionSelect 
+              id={`condition-${index}`}
+              value={item.condition}
+              onChange={handleConditionChange}
+            />
+
+            <ItemQuantityInput
+              id={`quantity-${index}`}
+              value={item.quantity}
+              onChange={handleQuantityChange}
+            />
+
+            <ItemTypeToggle 
+              isFirstEdition={item.isFirstEdition}
+              isHolo={item.isHolo}
+              isReverseHolo={item.isReverseHolo}
+              onToggleFirstEdition={handleToggleFirstEdition}
+              onToggleHolo={handleToggleHolo}
+              onToggleReverseHolo={handleToggleReverseHolo}
+            />
+
+            <PaymentTypeSelector
+              paymentType={item.paymentType}
+              onSelect={handlePaymentTypeChange}
+            />
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {/* Editable Market Price */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Market Price
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-gray-500">$</span>
+                </span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={item.price}
+                  onChange={handlePriceChange}
+                  disabled={item.isLoadingPrice}
+                  className="w-full pl-8 pr-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              {item.error && (
+                <p className="mt-1 text-xs text-red-500">{item.error}</p>
+              )}
+            </div>
+            
+            {/* Trade/Cash Value */}
+            <PriceDisplay
+              label={item.paymentType === 'cash' ? 'Cash Value' : 'Trade Value'}
+              isLoading={isLoading || item.isLoadingPrice || false}
+              error={item.error}
+              value={displayValue}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

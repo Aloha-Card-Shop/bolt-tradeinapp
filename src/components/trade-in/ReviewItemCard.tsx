@@ -1,10 +1,11 @@
 
 import React from 'react';
-import { X, ImageOff, DollarSign, ToggleLeft, ToggleRight } from 'lucide-react';
+import { X, ImageOff, DollarSign } from 'lucide-react';
 import { TradeInItem } from '../../hooks/useTradeInList';
 import { CONDITIONS, PAYMENT_TYPES } from '../../constants/tradeInConstants';
 import { formatCurrency } from '../../utils/formatters';
 import { CardNumberObject } from '../../types/card';
+import ItemTypeToggle from './ItemTypeToggle';
 
 interface ReviewItemCardProps {
   item: TradeInItem;
@@ -32,6 +33,12 @@ const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
     }
     
     return cardNumber;
+  };
+
+  // Handle price change
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPrice = parseFloat(e.target.value) || 0;
+    onUpdateItem(index, { ...item, price: newPrice });
   };
 
   return (
@@ -134,6 +141,48 @@ const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Market Price
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <DollarSign className="h-4 w-4 text-gray-400" />
+                </span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={item.price}
+                  onChange={handlePriceChange}
+                  className="w-full pl-8 pr-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <ItemTypeToggle
+              isFirstEdition={item.isFirstEdition}
+              isHolo={item.isHolo}
+              isReverseHolo={item.isReverseHolo || false}
+              onToggleFirstEdition={() => onUpdateItem(index, { ...item, isFirstEdition: !item.isFirstEdition })}
+              onToggleHolo={() => {
+                const newIsHolo = !item.isHolo;
+                onUpdateItem(index, { 
+                  ...item, 
+                  isHolo: newIsHolo, 
+                  isReverseHolo: newIsHolo ? false : item.isReverseHolo 
+                });
+              }}
+              onToggleReverseHolo={() => {
+                const newIsReverseHolo = !item.isReverseHolo;
+                onUpdateItem(index, { 
+                  ...item, 
+                  isReverseHolo: newIsReverseHolo, 
+                  isHolo: newIsReverseHolo ? false : item.isHolo 
+                });
+              }}
+            />
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Value
               </label>
               <div className="relative">
@@ -146,69 +195,6 @@ const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
                   readOnly
                   className="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700"
                 />
-              </div>
-            </div>
-
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Card Type
-              </label>
-              
-              <div className="space-y-2">
-                {/* First Edition Toggle */}
-                <div 
-                  onClick={() => onUpdateItem(index, { ...item, isFirstEdition: !item.isFirstEdition })}
-                  className="flex items-center justify-between p-2 bg-gray-50 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors duration-200"
-                >
-                  <span className="text-sm font-medium">
-                    {item.isFirstEdition ? '1st Edition' : 'Unlimited'}
-                  </span>
-                  {item.isFirstEdition ? (
-                    <ToggleRight className="h-6 w-6 text-blue-600" />
-                  ) : (
-                    <ToggleLeft className="h-6 w-6 text-gray-400" />
-                  )}
-                </div>
-                
-                {/* Holo Toggle */}
-                <div 
-                  onClick={() => onUpdateItem(index, { 
-                    ...item, 
-                    isHolo: !item.isHolo,
-                    isReverseHolo: item.isHolo ? item.isReverseHolo : false 
-                  })}
-                  className={`flex items-center justify-between p-2 ${item.isReverseHolo ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 cursor-pointer'} bg-gray-50 rounded-lg transition-colors duration-200`}
-                  aria-disabled={item.isReverseHolo}
-                >
-                  <span className="text-sm font-medium">Holo</span>
-                  {item.isHolo && !item.isReverseHolo ? (
-                    <ToggleRight className="h-6 w-6 text-purple-600" />
-                  ) : (
-                    <ToggleLeft className="h-6 w-6 text-gray-400" />
-                  )}
-                </div>
-                
-                {/* Reverse Holo Toggle */}
-                <div 
-                  onClick={() => {
-                    if (!item.isHolo) {
-                      onUpdateItem(index, { 
-                        ...item, 
-                        isReverseHolo: !item.isReverseHolo,
-                        isHolo: item.isReverseHolo ? item.isHolo : false 
-                      });
-                    }
-                  }}
-                  className={`flex items-center justify-between p-2 ${item.isHolo && !item.isReverseHolo ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 cursor-pointer'} bg-gray-50 rounded-lg transition-colors duration-200`}
-                  aria-disabled={item.isHolo && !item.isReverseHolo}
-                >
-                  <span className="text-sm font-medium">Reverse Holo</span>
-                  {item.isReverseHolo ? (
-                    <ToggleRight className="h-6 w-6 text-yellow-600" />
-                  ) : (
-                    <ToggleLeft className="h-6 w-6 text-gray-400" />
-                  )}
-                </div>
               </div>
             </div>
           </div>
