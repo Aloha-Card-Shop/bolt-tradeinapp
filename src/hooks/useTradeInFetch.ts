@@ -27,7 +27,8 @@ export const useTradeInFetch = (statusFilter: StatusFilter) => {
           payment_type,
           staff_notes,
           customers (first_name, last_name),
-          profiles:auth.users!handled_by (email)
+          handled_by,
+          handled_at
         `);
 
       // Apply status filter if not showing all
@@ -55,7 +56,8 @@ export const useTradeInFetch = (statusFilter: StatusFilter) => {
             notes: item.notes,
             payment_type: item.payment_type as 'cash' | 'trade' | 'mixed',
             staff_notes: item.staff_notes,
-            submitter_email: item.profiles?.email || null
+            handled_by: item.handled_by,
+            handled_at: item.handled_at
           };
           
           // Handle the customers object which may be returned as an object or an array with a single object
@@ -88,6 +90,37 @@ export const useTradeInFetch = (statusFilter: StatusFilter) => {
             
           return tradeIn;
         });
+        
+        // Now fetch emails for each handled_by user ID
+        if (tradeInsWithCustomerName.length > 0) {
+          // Get all handled_by IDs that are not null
+          const handledByIds = tradeInsWithCustomerName
+            .filter(item => item.handled_by)
+            .map(item => item.handled_by as string);
+            
+          if (handledByIds.length > 0) {
+            // Fetch emails for these users
+            const { data: profilesData, error: profilesError } = await supabase
+              .from('profiles')
+              .select('id, email')
+              .in('id', handledByIds);
+              
+            if (!profilesError && profilesData) {
+              // Create a map of user IDs to emails
+              const emailMap = new Map();
+              profilesData.forEach(profile => {
+                emailMap.set(profile.id, profile.email);
+              });
+              
+              // Update the trade-ins with submitter emails
+              tradeInsWithCustomerName.forEach(tradeIn => {
+                if (tradeIn.handled_by) {
+                  tradeIn.submitter_email = emailMap.get(tradeIn.handled_by) || null;
+                }
+              });
+            }
+          }
+        }
         
         setTradeIns(tradeInsWithCustomerName);
       }

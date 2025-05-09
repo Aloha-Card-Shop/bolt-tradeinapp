@@ -37,7 +37,8 @@ export const useMyTradeIns = () => {
           payment_type,
           staff_notes,
           customers (first_name, last_name),
-          profiles:auth.users!handled_by (email)
+          handled_by,
+          handled_at
         `)
         .eq('customer_id', user.id) // Show only trade-ins created by the current user
         .order('trade_in_date', { ascending: false });
@@ -66,8 +67,40 @@ export const useMyTradeIns = () => {
               : 'Unknown')
             : 'Unknown',
           customers: item.customers as any,
-          submitter_email: item.profiles?.email || null
+          handled_by: item.handled_by,
+          handled_at: item.handled_at
         }));
+        
+        // Now fetch emails for each handled_by user ID
+        if (transformedData.length > 0) {
+          // Get all handled_by IDs that are not null
+          const handledByIds = transformedData
+            .filter(item => item.handled_by)
+            .map(item => item.handled_by);
+            
+          if (handledByIds.length > 0) {
+            // Fetch emails for these users
+            const { data: profilesData, error: profilesError } = await supabase
+              .from('profiles')
+              .select('id, email')
+              .in('id', handledByIds);
+              
+            if (!profilesError && profilesData) {
+              // Create a map of user IDs to emails
+              const emailMap = new Map();
+              profilesData.forEach(profile => {
+                emailMap.set(profile.id, profile.email);
+              });
+              
+              // Update the trade-ins with submitter emails
+              transformedData.forEach(tradeIn => {
+                if (tradeIn.handled_by) {
+                  tradeIn.submitter_email = emailMap.get(tradeIn.handled_by) || null;
+                }
+              });
+            }
+          }
+        }
         
         setTradeIns(transformedData);
       }
