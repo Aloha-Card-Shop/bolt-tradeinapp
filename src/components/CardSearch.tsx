@@ -53,6 +53,13 @@ const CardSearch: React.FC<CardSearchProps> = ({
     onInputChange(event);
   };
 
+  // Added a handleKeyDown function to use performSearch
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      performSearch();
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="flex items-center mb-4">
@@ -74,6 +81,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
           <SearchNameInput 
             value={searchTerm}
             onChange={handleInputChange}
+            onKeyDown={handleKeyDown} // Pass the handleKeyDown function
             inputRef={searchInputRef}
           />
           
@@ -97,6 +105,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
         <CardNumberInput 
           cardNumber={cardDetails.number} 
           onChange={onInputChange} 
+          onKeyDown={handleKeyDown} // Also add Enter key behavior to card number input
         />
       </div>
     </div>
