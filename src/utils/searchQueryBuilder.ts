@@ -37,9 +37,10 @@ export const buildSearchQuery = async (
   }
 
   // Start building the query with select fields specified to reduce data transfer
+  // Removed 'number' from select as it doesn't exist in the unified_products table
   let query = supabase
     .from('unified_products')
-    .select('id, name, group_id, image_url, attributes, product_id, number', { count: 'exact' })
+    .select('id, name, group_id, image_url, attributes, product_id', { count: 'exact' })
     .order('name')
     .range(from, to);
 
@@ -67,18 +68,8 @@ export const buildSearchQuery = async (
     const numberBeforeSlash = extractNumberBeforeSlash(number);
     const fullNumber = number.toString();
     
-    // Build a combined filter to search in multiple locations:
-    // 1. Direct root-level "number" field
-    // 2. Within attributes object
+    // Build a combined filter to search in attributes object ONLY, since there's no number column
     let cardNumberFilters = [];
-    
-    // Root level number field direct searches
-    cardNumberFilters.push(`number.ilike.%${fullNumber}%`); // Contains full number
-    
-    // If we have a partial number, also search for that
-    if (numberBeforeSlash && numberBeforeSlash !== fullNumber) {
-      cardNumberFilters.push(`number.ilike.${numberBeforeSlash}/%`); // Starts with number before slash
-    }
     
     // Attributes-level searches for different possible paths
     const possiblePaths = ['number', 'Number', 'card_number', 'cardNumber'];
@@ -98,7 +89,7 @@ export const buildSearchQuery = async (
     
     if (DEBUG_MODE) {
       console.log(`Added enhanced card number filter for: ${number}`);
-      console.log(`Using root-level and attributes search with paths: ${possiblePaths.join(', ')}`);
+      console.log(`Using attributes search with paths: ${possiblePaths.join(', ')}`);
       console.log(`Also searching for partial matches with: ${numberBeforeSlash}`);
     }
   }
@@ -123,7 +114,7 @@ export const buildSearchQuery = async (
       category_id: categoryId || 'any',
       name: name ? (name.length <= 2 ? `${name}%` : `%${name}%`) : 'any',
       set_id: set ? (setOptions.find(s => s.name === set)?.id || 'not found') : 'any',
-      number: number ? `Enhanced search for: ${number} (including root and attributes)` : 'any'
+      number: number ? `Enhanced search for: ${number} (in attributes only)` : 'any'
     });
   }
 
@@ -144,8 +135,7 @@ export const formatResultsToCardDetails = (
         firstRecord: results[0],
         attributesStructure: results[0].attributes ? 
           JSON.stringify(results[0].attributes).substring(0, 200) + '...' :
-          'No attributes found',
-        rootNumber: results[0].number || 'No root number field'
+          'No attributes found'
       });
     }
   }
@@ -154,19 +144,11 @@ export const formatResultsToCardDetails = (
     // Set name lookup - use group_id to find the set name from setOptions
     const setName = (item.group_id && setOptions.find(s => s.id === item.group_id)?.name) || '';
     
-    // Enhanced card number extraction with priority on root-level number field
+    // Card number extraction from attributes ONLY (no direct number field)
     let cardNumber = '';
     
-    // First check the root-level number field
-    if (item.number) {
-      cardNumber = item.number;
-      
-      if (DEBUG_MODE) {
-        console.log(`Found root-level card number for ${item.name}: ${cardNumber}`);
-      }
-    }
-    // If not found at root level, try the attributes object
-    else if (item.attributes) {
+    // Extract card number from attributes object
+    if (item.attributes) {
       try {
         // Log the actual attributes structure for better debugging
         if (DEBUG_MODE && item.name.includes(searchCriteria.name || '')) {

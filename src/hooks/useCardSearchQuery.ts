@@ -107,14 +107,18 @@ export const useCardSearchQuery = () => {
       if (error) {
         console.error('Error from Supabase query:', error);
         
-        // Improved error messaging based on error codes
+        // Better error handling for database schema errors
         if (error.code === '42703') {
-          toast.error('There was a database schema error. We\'re fixing this issue.');
+          // This is a database schema error (column doesn't exist)
           console.error('Database schema error details:', {
             message: error.message,
             hint: 'Schema mismatch in JSON path expressions',
             details: 'This is being fixed by updating the query builder'
           });
+          
+          toast.error('There was a database error. Please try again in a moment.');
+          setSearchResults([]);
+          return new Set<number>();
         } else {
           toast.error(`Search error: ${error.message || 'Unknown error'}`);
         }
