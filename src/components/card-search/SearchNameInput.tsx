@@ -7,22 +7,16 @@ interface SearchNameInputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;
   inputRef?: React.RefObject<HTMLInputElement>;
-  onSearch?: () => void; // Kept for compatibility but less prominent
 }
 
 const SearchNameInput: React.FC<SearchNameInputProps> = ({ 
   value, 
   onChange, 
   onKeyDown,
-  inputRef,
-  onSearch
+  inputRef
 }) => {
-  // Handle enter key press to trigger search
+  // Handle enter key press
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (onSearch) onSearch();
-    }
     if (onKeyDown) onKeyDown(e);
   };
 

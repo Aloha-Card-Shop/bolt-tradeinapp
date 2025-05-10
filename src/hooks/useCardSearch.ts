@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CardDetails, GameType, GAME_OPTIONS } from '../types/card';
 import { useSetOptions } from './useSetOptions';
@@ -246,6 +245,8 @@ export const useCardSearch = () => {
     loadMoreResults,
     totalResults,
     handleUseAsCardNumber,
+    // We still include performSearch in the return object for API compatibility,
+    // but it's no longer passed to CardSearch component
     performSearch
   };
 };

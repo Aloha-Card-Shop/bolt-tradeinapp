@@ -96,6 +96,9 @@ export const useCardSearchQuery = () => {
         
         if (data && data.length > 0) {
           console.log('Sample result item:', data[0]);
+          if (data[0].attributes) {
+            console.log('Sample attributes structure:', data[0].attributes);
+          }
         } else {
           console.log('No results returned from query');
         }
@@ -106,11 +109,11 @@ export const useCardSearchQuery = () => {
         
         // Improved error messaging based on error codes
         if (error.code === '42703') {
-          toast.error('There was a database schema error. Please try again later or contact support.');
+          toast.error('There was a database schema error. We\'re fixing this issue.');
           console.error('Database schema error details:', {
             message: error.message,
-            hint: 'Check if column names in query match the actual schema',
-            details: 'This may indicate an issue with JSON path expressions or column names'
+            hint: 'Schema mismatch in JSON path expressions',
+            details: 'This is being fixed by updating the query builder'
           });
         } else {
           toast.error(`Search error: ${error.message || 'Unknown error'}`);
@@ -146,9 +149,9 @@ export const useCardSearchQuery = () => {
       
       // Provide more specific error messages for JSON structure issues
       if (error instanceof Error) {
-        if (error.message.includes('JSON')) {
+        if (error.message.includes('JSON') || error.message.includes('jsonb')) {
           console.error('JSON parsing error details:', error);
-          toast.error('Error processing card data structure. Please try a more specific search.');
+          toast.error('We\'re fixing an issue with the card search. Please try again in a moment.');
         } else if (error.name !== 'AbortError') {
           // Don't show toast for aborted requests
           toast.error(`Search failed: ${error.message}`);

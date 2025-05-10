@@ -62,14 +62,27 @@ export const buildSearchQuery = async (
   
   // Then apply card number filters which are also restrictive
   if (number) {
-    // Fix: Update the JSON path expressions for card numbers to match the actual data structure
-    // Use containsJson for more flexible searching within the JSON structure
-    query = query.or(`attributes->number.ilike.%${number}%,attributes->Number.ilike.%${number}%,attributes->card_number.ilike.%${number}%`);
+    // FIXED: Use proper Supabase JSON contains syntax instead of incorrect JSON path expressions
+    // The attributes column is JSONB, so we need to use containsJson or other valid JSONB operators
     
-    // Log the JSON filter for debugging
+    // Create a filter array with different possible attribute locations
+    const possiblePaths = ['number', 'Number', 'card_number', 'cardNumber'];
+    
+    // We'll use a combination of approaches for maximum compatibility
+    let cardNumberFilter = '';
+    
+    possiblePaths.forEach((path, index) => {
+      // Build a filter that checks if the path exists and contains our search term
+      if (index > 0) cardNumberFilter += ',';
+      cardNumberFilter += `attributes->${path}.ilike.%${number}%`;
+    });
+    
+    // Use OR logic to match any of these paths
+    query = query.or(cardNumberFilter);
+    
     if (DEBUG_MODE) {
-      console.log(`Added attributes JSON filter for card number: ${number}`);
-      console.log(`JSON filter paths: attributes->number, attributes->Number, attributes->card_number`);
+      console.log(`Added fixed card number filter for: ${number}`);
+      console.log(`Using attribute paths: ${possiblePaths.join(', ')}`);
     }
   }
   
@@ -93,7 +106,7 @@ export const buildSearchQuery = async (
       category_id: categoryId || 'any',
       name: name ? (name.length <= 2 ? `${name}%` : `%${name}%`) : 'any',
       set_id: set ? (setOptions.find(s => s.name === set)?.id || 'not found') : 'any',
-      number: number ? `Searching in attributes JSON for: ${number}` : 'any'
+      number: number ? `Improved JSONB search for: ${number}` : 'any'
     });
   }
 

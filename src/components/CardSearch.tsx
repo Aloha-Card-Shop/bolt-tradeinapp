@@ -19,7 +19,6 @@ interface CardSearchProps {
   searchInputRef?: React.RefObject<HTMLInputElement>;
   potentialCardNumber?: string | null;
   onUseAsCardNumber?: () => void;
-  performSearch?: () => void; // Kept for compatibility
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
@@ -29,8 +28,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
   isLoadingSets,
   searchInputRef,
   potentialCardNumber = null,
-  onUseAsCardNumber = () => {},
-  performSearch = () => {} // Kept for compatibility
+  onUseAsCardNumber = () => {}
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -69,7 +67,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
           onChange={onInputChange} 
         />
 
-        {/* Card Name Input - Now auto-searches */}
+        {/* Card Name Input - Auto-searches as user types */}
         <div className="relative">
           <SearchNameInput 
             value={searchTerm}
