@@ -14,7 +14,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 // Helper function to check if the tcgplayer_product_id migration has completed
 export const checkProductIdMigration = async () => {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('unified_products')
       .select('tcgplayer_product_id')
       .limit(1);
