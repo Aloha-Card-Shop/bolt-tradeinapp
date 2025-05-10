@@ -67,6 +67,8 @@ export async function getOrCreateCard(card: CardDetails): Promise<string> {
         card_number: card.number || null,
         image_url: card.imageUrl || null,
         attributes: { 
+          // Store product ID in both field formats for maximum compatibility
+          tcgplayer_id: card.productId || null,
           tcgplayer_product_id: card.productId || null,
           // Save additional details for future reference
           source: 'trade-in-app',

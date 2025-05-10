@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
@@ -278,7 +279,7 @@ export const formatResultsToCardDetails = (
     // Extract product ID with improved priority hierarchy
     // For cards table, we might not have a product_id directly
     const productId = isFromCardsTable 
-      ? (item.attributes?.tcgplayer_product_id || null)  // Use tcgplayer_product_id from attributes
+      ? (item.attributes?.tcgplayer_product_id || item.attributes?.tcgplayer_id || null)  // Use tcgplayer_product_id from attributes
       : extractProductId(item);
     
     // Debug output to trace productId extraction
@@ -304,29 +305,41 @@ function extractProductId(item: any): string | null {
   // Check each possible location for product ID in order of preference
   // 1. Direct tcgplayer_product_id field (new field added in migration)
   if (item.tcgplayer_product_id) {
+    if (DEBUG_MODE) console.log(`Found product ID in tcgplayer_product_id: ${item.tcgplayer_product_id}`);
     return String(item.tcgplayer_product_id);
   }
   
   // 2. Direct product_id field
   if (item.product_id) {
+    if (DEBUG_MODE) console.log(`Found product ID in product_id: ${item.product_id}`);
     return String(item.product_id);
   }
   
-  // 3. In attributes object as product_id
+  // 3. In attributes object as tcgplayer_id (actual field used in database)
+  if (item.attributes?.tcgplayer_id) {
+    if (DEBUG_MODE) console.log(`Found product ID in attributes.tcgplayer_id: ${item.attributes.tcgplayer_id}`);
+    return String(item.attributes.tcgplayer_id);
+  }
+  
+  // 4. In attributes object as product_id
   if (item.attributes?.product_id) {
+    if (DEBUG_MODE) console.log(`Found product ID in attributes.product_id: ${item.attributes.product_id}`);
     return String(item.attributes.product_id);
   }
   
-  // 4. In attributes object as tcgplayer_product_id
+  // 5. In attributes object as tcgplayer_product_id
   if (item.attributes?.tcgplayer_product_id) {
+    if (DEBUG_MODE) console.log(`Found product ID in attributes.tcgplayer_product_id: ${item.attributes.tcgplayer_product_id}`);
     return String(item.attributes.tcgplayer_product_id);
   }
   
-  // 5. Fallback to item.id
+  // 6. Fallback to item.id
   if (item.id) {
+    if (DEBUG_MODE) console.log(`No specific product ID found, using item.id: ${item.id}`);
     return String(item.id);
   }
   
   // If none found
+  if (DEBUG_MODE) console.log(`No product ID found for item: ${item.name || 'Unknown'}`);
   return null;
 }

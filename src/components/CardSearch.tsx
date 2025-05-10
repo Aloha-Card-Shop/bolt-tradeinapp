@@ -105,6 +105,16 @@ const CardSearch: React.FC<CardSearchProps> = ({
           onChange={onInputChange}
           onKeyDown={handleKeyDown}
         />
+        
+        {/* Search button */}
+        <div className="mt-4">
+          <button
+            onClick={performSearch}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+          >
+            Search
+          </button>
+        </div>
       </div>
     </div>
   );
