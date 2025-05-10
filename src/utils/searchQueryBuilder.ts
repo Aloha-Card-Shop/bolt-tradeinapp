@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
@@ -16,7 +15,7 @@ export const buildSearchQuery = async (
   page: number = 0
 ): Promise<{ query: any; foundSetIds: Set<number> }> => {
   // Destructure card details for easier use
-  const { name, set, number, game, categoryId } = cardDetails;
+  const { name, set, number, categoryId } = cardDetails;
 
   // Initialize set to store found set IDs
   const foundSetIds: Set<number> = new Set();
@@ -30,7 +29,6 @@ export const buildSearchQuery = async (
       name, 
       set, 
       number, 
-      game, 
       categoryId,
       pagination: { page, from, to }
     });
@@ -44,11 +42,7 @@ export const buildSearchQuery = async (
     .range(from, to);
 
   // Apply filters based on provided card details
-  if (game) {
-    query = query.eq('game', game);
-    if (DEBUG_MODE) console.log(`Added game filter: ${game}`);
-  }
-  
+  // IMPORTANT: We're only using categoryId, not game since that column doesn't exist
   if (categoryId) {
     query = query.eq('category_id', categoryId);
     if (DEBUG_MODE) console.log(`Added category filter: ${categoryId}`);
@@ -79,7 +73,6 @@ export const buildSearchQuery = async (
   if (DEBUG_MODE) {
     // This is a best-effort representation of the query
     console.log('Final query filters:', { 
-      game: game || 'any',
       category_id: categoryId || 'any',
       name: name ? `%${name}%` : 'any',
       set_id: set ? (setOptions.find(s => s.name === set)?.id || 'not found') : 'any',

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { CardDetails } from '../types/card';
 import { SetOption } from './useSetOptions';
@@ -45,7 +44,6 @@ export const useCardSearchQuery = () => {
         name: cardDetails.name || 'not specified',
         number: cardDetails.number || 'not specified',
         set: cardDetails.set || 'not specified',
-        game: cardDetails.game || 'not specified',
         categoryId: cardDetails.categoryId || 'not specified'
       });
     }
@@ -62,7 +60,6 @@ export const useCardSearchQuery = () => {
       
       if (DEBUG_MODE) {
         console.log('🔍 Executing Supabase query with filters:', {
-          game: cardDetails.game,
           categoryId: cardDetails.categoryId,
           name: cardDetails.name ? `%${cardDetails.name}%` : null,
           set: cardDetails.set,
