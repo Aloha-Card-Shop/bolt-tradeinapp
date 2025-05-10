@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
+
+import React, { useState, useCallback } from 'react';
 import { TradeInItem as TradeInItemType } from '../hooks/useTradeInList';
 import { useCustomers } from '../hooks/useCustomers';
 import { Customer } from '../hooks/useCustomers';
