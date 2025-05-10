@@ -13,8 +13,24 @@ interface TradeInItemProps {
 }
 
 // This is now just a passthrough component that uses our refactored implementation
-const TradeInItemWrapper: React.FC<TradeInItemProps> = (props) => {
-  return <TradeInItem {...props} />;
+const TradeInItemWrapper: React.FC<TradeInItemProps> = ({ 
+  item, 
+  index, 
+  onRemove, 
+  onUpdate, 
+  onConditionChange, 
+  onValueChange 
+}) => {
+  return (
+    <TradeInItem 
+      item={item}
+      index={index}
+      onRemove={onRemove}
+      onUpdate={onUpdate}
+      onConditionChange={onConditionChange}
+      onValueChange={onValueChange}
+    />
+  );
 };
 
 export default TradeInItemWrapper;

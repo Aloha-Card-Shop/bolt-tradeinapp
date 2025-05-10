@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { fetchCardPrices } from '../../utils/scraper';
 import { toast } from 'react-hot-toast';
 import { TradeInItem } from '../useTradeInList';
@@ -13,6 +13,10 @@ interface UseItemPriceProps {
 export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   const { cashValue, tradeValue, isLoading } = useTradeValue(item.card.game, item.price);
   const [displayValue, setDisplayValue] = useState(0);
+  
+  // Add refs to track previous values for comparison
+  const prevCashValue = useRef<number | undefined>(undefined);
+  const prevTradeValue = useRef<number | undefined>(undefined);
 
   // Calculate the display value based on payment type
   useEffect(() => {
@@ -22,20 +26,38 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     
     setDisplayValue(value * item.quantity);
     
-    // Update the item with new values if they've changed
+    // Only update if values have actually changed and price is valid
     if (!isLoading && item.price > 0) {
-      const hasValueChanged = 
-        item.cashValue !== cashValue || 
-        item.tradeValue !== tradeValue;
+      const hasCashValueChanged = item.cashValue !== cashValue && 
+                                cashValue !== prevCashValue.current;
       
-      if (hasValueChanged) {
+      const hasTradeValueChanged = item.tradeValue !== tradeValue &&
+                                 tradeValue !== prevTradeValue.current;
+      
+      // Update only if either value has meaningfully changed
+      if (hasCashValueChanged || hasTradeValueChanged) {
+        // Store new values in refs
+        prevCashValue.current = cashValue;
+        prevTradeValue.current = tradeValue;
+        
+        // Update the item with new values
         onUpdate({
           cashValue: cashValue,
           tradeValue: tradeValue
         });
       }
     }
-  }, [cashValue, tradeValue, isLoading, item.price, item.quantity, item.cashValue, item.tradeValue, item.paymentType, onUpdate]);
+  }, [
+    cashValue, 
+    tradeValue, 
+    isLoading, 
+    item.price, 
+    item.quantity, 
+    item.cashValue, 
+    item.tradeValue, 
+    item.paymentType, 
+    onUpdate
+  ]);
 
   const refreshPrice = useCallback(async () => {
     const { card, condition, isFirstEdition, isHolo, isReverseHolo } = item;

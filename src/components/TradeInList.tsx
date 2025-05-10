@@ -1,5 +1,4 @@
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { TradeInItem as TradeInItemType } from '../hooks/useTradeInList';
 import { useCustomers } from '../hooks/useCustomers';
 import { Customer } from '../hooks/useCustomers';
@@ -40,11 +39,11 @@ const TradeInList: React.FC<TradeInListProps> = ({
     items,
     selectedCustomer,
     itemValuesMap,
-    clearList, // Pass clearList to useTradeInSubmission
+    clearList,
     onSuccess: () => {
       setIsReviewing(false);
       setSelectedCustomer(null);
-      toast.success('Trade-in submitted successfully!'); // Add success toast
+      toast.success('Trade-in submitted successfully!');
     }
   });
 
@@ -59,7 +58,6 @@ const TradeInList: React.FC<TradeInListProps> = ({
     setSelectedCustomer(newCustomer);
   };
 
-  // Use the useCallback hook to memoize this function to prevent unnecessary re-renders
   const handleConditionChange = useCallback(async (i: number, cond: string) => {
     const item = items[i];
     if (!item || !cond) {
@@ -82,10 +80,19 @@ const TradeInList: React.FC<TradeInListProps> = ({
     }
   }, [items, onUpdateItem]);
 
-  // Use the useCallback hook here too to prevent infinite re-renders
   const handleValueChange = useCallback((itemId: string, values: { tradeValue: number; cashValue: number }) => {
     if (!itemId) return;
-    setItemValuesMap(prev => ({ ...prev, [itemId]: values }));
+    
+    setItemValuesMap(prev => {
+      const currentValues = prev[itemId];
+      if (currentValues && 
+          currentValues.tradeValue === values.tradeValue && 
+          currentValues.cashValue === values.cashValue) {
+        return prev;
+      }
+      
+      return { ...prev, [itemId]: values };
+    });
   }, []);
 
   if (isReviewing) {

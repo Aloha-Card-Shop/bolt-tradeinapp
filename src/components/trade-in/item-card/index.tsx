@@ -24,15 +24,18 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   onConditionChange,
   onValueChange
 }) => {
-  // Add a ref to track if this is the initial mount
+  // Add refs to track previous values and prevent unnecessary updates
   const initialMount = useRef(true);
+  const prevCashValue = useRef<number | undefined>(undefined);
+  const prevTradeValue = useRef<number | undefined>(undefined);
+  const valueChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Handle updates to the item
   const handleUpdate = useCallback((updates: Partial<TradeInItemType>) => {
     onUpdate(index, { ...item, ...updates });
   }, [index, item, onUpdate]);
 
-  // Notify parent about condition changes
+  // Handle condition changes
   const handleConditionChangeWrapper = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     onConditionChange(e.target.value);
   }, [onConditionChange]);
@@ -43,20 +46,56 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     onUpdate: handleUpdate
   });
 
-  // Notify parent when values change - now using a ref to prevent infinite loops
+  // Debounced value change handler to prevent rapid successive updates
+  const debouncedValueChange = useCallback((newCashValue: number | undefined, newTradeValue: number | undefined) => {
+    // Clear any existing timeout
+    if (valueChangeTimeoutRef.current) {
+      clearTimeout(valueChangeTimeoutRef.current);
+    }
+    
+    // Set a new timeout to execute after 300ms of stability
+    valueChangeTimeoutRef.current = setTimeout(() => {
+      if (typeof newCashValue !== 'undefined' && typeof newTradeValue !== 'undefined') {
+        onValueChange({ cashValue: newCashValue, tradeValue: newTradeValue });
+      }
+    }, 300);
+  }, [onValueChange]);
+  
+  // Cleanup timeout on unmount
   useEffect(() => {
-    // Skip the effect on the initial mount to prevent triggering the loop
+    return () => {
+      if (valueChangeTimeoutRef.current) {
+        clearTimeout(valueChangeTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Optimized effect with proper value comparison
+  useEffect(() => {
+    // Skip effect on initial mount to prevent initial loop
     if (initialMount.current) {
       initialMount.current = false;
+      // Store initial values
+      prevCashValue.current = cashValue;
+      prevTradeValue.current = tradeValue;
       return;
     }
 
-    // Only call onValueChange when we have actual values and not during calculations
-    if (!isCalculating && cashValue !== undefined && tradeValue !== undefined) {
-      onValueChange({ cashValue, tradeValue });
+    // Only call onValueChange when values have actually changed and are defined
+    if (!isCalculating && 
+        cashValue !== undefined && 
+        tradeValue !== undefined &&
+        (cashValue !== prevCashValue.current || tradeValue !== prevTradeValue.current)) {
+      
+      // Update refs with new values
+      prevCashValue.current = cashValue;
+      prevTradeValue.current = tradeValue;
+      
+      // Call debounced handler instead of direct onValueChange
+      debouncedValueChange(cashValue, tradeValue);
     }
-    // Important: Include all dependencies that are used in the effect
-  }, [cashValue, tradeValue, isCalculating, onValueChange]);
+    // Include all dependencies that are used in the effect
+  }, [cashValue, tradeValue, isCalculating, debouncedValueChange]);
 
   // Handle card attribute changes
   const {
