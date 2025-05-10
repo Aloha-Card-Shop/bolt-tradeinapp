@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { TradeInItem as TradeInItemType } from '../hooks/useTradeInList';
 import { useCustomers } from '../hooks/useCustomers';
 import { Customer } from '../hooks/useCustomers';
@@ -59,7 +59,8 @@ const TradeInList: React.FC<TradeInListProps> = ({
     setSelectedCustomer(newCustomer);
   };
 
-  const handleConditionChange = async (i: number, cond: string) => {
+  // Use the useCallback hook to memoize this function to prevent unnecessary re-renders
+  const handleConditionChange = useCallback(async (i: number, cond: string) => {
     const item = items[i];
     if (!item || !cond) {
       onUpdateItem(i, { ...item, condition: cond as any });
@@ -79,12 +80,13 @@ const TradeInList: React.FC<TradeInListProps> = ({
     } catch (e) {
       onUpdateItem(i, { ...item, isLoadingPrice: false, error: (e as Error).message });
     }
-  };
+  }, [items, onUpdateItem]);
 
-  const handleValueChange = (itemId: string, values: { tradeValue: number; cashValue: number }) => {
+  // Use the useCallback hook here too to prevent infinite re-renders
+  const handleValueChange = useCallback((itemId: string, values: { tradeValue: number; cashValue: number }) => {
     if (!itemId) return;
     setItemValuesMap(prev => ({ ...prev, [itemId]: values }));
-  };
+  }, []);
 
   if (isReviewing) {
     return (

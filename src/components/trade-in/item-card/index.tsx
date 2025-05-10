@@ -1,5 +1,5 @@
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { TradeInItem as TradeInItemType } from '../../../hooks/useTradeInList';
 import CardHeader from './CardHeader';
 import ItemControls from './ItemControls';
@@ -24,6 +24,9 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   onConditionChange,
   onValueChange
 }) => {
+  // Add a ref to track if this is the initial mount
+  const initialMount = useRef(true);
+
   // Handle updates to the item
   const handleUpdate = useCallback((updates: Partial<TradeInItemType>) => {
     onUpdate(index, { ...item, ...updates });
@@ -40,12 +43,20 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     onUpdate: handleUpdate
   });
 
-  // Notify parent when values change
-  React.useEffect(() => {
-    if (cashValue !== undefined && tradeValue !== undefined) {
+  // Notify parent when values change - now using a ref to prevent infinite loops
+  useEffect(() => {
+    // Skip the effect on the initial mount to prevent triggering the loop
+    if (initialMount.current) {
+      initialMount.current = false;
+      return;
+    }
+
+    // Only call onValueChange when we have actual values and not during calculations
+    if (!isCalculating && cashValue !== undefined && tradeValue !== undefined) {
       onValueChange({ cashValue, tradeValue });
     }
-  }, [cashValue, tradeValue, onValueChange]);
+    // Important: Include all dependencies that are used in the effect
+  }, [cashValue, tradeValue, isCalculating, onValueChange]);
 
   // Handle card attribute changes
   const {
