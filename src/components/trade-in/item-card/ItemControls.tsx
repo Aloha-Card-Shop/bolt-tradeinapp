@@ -37,34 +37,38 @@ const ItemControls: React.FC<ItemControlsProps> = ({
   onPaymentTypeChange
 }) => {
   return (
-    <div className="grid grid-cols-2 gap-4 mt-4">
-      <ConditionSelect 
-        condition={condition}
-        onChange={onConditionChange}
-        disabled={isLoadingPrice}
-      />
+    <div className="mt-4">
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <ConditionSelect 
+          condition={condition}
+          onChange={onConditionChange}
+          disabled={isLoadingPrice}
+        />
 
-      <QuantityInput
-        quantity={quantity}
-        onChange={onQuantityChange}
-        disabled={isLoadingPrice}
-      />
+        <QuantityInput
+          quantity={quantity}
+          onChange={onQuantityChange}
+          disabled={isLoadingPrice}
+        />
+      </div>
 
-      <CardAttributes 
-        isFirstEdition={isFirstEdition}
-        isHolo={isHolo}
-        isReverseHolo={isReverseHolo}
-        onToggleFirstEdition={onToggleFirstEdition}
-        onToggleHolo={onToggleHolo}
-        onToggleReverseHolo={onToggleReverseHolo}
-        isLoading={isLoadingPrice}
-      />
+      <div className="grid grid-cols-2 gap-4">
+        <CardAttributes 
+          isFirstEdition={isFirstEdition}
+          isHolo={isHolo}
+          isReverseHolo={isReverseHolo}
+          onToggleFirstEdition={onToggleFirstEdition}
+          onToggleHolo={onToggleHolo}
+          onToggleReverseHolo={onToggleReverseHolo}
+          isLoading={isLoadingPrice}
+        />
 
-      <PaymentTypeSelector
-        paymentType={paymentType}
-        onSelect={onPaymentTypeChange}
-        disabled={isLoadingPrice}
-      />
+        <PaymentTypeSelector
+          paymentType={paymentType}
+          onSelect={onPaymentTypeChange}
+          disabled={isLoadingPrice}
+        />
+      </div>
     </div>
   );
 };

@@ -12,7 +12,7 @@ interface TradeInItemProps {
   onValueChange: (values: { tradeValue: number; cashValue: number }) => void;
 }
 
-// This is now just a passthrough component that uses our refactored implementation
+// This component passes props to the refactored implementation
 const TradeInItemWrapper: React.FC<TradeInItemProps> = ({ 
   item, 
   index, 

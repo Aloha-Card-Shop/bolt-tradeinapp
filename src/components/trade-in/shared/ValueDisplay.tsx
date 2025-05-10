@@ -31,10 +31,7 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
         </span>
         <div className="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
           {isLoading ? (
-            <div className="flex items-center justify-center">
-              <Loader2 className="h-4 w-4 animate-spin text-blue-500 mr-2" />
-              <span>Calculating...</span>
-            </div>
+            <span className="text-gray-500">Calculating...</span>
           ) : error ? (
             <span className="text-red-500 text-xs">{error}</span>
           ) : (

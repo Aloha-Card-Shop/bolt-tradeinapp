@@ -110,7 +110,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   });
 
   return (
-    <div className="border border-gray-200 rounded-xl p-4 hover:border-blue-100 transition-colors duration-200">
+    <div className="border border-gray-200 rounded-xl p-5 hover:border-blue-100 transition-colors duration-200 bg-white shadow-sm">
       <CardHeader 
         card={item.card} 
         index={index}

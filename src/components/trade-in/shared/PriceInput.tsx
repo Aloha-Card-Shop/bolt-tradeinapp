@@ -33,7 +33,7 @@ const PriceInput: React.FC<PriceInputProps> = ({
           <button 
             onClick={onRefreshPrice}
             disabled={isLoading}
-            className="text-xs text-blue-600 hover:text-blue-800 disabled:text-gray-400 flex items-center"
+            className="text-xs text-blue-600 hover:text-blue-800 disabled:text-gray-400 flex items-center mb-1"
             title="Fetch new price"
             type="button"
           >
@@ -66,12 +66,16 @@ const PriceInput: React.FC<PriceInputProps> = ({
           disabled={isLoading || readOnly}
           readOnly={readOnly}
         />
-        {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
-        {!error && isPriceUnavailable && (
+        
+        {isPriceUnavailable && !error && (
           <div className="mt-1 text-xs text-yellow-600 flex items-center">
             <AlertCircle className="h-3 w-3 mr-1" />
-            No price available. Enter price manually.
+            <span>Enter price manually</span>
           </div>
+        )}
+        
+        {error && (
+          <p className="mt-1 text-xs text-red-500">{error}</p>
         )}
       </div>
     </div>

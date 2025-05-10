@@ -27,36 +27,26 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
         Card Type
       </label>
       <div className="space-y-2">
-        <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-          <div className="text-sm font-medium">Edition</div>
-          <div className="flex items-center p-1 bg-gray-200 rounded-lg">
-            <button 
-              className={`px-3 py-1 text-sm transition-colors ${
-                !isFirstEdition
-                  ? 'bg-white text-gray-800 shadow rounded' 
-                  : 'text-gray-600'
-              }`}
-              onClick={onToggleFirstEdition}
-              disabled={isLoading}
-              type="button"
-            >
-              Unlimited
-            </button>
-            <button
-              className={`px-3 py-1 text-sm transition-colors ${
-                isFirstEdition
-                  ? 'bg-white text-gray-800 shadow rounded' 
-                  : 'text-gray-600'
-              }`}
-              onClick={onToggleFirstEdition}
-              disabled={isLoading}
-              type="button"
-            >
-              1st Edition
-            </button>
-          </div>
+        {/* First Edition toggle */}
+        <div 
+          onClick={isLoading ? undefined : onToggleFirstEdition}
+          className={`flex items-center justify-between p-2 ${
+            isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 cursor-pointer'
+          } bg-gray-50 rounded-lg transition-colors duration-200`}
+        >
+          <span className="text-sm font-medium">
+            1st Edition
+          </span>
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+          ) : isFirstEdition ? (
+            <ToggleRight className="h-5 w-5 text-purple-600" />
+          ) : (
+            <ToggleLeft className="h-5 w-5 text-gray-400" />
+          )}
         </div>
         
+        {/* Holo toggle */}
         <div 
           onClick={isLoading || isReverseHolo ? undefined : onToggleHolo}
           className={`flex items-center justify-between p-2 ${
@@ -67,14 +57,15 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
             Holo
           </span>
           {isLoading ? (
-            <Loader2 className="h-6 w-6 text-blue-600 animate-spin" />
+            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
           ) : isHolo && !isReverseHolo ? (
-            <ToggleRight className="h-6 w-6 text-purple-600" />
+            <ToggleRight className="h-5 w-5 text-purple-600" />
           ) : (
-            <ToggleLeft className="h-6 w-6 text-gray-400" />
+            <ToggleLeft className="h-5 w-5 text-gray-400" />
           )}
         </div>
         
+        {/* Reverse Holo toggle */}
         <div 
           onClick={isLoading || isHolo ? undefined : onToggleReverseHolo}
           className={`flex items-center justify-between p-2 ${
@@ -85,11 +76,11 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
             Reverse Holo
           </span>
           {isLoading ? (
-            <Loader2 className="h-6 w-6 text-blue-600 animate-spin" />
+            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
           ) : isReverseHolo ? (
-            <ToggleRight className="h-6 w-6 text-yellow-600" />
+            <ToggleRight className="h-5 w-5 text-yellow-600" />
           ) : (
-            <ToggleLeft className="h-6 w-6 text-gray-400" />
+            <ToggleLeft className="h-5 w-5 text-gray-400" />
           )}
         </div>
       </div>

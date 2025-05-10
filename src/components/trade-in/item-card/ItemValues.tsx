@@ -28,7 +28,7 @@ const ItemValues: React.FC<ItemValuesProps> = ({
   isPriceUnavailable,
 }) => {
   return (
-    <div className="mt-4 grid md:grid-cols-3 gap-4">
+    <div className="mt-4 grid grid-cols-2 gap-4">
       <PriceInput 
         price={price}
         isLoading={isLoadingPrice}
@@ -38,16 +38,16 @@ const ItemValues: React.FC<ItemValuesProps> = ({
         isPriceUnavailable={isPriceUnavailable}
       />
       
-      <ValueDisplay 
-        label={paymentType === 'cash' ? 'Cash Value' : 'Trade Value'} 
-        value={displayValue} 
-        isLoading={isLoading || isLoadingPrice || false}
-        error={error}
-      />
-
-      <div className="flex items-end">
+      <div className="relative">
+        <ValueDisplay 
+          label={paymentType === 'cash' ? 'Cash Value' : 'Trade Value'} 
+          value={displayValue} 
+          isLoading={isLoading || isLoadingPrice || false}
+          error={error}
+        />
+        
         {(isLoadingPrice || isLoading) && (
-          <div className="text-xs text-blue-600 flex items-center ml-2">
+          <div className="absolute bottom-[-24px] left-0 text-xs text-blue-600 flex items-center">
             <Loader2 className="h-3 w-3 animate-spin mr-1" /> 
             Calculating value...
           </div>
