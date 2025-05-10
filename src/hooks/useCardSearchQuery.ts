@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { CardDetails } from '../types/card';
 import { SetOption } from './useSetOptions';
@@ -68,7 +67,7 @@ export const useCardSearchQuery = () => {
       // Build and execute query using the utility function
       const { query, foundSetIds } = await buildSearchQuery(cardDetails, setOptions, 0);
       
-      // Execute query with 2-second timeout for better user experience
+      // Execute query with 5-second timeout for better user experience
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Search timeout')), 5000)
       );
@@ -106,7 +105,7 @@ export const useCardSearchQuery = () => {
         
         // Improved error messaging based on error codes
         if (error.code === '42703') {
-          toast.error(`Database schema error: ${error.message}. Please contact support.`);
+          toast.error('There was a database schema error. Please try again later or contact support.');
         } else {
           toast.error(`Search error: ${error.message || 'Unknown error'}`);
         }

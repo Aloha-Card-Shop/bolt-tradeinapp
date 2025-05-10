@@ -38,7 +38,7 @@ export const buildSearchQuery = async (
   // Start building the query with select fields specified to reduce data transfer
   let query = supabase
     .from('unified_products')
-    .select('id, name, group_id, group_name, image_url, attributes, tcgplayer_product_id, product_id', { count: 'exact' })
+    .select('id, name, group_id, image_url, attributes, tcgplayer_product_id, product_id', { count: 'exact' })
     .order('name')
     .range(from, to);
 
@@ -110,10 +110,8 @@ export const formatResultsToCardDetails = (
   }
   
   return results.map(item => {
-    // Set name lookup
-    const setName = item.group_name || 
-      (item.group_id && setOptions.find(s => s.id === item.group_id)?.name) || 
-      '';
+    // Set name lookup - use group_id to find the set name from setOptions
+    const setName = (item.group_id && setOptions.find(s => s.id === item.group_id)?.name) || '';
     
     // Enhanced card number extraction with better handling of JSON attributes
     let cardNumber = '';
