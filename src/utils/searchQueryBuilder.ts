@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
@@ -42,7 +43,6 @@ export const buildSearchQuery = async (
     .range(from, to);
 
   // Apply filters based on provided card details
-  // IMPORTANT: We're only using categoryId, not game since that column doesn't exist
   if (categoryId) {
     query = query.eq('category_id', categoryId);
     if (DEBUG_MODE) console.log(`Added category filter: ${categoryId}`);
@@ -64,9 +64,13 @@ export const buildSearchQuery = async (
     }
   }
   
+  // Search for card numbers through the attributes JSON field
   if (number) {
-    query = query.ilike('number', `%${number}%`);
-    if (DEBUG_MODE) console.log(`Added number filter: %${number}%`);
+    // Handle card number search within JSON attributes
+    // First try searching in number attribute with direct value
+    query = query.or(`attributes->>number.ilike.%${number}%,attributes->Number->>value.ilike.%${number}%,attributes->>card_number.ilike.%${number}%`);
+    
+    if (DEBUG_MODE) console.log(`Added attributes JSON number filter: %${number}%`);
   }
 
   // Log the raw query for debugging
@@ -76,7 +80,7 @@ export const buildSearchQuery = async (
       category_id: categoryId || 'any',
       name: name ? `%${name}%` : 'any',
       set_id: set ? (setOptions.find(s => s.name === set)?.id || 'not found') : 'any',
-      number: number ? `%${number}%` : 'any'
+      number: number ? `Searching in attributes JSON for: ${number}` : 'any'
     });
   }
 
@@ -98,10 +102,26 @@ export const formatResultsToCardDetails = (
       (item.group_id && setOptions.find(s => s.id === item.group_id)?.name) || 
       '';
     
-    // Normalize card number structure
-    let cardNumber = item.number || '';
-    if (typeof cardNumber === 'object') {
-      cardNumber = cardNumber.value || cardNumber.displayName || '';
+    // Enhanced card number extraction with better handling of JSON attributes
+    let cardNumber = '';
+    
+    if (item.number) {
+      cardNumber = item.number;
+    } else if (item.attributes) {
+      // Try various common paths for card numbers in the attributes object
+      if (item.attributes.number) {
+        cardNumber = typeof item.attributes.number === 'object' ? 
+                    (item.attributes.number.value || item.attributes.number.displayName || '') : 
+                    String(item.attributes.number);
+      } else if (item.attributes.Number) {
+        cardNumber = typeof item.attributes.Number === 'object' ? 
+                    (item.attributes.Number.value || item.attributes.Number.displayName || '') : 
+                    String(item.attributes.Number);
+      } else if (item.attributes.card_number) {
+        cardNumber = typeof item.attributes.card_number === 'object' ? 
+                    (item.attributes.card_number.value || item.attributes.card_number.displayName || '') : 
+                    String(item.attributes.card_number);
+      }
     }
     
     // Extract product ID with improved priority hierarchy
@@ -116,12 +136,21 @@ export const formatResultsToCardDetails = (
         attrs_tcgplayer: item.attributes?.tcgplayer_product_id,
         attrs_product: item.attributes?.product_id
       });
+      
+      if (cardNumber) {
+        console.log(`Found card number for ${item.name}: ${cardNumber} from`, {
+          direct_number: item.number,
+          attrs_number: item.attributes?.number,
+          attrs_Number: item.attributes?.Number,
+          attrs_card_number: item.attributes?.card_number
+        });
+      }
     }
 
     return {
       name: item.name || item.clean_name || '',
       set: setName,
-      number: item.number || '',
+      number: cardNumber,
       game: searchCriteria.game,
       categoryId: searchCriteria.categoryId,
       productId: productId,

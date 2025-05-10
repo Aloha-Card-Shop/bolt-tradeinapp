@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { CardDetails } from '../types/card';
 import { SetOption } from './useSetOptions';
@@ -87,7 +88,14 @@ export const useCardSearchQuery = () => {
 
       if (error) {
         console.error('Error from Supabase query:', error);
-        toast.error(`Search error: ${error.message || 'Unknown error'}`);
+        
+        // Improved error messaging based on error codes
+        if (error.code === '42703') {
+          toast.error(`Database schema error: ${error.message}. Please contact support.`);
+        } else {
+          toast.error(`Search error: ${error.message || 'Unknown error'}`);
+        }
+        
         throw error;
       }
 
@@ -116,7 +124,12 @@ export const useCardSearchQuery = () => {
       return foundSetIds;
     } catch (error) {
       console.error('❌ Error searching cards:', error);
-      toast.error(`Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Don't show toast for aborted requests
+      if (error instanceof Error && error.name !== 'AbortError') {
+        toast.error(`Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+      
       setSearchResults([]);
       setHasMoreResults(false);
       setTotalResults(0);
