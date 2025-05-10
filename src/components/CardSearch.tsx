@@ -19,6 +19,7 @@ interface CardSearchProps {
   searchInputRef?: React.RefObject<HTMLInputElement>;
   potentialCardNumber?: string | null;
   onUseAsCardNumber?: () => void;
+  performSearch?: () => void; // Added this prop to match what's being passed in MainApp.tsx
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
@@ -28,7 +29,8 @@ const CardSearch: React.FC<CardSearchProps> = ({
   isLoadingSets,
   searchInputRef,
   potentialCardNumber = null,
-  onUseAsCardNumber = () => {}
+  onUseAsCardNumber = () => {},
+  performSearch = () => {} // Add default value to make it optional
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
