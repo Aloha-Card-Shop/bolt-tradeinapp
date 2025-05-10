@@ -69,7 +69,7 @@ export const buildSearchQuery = async (
     const fullNumber = number.toString();
     
     // Build a combined filter to search in attributes object ONLY, since there's no number column
-    let cardNumberFilters = [];
+    let cardNumberFilters: string[] = [];
     
     // Attributes-level searches for different possible paths
     const possiblePaths = ['number', 'Number', 'card_number', 'cardNumber'];
