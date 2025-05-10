@@ -10,3 +10,23 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+// Helper function to check if the tcgplayer_product_id migration has completed
+export const checkProductIdMigration = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('unified_products')
+      .select('tcgplayer_product_id')
+      .limit(1);
+    
+    if (error) {
+      console.error('Failed to check migration status:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (e) {
+    console.error('Migration check failed:', e);
+    return false;
+  }
+};
