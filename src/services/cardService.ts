@@ -1,3 +1,4 @@
+
 // src/services/cardService.ts
 
 import { supabase } from '../lib/supabase';
@@ -54,6 +55,7 @@ export async function getOrCreateCard(card: CardDetails): Promise<string> {
       game: card.game,
       set: card.set,
       number: card.number,
+      productId: card.productId
     });
 
     const { data: newCard, error: insertError } = await supabase
@@ -64,7 +66,12 @@ export async function getOrCreateCard(card: CardDetails): Promise<string> {
         set_name: card.set || null,
         card_number: card.number || null,
         image_url: card.imageUrl || null,
-        attributes: { tcgplayer_id: card.productId || null }
+        attributes: { 
+          tcgplayer_product_id: card.productId || null,
+          // Save additional details for future reference
+          source: 'trade-in-app',
+          created_at: new Date().toISOString()
+        }
       })
       .select('id')
       .single(); // safe here because we expect exactly one row

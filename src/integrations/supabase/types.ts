@@ -359,6 +359,7 @@ export type Database = {
           presale_note: string | null
           product_id: number
           released_on: string | null
+          tcgplayer_product_id: string | null
           url: string | null
         }
         Insert: {
@@ -376,6 +377,7 @@ export type Database = {
           presale_note?: string | null
           product_id: number
           released_on?: string | null
+          tcgplayer_product_id?: string | null
           url?: string | null
         }
         Update: {
@@ -393,6 +395,7 @@ export type Database = {
           presale_note?: string | null
           product_id?: number
           released_on?: string | null
+          tcgplayer_product_id?: string | null
           url?: string | null
         }
         Relationships: [
@@ -417,6 +420,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      extract_card_number: {
+        Args: { attrs: Json }
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string

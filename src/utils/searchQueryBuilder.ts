@@ -106,7 +106,7 @@ export const buildSearchQuery = async (
       if (DEBUG_MODE) console.log(`Added set filter on cards table: ${set}`);
     }
   } else {
-    // Apply filters for unified_products table - keep existing code from original
+    // Apply filters for unified_products table
     if (categoryId) {
       query = query.eq('category_id', categoryId);
       if (DEBUG_MODE) console.log(`Added category filter: ${categoryId}`);

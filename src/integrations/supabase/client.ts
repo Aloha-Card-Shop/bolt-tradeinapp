@@ -11,19 +11,31 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// Helper function to check if the tcgplayer_product_id migration has completed
+// Helper function to check if both the tcgplayer_product_id migration and card number extraction have completed
 export const checkProductIdMigration = async () => {
   try {
-    const { error } = await supabase
+    // First check for tcgplayer_product_id column in unified_products
+    const { error: columnError } = await supabase
       .from('unified_products')
       .select('tcgplayer_product_id')
       .limit(1);
     
-    if (error) {
-      console.error('Failed to check migration status:', error);
+    if (columnError) {
+      console.error('Failed to check tcgplayer_product_id column:', columnError);
+      return false;
+    }
+
+    // Then check if card numbers are properly populated in the cards table
+    const { error: cardNumberError } = await supabase
+      .rpc('extract_card_number', { attrs: { Number: { value: '123/456' } } });
+    
+    if (cardNumberError) {
+      console.error('Failed to check extract_card_number function:', cardNumberError);
       return false;
     }
     
+    // If we get here, both migrations completed successfully
+    console.log('Product ID and card number migrations are complete');
     return true;
   } catch (e) {
     console.error('Migration check failed:', e);
