@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { DollarSign, Loader2 } from 'lucide-react';
+import { DollarSign } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatters';
 
 interface ValueDisplayProps {
