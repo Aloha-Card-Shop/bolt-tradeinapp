@@ -19,7 +19,7 @@ interface CardSearchProps {
   searchInputRef?: React.RefObject<HTMLInputElement>;
   potentialCardNumber?: string | null;
   onUseAsCardNumber?: () => void;
-  performSearch?: () => void; // Added this prop to match what's being passed in MainApp.tsx
+  performSearch?: () => void; 
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
@@ -30,7 +30,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
   searchInputRef,
   potentialCardNumber = null,
   onUseAsCardNumber = () => {},
-  performSearch = () => {} // Add default value to make it optional
+  performSearch = () => {} 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -53,7 +53,6 @@ const CardSearch: React.FC<CardSearchProps> = ({
     onInputChange(event);
   };
 
-  // Added a handleKeyDown function to use performSearch
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       performSearch();
@@ -81,7 +80,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
           <SearchNameInput 
             value={searchTerm}
             onChange={handleInputChange}
-            onKeyDown={handleKeyDown} // Pass the handleKeyDown function
+            onKeyDown={handleKeyDown}
             inputRef={searchInputRef}
           />
           
@@ -97,15 +96,14 @@ const CardSearch: React.FC<CardSearchProps> = ({
           selectedSet={cardDetails.set || ''}
           setOptions={setOptions}
           isLoading={isLoadingSets}
-          disabled={!cardDetails.name && !cardDetails.number}
           onChange={onInputChange}
         />
 
         {/* Card Number Input */}
         <CardNumberInput 
           cardNumber={cardDetails.number} 
-          onChange={onInputChange} 
-          onKeyDown={handleKeyDown} // Also add Enter key behavior to card number input
+          onChange={onInputChange}
+          onKeyDown={handleKeyDown}
         />
       </div>
     </div>

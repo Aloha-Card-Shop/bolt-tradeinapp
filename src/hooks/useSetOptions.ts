@@ -38,7 +38,10 @@ export const useSetOptions = (game: GameType, categoryId?: number) => {
         })) || [];
 
         setSetOptions(options);
-        setFilteredSetOptions(options);
+        setFilteredSetOptions(options); // Initially show all sets
+        
+        console.log(`Loaded ${options.length} sets for game type: ${game}, categoryId: ${categoryId}`);
+        
       } catch (error) {
         console.error('Error fetching set options:', error);
         setSetOptions([]);
@@ -51,50 +54,53 @@ export const useSetOptions = (game: GameType, categoryId?: number) => {
     fetchSetOptions();
   }, [game, categoryId]);
 
-  // Filter set options based on search results and search terms
+  // Filter set options based on search results and search terms with less aggressive filtering
   const filterSetOptions = (
     searchTerms: string[],
     foundSetIds?: Set<number>
   ) => {
-    // Without search terms, no filtering
-    if (searchTerms.length === 0 && !foundSetIds) {
+    console.log(`Filtering sets with terms: [${searchTerms.join(', ')}], foundSetIds size: ${foundSetIds?.size || 0}`);
+    
+    // Without search terms or found sets, show all sets
+    if (searchTerms.length === 0 && (!foundSetIds || foundSetIds.size === 0)) {
+      console.log(`Showing all ${setOptions.length} sets - no filters active`);
       setFilteredSetOptions(setOptions);
       return;
     }
 
-    // Filter sets based on search terms OR if they contain any of the found cards
     let filtered = setOptions;
     
-    // Only filter by search terms if the user is specifically searching for a set name
+    // If we have search terms, do light filtering
     if (searchTerms.length > 0) {
+      // Less aggressive filtering - match if ANY search term appears anywhere in the set name
       filtered = setOptions.filter(option => {
         const setName = option.name.toLowerCase();
-        // Match if any search term appears anywhere in the set name
-        // OR if this set contains any of our found cards
-        return searchTerms.every(term => setName.includes(term.toLowerCase())) ||
-               (foundSetIds && foundSetIds.has(option.id));
+        return searchTerms.some(term => setName.includes(term.toLowerCase()));
       });
+      console.log(`After term filtering: ${filtered.length} sets match search terms`);
     }
 
-    // If we're filtering by card number, ensure sets containing matching cards are included
+    // Ensure we include sets that contain matching cards
     if (foundSetIds && foundSetIds.size > 0) {
-      // Add any sets that contain our found cards but might have been filtered out
-      const additionalSets = Array.from(foundSetIds)
+      // Create a Set from the filtered sets for O(1) lookups
+      const filteredSetIds = new Set(filtered.map(set => set.id));
+      
+      // Add any missing sets that contain our found cards
+      const setsToAdd = Array.from(foundSetIds)
+        .filter(id => !filteredSetIds.has(id))
         .map(id => setOptions.find(s => s.id === id))
         .filter(Boolean) as SetOption[];
       
-      // Combine and deduplicate sets
-      filtered = Array.from(new Set([...filtered, ...additionalSets]));
-    }
-
-    // If we still have no options but have found cards, use their sets
-    if (filtered.length === 0 && foundSetIds && foundSetIds.size > 0) {
-      filtered = setOptions.filter(option => foundSetIds.has(option.id));
+      if (setsToAdd.length > 0) {
+        console.log(`Adding ${setsToAdd.length} additional sets that contain matching cards`);
+        filtered = [...filtered, ...setsToAdd];
+      }
     }
 
     // Always sort alphabetically
     filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
 
+    console.log(`Final filtered set count: ${filtered.length} sets`);
     setFilteredSetOptions(filtered);
   };
 

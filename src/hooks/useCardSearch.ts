@@ -5,9 +5,9 @@ import { useCardSearchQuery } from './useCardSearchQuery';
 import { useCardSuggestions } from './useCardSuggestions';
 import { isLikelyCardNumber } from '../utils/cardSearchUtils';
 
-// Further reduced debounce timeout for more responsive search
-const SEARCH_DEBOUNCE_MS = 50; // Reduced from 100ms to 50ms
-const SUGGESTION_DEBOUNCE_MS = 75;
+// Increased debounce timeouts to reduce race conditions
+const SEARCH_DEBOUNCE_MS = 200; // Increased from 50ms
+const SUGGESTION_DEBOUNCE_MS = 200; // Increased from 75ms
 
 export const useCardSearch = () => {
   const [cardDetails, setCardDetails] = useState<CardDetails>({
@@ -100,7 +100,7 @@ export const useCardSearch = () => {
     }
   }, [shouldSearch, cardDetails, searchCards, setOptions, filterSetOptions]);
 
-  // Modified search behavior: immediate search as user types with even fewer characters
+  // Modified search behavior to better support set-only searches
   useEffect(() => {
     // Clear previous suggestion debounce
     if (suggestionDebounceRef.current) {
@@ -131,8 +131,13 @@ export const useCardSearch = () => {
       clearTimeout(searchDebounceRef.current);
     }
     
-    // Start search with just 1 character
-    if ((cardDetails.name && cardDetails.name.length >= 1) || cardDetails.number || cardDetails.set) {
+    // Start search with any valid criteria, including set-only searches
+    const hasSearchCriteria = 
+      (cardDetails.name && cardDetails.name.length >= 1) || 
+      cardDetails.number || 
+      cardDetails.set;
+      
+    if (hasSearchCriteria) {
       searchDebounceRef.current = setTimeout(() => {
         console.log("Auto-triggering search for:", cardDetails);
         setShouldSearch(true);
@@ -168,10 +173,11 @@ export const useCardSearch = () => {
       
       // Reset set selection if name is cleared
       if (!value) {
-        setCardDetails(prev => ({ ...prev, set: '', name: '', number: '' }));
+        setCardDetails(prev => ({ ...prev, name: '' }));
         setPotentialCardNumber(null);
       }
     } else if (name === 'set') {
+      // Updated set handling to perform search immediately
       setCardDetails(prev => ({ ...prev, [name]: value }));
       
       // Trigger search immediately when set changes
@@ -206,7 +212,7 @@ export const useCardSearch = () => {
     setTimeout(() => setShouldSearch(true), 50);
   }, [potentialCardNumber]);
 
-  // Perform a manual search (kept for compatibility but less needed now)
+  // Perform a manual search
   const performSearch = useCallback(() => {
     console.log("Manual search triggered with:", cardDetails);
     if (cardDetails.name || cardDetails.number || cardDetails.set) {
@@ -245,8 +251,6 @@ export const useCardSearch = () => {
     loadMoreResults,
     totalResults,
     handleUseAsCardNumber,
-    // We still include performSearch in the return object for API compatibility,
-    // but it's no longer passed to CardSearch component
     performSearch
   };
 };

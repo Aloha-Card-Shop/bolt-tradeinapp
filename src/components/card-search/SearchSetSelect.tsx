@@ -6,15 +6,13 @@ interface SearchSetSelectProps {
   selectedSet: string;
   setOptions: SetOption[];
   isLoading: boolean;
-  disabled: boolean;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
 const SearchSetSelect: React.FC<SearchSetSelectProps> = ({ 
   selectedSet, 
   setOptions, 
-  isLoading, 
-  disabled,
+  isLoading,
   onChange 
 }) => {
   return (
@@ -30,7 +28,6 @@ const SearchSetSelect: React.FC<SearchSetSelectProps> = ({
           name="set"
           value={selectedSet || ''}
           onChange={onChange}
-          disabled={disabled || setOptions.length === 0}
           className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:opacity-70"
         >
           <option value="">Select a set</option>
