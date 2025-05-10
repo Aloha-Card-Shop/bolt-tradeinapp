@@ -26,17 +26,24 @@ export const checkProductIdMigration = async () => {
     }
 
     // Then check if card numbers are properly populated in the cards table
-    const { error: cardNumberError } = await supabase
-      .rpc('extract_card_number', { attrs: { Number: { value: '123/456' } } });
+    const { data: cardsWithNumbers, error: cardsError } = await supabase
+      .from('cards')
+      .select('card_number')
+      .not('card_number', 'is', null)
+      .limit(5);
     
-    if (cardNumberError) {
-      console.error('Failed to check extract_card_number function:', cardNumberError);
+    if (cardsError) {
+      console.error('Failed to check card numbers in cards table:', cardsError);
       return false;
     }
     
-    // If we get here, both migrations completed successfully
-    console.log('Product ID and card number migrations are complete');
-    return true;
+    const hasCardNumbers = cardsWithNumbers && cardsWithNumbers.length > 0;
+    
+    console.log(`Migration check: ${hasCardNumbers ? 'Card numbers present' : 'Card numbers missing'}`);
+    console.log(`Found ${cardsWithNumbers?.length || 0} cards with numbers in sample`);
+    
+    // If both checks passed, the migration is complete
+    return !columnError && hasCardNumbers;
   } catch (e) {
     console.error('Migration check failed:', e);
     return false;

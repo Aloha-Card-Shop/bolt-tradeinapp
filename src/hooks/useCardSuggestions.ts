@@ -69,16 +69,43 @@ export const useCardSuggestions = () => {
         }
       }
 
-      // Transform to CardDetails format
-      const suggestions = allMatches.map(product => ({
-        name: product.name,
-        game,
-        categoryId,
-        imageUrl: product.image_url || null,
-        productId: product.tcgplayer_product_id || product.product_id?.toString() || product.attributes?.tcgplayer_product_id || null,
-        set: '',
-        number: product.attributes?.card_number || product.attributes?.Number?.value || ''
-      }));
+      // Transform to CardDetails format with improved card number and product ID extraction
+      const suggestions = allMatches.map(product => {
+        // Extract card number from attributes using multiple possible paths
+        let cardNumber = '';
+        if (product.attributes) {
+          if (product.attributes.Number) {
+            cardNumber = typeof product.attributes.Number === 'object' ? 
+              (product.attributes.Number.value || product.attributes.Number.displayName || '') : 
+              product.attributes.Number;
+          } else if (product.attributes.number) {
+            cardNumber = typeof product.attributes.number === 'object' ? 
+              (product.attributes.number.value || product.attributes.number.displayName || '') : 
+              product.attributes.number;
+          } else if (product.attributes.card_number) {
+            cardNumber = typeof product.attributes.card_number === 'object' ? 
+              (product.attributes.card_number.value || product.attributes.card_number.displayName || '') : 
+              product.attributes.card_number;
+          }
+        }
+
+        // Prioritize tcgplayer_product_id, then fall back to other ID fields
+        const productId = 
+          product.tcgplayer_product_id || 
+          (product.attributes?.tcgplayer_product_id?.toString()) || 
+          product.product_id?.toString() || 
+          null;
+
+        return {
+          name: product.name,
+          game,
+          categoryId,
+          imageUrl: product.image_url || null,
+          productId,
+          set: '',
+          number: cardNumber
+        };
+      });
 
       setSuggestions(suggestions);
       
@@ -120,7 +147,7 @@ export const useCardSuggestions = () => {
     fetchSuggestions,
     addToRecentSearches,
     getRecentSearches,
-    recentSearches, // Directly expose recentSearches array
+    recentSearches,
     clearRecentSearches
   };
 };
