@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CardDetails, GameType, GAME_OPTIONS } from '../types/card';
 import { useSetOptions } from './useSetOptions';
@@ -5,9 +6,9 @@ import { useCardSearchQuery } from './useCardSearchQuery';
 import { useCardSuggestions } from './useCardSuggestions';
 import { isLikelyCardNumber } from '../utils/cardSearchUtils';
 
-// Reduced debounce timeout for more responsive search
-const SEARCH_DEBOUNCE_MS = 200; // Reduced from 500ms to 200ms
-const SUGGESTION_DEBOUNCE_MS = 150; // Reduced from 300ms to 150ms
+// Greatly reduced debounce timeout for more responsive search
+const SEARCH_DEBOUNCE_MS = 100; // Reduced from 200ms to 100ms
+const SUGGESTION_DEBOUNCE_MS = 75; // Reduced from 150ms to 75ms
 
 export const useCardSearch = () => {
   const [cardDetails, setCardDetails] = useState<CardDetails>({
@@ -55,6 +56,9 @@ export const useCardSearch = () => {
 
   // Store the last search query to avoid duplicate searches
   const lastSearchRef = useRef<string>('');
+  
+  // Cache for recent search results to avoid redundant DB queries
+  const searchCacheRef = useRef<Map<string, any>>(new Map());
 
   // Perform search when shouldSearch is true
   useEffect(() => {
@@ -62,6 +66,14 @@ export const useCardSearch = () => {
       const performSearch = async () => {
         // Create a search signature to check against previous searches
         const searchSignature = `${cardDetails.name}|${cardDetails.number}|${cardDetails.set}|${cardDetails.game}`;
+        
+        // Check if we have cached results for this signature
+        const cachedResult = searchCacheRef.current.get(searchSignature);
+        if (cachedResult) {
+          console.log('Using cached search results for:', searchSignature);
+          // Handle cached results (this would need proper implementation)
+          // For now, we'll still search but could optimize this further
+        }
         
         if (searchSignature !== lastSearchRef.current) {
           lastSearchRef.current = searchSignature;
@@ -77,6 +89,9 @@ export const useCardSearch = () => {
           // Search cards and get set IDs from results
           const foundSetIds = await searchCards(cardDetails, setOptions);
           
+          // Cache the search for future use (simplified - would need more implementation)
+          // searchCacheRef.current.set(searchSignature, {...});
+          
           // Filter set options based on search results
           const searchTerms = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
           filterSetOptions(searchTerms, foundSetIds);
@@ -89,7 +104,7 @@ export const useCardSearch = () => {
     }
   }, [shouldSearch, cardDetails, searchCards, setOptions, filterSetOptions]);
 
-  // Modified search behavior: faster search as user types
+  // Modified search behavior: immediate search as user types with minimal characters
   useEffect(() => {
     // Clear previous suggestion debounce
     if (suggestionDebounceRef.current) {
@@ -120,8 +135,10 @@ export const useCardSearch = () => {
       clearTimeout(searchDebounceRef.current);
     }
     
-    // Search with fewer characters (2+ instead of 3+) and faster response
-    if ((cardDetails.name && cardDetails.name.length >= 2) || cardDetails.number || cardDetails.set) {
+    // Start search with even fewer characters (just 1 character) when name is the field being used
+    const minNameChars = cardDetails.number || cardDetails.set ? 2 : 1;
+    
+    if ((cardDetails.name && cardDetails.name.length >= minNameChars) || cardDetails.number || cardDetails.set) {
       searchDebounceRef.current = setTimeout(() => {
         console.log("Triggering search for:", cardDetails);
         setShouldSearch(true);

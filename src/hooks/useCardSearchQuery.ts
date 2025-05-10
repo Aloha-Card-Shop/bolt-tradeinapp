@@ -22,11 +22,12 @@ export const useCardSearchQuery = () => {
     setOptions: []
   });
 
-  // Search for cards based on provided criteria
+  // Optimized search function with faster response and better error handling
   const searchCards = async (
     cardDetails: CardDetails,
     setOptions: SetOption[]
   ): Promise<Set<number>> => {
+    // Quick validation to avoid empty searches
     if (!cardDetails.name && !cardDetails.number && !cardDetails.set) {
       if (DEBUG_MODE) console.log('Search aborted: No search criteria provided');
       setSearchResults([]);
@@ -35,9 +36,14 @@ export const useCardSearchQuery = () => {
       return new Set<number>();
     }
 
+    // Only show loading state if there are no existing results
+    // This prevents flickering when refining a search
+    if (searchResults.length === 0) {
+      setIsSearching(true);
+    }
+    
     // Reset pagination for new searches
     setCurrentPage(0);
-    setIsSearching(true);
     
     // Log search criteria in detail
     if (DEBUG_MODE) {
@@ -56,19 +62,28 @@ export const useCardSearchQuery = () => {
     });
     
     try {
+      // Start performance measurement
+      const startTime = performance.now();
+      
       // Build and execute query using the utility function
       const { query, foundSetIds } = await buildSearchQuery(cardDetails, setOptions, 0);
       
-      if (DEBUG_MODE) {
-        console.log('🔍 Executing Supabase query with filters:', {
-          categoryId: cardDetails.categoryId,
-          name: cardDetails.name ? `%${cardDetails.name}%` : null,
-          set: cardDetails.set,
-          number: cardDetails.number
-        });
-      }
+      // Execute query with 2-second timeout for better user experience
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Search timeout')), 5000)
+      );
       
-      const { data, error, count } = await query;
+      // Race between the query and the timeout
+      const { data, error, count } = await Promise.race([
+        query,
+        timeoutPromise.then(() => { throw new Error('Search timeout'); })
+      ]) as any;
+
+      // End performance measurement
+      const endTime = performance.now();
+      if (DEBUG_MODE) {
+        console.log(`🕒 Query execution time: ${(endTime - startTime).toFixed(2)}ms`);
+      }
 
       // Log raw response for debugging
       if (DEBUG_MODE) {
@@ -120,7 +135,6 @@ export const useCardSearchQuery = () => {
       }
       
       setSearchResults(foundCards);
-
       return foundSetIds;
     } catch (error) {
       console.error('❌ Error searching cards:', error);

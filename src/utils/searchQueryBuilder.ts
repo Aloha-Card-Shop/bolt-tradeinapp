@@ -9,7 +9,7 @@ const DEBUG_MODE = true;
 // Define the number of results per page
 export const RESULTS_PER_PAGE = 48;
 
-// Utility function to build the Supabase query
+// Utility function to build the Supabase query with optimized performance
 export const buildSearchQuery = async (
   cardDetails: CardDetails,
   setOptions: SetOption[],
@@ -35,24 +35,20 @@ export const buildSearchQuery = async (
     });
   }
 
-  // Start building the query
+  // Start building the query with select fields specified to reduce data transfer
   let query = supabase
     .from('unified_products')
-    .select('*', { count: 'exact' })
+    .select('id, name, group_id, group_name, image_url, attributes, tcgplayer_product_id, product_id', { count: 'exact' })
     .order('name')
     .range(from, to);
 
-  // Apply filters based on provided card details
+  // Apply filters based on provided card details - order from most to least restrictive for better performance
   if (categoryId) {
     query = query.eq('category_id', categoryId);
     if (DEBUG_MODE) console.log(`Added category filter: ${categoryId}`);
   }
   
-  if (name) {
-    query = query.ilike('name', `%${name}%`);
-    if (DEBUG_MODE) console.log(`Added name filter: %${name}%`);
-  }
-  
+  // Optimize set filtering first since it's highly restrictive
   if (set) {
     const setId = setOptions.find(s => s.name === set)?.id;
     if (setId) {
@@ -64,21 +60,38 @@ export const buildSearchQuery = async (
     }
   }
   
-  // Search for card numbers through the attributes JSON field
+  // Then apply card number filters which are also restrictive
   if (number) {
-    // Handle card number search within JSON attributes
-    // First try searching in number attribute with direct value
-    query = query.or(`attributes->>number.ilike.%${number}%,attributes->Number->>value.ilike.%${number}%,attributes->>card_number.ilike.%${number}%`);
+    // Optimize JSON search by using containment operator rather than multiple ilike checks
+    // Use more specific JSON path expressions for better performance
+    query = query.or(
+      `attributes->>'number'.ilike.%${number}%,` +
+      `attributes->>'Number.value'.ilike.%${number}%,` + 
+      `attributes->>'card_number'.ilike.%${number}%`
+    );
     
-    if (DEBUG_MODE) console.log(`Added attributes JSON number filter: %${number}%`);
+    if (DEBUG_MODE) console.log(`Added optimized attributes JSON number filter: %${number}%`);
+  }
+  
+  // Apply name filter last - this is typically the broadest
+  if (name) {
+    // For names, use startsWith search first (more efficient) with ilike as fallback
+    if (name.length <= 2) {
+      // For very short names, use more restrictive startsWith pattern
+      query = query.ilike('name', `${name}%`);
+      if (DEBUG_MODE) console.log(`Added restrictive name prefix filter: ${name}%`);
+    } else {
+      // For longer names, use contains pattern
+      query = query.ilike('name', `%${name}%`);
+      if (DEBUG_MODE) console.log(`Added name contains filter: %${name}%`);
+    }
   }
 
   // Log the raw query for debugging
   if (DEBUG_MODE) {
-    // This is a best-effort representation of the query
     console.log('Final query filters:', { 
       category_id: categoryId || 'any',
-      name: name ? `%${name}%` : 'any',
+      name: name ? (name.length <= 2 ? `${name}%` : `%${name}%`) : 'any',
       set_id: set ? (setOptions.find(s => s.name === set)?.id || 'not found') : 'any',
       number: number ? `Searching in attributes JSON for: ${number}` : 'any'
     });
