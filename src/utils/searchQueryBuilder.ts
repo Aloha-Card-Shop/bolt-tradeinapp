@@ -278,7 +278,7 @@ export const formatResultsToCardDetails = (
     // Extract product ID with improved priority hierarchy
     // For cards table, we might not have a product_id directly
     const productId = isFromCardsTable 
-      ? (item.id || null)  // Use card ID as product ID for cards table
+      ? (item.attributes?.tcgplayer_product_id || null)  // Use tcgplayer_product_id from attributes
       : extractProductId(item);
     
     // Debug output to trace productId extraction

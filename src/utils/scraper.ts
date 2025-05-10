@@ -1,4 +1,6 @@
 
+import { supabase } from '../lib/supabase';
+
 interface CacheEntry {
   price: number;
   timestamp: number;
@@ -169,5 +171,40 @@ export const fetchCardPrices = async (
   } catch (error) {
     console.error('Error fetching price:', error);
     return { price: "0.00", unavailable: true };
+  }
+};
+
+// Add a function to update card prices in the database
+export const updateCardPrice = async (
+  cardId: string, 
+  price: number, 
+  priceType: 'market_price' | 'low_price' | 'mid_price' | 'high_price' = 'market_price'
+): Promise<boolean> => {
+  try {
+    if (!cardId || typeof price !== 'number') {
+      console.error('Invalid parameters for updateCardPrice:', { cardId, price, priceType });
+      return false;
+    }
+    
+    // Create update object with only the field we want to update
+    const updateData: any = {
+      [priceType]: price,
+      last_updated: new Date().toISOString()
+    };
+    
+    const { error } = await supabase
+      .from('cards')
+      .update(updateData)
+      .eq('id', cardId);
+    
+    if (error) {
+      console.error('Failed to update card price:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in updateCardPrice:', error);
+    return false;
   }
 };
