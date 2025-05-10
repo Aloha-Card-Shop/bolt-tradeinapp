@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { CardDetails } from '../types/card';
 import { Package } from 'lucide-react';
@@ -7,7 +8,6 @@ import { SetOption } from '../hooks/useSetOptions';
 import SearchGameSelect from './card-search/SearchGameSelect';
 import SearchNameInput from './card-search/SearchNameInput';
 import CardNumberSuggestion from './card-search/CardNumberSuggestion';
-import SearchHistory from './card-search/SearchHistory';
 import SearchSetSelect from './card-search/SearchSetSelect';
 import CardNumberInput from './card-search/CardNumberInput';
 
@@ -16,9 +16,6 @@ interface CardSearchProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   setOptions: SetOption[];
   isLoadingSets: boolean;
-  searchHistory?: string[];
-  onSelectHistoryItem?: (item: string) => void;
-  onClearHistory?: () => void;
   searchInputRef?: React.RefObject<HTMLInputElement>;
   potentialCardNumber?: string | null;
   onUseAsCardNumber?: () => void;
@@ -29,9 +26,6 @@ const CardSearch: React.FC<CardSearchProps> = ({
   onInputChange, 
   setOptions, 
   isLoadingSets,
-  searchHistory = [],
-  onSelectHistoryItem = () => {},
-  onClearHistory = () => {},
   searchInputRef,
   potentialCardNumber = null,
   onUseAsCardNumber = () => {}
@@ -57,7 +51,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
     onInputChange(event);
   };
 
-  // Simplified keyboard handler - we don't need to manage dropdown visibility anymore
+  // Simplified keyboard handler
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -80,7 +74,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
           onChange={onInputChange} 
         />
 
-        {/* Card Name Input - removed suggestions dropdown */}
+        {/* Card Name Input */}
         <div className="relative">
           <SearchNameInput 
             value={searchTerm}
@@ -89,19 +83,12 @@ const CardSearch: React.FC<CardSearchProps> = ({
             inputRef={searchInputRef}
           />
           
-          {/* Card number suggestion - keep this feature */}
+          {/* Card number suggestion */}
           <CardNumberSuggestion 
             potentialCardNumber={potentialCardNumber}
             onUseAsCardNumber={onUseAsCardNumber}
           />
         </div>
-        
-        {/* Recent Searches - keep this feature */}
-        <SearchHistory 
-          searchHistory={searchHistory}
-          onSelectHistoryItem={onSelectHistoryItem}
-          onClearHistory={onClearHistory}
-        />
         
         {/* Set Selection */}
         <SearchSetSelect 

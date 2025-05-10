@@ -6,9 +6,9 @@ import { useCardSuggestions } from './useCardSuggestions';
 import { isLikelyCardNumber } from '../utils/cardSearchUtils';
 import toast from 'react-hot-toast';
 
-// Debounce timeout duration for search
-const SEARCH_DEBOUNCE_MS = 500;
-const SUGGESTION_DEBOUNCE_MS = 300;
+// Reduced debounce timeout for more responsive search
+const SEARCH_DEBOUNCE_MS = 200; // Reduced from 500ms to 200ms
+const SUGGESTION_DEBOUNCE_MS = 150; // Reduced from 300ms to 150ms
 
 export const useCardSearch = () => {
   const [cardDetails, setCardDetails] = useState<CardDetails>({
@@ -83,11 +83,6 @@ export const useCardSearch = () => {
           // Filter set options based on search results
           const searchTerms = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
           filterSetOptions(searchTerms, foundSetIds);
-
-          // Add to search history if it's a meaningful search
-          if (cardDetails.name && cardDetails.name.length >= 3) {
-            addToRecentSearches(cardDetails.name);
-          }
         }
         
         setShouldSearch(false);
@@ -95,9 +90,9 @@ export const useCardSearch = () => {
       
       performSearch();
     }
-  }, [shouldSearch, cardDetails, searchCards, setOptions, filterSetOptions, addToRecentSearches]);
+  }, [shouldSearch, cardDetails, searchCards, setOptions, filterSetOptions]);
 
-  // Modified search behavior: Now we just do the main search and skip showing suggestions dropdown
+  // Modified search behavior: faster search as user types
   useEffect(() => {
     // Clear previous suggestion debounce
     if (suggestionDebounceRef.current) {
@@ -128,8 +123,8 @@ export const useCardSearch = () => {
       clearTimeout(searchDebounceRef.current);
     }
     
-    // Only perform full search if name has 3+ characters or if number/set is specified
-    if ((cardDetails.name && cardDetails.name.length >= 3) || cardDetails.number || cardDetails.set) {
+    // Search with fewer characters (2+ instead of 3+) and faster response
+    if ((cardDetails.name && cardDetails.name.length >= 2) || cardDetails.number || cardDetails.set) {
       searchDebounceRef.current = setTimeout(() => {
         setShouldSearch(true);
       }, SEARCH_DEBOUNCE_MS);
@@ -156,16 +151,22 @@ export const useCardSearch = () => {
         categoryId: gameOption?.categoryId,
         set: ''
       }));
+      
+      // Trigger search immediately when game changes
+      setTimeout(() => setShouldSearch(true), 50);
     } else if (name === 'name') {
       setCardDetails(prev => ({ ...prev, [name]: value }));
-      // Keep suggestions hidden - we never show them now
-      setShowSuggestions(false);
       
       // Reset set selection if name is cleared
       if (!value) {
         setCardDetails(prev => ({ ...prev, set: '', name: '', number: '' }));
         setPotentialCardNumber(null);
       }
+    } else if (name === 'set') {
+      setCardDetails(prev => ({ ...prev, [name]: value }));
+      
+      // Trigger search immediately when set changes
+      setTimeout(() => setShouldSearch(true), 50);
     } else {
       setCardDetails(prev => ({ ...prev, [name]: value }));
     }
@@ -186,60 +187,12 @@ export const useCardSearch = () => {
     if (searchInputRef.current) {
       searchInputRef.current.focus();
     }
+    
+    // Trigger search immediately
+    setTimeout(() => setShouldSearch(true), 50);
   }, [potentialCardNumber]);
 
-  // Handle selection of a suggestion with immediate search
-  const selectSuggestion = useCallback((suggestion: CardDetails) => {
-    console.log('Selected suggestion:', suggestion);
-    
-    // Make sure the productId is properly extracted
-    const productId = suggestion.productId || null;
-    console.log('Using product ID from suggestion:', productId);
-    
-    // Update card details with selected suggestion
-    setCardDetails(prev => ({
-      ...prev,
-      name: suggestion.name,
-      productId: productId,
-      number: suggestion.number || prev.number,
-      // If suggestion has an image URL, keep it for reference
-      imageUrl: suggestion.imageUrl || prev.imageUrl
-    }));
-    
-    // Hide suggestions
-    setShowSuggestions(false);
-    
-    // Trigger a search immediately with the selected suggestion
-    setShouldSearch(true);
-    
-    // Add to search history
-    if (suggestion.name && suggestion.name.length >= 3) {
-      addToRecentSearches(suggestion.name);
-    }
-    
-    // Show a toast notification
-    toast.success(`Searching for ${suggestion.name}`);
-  }, [addToRecentSearches]);
-
-  // Select history item and search
-  const selectHistoryItem = useCallback((item: string) => {
-    setCardDetails(prev => ({
-      ...prev,
-      name: item,
-      number: '' // Clear number field when selecting from history
-    }));
-    
-    // Focus the search input after selecting history item
-    if (searchInputRef.current) {
-      setTimeout(() => {
-        if (searchInputRef.current) {
-          searchInputRef.current.focus();
-        }
-      }, 100);
-    }
-  }, []);
-
-  // Perform a manual search (e.g., from a search button)
+  // Perform a manual search
   const performSearch = useCallback(() => {
     if (cardDetails.name || cardDetails.number || cardDetails.set) {
       setShouldSearch(true);
@@ -258,6 +211,9 @@ export const useCardSearch = () => {
     setPotentialCardNumber(null);
   }, []);
 
+  // We maintain the search history functions but don't expose them in the return value
+  // since we've removed the UI component
+
   return {
     cardDetails,
     searchResults,
@@ -271,9 +227,6 @@ export const useCardSearch = () => {
     searchHistory: recentSearches,
     potentialCardNumber,
     handleInputChange,
-    selectSuggestion,
-    selectHistoryItem,
-    clearSearchHistory: clearRecentSearches,
     resetSearch,
     searchInputRef,
     hasMoreResults,

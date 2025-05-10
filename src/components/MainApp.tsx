@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DatabaseIcon, Sparkles } from 'lucide-react';
 import { Toaster } from 'react-hot-toast'; // Import Toaster for notifications
@@ -19,11 +18,8 @@ function MainApp() {
     setOptions, 
     isLoadingSets, 
     isSearching, 
-    searchHistory,
     potentialCardNumber,
     handleInputChange, 
-    selectHistoryItem,
-    clearSearchHistory,
     resetSearch,
     searchInputRef,
     hasMoreResults,
@@ -80,7 +76,7 @@ function MainApp() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <Toaster position="top-center" /> {/* Add Toast notification container */}
+      <Toaster position="top-center" />
       <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg relative overflow-hidden mt-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent)] pointer-events-none"></div>
         <div className="container mx-auto px-4 py-8">
@@ -111,9 +107,6 @@ function MainApp() {
                 onInputChange={handleInputChange}
                 setOptions={setOptions}
                 isLoadingSets={isLoadingSets}
-                searchHistory={searchHistory}
-                onSelectHistoryItem={selectHistoryItem}
-                onClearHistory={clearSearchHistory}
                 searchInputRef={searchInputRef}
                 potentialCardNumber={potentialCardNumber}
                 onUseAsCardNumber={handleUseAsCardNumber}
