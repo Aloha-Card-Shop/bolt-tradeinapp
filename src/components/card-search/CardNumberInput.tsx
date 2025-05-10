@@ -1,12 +1,11 @@
-
-import React from 'react';
+import React, { KeyboardEvent } from 'react';
 import { CardNumberObject } from '../../types/card';
 import { getCardNumberString } from '../../utils/cardSearchUtils';
 
 interface CardNumberInputProps {
   cardNumber: string | CardNumberObject | undefined;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onKeyDown?: (e: React.KeyboardEvent) => void; // Add optional onKeyDown prop
+  onKeyDown?: (e: React.KeyboardEvent) => void;
 }
 
 const CardNumberInput: React.FC<CardNumberInputProps> = ({ 
@@ -14,6 +13,21 @@ const CardNumberInput: React.FC<CardNumberInputProps> = ({
   onChange,
   onKeyDown 
 }) => {
+  // Handle Enter key press - default behavior is to trigger search
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    // If custom onKeyDown prop is provided, use that
+    if (onKeyDown) {
+      onKeyDown(e);
+      return;
+    }
+    
+    // Otherwise handle Enter key press with default behavior
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      // The input change handler in useCardSearch already triggers search
+    }
+  };
+  
   return (
     <div>
       <label htmlFor="card-number" className="block mb-1 text-sm font-medium text-gray-700">
@@ -25,7 +39,7 @@ const CardNumberInput: React.FC<CardNumberInputProps> = ({
         name="number"
         value={getCardNumberString(cardNumber)}
         onChange={onChange}
-        onKeyDown={onKeyDown} // Add the onKeyDown handler
+        onKeyDown={handleKeyDown}
         placeholder="e.g. 12 or 12/107"
         className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />

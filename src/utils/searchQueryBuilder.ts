@@ -2,6 +2,7 @@
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
+import { extractNumberBeforeSlash } from './cardSearchUtils';
 
 // Debug mode flag - set to true to enable verbose logging
 const DEBUG_MODE = true;
@@ -38,7 +39,7 @@ export const buildSearchQuery = async (
   // Start building the query with select fields specified to reduce data transfer
   let query = supabase
     .from('unified_products')
-    .select('id, name, group_id, image_url, attributes, product_id', { count: 'exact' })
+    .select('id, name, group_id, image_url, attributes, product_id, number', { count: 'exact' })
     .order('name')
     .range(from, to);
 
@@ -62,27 +63,43 @@ export const buildSearchQuery = async (
   
   // Then apply card number filters which are also restrictive
   if (number) {
-    // FIXED: Use proper Supabase JSON contains syntax instead of incorrect JSON path expressions
-    // The attributes column is JSONB, so we need to use containsJson or other valid JSONB operators
+    // Get number before slash for partial matching
+    const numberBeforeSlash = extractNumberBeforeSlash(number);
+    const fullNumber = number.toString();
     
-    // Create a filter array with different possible attribute locations
+    // Build a combined filter to search in multiple locations:
+    // 1. Direct root-level "number" field
+    // 2. Within attributes object
+    let cardNumberFilters = [];
+    
+    // Root level number field direct searches
+    cardNumberFilters.push(`number.ilike.%${fullNumber}%`); // Contains full number
+    
+    // If we have a partial number, also search for that
+    if (numberBeforeSlash && numberBeforeSlash !== fullNumber) {
+      cardNumberFilters.push(`number.ilike.${numberBeforeSlash}/%`); // Starts with number before slash
+    }
+    
+    // Attributes-level searches for different possible paths
     const possiblePaths = ['number', 'Number', 'card_number', 'cardNumber'];
     
-    // We'll use a combination of approaches for maximum compatibility
-    let cardNumberFilter = '';
-    
-    possiblePaths.forEach((path, index) => {
-      // Build a filter that checks if the path exists and contains our search term
-      if (index > 0) cardNumberFilter += ',';
-      cardNumberFilter += `attributes->${path}.ilike.%${number}%`;
+    possiblePaths.forEach(path => {
+      // Full number match within attributes
+      cardNumberFilters.push(`attributes->${path}.ilike.%${fullNumber}%`);
+      
+      // Partial number match within attributes (if applicable)
+      if (numberBeforeSlash && numberBeforeSlash !== fullNumber) {
+        cardNumberFilters.push(`attributes->${path}.ilike.${numberBeforeSlash}/%`);
+      }
     });
     
     // Use OR logic to match any of these paths
-    query = query.or(cardNumberFilter);
+    query = query.or(cardNumberFilters.join(','));
     
     if (DEBUG_MODE) {
-      console.log(`Added fixed card number filter for: ${number}`);
-      console.log(`Using attribute paths: ${possiblePaths.join(', ')}`);
+      console.log(`Added enhanced card number filter for: ${number}`);
+      console.log(`Using root-level and attributes search with paths: ${possiblePaths.join(', ')}`);
+      console.log(`Also searching for partial matches with: ${numberBeforeSlash}`);
     }
   }
   
@@ -106,7 +123,7 @@ export const buildSearchQuery = async (
       category_id: categoryId || 'any',
       name: name ? (name.length <= 2 ? `${name}%` : `%${name}%`) : 'any',
       set_id: set ? (setOptions.find(s => s.name === set)?.id || 'not found') : 'any',
-      number: number ? `Improved JSONB search for: ${number}` : 'any'
+      number: number ? `Enhanced search for: ${number} (including root and attributes)` : 'any'
     });
   }
 
@@ -127,7 +144,8 @@ export const formatResultsToCardDetails = (
         firstRecord: results[0],
         attributesStructure: results[0].attributes ? 
           JSON.stringify(results[0].attributes).substring(0, 200) + '...' :
-          'No attributes found'
+          'No attributes found',
+        rootNumber: results[0].number || 'No root number field'
       });
     }
   }
@@ -136,10 +154,19 @@ export const formatResultsToCardDetails = (
     // Set name lookup - use group_id to find the set name from setOptions
     const setName = (item.group_id && setOptions.find(s => s.id === item.group_id)?.name) || '';
     
-    // Enhanced card number extraction with better handling of JSON attributes
+    // Enhanced card number extraction with priority on root-level number field
     let cardNumber = '';
     
-    if (item.attributes) {
+    // First check the root-level number field
+    if (item.number) {
+      cardNumber = item.number;
+      
+      if (DEBUG_MODE) {
+        console.log(`Found root-level card number for ${item.name}: ${cardNumber}`);
+      }
+    }
+    // If not found at root level, try the attributes object
+    else if (item.attributes) {
       try {
         // Log the actual attributes structure for better debugging
         if (DEBUG_MODE && item.name.includes(searchCriteria.name || '')) {
@@ -183,16 +210,8 @@ export const formatResultsToCardDetails = (
     const productId = extractProductId(item);
     
     // Debug output to trace productId extraction
-    if (DEBUG_MODE) {
-      console.log(`Card: ${item.name}, Extracted ID: ${productId}, Raw ID sources:`, {
-        direct_id: item.id,
-        product_id: item.product_id,
-        attrs_product: item.attributes?.product_id
-      });
-      
-      if (cardNumber) {
-        console.log(`Found card number for ${item.name}: ${cardNumber} from attributes`);
-      }
+    if (DEBUG_MODE && cardNumber) {
+      console.log(`Card: ${item.name}, Number: ${cardNumber}, Extracted ID: ${productId}`);
     }
 
     return {
