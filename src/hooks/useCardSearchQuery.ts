@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { CardDetails } from '../types/card';
 import { SetOption } from './useSetOptions';
@@ -106,6 +107,11 @@ export const useCardSearchQuery = () => {
         // Improved error messaging based on error codes
         if (error.code === '42703') {
           toast.error('There was a database schema error. Please try again later or contact support.');
+          console.error('Database schema error details:', {
+            message: error.message,
+            hint: 'Check if column names in query match the actual schema',
+            details: 'This may indicate an issue with JSON path expressions or column names'
+          });
         } else {
           toast.error(`Search error: ${error.message || 'Unknown error'}`);
         }
@@ -138,9 +144,17 @@ export const useCardSearchQuery = () => {
     } catch (error) {
       console.error('❌ Error searching cards:', error);
       
-      // Don't show toast for aborted requests
-      if (error instanceof Error && error.name !== 'AbortError') {
-        toast.error(`Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Provide more specific error messages for JSON structure issues
+      if (error instanceof Error) {
+        if (error.message.includes('JSON')) {
+          console.error('JSON parsing error details:', error);
+          toast.error('Error processing card data structure. Please try a more specific search.');
+        } else if (error.name !== 'AbortError') {
+          // Don't show toast for aborted requests
+          toast.error(`Search failed: ${error.message}`);
+        }
+      } else {
+        toast.error('Search failed: Unknown error');
       }
       
       setSearchResults([]);

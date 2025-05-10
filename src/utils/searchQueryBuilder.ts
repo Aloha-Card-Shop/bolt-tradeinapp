@@ -38,7 +38,7 @@ export const buildSearchQuery = async (
   // Start building the query with select fields specified to reduce data transfer
   let query = supabase
     .from('unified_products')
-    .select('id, name, group_id, image_url, attributes, tcgplayer_product_id, product_id', { count: 'exact' })
+    .select('id, name, group_id, image_url, attributes, product_id', { count: 'exact' })
     .order('name')
     .range(from, to);
 
@@ -62,15 +62,15 @@ export const buildSearchQuery = async (
   
   // Then apply card number filters which are also restrictive
   if (number) {
-    // Optimize JSON search by using containment operator rather than multiple ilike checks
-    // Use more specific JSON path expressions for better performance
-    query = query.or(
-      `attributes->>'number'.ilike.%${number}%,` +
-      `attributes->>'Number.value'.ilike.%${number}%,` + 
-      `attributes->>'card_number'.ilike.%${number}%`
-    );
+    // Fix: Update the JSON path expressions for card numbers to match the actual data structure
+    // Use containsJson for more flexible searching within the JSON structure
+    query = query.or(`attributes->number.ilike.%${number}%,attributes->Number.ilike.%${number}%,attributes->card_number.ilike.%${number}%`);
     
-    if (DEBUG_MODE) console.log(`Added optimized attributes JSON number filter: %${number}%`);
+    // Log the JSON filter for debugging
+    if (DEBUG_MODE) {
+      console.log(`Added attributes JSON filter for card number: ${number}`);
+      console.log(`JSON filter paths: attributes->number, attributes->Number, attributes->card_number`);
+    }
   }
   
   // Apply name filter last - this is typically the broadest
@@ -107,6 +107,16 @@ export const formatResultsToCardDetails = (
 ): CardDetails[] => {
   if (DEBUG_MODE) {
     console.log(`Formatting ${results.length} raw results to CardDetails objects`);
+    
+    // Log a sample of the results to help debug JSON structure
+    if (results.length > 0) {
+      console.log('Sample result attributes structure:', {
+        firstRecord: results[0],
+        attributesStructure: results[0].attributes ? 
+          JSON.stringify(results[0].attributes).substring(0, 200) + '...' :
+          'No attributes found'
+      });
+    }
   }
   
   return results.map(item => {
@@ -116,22 +126,43 @@ export const formatResultsToCardDetails = (
     // Enhanced card number extraction with better handling of JSON attributes
     let cardNumber = '';
     
-    if (item.number) {
-      cardNumber = item.number;
-    } else if (item.attributes) {
-      // Try various common paths for card numbers in the attributes object
-      if (item.attributes.number) {
-        cardNumber = typeof item.attributes.number === 'object' ? 
-                    (item.attributes.number.value || item.attributes.number.displayName || '') : 
-                    String(item.attributes.number);
-      } else if (item.attributes.Number) {
-        cardNumber = typeof item.attributes.Number === 'object' ? 
-                    (item.attributes.Number.value || item.attributes.Number.displayName || '') : 
-                    String(item.attributes.Number);
-      } else if (item.attributes.card_number) {
-        cardNumber = typeof item.attributes.card_number === 'object' ? 
-                    (item.attributes.card_number.value || item.attributes.card_number.displayName || '') : 
-                    String(item.attributes.card_number);
+    if (item.attributes) {
+      try {
+        // Log the actual attributes structure for better debugging
+        if (DEBUG_MODE && item.name.includes(searchCriteria.name || '')) {
+          console.log(`Card "${item.name}" attributes:`, item.attributes);
+        }
+        
+        // Try various paths for the card number in the attributes object
+        if (typeof item.attributes === 'object') {
+          // Direct properties at the root level
+          if (item.attributes.number !== undefined) {
+            cardNumber = typeof item.attributes.number === 'object' 
+              ? (item.attributes.number.value || item.attributes.number.displayName || '') 
+              : String(item.attributes.number);
+          } 
+          else if (item.attributes.Number !== undefined) {
+            cardNumber = typeof item.attributes.Number === 'object'
+              ? (item.attributes.Number.value || item.attributes.Number.displayName || '')
+              : String(item.attributes.Number);
+          }
+          else if (item.attributes.card_number !== undefined) {
+            cardNumber = typeof item.attributes.card_number === 'object'
+              ? (item.attributes.card_number.value || item.attributes.card_number.displayName || '')
+              : String(item.attributes.card_number);
+          }
+          // Look for a properties field that might contain the number
+          else if (item.attributes.properties && typeof item.attributes.properties === 'object') {
+            const props = item.attributes.properties;
+            if (props.number) {
+              cardNumber = typeof props.number === 'object' 
+                ? (props.number.value || props.number.displayName || '') 
+                : String(props.number);
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to parse attributes for card "${item.name}":`, error);
       }
     }
     
@@ -142,19 +173,12 @@ export const formatResultsToCardDetails = (
     if (DEBUG_MODE) {
       console.log(`Card: ${item.name}, Extracted ID: ${productId}, Raw ID sources:`, {
         direct_id: item.id,
-        tcgplayer_id: item.tcgplayer_product_id,
         product_id: item.product_id,
-        attrs_tcgplayer: item.attributes?.tcgplayer_product_id,
         attrs_product: item.attributes?.product_id
       });
       
       if (cardNumber) {
-        console.log(`Found card number for ${item.name}: ${cardNumber} from`, {
-          direct_number: item.number,
-          attrs_number: item.attributes?.number,
-          attrs_Number: item.attributes?.Number,
-          attrs_card_number: item.attributes?.card_number
-        });
+        console.log(`Found card number for ${item.name}: ${cardNumber} from attributes`);
       }
     }
 
@@ -174,27 +198,17 @@ export const formatResultsToCardDetails = (
 // Helper function to extract product ID using a more robust approach
 function extractProductId(item: any): string | null {
   // Check each possible location for product ID in order of preference
-  // 1. Direct tcgplayer_product_id field
-  if (item.tcgplayer_product_id) {
-    return String(item.tcgplayer_product_id);
-  }
-  
-  // 2. In attributes object as tcgplayer_product_id
-  if (item.attributes?.tcgplayer_product_id) {
-    return String(item.attributes.tcgplayer_product_id);
-  }
-  
-  // 3. Direct product_id field
+  // 1. Direct product_id field
   if (item.product_id) {
     return String(item.product_id);
   }
   
-  // 4. In attributes object as product_id
+  // 2. In attributes object as product_id
   if (item.attributes?.product_id) {
     return String(item.attributes.product_id);
   }
   
-  // 5. Fallback to item.id
+  // 3. Fallback to item.id
   if (item.id) {
     return String(item.id);
   }
