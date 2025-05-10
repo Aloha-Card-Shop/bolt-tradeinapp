@@ -3,6 +3,9 @@ import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
 
+// Debug mode flag - set to true to enable verbose logging
+const DEBUG_MODE = true;
+
 // Define the number of results per page
 export const RESULTS_PER_PAGE = 48;
 
@@ -22,6 +25,17 @@ export const buildSearchQuery = async (
   const from = page * RESULTS_PER_PAGE;
   const to = (page + 1) * RESULTS_PER_PAGE - 1;
 
+  if (DEBUG_MODE) {
+    console.log('🔧 Building search query with parameters:', { 
+      name, 
+      set, 
+      number, 
+      game, 
+      categoryId,
+      pagination: { page, from, to }
+    });
+  }
+
   // Start building the query
   let query = supabase
     .from('unified_products')
@@ -32,22 +46,45 @@ export const buildSearchQuery = async (
   // Apply filters based on provided card details
   if (game) {
     query = query.eq('game', game);
+    if (DEBUG_MODE) console.log(`Added game filter: ${game}`);
   }
+  
   if (categoryId) {
     query = query.eq('category_id', categoryId);
+    if (DEBUG_MODE) console.log(`Added category filter: ${categoryId}`);
   }
+  
   if (name) {
     query = query.ilike('name', `%${name}%`);
+    if (DEBUG_MODE) console.log(`Added name filter: %${name}%`);
   }
+  
   if (set) {
     const setId = setOptions.find(s => s.name === set)?.id;
     if (setId) {
       query = query.eq('group_id', setId);
       foundSetIds.add(setId);
+      if (DEBUG_MODE) console.log(`Added set filter, mapped "${set}" to ID: ${setId}`);
+    } else if (DEBUG_MODE) {
+      console.warn(`Set "${set}" not found in setOptions`);
     }
   }
+  
   if (number) {
     query = query.ilike('number', `%${number}%`);
+    if (DEBUG_MODE) console.log(`Added number filter: %${number}%`);
+  }
+
+  // Log the raw query for debugging
+  if (DEBUG_MODE) {
+    // This is a best-effort representation of the query
+    console.log('Final query filters:', { 
+      game: game || 'any',
+      category_id: categoryId || 'any',
+      name: name ? `%${name}%` : 'any',
+      set_id: set ? (setOptions.find(s => s.name === set)?.id || 'not found') : 'any',
+      number: number ? `%${number}%` : 'any'
+    });
   }
 
   return { query, foundSetIds };
@@ -58,6 +95,10 @@ export const formatResultsToCardDetails = (
   setOptions: SetOption[],
   searchCriteria: CardDetails
 ): CardDetails[] => {
+  if (DEBUG_MODE) {
+    console.log(`Formatting ${results.length} raw results to CardDetails objects`);
+  }
+  
   return results.map(item => {
     // Set name lookup
     const setName = item.group_name || 
@@ -74,13 +115,15 @@ export const formatResultsToCardDetails = (
     const productId = extractProductId(item);
     
     // Debug output to trace productId extraction
-    console.log(`Card: ${item.name}, Extracted ID: ${productId}, Raw ID sources:`, {
-      direct_id: item.id,
-      tcgplayer_id: item.tcgplayer_product_id,
-      product_id: item.product_id,
-      attrs_tcgplayer: item.attributes?.tcgplayer_product_id,
-      attrs_product: item.attributes?.product_id
-    });
+    if (DEBUG_MODE) {
+      console.log(`Card: ${item.name}, Extracted ID: ${productId}, Raw ID sources:`, {
+        direct_id: item.id,
+        tcgplayer_id: item.tcgplayer_product_id,
+        product_id: item.product_id,
+        attrs_tcgplayer: item.attributes?.tcgplayer_product_id,
+        attrs_product: item.attributes?.product_id
+      });
+    }
 
     return {
       name: item.name || item.clean_name || '',

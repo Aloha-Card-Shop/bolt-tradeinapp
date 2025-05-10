@@ -3,6 +3,10 @@ import { useState } from 'react';
 import { CardDetails } from '../types/card';
 import { SetOption } from './useSetOptions';
 import { buildSearchQuery, formatResultsToCardDetails, RESULTS_PER_PAGE } from '../utils/searchQueryBuilder';
+import { toast } from 'react-hot-toast';
+
+// Debug mode flag - set to true to enable verbose logging
+const DEBUG_MODE = true;
 
 export const useCardSearchQuery = () => {
   const [searchResults, setSearchResults] = useState<CardDetails[]>([]);
@@ -24,6 +28,7 @@ export const useCardSearchQuery = () => {
     setOptions: SetOption[]
   ): Promise<Set<number>> => {
     if (!cardDetails.name && !cardDetails.number && !cardDetails.set) {
+      if (DEBUG_MODE) console.log('Search aborted: No search criteria provided');
       setSearchResults([]);
       setHasMoreResults(false);
       setTotalResults(0);
@@ -34,6 +39,17 @@ export const useCardSearchQuery = () => {
     setCurrentPage(0);
     setIsSearching(true);
     
+    // Log search criteria in detail
+    if (DEBUG_MODE) {
+      console.log('📝 Search initiated with criteria:', {
+        name: cardDetails.name || 'not specified',
+        number: cardDetails.number || 'not specified',
+        set: cardDetails.set || 'not specified',
+        game: cardDetails.game || 'not specified',
+        categoryId: cardDetails.categoryId || 'not specified'
+      });
+    }
+    
     // Save search parameters for pagination
     setLastSearchParams({
       cardDetails: { ...cardDetails },
@@ -41,32 +57,69 @@ export const useCardSearchQuery = () => {
     });
     
     try {
-      // Build and execute query using the new utility function
+      // Build and execute query using the utility function
       const { query, foundSetIds } = await buildSearchQuery(cardDetails, setOptions, 0);
+      
+      if (DEBUG_MODE) {
+        console.log('🔍 Executing Supabase query with filters:', {
+          game: cardDetails.game,
+          categoryId: cardDetails.categoryId,
+          name: cardDetails.name ? `%${cardDetails.name}%` : null,
+          set: cardDetails.set,
+          number: cardDetails.number
+        });
+      }
+      
       const { data, error, count } = await query;
 
-      if (error) throw error;
+      // Log raw response for debugging
+      if (DEBUG_MODE) {
+        console.log('📊 Supabase response:', { 
+          success: !error, 
+          count: count || 'unknown',
+          resultCount: data?.length || 0,
+          error: error ? `${error.code}: ${error.message}` : null
+        });
+        
+        if (data && data.length > 0) {
+          console.log('Sample result item:', data[0]);
+        } else {
+          console.log('No results returned from query');
+        }
+      }
+
+      if (error) {
+        console.error('Error from Supabase query:', error);
+        toast.error(`Search error: ${error.message || 'Unknown error'}`);
+        throw error;
+      }
 
       // Set total count if available
       if (count !== null) {
         setTotalResults(count);
         setHasMoreResults(count > RESULTS_PER_PAGE);
+        
+        if (DEBUG_MODE) {
+          console.log(`Total results: ${count}, showing first ${Math.min(RESULTS_PER_PAGE, count || 0)}`);
+        }
       }
 
-      // Log the number of results found
-      console.log(`Found ${data?.length || 0} results for card search`, { 
-        name: cardDetails.name, 
-        number: cardDetails.number,
-        set: cardDetails.set
-      });
-
-      // Format the search results using the new utility function
+      // Format the search results using the utility function
       const foundCards = formatResultsToCardDetails(data || [], setOptions, cardDetails);
+      
+      if (DEBUG_MODE) {
+        console.log(`✅ Found ${foundCards.length} formatted card results`);
+        if (foundCards.length > 0) {
+          console.log('First formatted card:', foundCards[0]);
+        }
+      }
+      
       setSearchResults(foundCards);
 
       return foundSetIds;
     } catch (error) {
-      console.error('Error searching cards:', error);
+      console.error('❌ Error searching cards:', error);
+      toast.error(`Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setSearchResults([]);
       setHasMoreResults(false);
       setTotalResults(0);
@@ -83,8 +136,12 @@ export const useCardSearchQuery = () => {
     const nextPage = currentPage + 1;
     setIsSearching(true);
     
+    if (DEBUG_MODE) {
+      console.log(`📜 Loading more results - page ${nextPage + 1}`);
+    }
+    
     try {
-      // Build query for the next page using the new utility function
+      // Build query for the next page using the utility function
       const { query } = await buildSearchQuery(
         lastSearchParams.cardDetails,
         lastSearchParams.setOptions,
@@ -94,7 +151,11 @@ export const useCardSearchQuery = () => {
       // Execute query
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading more results:', error);
+        toast.error(`Failed to load more results: ${error.message}`);
+        throw error;
+      }
 
       // Format and append new results
       const newCards = formatResultsToCardDetails(
@@ -102,6 +163,10 @@ export const useCardSearchQuery = () => {
         lastSearchParams.setOptions,
         lastSearchParams.cardDetails
       );
+
+      if (DEBUG_MODE) {
+        console.log(`Loaded ${newCards.length} additional results`);
+      }
 
       // Append new results to existing ones
       setSearchResults(prev => [...prev, ...newCards]);
@@ -111,7 +176,8 @@ export const useCardSearchQuery = () => {
       setHasMoreResults(newCards.length === RESULTS_PER_PAGE);
       
     } catch (error) {
-      console.error('Error loading more results:', error);
+      console.error('❌ Error loading more results:', error);
+      toast.error(`Failed to load more results: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsSearching(false);
     }
