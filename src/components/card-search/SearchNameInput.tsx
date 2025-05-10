@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search, Bug } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 interface SearchNameInputProps {
   value: string;

@@ -46,7 +46,7 @@ export const supabase = createClient<Database>(
 // Add a health check function for debugging
 export const checkSupabaseConnection = async () => {
   try {
-    const { data, error } = await supabase.from('profiles').select('count').limit(1);
+    const { error } = await supabase.from('profiles').select('count').limit(1);
     if (error) throw error;
     console.log('✅ Supabase connection verified');
     return true;
