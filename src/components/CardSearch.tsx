@@ -19,7 +19,7 @@ interface CardSearchProps {
   searchInputRef?: React.RefObject<HTMLInputElement>;
   potentialCardNumber?: string | null;
   onUseAsCardNumber?: () => void;
-  performSearch?: () => void; // Add the search function prop
+  performSearch?: () => void; // Kept for compatibility
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
@@ -30,7 +30,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
   searchInputRef,
   potentialCardNumber = null,
   onUseAsCardNumber = () => {},
-  performSearch = () => {} // Default to empty function
+  performSearch = () => {} // Kept for compatibility
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -53,14 +53,6 @@ const CardSearch: React.FC<CardSearchProps> = ({
     onInputChange(event);
   };
 
-  // Simplified keyboard handler
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      performSearch();
-    }
-  };
-
   return (
     <div className="p-6">
       <div className="flex items-center mb-4">
@@ -77,14 +69,12 @@ const CardSearch: React.FC<CardSearchProps> = ({
           onChange={onInputChange} 
         />
 
-        {/* Card Name Input */}
+        {/* Card Name Input - Now auto-searches */}
         <div className="relative">
           <SearchNameInput 
             value={searchTerm}
             onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
             inputRef={searchInputRef}
-            onSearch={performSearch} // Pass the search function
           />
           
           {/* Card number suggestion */}

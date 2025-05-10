@@ -6,9 +6,9 @@ import { useCardSearchQuery } from './useCardSearchQuery';
 import { useCardSuggestions } from './useCardSuggestions';
 import { isLikelyCardNumber } from '../utils/cardSearchUtils';
 
-// Greatly reduced debounce timeout for more responsive search
-const SEARCH_DEBOUNCE_MS = 100; // Reduced from 200ms to 100ms
-const SUGGESTION_DEBOUNCE_MS = 75; // Reduced from 150ms to 75ms
+// Further reduced debounce timeout for more responsive search
+const SEARCH_DEBOUNCE_MS = 50; // Reduced from 100ms to 50ms
+const SUGGESTION_DEBOUNCE_MS = 75;
 
 export const useCardSearch = () => {
   const [cardDetails, setCardDetails] = useState<CardDetails>({
@@ -89,9 +89,6 @@ export const useCardSearch = () => {
           // Search cards and get set IDs from results
           const foundSetIds = await searchCards(cardDetails, setOptions);
           
-          // Cache the search for future use (simplified - would need more implementation)
-          // searchCacheRef.current.set(searchSignature, {...});
-          
           // Filter set options based on search results
           const searchTerms = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
           filterSetOptions(searchTerms, foundSetIds);
@@ -104,7 +101,7 @@ export const useCardSearch = () => {
     }
   }, [shouldSearch, cardDetails, searchCards, setOptions, filterSetOptions]);
 
-  // Modified search behavior: immediate search as user types with minimal characters
+  // Modified search behavior: immediate search as user types with even fewer characters
   useEffect(() => {
     // Clear previous suggestion debounce
     if (suggestionDebounceRef.current) {
@@ -112,7 +109,7 @@ export const useCardSearch = () => {
     }
     
     // Still fetch suggestions for historical data, but don't show the dropdown
-    if (cardDetails.name && cardDetails.name.length >= 2) {
+    if (cardDetails.name && cardDetails.name.length >= 1) {
       suggestionDebounceRef.current = setTimeout(() => {
         // Make sure categoryId is provided and is a number
         const categoryIdToUse = cardDetails.categoryId ?? GAME_OPTIONS[0].categoryId;
@@ -135,12 +132,10 @@ export const useCardSearch = () => {
       clearTimeout(searchDebounceRef.current);
     }
     
-    // Start search with even fewer characters (just 1 character) when name is the field being used
-    const minNameChars = cardDetails.number || cardDetails.set ? 2 : 1;
-    
-    if ((cardDetails.name && cardDetails.name.length >= minNameChars) || cardDetails.number || cardDetails.set) {
+    // Start search with just 1 character
+    if ((cardDetails.name && cardDetails.name.length >= 1) || cardDetails.number || cardDetails.set) {
       searchDebounceRef.current = setTimeout(() => {
-        console.log("Triggering search for:", cardDetails);
+        console.log("Auto-triggering search for:", cardDetails);
         setShouldSearch(true);
       }, SEARCH_DEBOUNCE_MS);
     }
@@ -184,6 +179,11 @@ export const useCardSearch = () => {
       setTimeout(() => setShouldSearch(true), 50);
     } else {
       setCardDetails(prev => ({ ...prev, [name]: value }));
+      
+      // Also trigger search for other fields like number
+      if (name === 'number' && value) {
+        setTimeout(() => setShouldSearch(true), 50);
+      }
     }
   };
 
@@ -207,7 +207,7 @@ export const useCardSearch = () => {
     setTimeout(() => setShouldSearch(true), 50);
   }, [potentialCardNumber]);
 
-  // Perform a manual search
+  // Perform a manual search (kept for compatibility but less needed now)
   const performSearch = useCallback(() => {
     console.log("Manual search triggered with:", cardDetails);
     if (cardDetails.name || cardDetails.number || cardDetails.set) {

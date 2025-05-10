@@ -7,7 +7,7 @@ interface SearchNameInputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;
   inputRef?: React.RefObject<HTMLInputElement>;
-  onSearch?: () => void; // Added prop for manual search trigger
+  onSearch?: () => void; // Kept for compatibility but less prominent
 }
 
 const SearchNameInput: React.FC<SearchNameInputProps> = ({ 
@@ -40,16 +40,19 @@ const SearchNameInput: React.FC<SearchNameInputProps> = ({
           value={value}
           onChange={onChange}
           onKeyDown={handleKeyDown}
-          className="w-full px-4 py-2 pl-4 pr-12 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 pl-4 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          autoComplete="off"
         />
-        <button 
-          type="button"
-          onClick={onSearch}
-          className="absolute inset-y-0 right-0 flex items-center px-3 bg-blue-50 hover:bg-blue-100 rounded-r-lg transition-colors border-l"
+        <div 
+          className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 pointer-events-none"
+          aria-hidden="true"
         >
-          <Search className="h-5 w-5 text-blue-600" />
-        </button>
+          <Search className="h-4 w-4" />
+        </div>
       </div>
+      <p className="mt-1 text-xs text-gray-500">
+        Results appear as you type
+      </p>
     </div>
   );
 };
