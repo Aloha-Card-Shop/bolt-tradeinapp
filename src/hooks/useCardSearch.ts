@@ -4,7 +4,6 @@ import { useSetOptions } from './useSetOptions';
 import { useCardSearchQuery } from './useCardSearchQuery';
 import { useCardSuggestions } from './useCardSuggestions';
 import { isLikelyCardNumber } from '../utils/cardSearchUtils';
-import toast from 'react-hot-toast';
 
 // Reduced debounce timeout for more responsive search
 const SEARCH_DEBOUNCE_MS = 200; // Reduced from 500ms to 200ms
@@ -48,9 +47,7 @@ export const useCardSearch = () => {
     suggestions, 
     isLoading: isLoadingSuggestions, 
     fetchSuggestions,
-    addToRecentSearches,
-    recentSearches,
-    clearRecentSearches
+    recentSearches
   } = useCardSuggestions();
 
   // Detect potentially abandoned searches (like a card number in the name field)
@@ -126,6 +123,7 @@ export const useCardSearch = () => {
     // Search with fewer characters (2+ instead of 3+) and faster response
     if ((cardDetails.name && cardDetails.name.length >= 2) || cardDetails.number || cardDetails.set) {
       searchDebounceRef.current = setTimeout(() => {
+        console.log("Triggering search for:", cardDetails);
         setShouldSearch(true);
       }, SEARCH_DEBOUNCE_MS);
     }
@@ -194,6 +192,7 @@ export const useCardSearch = () => {
 
   // Perform a manual search
   const performSearch = useCallback(() => {
+    console.log("Manual search triggered with:", cardDetails);
     if (cardDetails.name || cardDetails.number || cardDetails.set) {
       setShouldSearch(true);
     }
@@ -210,9 +209,6 @@ export const useCardSearch = () => {
     setShowSuggestions(false);
     setPotentialCardNumber(null);
   }, []);
-
-  // We maintain the search history functions but don't expose them in the return value
-  // since we've removed the UI component
 
   return {
     cardDetails,

@@ -110,6 +110,7 @@ function MainApp() {
                 searchInputRef={searchInputRef}
                 potentialCardNumber={potentialCardNumber}
                 onUseAsCardNumber={handleUseAsCardNumber}
+                performSearch={performSearch} // Pass the performSearch function
               />
             </div>
             

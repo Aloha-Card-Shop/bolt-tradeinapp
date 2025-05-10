@@ -19,6 +19,7 @@ interface CardSearchProps {
   searchInputRef?: React.RefObject<HTMLInputElement>;
   potentialCardNumber?: string | null;
   onUseAsCardNumber?: () => void;
+  performSearch?: () => void; // Add the search function prop
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
@@ -28,7 +29,8 @@ const CardSearch: React.FC<CardSearchProps> = ({
   isLoadingSets,
   searchInputRef,
   potentialCardNumber = null,
-  onUseAsCardNumber = () => {}
+  onUseAsCardNumber = () => {},
+  performSearch = () => {} // Default to empty function
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -55,6 +57,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      performSearch();
     }
   };
 
@@ -81,6 +84,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             inputRef={searchInputRef}
+            onSearch={performSearch} // Pass the search function
           />
           
           {/* Card number suggestion */}
