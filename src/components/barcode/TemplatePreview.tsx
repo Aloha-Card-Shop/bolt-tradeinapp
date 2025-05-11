@@ -60,25 +60,31 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({ template, sampleTrade
     <div className="border rounded-md p-4">
       <h3 className="font-medium text-gray-800 mb-2">Template Preview</h3>
       <div className="bg-white border border-gray-200 p-3 rounded shadow-sm">
-        <div className="w-full">
-          {templateType === 'card' ? (
-            <CardBarcodeGenerator 
-              tradeIn={tradeIn}
-              item={sampleItem}
-              width={2.5} 
-              height={70} // Updated from 100 to 70 to match the updated default
-              displayValue={true} 
-              fontSize={16} 
-            />
-          ) : (
-            <BarcodeGenerator 
-              tradeIn={tradeIn} 
-              width={2.5} 
-              height={150} 
-              displayValue={true} 
-              fontSize={16} 
-            />
-          )}
+        <div className="w-full flex justify-center">
+          {/* Add size guide */}
+          <div className="border-2 border-dashed border-gray-400 p-1 relative" style={{ width: '384px' }}>
+            <div className="absolute -top-6 left-0 right-0 text-xs text-gray-500 text-center">2" x 1" label</div>
+            {templateType === 'card' ? (
+              <CardBarcodeGenerator 
+                tradeIn={tradeIn}
+                item={sampleItem}
+                width={2} 
+                height={60}
+                displayValue={true} 
+                fontSize={12} 
+              />
+            ) : (
+              <div style={{ aspectRatio: '2/1', width: '100%' }}>
+                <BarcodeGenerator 
+                  tradeIn={tradeIn} 
+                  width={2} 
+                  height={150} 
+                  displayValue={true} 
+                  fontSize={16} 
+                />
+              </div>
+            )}
+          </div>
         </div>
         
         {template && (

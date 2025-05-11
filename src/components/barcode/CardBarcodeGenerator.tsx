@@ -18,7 +18,7 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
   tradeIn,
   item,
   width = 2,
-  height = 70, // Reduced from 100 to 70
+  height = 60, // Further reduced from 70 to 60
   displayValue = true,
   fontSize = 12,
 }) => {
@@ -33,8 +33,8 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
           height,
           displayValue,
           fontSize,
-          marginTop: 5, // Reduced from 10 to 5
-          marginBottom: 5, // Reduced from 10 to 5
+          marginTop: 3, // Reduced from 5 to 3
+          marginBottom: 3, // Reduced from 5 to 3
           background: '#ffffff'
         });
       } catch (error) {
@@ -60,22 +60,22 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
   ].filter(Boolean).join(' • ');
   
   return (
-    <div className="bg-white p-4 rounded-lg shadow">
-      {/* Top section: Price and Condition - with responsive text */}
-      <div className="mb-4 text-center border-b pb-6 w-full">
-        <div className="text-3xl font-bold w-full px-1 flex justify-center items-center">
+    <div className="bg-white p-2 rounded-lg shadow" style={{ aspectRatio: '2/1', width: '100%', maxWidth: '384px' }}>
+      {/* Top section: Price and Condition - with responsive text and smaller padding */}
+      <div className="mb-2 text-center border-b pb-2 w-full">
+        <div className="text-xl font-bold w-full px-1 flex justify-center items-center">
           <span className="truncate text-center w-full">{cardPrice} | {cardCondition}</span>
         </div>
       </div>
       
       {/* Middle section: Barcode - height reduced */}
-      <div className="py-2">
+      <div className="py-1">
         <svg ref={barcodeRef} className="w-full"></svg>
       </div>
       
-      {/* Bottom section: Card Name, Set Name and Number - with responsive text */}
-      <div className="mt-4 text-center border-t pt-6">
-        <div className="text-xl font-medium w-full px-1">
+      {/* Bottom section: Card Name, Set Name and Number - with responsive text and smaller padding */}
+      <div className="mt-1 text-center border-t pt-2">
+        <div className="text-sm font-medium w-full px-1">
           <span className="truncate inline-block w-full">{bottomText}</span>
         </div>
       </div>
