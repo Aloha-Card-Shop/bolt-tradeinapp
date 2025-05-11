@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { GameType } from '../types/card';
@@ -11,6 +12,7 @@ export const useSetOptions = (game: GameType, categoryId?: number) => {
   const [setOptions, setSetOptions] = useState<SetOption[]>([]);
   const [filteredSetOptions, setFilteredSetOptions] = useState<SetOption[]>([]);
   const [isLoadingSets, setIsLoadingSets] = useState(false);
+  const [isFiltered, setIsFiltered] = useState(false);
 
   // Fetch all sets for the selected game
   useEffect(() => {
@@ -38,6 +40,7 @@ export const useSetOptions = (game: GameType, categoryId?: number) => {
 
         setSetOptions(options);
         setFilteredSetOptions(options); // Initially show all sets
+        setIsFiltered(false); // Reset filter status
         
         console.log(`Loaded ${options.length} sets for game type: ${game}, categoryId: ${categoryId}`);
         
@@ -53,53 +56,51 @@ export const useSetOptions = (game: GameType, categoryId?: number) => {
     fetchSetOptions();
   }, [game, categoryId]);
 
-  // Modified filter function that is less aggressive with filtering
+  // Modified filter function that only shows sets containing search results
   const filterSetOptions = (
     searchTerms: string[],
     foundSetIds?: Set<number>
   ) => {
     console.log(`Filtering sets with terms: [${searchTerms.join(', ')}], foundSetIds size: ${foundSetIds?.size || 0}`);
     
-    // If search is empty or hasn't produced results yet, show all sets
+    // If search is empty, show all sets
     if (searchTerms.length === 0) {
       console.log(`Showing all ${setOptions.length} sets - no search terms active`);
       setFilteredSetOptions([...setOptions].sort((a, b) => a.name.localeCompare(b.name)));
+      setIsFiltered(false);
       return;
     }
 
-    // If we have foundSetIds from search results, prioritize showing those sets
-    // but don't exclude sets based on name matching
-    let filtered = [...setOptions]; // Start with all sets
-    
-    // If we have search results with specific sets, prioritize those
+    // If we have search results with specific sets, ONLY show those sets
     if (foundSetIds && foundSetIds.size > 0) {
-      // Mark sets that contain our found cards
-      const matchingSets = new Set(Array.from(foundSetIds));
+      // Only include sets that contain our found cards
+      const filtered = setOptions.filter(set => foundSetIds.has(set.id))
+        .sort((a, b) => a.name.localeCompare(b.name)); // Still sort alphabetically
       
-      // Sort so that matching sets appear first
-      filtered = filtered.sort((a, b) => {
-        // If a is a matching set and b is not, a comes first
-        if (matchingSets.has(a.id) && !matchingSets.has(b.id)) return -1;
-        // If b is a matching set and a is not, b comes first
-        if (!matchingSets.has(a.id) && matchingSets.has(b.id)) return 1;
-        // Otherwise sort alphabetically
-        return a.name.localeCompare(b.name);
-      });
-      
-      console.log(`Prioritized ${foundSetIds.size} sets with matching cards`);
+      console.log(`Filtered to ${filtered.length} sets containing search results`);
+      setFilteredSetOptions(filtered);
+      setIsFiltered(true);
     } else {
-      // Without search results, just sort alphabetically
-      filtered = filtered.sort((a, b) => a.name.localeCompare(b.name));
+      // If we have search terms but no matching sets found yet, 
+      // still show all sets until we get actual results
+      setFilteredSetOptions([...setOptions].sort((a, b) => a.name.localeCompare(b.name)));
+      setIsFiltered(false);
+      console.log(`No matching sets found yet, showing all ${setOptions.length} sets`);
     }
+  };
 
-    console.log(`Final filtered set count: ${filtered.length} sets`);
-    setFilteredSetOptions(filtered);
+  const showAllSets = () => {
+    setFilteredSetOptions([...setOptions].sort((a, b) => a.name.localeCompare(b.name)));
+    setIsFiltered(false);
+    console.log(`Reset filter to show all ${setOptions.length} sets`);
   };
 
   return {
     setOptions,
     filteredSetOptions,
     isLoadingSets,
-    filterSetOptions
+    filterSetOptions,
+    showAllSets,
+    isFiltered
   };
 };

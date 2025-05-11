@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DatabaseIcon, Sparkles } from 'lucide-react';
 import { Toaster } from 'react-hot-toast'; // Import Toaster for notifications
@@ -27,7 +26,9 @@ function MainApp() {
     loadMoreResults,
     totalResults,
     handleUseAsCardNumber,
-    performSearch
+    performSearch,
+    isSetFiltered,
+    handleShowAllSets
   } = useCardSearch();
   
   const { savedCards, removeCard } = useSavedCards();
@@ -112,7 +113,9 @@ function MainApp() {
                 searchInputRef={searchInputRef}
                 potentialCardNumber={potentialCardNumber}
                 onUseAsCardNumber={handleUseAsCardNumber}
-                performSearch={performSearch} 
+                performSearch={performSearch}
+                isFiltered={isSetFiltered}
+                onShowAllSets={handleShowAllSets}
               />
             </div>
             

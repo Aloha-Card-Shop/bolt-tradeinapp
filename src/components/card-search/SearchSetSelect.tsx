@@ -7,13 +7,17 @@ interface SearchSetSelectProps {
   setOptions: SetOption[];
   isLoading: boolean;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  isFiltered?: boolean;
+  onShowAllSets?: () => void;
 }
 
 const SearchSetSelect: React.FC<SearchSetSelectProps> = ({ 
   selectedSet, 
   setOptions, 
   isLoading,
-  onChange 
+  onChange,
+  isFiltered = false,
+  onShowAllSets
 }) => {
   return (
     <div>
@@ -38,8 +42,21 @@ const SearchSetSelect: React.FC<SearchSetSelectProps> = ({
               </option>
             ))}
           </select>
-          <div className="mt-1 text-xs text-gray-500">
-            {setOptions.length} sets available
+          <div className="mt-1 text-xs flex justify-between items-center">
+            <span className="text-gray-500">
+              {isFiltered 
+                ? `${setOptions.length} matching sets` 
+                : `${setOptions.length} sets available`}
+            </span>
+            {isFiltered && onShowAllSets && (
+              <button 
+                onClick={onShowAllSets}
+                type="button"
+                className="text-blue-500 hover:text-blue-700 text-xs"
+              >
+                Show all sets
+              </button>
+            )}
           </div>
         </div>
       )}

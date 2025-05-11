@@ -20,7 +20,9 @@ interface CardSearchProps {
   searchInputRef?: React.RefObject<HTMLInputElement>;
   potentialCardNumber?: string | null;
   onUseAsCardNumber?: () => void;
-  performSearch?: () => void; 
+  performSearch?: () => void;
+  isFiltered?: boolean;
+  onShowAllSets?: () => void;
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
@@ -32,7 +34,9 @@ const CardSearch: React.FC<CardSearchProps> = ({
   searchInputRef,
   potentialCardNumber = null,
   onUseAsCardNumber = () => {},
-  performSearch = () => {} 
+  performSearch = () => {},
+  isFiltered = false,
+  onShowAllSets
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -103,6 +107,8 @@ const CardSearch: React.FC<CardSearchProps> = ({
           setOptions={setOptions}
           isLoading={isLoadingSets}
           onChange={onInputChange}
+          isFiltered={isFiltered}
+          onShowAllSets={onShowAllSets}
         />
 
         {/* Card Number Input - with improved placeholder and help text */}

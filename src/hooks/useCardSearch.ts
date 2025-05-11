@@ -29,7 +29,10 @@ export const useCardSearch = () => {
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const suggestionDebounceRef = useRef<NodeJS.Timeout | null>(null);
   
-  const { setOptions, filteredSetOptions, isLoadingSets, filterSetOptions } = useSetOptions(
+  // Track if sets are filtered
+  const [isSetFiltered, setIsSetFiltered] = useState(false);
+  
+  const { setOptions, filteredSetOptions, isLoadingSets, filterSetOptions, showAllSets, isFiltered } = useSetOptions(
     cardDetails.game,
     cardDetails.categoryId
   );
@@ -91,6 +94,9 @@ export const useCardSearch = () => {
           // Filter set options based on search results
           const searchTerms = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
           filterSetOptions(searchTerms, foundSetIds);
+          
+          // Record if sets are being filtered
+          setIsSetFiltered(isFiltered);
         }
         
         setShouldSearch(false);
@@ -98,7 +104,7 @@ export const useCardSearch = () => {
       
       performSearch();
     }
-  }, [shouldSearch, cardDetails, searchCards, setOptions, filterSetOptions]);
+  }, [shouldSearch, cardDetails, searchCards, setOptions, filterSetOptions, isFiltered]);
 
   // Modified search behavior to better support set-only searches
   useEffect(() => {
@@ -234,6 +240,12 @@ export const useCardSearch = () => {
     }
   }, [cardDetails]);
 
+  // Add new handleShowAllSets function
+  const handleShowAllSets = useCallback(() => {
+    showAllSets();
+    setIsSetFiltered(false);
+  }, [showAllSets]);
+
   const resetSearch = useCallback(() => {
     setCardDetails(prev => ({
       name: '',
@@ -244,6 +256,7 @@ export const useCardSearch = () => {
     }));
     setShowSuggestions(false);
     setPotentialCardNumber(null);
+    setIsSetFiltered(false);
   }, []);
 
   return {
@@ -265,6 +278,8 @@ export const useCardSearch = () => {
     loadMoreResults,
     totalResults,
     handleUseAsCardNumber,
-    performSearch
+    performSearch,
+    isSetFiltered,
+    handleShowAllSets
   };
 };
