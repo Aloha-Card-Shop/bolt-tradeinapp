@@ -16,6 +16,7 @@ interface CardSearchProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   setOptions: SetOption[];
   isLoadingSets: boolean;
+  isSearching?: boolean;
   searchInputRef?: React.RefObject<HTMLInputElement>;
   potentialCardNumber?: string | null;
   onUseAsCardNumber?: () => void;
@@ -27,6 +28,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
   onInputChange, 
   setOptions, 
   isLoadingSets,
+  isSearching = false,
   searchInputRef,
   potentialCardNumber = null,
   onUseAsCardNumber = () => {},
@@ -82,6 +84,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             inputRef={searchInputRef}
+            isSearching={isSearching}
           />
           
           {/* Card number suggestion - now with enhanced detection */}
@@ -89,6 +92,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
             <CardNumberSuggestion 
               potentialCardNumber={potentialCardNumber}
               onUseAsCardNumber={onUseAsCardNumber}
+              isDetecting={isSearching}
             />
           )}
         </div>
@@ -106,15 +110,20 @@ const CardSearch: React.FC<CardSearchProps> = ({
           cardNumber={cardDetails.number} 
           onChange={onInputChange}
           onKeyDown={handleKeyDown}
+          isSearching={isSearching}
         />
         
         {/* Search button */}
         <div className="mt-4">
           <button
             onClick={performSearch}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+            disabled={isSearching}
+            className={`w-full ${isSearching 
+              ? 'bg-blue-400 cursor-not-allowed' 
+              : 'bg-blue-600 hover:bg-blue-700'} 
+              text-white font-medium py-2 px-4 rounded-lg transition-colors`}
           >
-            Search
+            {isSearching ? 'Searching...' : 'Search'}
           </button>
         </div>
       </div>

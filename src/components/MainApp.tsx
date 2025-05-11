@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DatabaseIcon, Sparkles } from 'lucide-react';
 import { Toaster } from 'react-hot-toast'; // Import Toaster for notifications
@@ -107,10 +108,11 @@ function MainApp() {
                 onInputChange={handleInputChange}
                 setOptions={setOptions}
                 isLoadingSets={isLoadingSets}
+                isSearching={isSearching}
                 searchInputRef={searchInputRef}
                 potentialCardNumber={potentialCardNumber}
                 onUseAsCardNumber={handleUseAsCardNumber}
-                performSearch={performSearch} // Pass the performSearch function
+                performSearch={performSearch} 
               />
             </div>
             

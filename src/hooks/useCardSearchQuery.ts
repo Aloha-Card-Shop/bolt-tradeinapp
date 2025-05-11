@@ -7,6 +7,8 @@ import { toast } from 'react-hot-toast';
 
 // Debug mode flag - set to true to enable verbose logging
 const DEBUG_MODE = true;
+// Increased timeout from 5 seconds to 12 seconds to allow for more complex queries
+const SEARCH_TIMEOUT_MS = 12000;
 
 export const useCardSearchQuery = () => {
   const [searchResults, setSearchResults] = useState<CardDetails[]>([]);
@@ -22,6 +24,9 @@ export const useCardSearchQuery = () => {
     setOptions: []
   });
 
+  // Track if any search is in progress to prevent duplicate requests
+  const [activeSearchController, setActiveSearchController] = useState<AbortController | null>(null);
+
   // Optimized search function with faster response and better error handling
   const searchCards = async (
     cardDetails: CardDetails,
@@ -35,6 +40,15 @@ export const useCardSearchQuery = () => {
       setTotalResults(0);
       return new Set<number>();
     }
+
+    // Cancel any ongoing search to prevent race conditions
+    if (activeSearchController) {
+      activeSearchController.abort();
+    }
+
+    // Create new abort controller for this search
+    const controller = new AbortController();
+    setActiveSearchController(controller);
 
     // Only show loading state if there are no existing results
     // This prevents flickering when refining a search
@@ -68,9 +82,9 @@ export const useCardSearchQuery = () => {
       // Build and execute query using the utility function
       const { query, foundSetIds } = await buildSearchQuery(cardDetails, setOptions, 0);
       
-      // Execute query with 5-second timeout for better user experience
+      // Execute query with improved timeout handling
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Search timeout')), 5000)
+        setTimeout(() => reject(new Error('Search timeout')), SEARCH_TIMEOUT_MS)
       );
       
       // Race between the query and the timeout
@@ -83,6 +97,12 @@ export const useCardSearchQuery = () => {
       const endTime = performance.now();
       if (DEBUG_MODE) {
         console.log(`🕒 Query execution time: ${(endTime - startTime).toFixed(2)}ms`);
+      }
+
+      // Check if search was aborted
+      if (controller.signal.aborted) {
+        console.log('Search aborted: User initiated a new search');
+        return foundSetIds;
       }
 
       // Log raw response for debugging
@@ -151,9 +171,17 @@ export const useCardSearchQuery = () => {
     } catch (error) {
       console.error('❌ Error searching cards:', error);
       
+      // Skip error notifications if search was aborted
+      if (controller.signal.aborted) {
+        return new Set<number>();
+      }
+      
       // Provide more specific error messages for JSON structure issues
       if (error instanceof Error) {
-        if (error.message.includes('JSON') || error.message.includes('jsonb')) {
+        if (error.message.includes('timeout') || error.message === 'Search timeout') {
+          console.error('Search timeout error details:', error);
+          toast.error('The search is taking longer than expected. Try a more specific search term.');
+        } else if (error.message.includes('JSON') || error.message.includes('jsonb')) {
           console.error('JSON parsing error details:', error);
           toast.error('We\'re fixing an issue with the card search. Please try again in a moment.');
         } else if (error.name !== 'AbortError') {
@@ -169,6 +197,10 @@ export const useCardSearchQuery = () => {
       setTotalResults(0);
       return new Set<number>();
     } finally {
+      // Clear the abort controller reference if this is still the active search
+      if (activeSearchController === controller && !controller.signal.aborted) {
+        setActiveSearchController(null);
+      }
       setIsSearching(false);
     }
   };
