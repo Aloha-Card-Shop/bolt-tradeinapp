@@ -86,7 +86,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ template, onSave, onCancel 
           required
         />
         <p className="mt-1 text-xs text-gray-500">
-          Use placeholders: {{'{{'}}customerName{{'}}'}}, {{'{{'}}date{{'}}'}}, {{'{{'}}totalValue{{'}}'}}, {{'{{'}}cashValue{{'}}'}}, {{'{{'}}tradeValue{{'}}'}}, {{'{{'}}tradeInId{{'}}'}}
+          Use placeholders: {"{{customerName}}"}, {"{{date}}"}, {"{{totalValue}}"}, {"{{cashValue}}"}, {"{{tradeValue}}"}, {"{{tradeInId}}"}
         </p>
       </div>
       
