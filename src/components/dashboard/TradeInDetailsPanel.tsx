@@ -3,7 +3,7 @@ import React from 'react';
 import { formatCurrency } from '../../utils/formatters';
 import { Loader2 } from 'lucide-react';
 import EditableTradeInItemRow from './EditableTradeInItemRow';
-import { TradeIn } from '../../types/tradeIn';
+import { TradeIn, TradeInItem } from '../../types/tradeIn';
 import { useTradeInItemUpdate } from '../../hooks/useTradeInItemUpdate';
 
 interface TradeInDetailsPanelProps {
@@ -32,7 +32,7 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
     }
   };
 
-  const handleItemUpdate = (itemId: string) => (updates: Partial<TradeIn>) => {
+  const handleItemUpdate = (itemId: string) => (updates: Partial<TradeInItem>) => {
     if (!itemId) return;
     updateTradeInItem(tradeIn.id, itemId, updates);
   };

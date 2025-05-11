@@ -13,12 +13,7 @@ export const useTradeInItemUpdate = (
   const updateTradeInItem = async (
     tradeInId: string,
     itemId: string,
-    updates: Partial<{
-      condition: string;
-      quantity: number;
-      price: number;
-      attributes: TradeInItem['attributes'];
-    }>
+    updates: Partial<TradeInItem>
   ) => {
     if (!itemId) {
       setErrorMessage('Missing item ID for update');
@@ -29,14 +24,19 @@ export const useTradeInItemUpdate = (
     setErrorMessage(null);
 
     try {
+      // Extract fields we need to update in the database
+      const dbUpdates: any = {};
+      
+      // Only include fields that are actually being updated
+      if (updates.condition !== undefined) dbUpdates.condition = updates.condition;
+      if (updates.quantity !== undefined) dbUpdates.quantity = updates.quantity;
+      if (updates.price !== undefined) dbUpdates.price = updates.price;
+      if (updates.attributes !== undefined) dbUpdates.attributes = updates.attributes;
+
       // Update the trade_in_items table
       const { error } = await supabase
         .from('trade_in_items')
-        .update({
-          ...updates,
-          // Don't include attributes in the top level if it's not provided
-          ...(updates.attributes ? { attributes: updates.attributes } : {})
-        })
+        .update(dbUpdates)
         .eq('id', itemId)
         .eq('trade_in_id', tradeInId);
 
@@ -92,7 +92,7 @@ export const useTradeInItemUpdate = (
     let tradeTotal = 0;
     
     items.forEach(item => {
-      const paymentType = item.attributes.paymentType || 'cash';
+      const paymentType = item.attributes?.paymentType || 'cash';
       const itemPrice = item.price;
       const quantity = item.quantity || 1;
       

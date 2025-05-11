@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import TradeInTable from '../dashboard/TradeInTable';
@@ -23,6 +23,14 @@ const MyTradeInsContent: React.FC<MyTradeInsContentProps> = ({
   loadingItems,
   onToggleDetails
 }) => {
+  // Add state for tradeIns in this component since we need to provide setTradeIns prop
+  const [localTradeIns, setLocalTradeIns] = useState<TradeIn[]>(tradeIns);
+
+  // Update local state when props change
+  React.useEffect(() => {
+    setLocalTradeIns(tradeIns);
+  }, [tradeIns]);
+
   return (
     <div className="min-h-screen bg-gray-50 pt-16 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -45,7 +53,7 @@ const MyTradeInsContent: React.FC<MyTradeInsContentProps> = ({
 
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <TradeInTable 
-            tradeIns={tradeIns}
+            tradeIns={localTradeIns}
             isLoading={isLoading}
             expandedTradeIn={expandedTradeIn}
             loadingItems={loadingItems}
@@ -54,6 +62,7 @@ const MyTradeInsContent: React.FC<MyTradeInsContentProps> = ({
             onApprove={() => {}}
             onDeny={() => {}}
             onDelete={() => {}}
+            setTradeIns={setLocalTradeIns}
           />
         </div>
       </div>
