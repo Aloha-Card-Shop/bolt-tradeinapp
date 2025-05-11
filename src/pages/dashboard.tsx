@@ -9,7 +9,8 @@ import {
   DollarSign,
   Settings,
   ChevronRight,
-  Receipt
+  Receipt,
+  Barcode
 } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
 import { supabase } from '../lib/supabase';
@@ -103,6 +104,26 @@ const Dashboard: React.FC = () => {
               <ChevronRight className="h-5 w-5 text-purple-500 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
+
+          {/* Barcode Management Card - New addition */}
+          {isStaff && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center mb-4">
+                <div className="p-3 bg-amber-100 rounded-lg">
+                  <Barcode className="h-6 w-6 text-amber-600" />
+                </div>
+                <h2 className="ml-3 text-xl font-semibold text-gray-900">Barcode Templates</h2>
+              </div>
+              <p className="text-gray-600 mb-6">Manage barcode templates and printing settings</p>
+              <Link 
+                to="/admin/barcodes" 
+                className="group flex items-center justify-between px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition-colors"
+              >
+                <span>Manage Templates</span>
+                <ChevronRight className="h-5 w-5 text-amber-500 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          )}
 
           {/* Customer Management Card */}
           {isStaff && (
