@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { PlusCircle, Trash, Save, Edit, Printer } from 'lucide-react';
 import { usePrinters } from '../../hooks/usePrinters';
-import AdminWrapper from '../../components/AdminWrapper';
+import { useAdminApi } from '../../components/AdminWrapper';
 
 const PrintersAdminPage: React.FC = () => {
   const { printers, locations, isLoading, addPrinter, updatePrinter, deletePrinter, addLocation, updateLocation, deleteLocation } = usePrinters();

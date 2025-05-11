@@ -40,6 +40,12 @@ export interface TradeIn {
   handled_by?: string | null;
   handled_at?: string | null;
   is_updating?: boolean;
+  // Add print-related properties
+  printed?: boolean;
+  print_count?: number;
+  last_printed_at?: string;
+  printed_by?: string;
+  printer_id?: string;
 }
 
 export type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected';
