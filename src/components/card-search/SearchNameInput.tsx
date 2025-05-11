@@ -1,19 +1,21 @@
 
 import React from 'react';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 
 interface SearchNameInputProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;
   inputRef?: React.RefObject<HTMLInputElement>;
+  isSearching?: boolean;
 }
 
 const SearchNameInput: React.FC<SearchNameInputProps> = ({ 
   value, 
   onChange, 
   onKeyDown,
-  inputRef
+  inputRef,
+  isSearching = false
 }) => {
   // Handle enter key press
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -41,7 +43,11 @@ const SearchNameInput: React.FC<SearchNameInputProps> = ({
           className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 pointer-events-none"
           aria-hidden="true"
         >
-          <Search className="h-4 w-4" />
+          {isSearching ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Search className="h-4 w-4" />
+          )}
         </div>
       </div>
       <p className="mt-1 text-xs text-gray-500">

@@ -1,5 +1,5 @@
 
-import React, { KeyboardEvent, useState } from 'react';
+import React, { KeyboardEvent } from 'react';
 import { CardNumberObject } from '../../types/card';
 import { getCardNumberString } from '../../utils/cardSearchUtils';
 import { Loader2 } from 'lucide-react';
