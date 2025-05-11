@@ -40,7 +40,7 @@ export interface TradeIn {
   handled_by?: string | null;
   handled_at?: string | null;
   is_updating?: boolean;
-  // Add print-related properties
+  // Print-related properties
   printed?: boolean;
   print_count?: number;
   last_printed_at?: string;

@@ -85,14 +85,7 @@ serve(async (req) => {
       );
     }
 
-    // This would be replaced with actual PrintNode API call
-    // For now, this is a mock implementation
-    console.log('Printing trade-in barcode:', { 
-      tradeIn, 
-      printer,
-      printNodePrinterId: printer.printer_id
-    });
-
+    // If API key is not set, use mock implementation
     if (!PRINTNODE_API_KEY) {
       console.log('PRINTNODE_API_KEY not set, using mock print');
       
@@ -110,9 +103,7 @@ serve(async (req) => {
       );
     }
 
-    // Here we would make actual API call to PrintNode
-    // Example code below for when API key is set up:
-    /*
+    // For real PrintNode integration
     const customerName = tradeIn.customers 
       ? `${tradeIn.customers.first_name} ${tradeIn.customers.last_name}` 
       : 'Unknown Customer';
@@ -120,7 +111,7 @@ serve(async (req) => {
     const formattedDate = new Date(tradeIn.trade_in_date).toLocaleDateString();
     
     // Generate base64-encoded ZPL for the label
-    // This is a very basic example - you would want to customize this
+    // This is a basic ZPL template for a 2x1 inch label
     const zpl = `^XA
 ^FO50,50^A0N,30,30^FD${customerName}^FS
 ^FO50,90^A0N,20,20^FD${formattedDate}^FS
@@ -129,6 +120,13 @@ serve(async (req) => {
 ^XZ`;
 
     const base64Content = btoa(zpl);
+    
+    console.log('Sending print job to PrintNode:', {
+      printerId: parseInt(printer.printer_id, 10),
+      title: `Trade-In Label ${tradeIn.id}`,
+      contentType: 'raw_base64',
+      content: 'Base64 ZPL data (truncated for logs)'
+    });
 
     // Make request to PrintNode API
     const response = await fetch('https://api.printnode.com/printjobs', {
@@ -146,19 +144,20 @@ serve(async (req) => {
       })
     });
 
+    if (!response.ok) {
+      const printNodeError = await response.text();
+      console.error('PrintNode API error:', printNodeError);
+      throw new Error(`PrintNode API Error: ${printNodeError}`);
+    }
+    
     const printNodeResponse = await response.json();
     
-    if (!response.ok) {
-      throw new Error(`PrintNode API Error: ${JSON.stringify(printNodeResponse)}`);
-    }
-    */
-
     // Return success response
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: 'Print job submitted successfully',
-        printJobId: 'mock-print-job-' + Date.now() // In real implementation, would be from PrintNode
+        printJobId: printNodeResponse.id || 'unknown'
       }),
       {
         status: 200,
