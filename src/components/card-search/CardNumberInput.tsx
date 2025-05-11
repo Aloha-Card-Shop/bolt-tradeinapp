@@ -1,3 +1,4 @@
+
 import React, { KeyboardEvent } from 'react';
 import { CardNumberObject } from '../../types/card';
 import { getCardNumberString } from '../../utils/cardSearchUtils';
@@ -40,11 +41,11 @@ const CardNumberInput: React.FC<CardNumberInputProps> = ({
         value={getCardNumberString(cardNumber)}
         onChange={onChange}
         onKeyDown={handleKeyDown}
-        placeholder="e.g. 12 or 12/107"
+        placeholder="e.g. 12, 12/107, or SW123"
         className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       <p className="mt-1 text-xs text-gray-500">
-        Enter full or partial card number (with or without set number)
+        Enter full or partial card number (works with just digits, with set number, or prefix)
       </p>
     </div>
   );

@@ -16,12 +16,14 @@ const CardNumberSuggestion: React.FC<CardNumberSuggestionProps> = ({
   
   return (
     <div className="mt-1 p-2 bg-blue-50 text-sm rounded-md flex items-center justify-between">
-      <span>Looking for card #{potentialCardNumber}?</span>
+      <span>
+        <span className="font-medium">#{potentialCardNumber}</span> looks like a card number
+      </span>
       <button 
         onClick={onUseAsCardNumber}
         className="text-blue-600 hover:text-blue-800 font-medium"
       >
-        Search by number
+        Search as card number
       </button>
     </div>
   );

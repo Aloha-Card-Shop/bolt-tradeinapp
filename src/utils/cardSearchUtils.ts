@@ -1,4 +1,3 @@
-
 import { CardNumberObject } from '../types/card';
 
 /**
@@ -44,28 +43,56 @@ export const createCardNumberFilters = (cardNumber: string): string[] => {
   
   const filters = [];
   const numberBeforeSlash = extractNumberBeforeSlash(cardNumber);
+  const isNumericOnly = /^\d+$/.test(cardNumber);
   
-  // Handle exact matches (highest priority)
+  // Priority 1: Exact matches (highest priority)
   filters.push(`attributes->>'card_number'.eq.${cardNumber}`);
   filters.push(`attributes->>'Number'.eq.${cardNumber}`);
   
-  // Handle where card number might be a prefix (with slash)
-  filters.push(`attributes->>'card_number'.ilike.${cardNumber}/%`);
-  filters.push(`attributes->>'Number'.ilike.${cardNumber}/%`);
-  
-  // Handle partial matches where the number appears at the beginning
+  // Priority 2: Prefix matches (card number starts with the search term)
   filters.push(`attributes->>'card_number'.ilike.${cardNumber}%`);
   filters.push(`attributes->>'Number'.ilike.${cardNumber}%`);
   
-  // Always look for the number before slash to handle cases like "167" finding "167/159"
+  // Priority 3: Handle where card number might be a prefix with slash
+  filters.push(`attributes->>'card_number'.ilike.${cardNumber}/%`);
+  filters.push(`attributes->>'Number'.ilike.${cardNumber}/%`);
+  
+  // Priority 4: If searching for just digits, look for those digits at start of number
+  if (isNumericOnly) {
+    // For numeric searches, add specific pattern match for numbers at the start
+    // This helps when searching for "25" to find "25/123" or similar patterns
+    filters.push(`attributes->>'card_number'.ilike.${cardNumber}/%`);
+    filters.push(`attributes->>'Number'.ilike.${cardNumber}/%`);
+    
+    // Also look for the digits anywhere in the number
+    filters.push(`attributes->>'card_number'.ilike.%${cardNumber}%`);
+    filters.push(`attributes->>'Number'.ilike.%${cardNumber}%`);
+  }
+  
+  // Handle specific case where numberBeforeSlash is different
   if (numberBeforeSlash !== cardNumber) {
+    // Add search for just the number before slash followed by slash
     filters.push(`attributes->>'card_number'.ilike.${numberBeforeSlash}/%`);
     filters.push(`attributes->>'Number'.ilike.${numberBeforeSlash}/%`);
   }
   
-  // Add general contains matches (lowest priority)
-  filters.push(`attributes->>'card_number'.ilike.%${cardNumber}%`);
-  filters.push(`attributes->>'Number'.ilike.%${cardNumber}%`);
+  // Add pattern matches for common formats
+  if (isNumericOnly) {
+    // If we're searching for just a number like "123", also check:
+    // - SW123 (number at end)
+    // - S-123 (number after hyphen)
+    // - 123/ABC (number before slash)
+    // - 123A (number followed by letter)
+    
+    filters.push(`attributes->>'card_number'.ilike.%${cardNumber}`); // Ends with number
+    filters.push(`attributes->>'Number'.ilike.%${cardNumber}`);
+    
+    filters.push(`attributes->>'card_number'.ilike.%-${cardNumber}%`); // After hyphen
+    filters.push(`attributes->>'Number'.ilike.%-${cardNumber}%`);
+    
+    filters.push(`attributes->>'card_number'.ilike.${cardNumber}/%`); // Before slash
+    filters.push(`attributes->>'Number'.ilike.${cardNumber}/%`);
+  }
   
   return filters;
 };
@@ -133,9 +160,13 @@ export const isLikelyCardNumber = (searchTerm: string): boolean => {
   // Basic check: Contains only digits
   const isJustNumber = /^\d+$/.test(searchTerm.trim());
   
-  // More advanced checks could be added here
+  // Check if it looks like a card number with a slash pattern (e.g., "123/456")
+  const isSlashPattern = /^\d+\/\w+$/.test(searchTerm.trim());
   
-  return isJustNumber && searchTerm.trim().length > 0;
+  // Check if it's a letter followed by numbers (e.g., "SW123")
+  const isLetterNumber = /^[A-Za-z]+[-]?\d+$/.test(searchTerm.trim());
+  
+  return (isJustNumber && searchTerm.trim().length > 0) || isSlashPattern || isLetterNumber;
 };
 
 /**

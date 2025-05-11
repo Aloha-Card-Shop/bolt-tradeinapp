@@ -154,6 +154,7 @@ export const useCardSearch = () => {
     };
   }, [cardDetails.name, cardDetails.number, cardDetails.set, cardDetails.game, cardDetails.categoryId, fetchSuggestions]);
 
+  // Improved handleInputChange to better detect potential card numbers
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
@@ -170,6 +171,13 @@ export const useCardSearch = () => {
       setTimeout(() => setShouldSearch(true), 50);
     } else if (name === 'name') {
       setCardDetails(prev => ({ ...prev, [name]: value }));
+      
+      // Check if input might be a card number
+      if (isLikelyCardNumber(value) && !cardDetails.number) {
+        setPotentialCardNumber(value.trim());
+      } else {
+        setPotentialCardNumber(null);
+      }
       
       // Reset set selection if name is cleared
       if (!value) {
@@ -192,14 +200,14 @@ export const useCardSearch = () => {
     }
   };
 
-  // Use potential card number as actual card number
+  // Improved use potential card number function
   const handleUseAsCardNumber = useCallback(() => {
     if (!potentialCardNumber) return;
     
     setCardDetails(prev => ({
       ...prev,
-      name: '',
-      number: potentialCardNumber
+      name: '', // Clear the name field
+      number: potentialCardNumber // Move the value to card number field
     }));
     setPotentialCardNumber(null);
     

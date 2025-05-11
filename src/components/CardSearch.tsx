@@ -84,11 +84,13 @@ const CardSearch: React.FC<CardSearchProps> = ({
             inputRef={searchInputRef}
           />
           
-          {/* Card number suggestion */}
-          <CardNumberSuggestion 
-            potentialCardNumber={potentialCardNumber}
-            onUseAsCardNumber={onUseAsCardNumber}
-          />
+          {/* Card number suggestion - now with enhanced detection */}
+          {potentialCardNumber && (
+            <CardNumberSuggestion 
+              potentialCardNumber={potentialCardNumber}
+              onUseAsCardNumber={onUseAsCardNumber}
+            />
+          )}
         </div>
         
         {/* Set Selection */}
@@ -99,7 +101,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
           onChange={onInputChange}
         />
 
-        {/* Card Number Input */}
+        {/* Card Number Input - with improved placeholder and help text */}
         <CardNumberInput 
           cardNumber={cardDetails.number} 
           onChange={onInputChange}

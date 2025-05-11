@@ -72,25 +72,47 @@ export const buildSearchQuery = async (
       if (DEBUG_MODE) console.log('Category filter not applied to cards table (missing column)');
     }
     
-    // More precise card number filtering since we have a dedicated column
+    // Enhanced card number filtering with better partial matching
     if (number) {
       // Get number before slash for partial matching
       const numberBeforeSlash = extractNumberBeforeSlash(number);
       const fullNumber = number.toString();
+      const isNumericOnly = /^\d+$/.test(fullNumber);
       
-      // Direct filtering on the card_number column
+      // Set up a series of OR conditions to match the card number in various ways
+      let cardNumberFilters = [];
+      
+      // Exact match (highest priority)
+      cardNumberFilters.push(`card_number.eq.${fullNumber}`);
+      
+      // Prefix match (starts with search term)
+      cardNumberFilters.push(`card_number.ilike.${fullNumber}%`);
+      
+      // Contains match (number appears anywhere)
+      cardNumberFilters.push(`card_number.ilike.%${fullNumber}%`);
+      
+      // If numeric only, add special partial matching patterns
+      if (isNumericOnly) {
+        // Match where numeric part is at beginning followed by slash
+        cardNumberFilters.push(`card_number.ilike.${fullNumber}/%`);
+        
+        // Match where numeric part is at end
+        cardNumberFilters.push(`card_number.ilike.%${fullNumber}`);
+        
+        // Special pattern for numbers after a hyphen (like "SW-123")
+        cardNumberFilters.push(`card_number.ilike.%-${fullNumber}%`);
+      }
+      
+      // If numberBeforeSlash is different, add those patterns too
       if (numberBeforeSlash && numberBeforeSlash !== fullNumber) {
-        query = query.or(`card_number.ilike.${fullNumber}%,card_number.ilike.${numberBeforeSlash}/%`);
-        
-        if (DEBUG_MODE) {
-          console.log(`Added enhanced card number filter on cards table: ${fullNumber} or ${numberBeforeSlash}/`);
-        }
-      } else {
-        query = query.ilike('card_number', `${fullNumber}%`);
-        
-        if (DEBUG_MODE) {
-          console.log(`Added card number filter on cards table: ${fullNumber}%`);
-        }
+        cardNumberFilters.push(`card_number.ilike.${numberBeforeSlash}/%`);
+      }
+      
+      // Combine all patterns with OR logic
+      query = query.or(cardNumberFilters.join(','));
+      
+      if (DEBUG_MODE) {
+        console.log(`Added enhanced card number filters: ${cardNumberFilters.join(' OR ')}`);
       }
     }
     
