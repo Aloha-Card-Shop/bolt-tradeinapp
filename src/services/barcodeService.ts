@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { BarcodeTemplate, BarcodeSetting, PrintLog } from '../types/barcode';
 import { TradeIn } from '../types/tradeIn';
@@ -109,7 +108,7 @@ export const barcodeService = {
         name: "Card Barcode Template",
         description: "Template for printing individual card barcodes with price, condition, name and number",
         zpl_template: `^XA
-^FO50,50^A0N,30,30^FD${{cardPrice}} | {{cardCondition}}^FS
+^FO50,50^A0N,30,30^FD\${{cardPrice}} | {{cardCondition}}^FS
 ^FO50,90^BY3^BCN,100,Y,N,N^FD{{tradeInId}}^FS
 ^FO50,220^A0N,30,30^FD{{cardName}}^FS
 ^FO50,260^A0N,20,20^FD{{cardNumber}}^FS

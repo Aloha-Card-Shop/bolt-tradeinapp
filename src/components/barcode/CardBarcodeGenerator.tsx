@@ -42,9 +42,6 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
       }
     }
   }, [tradeIn.id, width, height, displayValue, fontSize]);
-
-  // Format date for display
-  const formattedDate = new Date(tradeIn.trade_in_date).toLocaleDateString();
   
   // Get card details if an item is provided
   const cardName = item?.card_name || 'Card';
@@ -56,7 +53,7 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
     <div className="bg-white p-4 rounded-lg shadow">
       {/* Top 25%: Price and Condition */}
       <div className="mb-2 text-center font-bold border-b pb-2">
-        <div className="text-lg">${cardPrice} | {cardCondition}</div>
+        <div className="text-lg">{cardPrice} | {cardCondition}</div>
       </div>
       
       {/* Middle 50%: Barcode */}

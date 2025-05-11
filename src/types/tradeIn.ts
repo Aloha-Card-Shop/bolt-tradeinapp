@@ -17,6 +17,7 @@ export interface TradeInItem {
     paymentType?: 'cash' | 'trade';
     cashValue?: number;
     tradeValue?: number;
+    cardNumber?: string;  // Add cardNumber to attributes
   };
   tcgplayer_url?: string | null;
   image_url?: string | null;
