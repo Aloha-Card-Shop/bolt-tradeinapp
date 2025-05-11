@@ -1,12 +1,14 @@
 
 import React from 'react';
 import { BarcodeTemplate } from '../../types/barcode';
-import { TradeIn } from '../../types/tradeIn';
+import { TradeIn, TradeInItem } from '../../types/tradeIn';
 import BarcodeGenerator from './BarcodeGenerator';
+import CardBarcodeGenerator from './CardBarcodeGenerator';
 
 interface TemplatePreviewProps {
   template?: BarcodeTemplate | null;
   sampleTradeIn?: TradeIn;
+  templateType?: 'standard' | 'card';
 }
 
 // Create a sample trade-in for preview
@@ -31,15 +33,51 @@ const createSampleTradeIn = (): TradeIn => {
   };
 };
 
-const TemplatePreview: React.FC<TemplatePreviewProps> = ({ template, sampleTradeIn }) => {
+// Create a sample trade-in item for preview
+const createSampleItem = (): TradeInItem => {
+  return {
+    card_name: 'Charizard Holo',
+    quantity: 1,
+    price: 45.00,
+    condition: 'near_mint',
+    attributes: {
+      isFirstEdition: true,
+      isHolo: true,
+      cardNumber: '4/102',
+      paymentType: 'cash',
+      cashValue: 22.50,
+      tradeValue: 29.25
+    }
+  };
+};
+
+const TemplatePreview: React.FC<TemplatePreviewProps> = ({ template, sampleTradeIn, templateType = 'standard' }) => {
   const tradeIn = sampleTradeIn || createSampleTradeIn();
+  const sampleItem = createSampleItem();
   
   return (
     <div className="border rounded-md p-4">
       <h3 className="font-medium text-gray-800 mb-2">Template Preview</h3>
       <div className="bg-white border border-gray-200 p-3 rounded shadow-sm">
         <div className="w-full">
-          <BarcodeGenerator tradeIn={tradeIn} width={2.5} height={150} displayValue={true} fontSize={16} />
+          {templateType === 'card' ? (
+            <CardBarcodeGenerator 
+              tradeIn={tradeIn}
+              item={sampleItem}
+              width={2.5} 
+              height={100} 
+              displayValue={true} 
+              fontSize={16} 
+            />
+          ) : (
+            <BarcodeGenerator 
+              tradeIn={tradeIn} 
+              width={2.5} 
+              height={150} 
+              displayValue={true} 
+              fontSize={16} 
+            />
+          )}
         </div>
         
         {template && (

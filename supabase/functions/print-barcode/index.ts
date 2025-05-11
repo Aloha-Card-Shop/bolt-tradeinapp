@@ -19,6 +19,7 @@ interface PrintRequest {
   tradeInId: string;
   printerId: string;
   templateId?: string | null;
+  cardId?: string | null;
 }
 
 serve(async (req) => {
@@ -30,7 +31,7 @@ serve(async (req) => {
   try {
     // Get request body
     const body: PrintRequest = await req.json();
-    const { tradeInId, printerId, templateId } = body;
+    const { tradeInId, printerId, templateId, cardId } = body;
 
     if (!tradeInId || !printerId) {
       return new Response(
@@ -66,6 +67,32 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
+    }
+
+    // Get card data if cardId is provided
+    let card = null;
+    if (cardId) {
+      const { data: tradeInItem, error: cardError } = await supabase
+        .from('trade_in_items')
+        .select(`
+          id,
+          card_id,
+          card_name,
+          quantity,
+          price,
+          condition,
+          attributes,
+          cards (name, card_number)
+        `)
+        .eq('id', cardId)
+        .eq('trade_in_id', tradeInId)
+        .single();
+
+      if (cardError) {
+        console.error('Error fetching card:', cardError);
+      } else {
+        card = tradeInItem;
+      }
     }
 
     // Get printer details
@@ -145,6 +172,14 @@ serve(async (req) => {
     // Generate ZPL content
     let zpl;
     if (template && template.zpl_template) {
+      // Prepare card-related values if available
+      const cardName = card?.card_name || '';
+      const cardNumber = card?.cards?.card_number || 
+                       card?.attributes?.cardNumber || 
+                       (card?.attributes && typeof card.attributes === 'object' && 'cardNumber' in card.attributes ? card.attributes.cardNumber : '');
+      const cardPrice = card?.price?.toFixed(2) || '0.00';
+      const cardCondition = card?.condition || '';
+
       // Replace template placeholders with actual values
       zpl = template.zpl_template
         .replace(/\{\{customerName\}\}/g, customerName)
@@ -152,22 +187,37 @@ serve(async (req) => {
         .replace(/\{\{totalValue\}\}/g, tradeIn.total_value.toFixed(2))
         .replace(/\{\{cashValue\}\}/g, tradeIn.cash_value.toFixed(2))
         .replace(/\{\{tradeValue\}\}/g, tradeIn.trade_value.toFixed(2))
-        .replace(/\{\{tradeInId\}\}/g, tradeIn.id);
+        .replace(/\{\{tradeInId\}\}/g, tradeIn.id)
+        .replace(/\{\{cardName\}\}/g, cardName)
+        .replace(/\{\{cardNumber\}\}/g, cardNumber)
+        .replace(/\{\{cardPrice\}\}/g, cardPrice)
+        .replace(/\{\{cardCondition\}\}/g, cardCondition);
     } else {
       // Fallback to hardcoded ZPL if no template is found
-      zpl = `^XA
+      if (card) {
+        // Card-specific template
+        zpl = `^XA
+^FO50,50^A0N,30,30^FD$${card.price?.toFixed(2) || '0.00'} | ${card.condition || ''}^FS
+^FO50,90^BY3^BCN,100,Y,N,N^FD${tradeIn.id}^FS
+^FO50,220^A0N,30,30^FD${card.card_name || 'Unknown Card'}^FS
+^FO50,260^A0N,20,20^FD${card?.cards?.card_number || card?.attributes?.cardNumber || ''}^FS
+^XZ`;
+      } else {
+        // Standard trade-in template
+        zpl = `^XA
 ^FO50,50^A0N,30,30^FD${customerName}^FS
 ^FO50,90^A0N,20,20^FD${formattedDate}^FS
 ^FO50,120^A0N,20,20^FD$${tradeIn.total_value.toFixed(2)}^FS
 ^FO50,170^BY3^BCN,100,Y,N,N^FD${tradeIn.id}^FS
 ^XZ`;
+      }
     }
 
     const base64Content = btoa(zpl);
     
     console.log('Sending print job to PrintNode:', {
       printerId: parseInt(printer.printer_id, 10),
-      title: `Trade-In Label ${tradeIn.id}`,
+      title: card ? `Card Label ${card.card_name}` : `Trade-In Label ${tradeIn.id}`,
       contentType: 'raw_base64',
       content: 'Base64 ZPL data (truncated for logs)'
     });
@@ -181,7 +231,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         printerId: parseInt(printer.printer_id, 10),
-        title: `Trade-In Label ${tradeIn.id}`,
+        title: card ? `Card Label ${card.card_name}` : `Trade-In Label ${tradeIn.id}`,
         contentType: 'raw_base64',
         content: base64Content,
         source: 'Lovable Trade-In System'

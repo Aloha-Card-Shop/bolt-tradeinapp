@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Barcode, ArrowLeft, Plus, Settings as SettingsIcon, History } from 'lucide-react';
@@ -21,6 +20,7 @@ const BarcodesAdmin: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<BarcodeTemplate | null>(null);
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
   const [isEditingTemplate, setIsEditingTemplate] = useState(false);
+  const [templateType, setTemplateType] = useState<'standard' | 'card'>('standard');
   
   // State for settings
   const [settings, setSettings] = useState<BarcodeSetting | null>(null);
@@ -33,6 +33,15 @@ const BarcodesAdmin: React.FC = () => {
   // State for active tab
   const [activeTab, setActiveTab] = useState<'templates' | 'settings' | 'logs'>('templates');
 
+  // Create card template if it doesn't exist
+  const ensureCardTemplateExists = async () => {
+    try {
+      await barcodeService.createCardTemplate();
+    } catch (error) {
+      console.error('Error ensuring card template exists:', error);
+    }
+  };
+
   // Fetch templates
   const fetchTemplates = async () => {
     setIsLoadingTemplates(true);
@@ -43,6 +52,14 @@ const BarcodesAdmin: React.FC = () => {
       // Set default template as selected
       const defaultTemplate = data.find(t => t.is_default) || (data.length > 0 ? data[0] : null);
       setSelectedTemplate(defaultTemplate);
+      
+      // Check if the selected template is a card template
+      if (defaultTemplate && (defaultTemplate.name.toLowerCase().includes('card') || 
+          defaultTemplate.description?.toLowerCase().includes('card'))) {
+        setTemplateType('card');
+      } else {
+        setTemplateType('standard');
+      }
     } catch (error) {
       console.error('Error fetching templates:', error);
       toast.error('Failed to load barcode templates');
@@ -81,10 +98,26 @@ const BarcodesAdmin: React.FC = () => {
 
   // Initial data fetch
   useEffect(() => {
-    fetchTemplates();
+    ensureCardTemplateExists().then(() => fetchTemplates());
     fetchSettings();
     fetchLogs();
   }, []);
+
+  // Handle template type change
+  const handleTemplateTypeChange = (type: 'standard' | 'card') => {
+    setTemplateType(type);
+    
+    // Find a template that matches the selected type
+    const matchingTemplate = templates.find(t => {
+      const isCardTemplate = t.name.toLowerCase().includes('card') || 
+                           t.description?.toLowerCase().includes('card');
+      return type === 'card' ? isCardTemplate : !isCardTemplate;
+    });
+    
+    if (matchingTemplate) {
+      setSelectedTemplate(matchingTemplate);
+    }
+  };
 
   // Handle template save
   const handleSaveTemplate = async (templateData: Partial<BarcodeTemplate>) => {
@@ -113,6 +146,14 @@ const BarcodesAdmin: React.FC = () => {
   const handleEditTemplate = (template: BarcodeTemplate) => {
     setSelectedTemplate(template);
     setIsEditingTemplate(true);
+    
+    // Set template type based on name or description
+    if (template.name.toLowerCase().includes('card') || 
+        template.description?.toLowerCase().includes('card')) {
+      setTemplateType('card');
+    } else {
+      setTemplateType('standard');
+    }
   };
 
   // Handle template delete
@@ -213,16 +254,40 @@ const BarcodesAdmin: React.FC = () => {
                   <>
                     <div className="flex justify-between items-center mb-4">
                       <h2 className="text-lg font-medium text-gray-900">Barcode Templates</h2>
-                      <button
-                        onClick={() => {
-                          setIsCreatingTemplate(true);
-                          setSelectedTemplate(null);
-                        }}
-                        className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add Template
-                      </button>
+                      <div className="flex items-center space-x-3">
+                        <div className="flex rounded-md shadow-sm">
+                          <button
+                            onClick={() => handleTemplateTypeChange('standard')}
+                            className={`px-4 py-2 text-sm font-medium rounded-l-md ${
+                              templateType === 'standard'
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            Standard
+                          </button>
+                          <button
+                            onClick={() => handleTemplateTypeChange('card')}
+                            className={`px-4 py-2 text-sm font-medium rounded-r-md ${
+                              templateType === 'card'
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            Card
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setIsCreatingTemplate(true);
+                            setSelectedTemplate(null);
+                          }}
+                          className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add Template
+                        </button>
+                      </div>
                     </div>
                     
                     {isLoadingTemplates ? (
@@ -239,7 +304,10 @@ const BarcodesAdmin: React.FC = () => {
                           />
                         </div>
                         <div>
-                          <TemplatePreview template={selectedTemplate} />
+                          <TemplatePreview 
+                            template={selectedTemplate} 
+                            templateType={templateType}
+                          />
                         </div>
                       </div>
                     )}
@@ -261,7 +329,10 @@ const BarcodesAdmin: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <TemplatePreview template={selectedTemplate} />
+                        <TemplatePreview 
+                          template={selectedTemplate}
+                          templateType={templateType} 
+                        />
                       </div>
                     </div>
                   </>

@@ -5,14 +5,15 @@ import { toast } from 'react-hot-toast';
 
 export const printService = {
   // Print a barcode label for a trade-in
-  printTradeInBarcode: async (tradeIn: TradeIn, printerId: string, templateId: string | null = null) => {
+  printTradeInBarcode: async (tradeIn: TradeIn, printerId: string, templateId: string | null = null, cardId: string | null = null) => {
     try {
       // Call edge function to print barcode
       const { data, error } = await supabase.functions.invoke('print-barcode', {
         body: {
           tradeInId: tradeIn.id,
           printerId: printerId,
-          templateId: templateId
+          templateId: templateId,
+          cardId: cardId
         }
       });
 
@@ -32,12 +33,17 @@ export const printService = {
       
       if (updateError) throw updateError;
       
-      toast.success('Barcode sent to printer');
+      toast.success(cardId ? 'Card barcode sent to printer' : 'Barcode sent to printer');
       return data;
     } catch (err) {
       console.error('Error printing barcode:', err);
       toast.error(`Failed to print barcode: ${(err as Error).message}`);
       throw err;
     }
+  },
+
+  // Print a barcode label for a specific card
+  printCardBarcode: async (tradeIn: TradeIn, cardId: string, printerId: string, templateId: string | null = null) => {
+    return printService.printTradeInBarcode(tradeIn, printerId, templateId, cardId);
   }
 };

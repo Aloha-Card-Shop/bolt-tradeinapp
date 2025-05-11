@@ -88,6 +88,42 @@ export const barcodeService = {
       return null;
     }
   },
+  
+  // Create a default card template if it doesn't exist
+  createCardTemplate: async (): Promise<BarcodeTemplate | null> => {
+    try {
+      // Check if a card template already exists
+      const { data: existingTemplates } = await supabase
+        .from('barcode_templates')
+        .select('id')
+        .ilike('name', '%Card%')
+        .limit(1);
+        
+      if (existingTemplates && existingTemplates.length > 0) {
+        // Card template already exists
+        return await barcodeService.fetchTemplateById(existingTemplates[0].id);
+      }
+      
+      // Create a new card template
+      const cardTemplate = {
+        name: "Card Barcode Template",
+        description: "Template for printing individual card barcodes with price, condition, name and number",
+        zpl_template: `^XA
+^FO50,50^A0N,30,30^FD${{cardPrice}} | {{cardCondition}}^FS
+^FO50,90^BY3^BCN,100,Y,N,N^FD{{tradeInId}}^FS
+^FO50,220^A0N,30,30^FD{{cardName}}^FS
+^FO50,260^A0N,20,20^FD{{cardNumber}}^FS
+^XZ`,
+        is_default: false
+      };
+      
+      return await barcodeService.createTemplate(cardTemplate);
+    } catch (err) {
+      console.error('Error creating card template:', err);
+      toast.error(`Failed to create card template: ${(err as Error).message}`);
+      return null;
+    }
+  },
 
   // Update an existing template
   updateTemplate: async (id: string, updates: Partial<BarcodeTemplate>): Promise<BarcodeTemplate | null> => {
@@ -232,10 +268,10 @@ export const barcodeService = {
   },
 
   // Print a barcode with a specific template
-  printBarcodeWithTemplate: async (tradeIn: TradeIn, printerId: string, templateId: string | null = null): Promise<void> => {
+  printBarcodeWithTemplate: async (tradeIn: TradeIn, printerId: string, templateId: string | null = null, cardId: string | null = null): Promise<void> => {
     try {
       // Use the printService to handle actual printing
-      await printService.printTradeInBarcode(tradeIn, printerId, templateId);
+      await printService.printTradeInBarcode(tradeIn, printerId, templateId, cardId);
       
       // Record in print logs table
       await supabase
@@ -248,7 +284,7 @@ export const barcodeService = {
           status: 'sent'
         });
 
-      toast.success('Barcode sent to printer');
+      toast.success(cardId ? 'Card barcode sent to printer' : 'Barcode sent to printer');
     } catch (err) {
       console.error('Error printing barcode:', err);
       
@@ -265,6 +301,20 @@ export const barcodeService = {
         });
 
       toast.error(`Failed to print barcode: ${(err as Error).message}`);
+      throw err;
+    }
+  },
+
+  // Print a card barcode
+  printCardBarcode: async (tradeIn: TradeIn, cardId: string, printerId: string): Promise<void> => {
+    try {
+      // Get or create a card template
+      const cardTemplate = await barcodeService.createCardTemplate();
+      
+      // Print using the card template
+      await barcodeService.printBarcodeWithTemplate(tradeIn, printerId, cardTemplate?.id || null, cardId);
+    } catch (err) {
+      console.error('Error printing card barcode:', err);
       throw err;
     }
   },
