@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Settings, ClipboardList, UserCircle, DollarSign, LogOut } from 'lucide-react';
+import { Home, Settings, ClipboardList, UserCircle, DollarSign, LogOut, Barcode } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
 import { supabase } from '../lib/supabase';
 
@@ -85,6 +86,18 @@ const AdminNav: React.FC<AdminNavProps> = ({ userRole }) => {
                 >
                   <DollarSign className="h-4 w-4 mr-2" />
                   Trade Values
+                </button>
+
+                <button
+                  onClick={() => navigate('/admin/barcodes')}
+                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                    isActive('/admin/barcodes')
+                      ? 'text-indigo-600 bg-indigo-50'
+                      : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'
+                  }`}
+                >
+                  <Barcode className="h-4 w-4 mr-2" />
+                  Barcodes
                 </button>
 
                 <button

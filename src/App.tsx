@@ -8,6 +8,7 @@ import AdminCustomers from './pages/admin/customers';
 import AdminUsers from './pages/admin/users';
 import TradeValues from './pages/admin/trade-values';
 import PrintersAdmin from './pages/admin/printers';
+import BarcodesAdmin from './pages/admin/barcodes';
 import ManagerDashboard from './pages/dashboard/manager';
 import MainApp from './components/MainApp';
 import MyTradeIns from './pages/my-trade-ins';
@@ -81,6 +82,12 @@ function App() {
         <Route path="/admin/printers" element={
           <AuthGuard allowedRoles={['admin', 'manager']}>
             <PrintersAdmin />
+          </AuthGuard>
+        } />
+
+        <Route path="/admin/barcodes" element={
+          <AuthGuard allowedRoles={['admin']}>
+            <BarcodesAdmin />
           </AuthGuard>
         } />
         

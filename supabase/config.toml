@@ -42,3 +42,5 @@ verify_jwt = true
 verify_jwt = true
 [functions.update-user]
 verify_jwt = true
+[functions.print-barcode]
+verify_jwt = true

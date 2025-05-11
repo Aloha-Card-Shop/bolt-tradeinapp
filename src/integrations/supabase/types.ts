@@ -9,6 +9,66 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      barcode_settings: {
+        Row: {
+          description: string | null
+          id: string
+          setting_name: string
+          setting_value: Json
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          setting_name: string
+          setting_value: Json
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          setting_name?: string
+          setting_value?: Json
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      barcode_templates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          updated_at: string | null
+          zpl_template: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          updated_at?: string | null
+          zpl_template: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          updated_at?: string | null
+          zpl_template?: string
+        }
+        Relationships: []
+      }
       cards: {
         Row: {
           attributes: Json | null
@@ -196,6 +256,64 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      print_logs: {
+        Row: {
+          error_message: string | null
+          id: string
+          print_job_id: string | null
+          printed_at: string | null
+          printed_by: string
+          printer_id: string
+          status: string
+          template_id: string | null
+          trade_in_id: string
+        }
+        Insert: {
+          error_message?: string | null
+          id?: string
+          print_job_id?: string | null
+          printed_at?: string | null
+          printed_by: string
+          printer_id: string
+          status: string
+          template_id?: string | null
+          trade_in_id: string
+        }
+        Update: {
+          error_message?: string | null
+          id?: string
+          print_job_id?: string | null
+          printed_at?: string | null
+          printed_by?: string
+          printer_id?: string
+          status?: string
+          template_id?: string | null
+          trade_in_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_logs_printer_id_fkey"
+            columns: ["printer_id"]
+            isOneToOne: false
+            referencedRelation: "printers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_logs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "barcode_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_logs_trade_in_id_fkey"
+            columns: ["trade_in_id"]
+            isOneToOne: false
+            referencedRelation: "trade_ins"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       printers: {
         Row: {

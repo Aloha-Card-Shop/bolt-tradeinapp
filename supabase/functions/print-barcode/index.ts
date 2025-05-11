@@ -18,6 +18,7 @@ const PRINTNODE_API_KEY = Deno.env.get('PRINTNODE_API_KEY') || '';
 interface PrintRequest {
   tradeInId: string;
   printerId: string;
+  templateId?: string | null;
 }
 
 serve(async (req) => {
@@ -29,7 +30,7 @@ serve(async (req) => {
   try {
     // Get request body
     const body: PrintRequest = await req.json();
-    const { tradeInId, printerId } = body;
+    const { tradeInId, printerId, templateId } = body;
 
     if (!tradeInId || !printerId) {
       return new Response(
@@ -85,6 +86,37 @@ serve(async (req) => {
       );
     }
 
+    // Get selected template or default template if none specified
+    let template = null;
+
+    if (templateId) {
+      const { data: selectedTemplate, error: templateError } = await supabase
+        .from('barcode_templates')
+        .select('*')
+        .eq('id', templateId)
+        .single();
+      
+      if (templateError) {
+        console.error('Error fetching template:', templateError);
+      } else {
+        template = selectedTemplate;
+      }
+    }
+
+    if (!template) {
+      const { data: defaultTemplate, error: defaultTemplateError } = await supabase
+        .from('barcode_templates')
+        .select('*')
+        .eq('is_default', true)
+        .single();
+      
+      if (defaultTemplateError) {
+        console.error('Error fetching default template:', defaultTemplateError);
+      } else {
+        template = defaultTemplate;
+      }
+    }
+
     // If API key is not set, use mock implementation
     if (!PRINTNODE_API_KEY) {
       console.log('PRINTNODE_API_KEY not set, using mock print');
@@ -110,14 +142,26 @@ serve(async (req) => {
     
     const formattedDate = new Date(tradeIn.trade_in_date).toLocaleDateString();
     
-    // Generate base64-encoded ZPL for the label
-    // This is a basic ZPL template for a 2x1 inch label
-    const zpl = `^XA
+    // Generate ZPL content
+    let zpl;
+    if (template && template.zpl_template) {
+      // Replace template placeholders with actual values
+      zpl = template.zpl_template
+        .replace(/\{\{customerName\}\}/g, customerName)
+        .replace(/\{\{date\}\}/g, formattedDate)
+        .replace(/\{\{totalValue\}\}/g, tradeIn.total_value.toFixed(2))
+        .replace(/\{\{cashValue\}\}/g, tradeIn.cash_value.toFixed(2))
+        .replace(/\{\{tradeValue\}\}/g, tradeIn.trade_value.toFixed(2))
+        .replace(/\{\{tradeInId\}\}/g, tradeIn.id);
+    } else {
+      // Fallback to hardcoded ZPL if no template is found
+      zpl = `^XA
 ^FO50,50^A0N,30,30^FD${customerName}^FS
 ^FO50,90^A0N,20,20^FD${formattedDate}^FS
 ^FO50,120^A0N,20,20^FD$${tradeIn.total_value.toFixed(2)}^FS
 ^FO50,170^BY3^BCN,100,Y,N,N^FD${tradeIn.id}^FS
 ^XZ`;
+    }
 
     const base64Content = btoa(zpl);
     
