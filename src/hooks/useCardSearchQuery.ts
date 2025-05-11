@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { CardDetails } from '../types/card';
 import { SetOption } from './useSetOptions';
-import { buildSearchQuery, formatResultsToCardDetails, RESULTS_PER_PAGE } from '../utils/searchQueryBuilder';
+import { buildSearchQuery, formatResultsToCardDetails, RESULTS_PER_PAGE, findSetIdByName } from '../utils/searchQueryBuilder';
 import { toast } from 'react-hot-toast';
 
 // Debug mode flag - set to true to enable verbose logging
@@ -156,6 +156,41 @@ export const useCardSearchQuery = () => {
         }
       }
 
+      // Extract set IDs from the search results
+      const resultSetIds = new Set<number>(foundSetIds);
+
+      // Process the results to get all sets that contain matching cards
+      if (data && data.length > 0) {
+        if (DEBUG_MODE) {
+          console.log('Extracting set IDs from search results...');
+        }
+
+        data.forEach((item: any) => {
+          // For cards table results, look up the set ID by name
+          if (item.set_name) {
+            const setId = findSetIdByName(item.set_name, setOptions);
+            if (setId) {
+              resultSetIds.add(setId);
+              if (DEBUG_MODE) {
+                console.log(`Found card "${item.name}" in set "${item.set_name}" (ID: ${setId})`);
+              }
+            }
+          }
+          // For unified_products table, use the direct group_id
+          else if (item.group_id) {
+            resultSetIds.add(item.group_id);
+            if (DEBUG_MODE) {
+              const setName = setOptions.find(s => s.id === item.group_id)?.name;
+              console.log(`Found card "${item.name}" in set "${setName}" (ID: ${item.group_id})`);
+            }
+          }
+        });
+        
+        if (DEBUG_MODE) {
+          console.log(`Total unique sets containing search results: ${resultSetIds.size}`);
+        }
+      }
+
       // Format the search results using the utility function
       const foundCards = formatResultsToCardDetails(data || [], setOptions, cardDetails);
       
@@ -167,7 +202,7 @@ export const useCardSearchQuery = () => {
       }
       
       setSearchResults(foundCards);
-      return foundSetIds;
+      return resultSetIds;
     } catch (error) {
       console.error('❌ Error searching cards:', error);
       

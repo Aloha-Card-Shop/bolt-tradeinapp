@@ -216,6 +216,12 @@ export const buildSearchQuery = async (
   return { query, foundSetIds };
 };
 
+// Helper function to extract set ID for a set name
+export const findSetIdByName = (setName: string, setOptions: SetOption[]): number | undefined => {
+  const setOption = setOptions.find(option => option.name === setName);
+  return setOption?.id;
+};
+
 export const formatResultsToCardDetails = (
   results: any[],
   setOptions: SetOption[],
@@ -365,3 +371,4 @@ function extractProductId(item: any): string | null {
   if (DEBUG_MODE) console.log(`No product ID found for item: ${item.name || 'Unknown'}`);
   return null;
 }
+
