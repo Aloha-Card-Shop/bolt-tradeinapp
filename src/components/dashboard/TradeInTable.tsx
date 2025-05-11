@@ -16,6 +16,7 @@ interface TradeInTableProps {
   onApprove: (id: string) => void;
   onDeny: (id: string) => void;
   onDelete: (id: string) => void;
+  setTradeIns: React.Dispatch<React.SetStateAction<TradeIn[]>>;
 }
 
 const TradeInTable: React.FC<TradeInTableProps> = ({
@@ -27,7 +28,8 @@ const TradeInTable: React.FC<TradeInTableProps> = ({
   onToggleDetails,
   onApprove,
   onDeny,
-  onDelete
+  onDelete,
+  setTradeIns
 }) => {
   if (isLoading) {
     return <TradeInTableLoading />;
@@ -46,6 +48,7 @@ const TradeInTable: React.FC<TradeInTableProps> = ({
           onApprove={onApprove}
           onDeny={onDeny}
           onDelete={onDelete}
+          setTradeIns={setTradeIns}
         />
       </table>
       

@@ -5,6 +5,8 @@ export interface Customer {
 }
 
 export interface TradeInItem {
+  id?: string;
+  card_id?: string;
   card_name: string;
   quantity: number;
   price: number;
@@ -16,6 +18,8 @@ export interface TradeInItem {
     cashValue?: number;
     tradeValue?: number;
   };
+  tcgplayer_url?: string | null;
+  image_url?: string | null;
 }
 
 export interface TradeIn {
@@ -35,6 +39,7 @@ export interface TradeIn {
   submitter_email?: string | null; 
   handled_by?: string | null;
   handled_at?: string | null;
+  is_updating?: boolean;
 }
 
 export type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected';

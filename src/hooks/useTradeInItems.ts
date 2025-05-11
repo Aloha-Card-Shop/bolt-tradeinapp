@@ -13,11 +13,14 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
       const { data, error } = await supabase
         .from('trade_in_items')
         .select(`
+          id,
+          trade_in_id,
+          card_id,
           quantity,
           price,
           condition,
           attributes,
-          cards:card_id(name)
+          cards:card_id(name, tcgplayer_url, image_url)
         `)
         .eq('trade_in_id', tradeInId);
 
@@ -25,7 +28,10 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
 
       // Fix the type issue with cards.name and handle attributes correctly
       const items = data.map(item => {
-        const cardName = item.cards ? (typeof item.cards === 'object' && item.cards !== null ? (item.cards as any).name : 'Unknown Card') : 'Unknown Card';
+        const cardData = item.cards ? (typeof item.cards === 'object' && item.cards !== null ? (item.cards as any) : null) : null;
+        const cardName = cardData?.name || 'Unknown Card';
+        const tcgplayer_url = cardData?.tcgplayer_url || null;
+        const image_url = cardData?.image_url || null;
         
         // Ensure attributes is an object with the expected properties
         const attributes = item.attributes || {};
@@ -54,6 +60,8 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
         if (tradeValue === undefined) tradeValue = item.price;
         
         return {
+          id: item.id,
+          card_id: item.card_id,
           card_name: cardName,
           quantity: item.quantity,
           price: item.price,
@@ -64,7 +72,9 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
             paymentType,
             cashValue,
             tradeValue
-          }
+          },
+          tcgplayer_url,
+          image_url
         };
       });
 

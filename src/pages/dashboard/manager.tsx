@@ -9,6 +9,7 @@ import { useTradeInManager } from '../../hooks/useTradeInManager';
 const ManagerDashboard: React.FC = () => {
   const {
     tradeIns,
+    setTradeIns,
     isDataLoading,
     errorMessage,
     actionLoading,
@@ -56,6 +57,7 @@ const ManagerDashboard: React.FC = () => {
         onApprove={handleApproveTradeIn}
         onDeny={handleDenyTradeIn}
         onDelete={handleDeleteTradeIn}
+        setTradeIns={setTradeIns}
       />
     </div>
   );

@@ -64,6 +64,7 @@ export const useTradeInManager = () => {
 
   return {
     tradeIns: filteredTradeIns,
+    setTradeIns,
     isDataLoading,
     errorMessage,
     actionLoading,

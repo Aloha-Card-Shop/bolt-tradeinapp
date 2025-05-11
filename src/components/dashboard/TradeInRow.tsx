@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
@@ -16,6 +17,7 @@ interface TradeInRowProps {
   onApprove: (id: string) => void;
   onDeny: (id: string) => void;
   onDelete: (id: string) => void;
+  setTradeIns: React.Dispatch<React.SetStateAction<TradeIn[]>>;
 }
 
 const TradeInRow: React.FC<TradeInRowProps> = ({
@@ -26,7 +28,8 @@ const TradeInRow: React.FC<TradeInRowProps> = ({
   onToggleDetails,
   onApprove,
   onDeny,
-  onDelete
+  onDelete,
+  setTradeIns
 }) => {
   return (
     <React.Fragment>
@@ -75,7 +78,11 @@ const TradeInRow: React.FC<TradeInRowProps> = ({
       
       {isExpanded && (
         <tr>
-          <TradeInDetailsPanel tradeIn={tradeIn} loadingItems={loadingItems} />
+          <TradeInDetailsPanel 
+            tradeIn={tradeIn} 
+            loadingItems={loadingItems} 
+            setTradeIns={setTradeIns} 
+          />
         </tr>
       )}
     </React.Fragment>

@@ -2,15 +2,23 @@
 import React from 'react';
 import { formatCurrency } from '../../utils/formatters';
 import { Loader2 } from 'lucide-react';
-import TradeInItemRow from './TradeInItemRow';
+import EditableTradeInItemRow from './EditableTradeInItemRow';
 import { TradeIn } from '../../types/tradeIn';
+import { useTradeInItemUpdate } from '../../hooks/useTradeInItemUpdate';
 
 interface TradeInDetailsPanelProps {
   tradeIn: TradeIn;
   loadingItems: string | null;
+  setTradeIns: React.Dispatch<React.SetStateAction<TradeIn[]>>;
 }
 
-const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({ tradeIn, loadingItems }) => {
+const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({ 
+  tradeIn, 
+  loadingItems,
+  setTradeIns 
+}) => {
+  const { updatingItemId, updateTradeInItem } = useTradeInItemUpdate(setTradeIns);
+  
   const getStatusMessage = (status: string) => {
     switch (status) {
       case 'pending':
@@ -22,6 +30,11 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({ tradeIn, load
       default:
         return "";
     }
+  };
+
+  const handleItemUpdate = (itemId: string) => (updates: Partial<TradeIn>) => {
+    if (!itemId) return;
+    updateTradeInItem(tradeIn.id, itemId, updates);
   };
 
   const statusMessage = getStatusMessage(tradeIn.status);
@@ -131,7 +144,12 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({ tradeIn, load
                 </thead>
                 <tbody>
                   {tradeIn.items.map((item, index) => (
-                    <TradeInItemRow key={index} item={item} />
+                    <EditableTradeInItemRow
+                      key={item.id || index}
+                      item={item}
+                      isUpdating={updatingItemId === item.id}
+                      onUpdate={handleItemUpdate(item.id || '')}
+                    />
                   ))}
                 </tbody>
               </table>
