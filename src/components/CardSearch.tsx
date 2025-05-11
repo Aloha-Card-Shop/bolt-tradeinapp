@@ -119,19 +119,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
           isSearching={isSearching}
         />
         
-        {/* Search button */}
-        <div className="mt-4">
-          <button
-            onClick={performSearch}
-            disabled={isSearching}
-            className={`w-full ${isSearching 
-              ? 'bg-blue-400 cursor-not-allowed' 
-              : 'bg-blue-600 hover:bg-blue-700'} 
-              text-white font-medium py-2 px-4 rounded-lg transition-colors`}
-          >
-            {isSearching ? 'Searching...' : 'Search'}
-          </button>
-        </div>
+        {/* Search button has been removed */}
       </div>
     </div>
   );
