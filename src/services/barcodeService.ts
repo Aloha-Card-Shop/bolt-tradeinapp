@@ -108,9 +108,9 @@ export const barcodeService = {
         name: "Card Barcode Template",
         description: "Template for printing individual card barcodes with price, condition, name and number",
         zpl_template: `^XA
-^FO20,40^A0N,50,50^FD\${{cardPrice}} | {{cardCondition}}^FS
+^FO20,40^A0N,60,60^FD\${{cardPrice}} | {{cardCondition}}^FS
 ^FO50,120^BY3^BCN,70,Y,N,N^FD{{tradeInId}}^FS
-^FO20,220^A0N,30,30^FD{{cardName}} • {{setName}} • {{cardNumber}}^FS
+^FO20,220^A0N,40,40^FD{{cardName}} • {{setName}} • {{cardNumber}}^FS
 ^XZ`,
         is_default: false
       };
