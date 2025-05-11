@@ -18,7 +18,7 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
   tradeIn,
   item,
   width = 2,
-  height = 60, // Further reduced from 70 to 60
+  height = 50, // Further reduced from 60 to 50 to give more room to price/condition
   displayValue = true,
   fontSize = 12,
 }) => {
@@ -33,8 +33,8 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
           height,
           displayValue,
           fontSize,
-          marginTop: 3, // Reduced from 5 to 3
-          marginBottom: 3, // Reduced from 5 to 3
+          marginTop: 2, // Reduced from 3 to 2
+          marginBottom: 2, // Reduced from 3 to 2
           background: '#ffffff'
         });
       } catch (error) {
@@ -60,22 +60,22 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
   ].filter(Boolean).join(' • ');
   
   return (
-    <div className="bg-white p-2 rounded-lg shadow" style={{ aspectRatio: '2/1', width: '100%', maxWidth: '384px' }}>
-      {/* Top section: Price and Condition - with responsive text and smaller padding */}
-      <div className="mb-2 text-center border-b pb-2 w-full">
-        <div className="text-xl font-bold w-full px-1 flex justify-center items-center">
+    <div className="bg-white p-1 rounded-lg shadow" style={{ aspectRatio: '2/1', width: '100%', maxWidth: '384px' }}>
+      {/* Top section: Price and Condition - with larger text and more space */}
+      <div className="mb-1 text-center border-b pb-1 w-full" style={{ flex: '0 0 40%' }}>
+        <div className="text-3xl font-bold w-full px-1 flex justify-center items-center">
           <span className="truncate text-center w-full">{cardPrice} | {cardCondition}</span>
         </div>
       </div>
       
       {/* Middle section: Barcode - height reduced */}
-      <div className="py-1">
+      <div className="py-0.5">
         <svg ref={barcodeRef} className="w-full"></svg>
       </div>
       
-      {/* Bottom section: Card Name, Set Name and Number - with responsive text and smaller padding */}
-      <div className="mt-1 text-center border-t pt-2">
-        <div className="text-sm font-medium w-full px-1">
+      {/* Bottom section: Card Name, Set Name and Number - smaller to give more room to top section */}
+      <div className="mt-0.5 text-center border-t pt-1">
+        <div className="text-xs font-medium w-full px-1">
           <span className="truncate inline-block w-full">{bottomText}</span>
         </div>
       </div>

@@ -69,7 +69,7 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({ template, sampleTrade
                 tradeIn={tradeIn}
                 item={sampleItem}
                 width={2} 
-                height={60}
+                height={50} // Reduced from 60 to 50
                 displayValue={true} 
                 fontSize={12} 
               />
