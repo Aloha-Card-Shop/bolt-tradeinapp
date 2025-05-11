@@ -18,7 +18,7 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
   tradeIn,
   item,
   width = 2,
-  height = 100,
+  height = 70, // Reduced from 100 to 70
   displayValue = true,
   fontSize = 12,
 }) => {
@@ -33,8 +33,8 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
           height,
           displayValue,
           fontSize,
-          marginTop: 10,
-          marginBottom: 10,
+          marginTop: 5, // Reduced from 10 to 5
+          marginBottom: 5, // Reduced from 10 to 5
           background: '#ffffff'
         });
       } catch (error) {
@@ -61,19 +61,19 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
   
   return (
     <div className="bg-white p-4 rounded-lg shadow">
-      {/* Top section: Price and Condition - full width */}
-      <div className="mb-3 text-center border-b pb-3 w-full">
-        <div className="text-xl font-bold">{cardPrice} | {cardCondition}</div>
+      {/* Top section: Price and Condition - doubled padding, increased font size */}
+      <div className="mb-4 text-center border-b pb-6 w-full">
+        <div className="text-2xl font-bold">{cardPrice} | {cardCondition}</div>
       </div>
       
-      {/* Middle section: Barcode - slightly larger */}
-      <div className="py-3">
+      {/* Middle section: Barcode - height reduced */}
+      <div className="py-2">
         <svg ref={barcodeRef} className="w-full"></svg>
       </div>
       
-      {/* Bottom section: Card Name, Set Name and Number on one line */}
-      <div className="mt-3 text-center border-t pt-3">
-        <div className="text-sm font-medium truncate">{bottomText}</div>
+      {/* Bottom section: Card Name, Set Name and Number - doubled padding, increased font size */}
+      <div className="mt-4 text-center border-t pt-6">
+        <div className="text-base font-medium truncate">{bottomText}</div>
       </div>
     </div>
   );

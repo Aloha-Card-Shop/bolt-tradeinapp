@@ -66,7 +66,7 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({ template, sampleTrade
               tradeIn={tradeIn}
               item={sampleItem}
               width={2.5} 
-              height={100} 
+              height={70} // Updated from 100 to 70 to match the updated default
               displayValue={true} 
               fontSize={16} 
             />
