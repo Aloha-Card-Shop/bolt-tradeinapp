@@ -131,6 +131,12 @@ export const useCardSearch = () => {
       clearTimeout(searchDebounceRef.current);
     }
     
+    // Always update set options to show all sets when no name search is active
+    if (!cardDetails.name) {
+      const searchTerms = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
+      filterSetOptions(searchTerms);
+    }
+    
     // Start search with any valid criteria, including set-only searches
     const hasSearchCriteria = 
       (cardDetails.name && cardDetails.name.length >= 1) || 
@@ -152,7 +158,7 @@ export const useCardSearch = () => {
         clearTimeout(searchDebounceRef.current);
       }
     };
-  }, [cardDetails.name, cardDetails.number, cardDetails.set, cardDetails.game, cardDetails.categoryId, fetchSuggestions]);
+  }, [cardDetails.name, cardDetails.number, cardDetails.set, cardDetails.game, cardDetails.categoryId, fetchSuggestions, filterSetOptions]);
 
   // Improved handleInputChange to better detect potential card numbers
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

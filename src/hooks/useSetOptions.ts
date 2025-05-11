@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { GameType } from '../types/card';
@@ -54,51 +53,44 @@ export const useSetOptions = (game: GameType, categoryId?: number) => {
     fetchSetOptions();
   }, [game, categoryId]);
 
-  // Filter set options based on search results and search terms with less aggressive filtering
+  // Modified filter function that is less aggressive with filtering
   const filterSetOptions = (
     searchTerms: string[],
     foundSetIds?: Set<number>
   ) => {
     console.log(`Filtering sets with terms: [${searchTerms.join(', ')}], foundSetIds size: ${foundSetIds?.size || 0}`);
     
-    // Without search terms or found sets, show all sets
-    if (searchTerms.length === 0 && (!foundSetIds || foundSetIds.size === 0)) {
-      console.log(`Showing all ${setOptions.length} sets - no filters active`);
-      setFilteredSetOptions(setOptions);
+    // If search is empty or hasn't produced results yet, show all sets
+    if (searchTerms.length === 0) {
+      console.log(`Showing all ${setOptions.length} sets - no search terms active`);
+      setFilteredSetOptions([...setOptions].sort((a, b) => a.name.localeCompare(b.name)));
       return;
     }
 
-    let filtered = setOptions;
+    // If we have foundSetIds from search results, prioritize showing those sets
+    // but don't exclude sets based on name matching
+    let filtered = [...setOptions]; // Start with all sets
     
-    // If we have search terms, do light filtering
-    if (searchTerms.length > 0) {
-      // Less aggressive filtering - match if ANY search term appears anywhere in the set name
-      filtered = setOptions.filter(option => {
-        const setName = option.name.toLowerCase();
-        return searchTerms.some(term => setName.includes(term.toLowerCase()));
-      });
-      console.log(`After term filtering: ${filtered.length} sets match search terms`);
-    }
-
-    // Ensure we include sets that contain matching cards
+    // If we have search results with specific sets, prioritize those
     if (foundSetIds && foundSetIds.size > 0) {
-      // Create a Set from the filtered sets for O(1) lookups
-      const filteredSetIds = new Set(filtered.map(set => set.id));
+      // Mark sets that contain our found cards
+      const matchingSets = new Set(Array.from(foundSetIds));
       
-      // Add any missing sets that contain our found cards
-      const setsToAdd = Array.from(foundSetIds)
-        .filter(id => !filteredSetIds.has(id))
-        .map(id => setOptions.find(s => s.id === id))
-        .filter(Boolean) as SetOption[];
+      // Sort so that matching sets appear first
+      filtered = filtered.sort((a, b) => {
+        // If a is a matching set and b is not, a comes first
+        if (matchingSets.has(a.id) && !matchingSets.has(b.id)) return -1;
+        // If b is a matching set and a is not, b comes first
+        if (!matchingSets.has(a.id) && matchingSets.has(b.id)) return 1;
+        // Otherwise sort alphabetically
+        return a.name.localeCompare(b.name);
+      });
       
-      if (setsToAdd.length > 0) {
-        console.log(`Adding ${setsToAdd.length} additional sets that contain matching cards`);
-        filtered = [...filtered, ...setsToAdd];
-      }
+      console.log(`Prioritized ${foundSetIds.size} sets with matching cards`);
+    } else {
+      // Without search results, just sort alphabetically
+      filtered = filtered.sort((a, b) => a.name.localeCompare(b.name));
     }
-
-    // Always sort alphabetically
-    filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
 
     console.log(`Final filtered set count: ${filtered.length} sets`);
     setFilteredSetOptions(filtered);
