@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -174,6 +173,7 @@ serve(async (req) => {
     if (template && template.zpl_template) {
       // Prepare card-related values if available
       const cardName = card?.card_name || '';
+      const setName = card?.attributes?.setName || '';
       const cardNumber = card?.cards?.card_number || 
                        card?.attributes?.cardNumber || 
                        (card?.attributes && typeof card.attributes === 'object' && 'cardNumber' in card.attributes ? card.attributes.cardNumber : '');
@@ -189,18 +189,22 @@ serve(async (req) => {
         .replace(/\{\{tradeValue\}\}/g, tradeIn.trade_value.toFixed(2))
         .replace(/\{\{tradeInId\}\}/g, tradeIn.id)
         .replace(/\{\{cardName\}\}/g, cardName)
+        .replace(/\{\{setName\}\}/g, setName)
         .replace(/\{\{cardNumber\}\}/g, cardNumber)
         .replace(/\{\{cardPrice\}\}/g, cardPrice)
         .replace(/\{\{cardCondition\}\}/g, cardCondition);
     } else {
       // Fallback to hardcoded ZPL if no template is found
       if (card) {
-        // Card-specific template
+        // Updated card-specific template with set name
+        const setName = card.attributes?.setName || '';
+        const cardInfo = [card.card_name, setName, card?.cards?.card_number || card?.attributes?.cardNumber || '']
+          .filter(Boolean).join(' • ');
+          
         zpl = `^XA
-^FO50,50^A0N,30,30^FD$${card.price?.toFixed(2) || '0.00'} | ${card.condition || ''}^FS
-^FO50,90^BY3^BCN,100,Y,N,N^FD${tradeIn.id}^FS
-^FO50,220^A0N,30,30^FD${card.card_name || 'Unknown Card'}^FS
-^FO50,260^A0N,20,20^FD${card?.cards?.card_number || card?.attributes?.cardNumber || ''}^FS
+^FO20,50^A0N,40,40^FD$${card.price?.toFixed(2) || '0.00'} | ${card.condition || ''}^FS
+^FO50,120^BY3^BCN,100,Y,N,N^FD${tradeIn.id}^FS
+^FO20,250^A0N,25,25^FD${cardInfo}^FS
 ^XZ`;
       } else {
         // Standard trade-in template

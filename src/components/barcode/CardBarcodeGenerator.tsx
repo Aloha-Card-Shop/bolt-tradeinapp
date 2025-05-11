@@ -49,22 +49,31 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
   const cardPrice = item ? formatCurrency(item.price) : '';
   const cardCondition = item?.condition || 'N/A';
   
+  // Get set name if available
+  const setName = item?.attributes?.setName || '';
+  
+  // Format display text for bottom line
+  const bottomText = [
+    cardName,
+    setName,
+    cardNumber
+  ].filter(Boolean).join(' • ');
+  
   return (
     <div className="bg-white p-4 rounded-lg shadow">
-      {/* Top 25%: Price and Condition */}
-      <div className="mb-2 text-center font-bold border-b pb-2">
-        <div className="text-lg">{cardPrice} | {cardCondition}</div>
+      {/* Top section: Price and Condition - full width */}
+      <div className="mb-3 text-center border-b pb-3 w-full">
+        <div className="text-xl font-bold">{cardPrice} | {cardCondition}</div>
       </div>
       
-      {/* Middle 50%: Barcode */}
-      <div className="py-2">
+      {/* Middle section: Barcode - slightly larger */}
+      <div className="py-3">
         <svg ref={barcodeRef} className="w-full"></svg>
       </div>
       
-      {/* Bottom 25%: Card Name and Number */}
-      <div className="mt-2 text-center border-t pt-2">
-        <div className="font-medium truncate">{cardName}</div>
-        <div className="text-xs text-gray-600">{cardNumber}</div>
+      {/* Bottom section: Card Name, Set Name and Number on one line */}
+      <div className="mt-3 text-center border-t pt-3">
+        <div className="text-sm font-medium truncate">{bottomText}</div>
       </div>
     </div>
   );

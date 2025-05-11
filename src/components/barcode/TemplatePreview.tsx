@@ -44,6 +44,7 @@ const createSampleItem = (): TradeInItem => {
       isFirstEdition: true,
       isHolo: true,
       cardNumber: '4/102',
+      setName: 'Base Set',
       paymentType: 'cash',
       cashValue: 22.50,
       tradeValue: 29.25
