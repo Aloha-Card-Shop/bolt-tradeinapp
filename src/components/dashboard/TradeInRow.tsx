@@ -72,6 +72,7 @@ const TradeInRow: React.FC<TradeInRowProps> = ({
             onApprove={onApprove}
             onDeny={onDeny}
             onDelete={onDelete}
+            tradeIn={tradeIn} // Pass the full trade-in object
           />
         </td>
       </tr>

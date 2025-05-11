@@ -176,6 +176,62 @@ export type Database = {
           },
         ]
       }
+      locations: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      printers: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean | null
+          location_id: string
+          name: string
+          printer_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          location_id: string
+          name: string
+          printer_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          location_id?: string
+          name?: string
+          printer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printers_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -256,8 +312,13 @@ export type Database = {
           handled_at: string | null
           handled_by: string | null
           id: string
+          last_printed_at: string | null
           notes: string | null
           payment_type: string
+          print_count: number | null
+          printed: boolean | null
+          printed_by: string | null
+          printer_id: string | null
           staff_notes: string | null
           status: string
           total_value: number
@@ -271,8 +332,13 @@ export type Database = {
           handled_at?: string | null
           handled_by?: string | null
           id?: string
+          last_printed_at?: string | null
           notes?: string | null
           payment_type?: string
+          print_count?: number | null
+          printed?: boolean | null
+          printed_by?: string | null
+          printer_id?: string | null
           staff_notes?: string | null
           status?: string
           total_value?: number
@@ -286,8 +352,13 @@ export type Database = {
           handled_at?: string | null
           handled_by?: string | null
           id?: string
+          last_printed_at?: string | null
           notes?: string | null
           payment_type?: string
+          print_count?: number | null
+          printed?: boolean | null
+          printed_by?: string | null
+          printer_id?: string | null
           staff_notes?: string | null
           status?: string
           total_value?: number
@@ -300,6 +371,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_ins_printer_id_fkey"
+            columns: ["printer_id"]
+            isOneToOne: false
+            referencedRelation: "printers"
             referencedColumns: ["id"]
           },
         ]

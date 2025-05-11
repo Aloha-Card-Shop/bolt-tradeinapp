@@ -7,6 +7,7 @@ import AdminPage from './pages/admin/AdminPage';
 import AdminCustomers from './pages/admin/customers';
 import AdminUsers from './pages/admin/users';
 import TradeValues from './pages/admin/trade-values';
+import PrintersAdmin from './pages/admin/printers';
 import ManagerDashboard from './pages/dashboard/manager';
 import MainApp from './components/MainApp';
 import MyTradeIns from './pages/my-trade-ins';
@@ -74,6 +75,12 @@ function App() {
         <Route path="/admin/trade-values" element={
           <AuthGuard allowedRoles={['admin']}>
             <TradeValues />
+          </AuthGuard>
+        } />
+        
+        <Route path="/admin/printers" element={
+          <AuthGuard allowedRoles={['admin', 'manager']}>
+            <PrintersAdmin />
           </AuthGuard>
         } />
         
