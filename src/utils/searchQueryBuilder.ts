@@ -75,75 +75,47 @@ export const buildSearchQuery = async (
     const numberBeforeSlash = extractNumberBeforeSlash(number);
     const fullNumber = number.toString();
     
-    // Card number search requires special handling:
-    // Instead of building a complex OR filter in one go, we'll build a filter string
-    // using proper Postgres JSONB syntax and apply it via the .or() method
-    
-    // First handle direct attribute paths (most common)
     try {
-      // Direct attribute paths
-      const directPaths = [
-        `attributes->>'number' = '${fullNumber}'`,
-        `attributes->>'Number' = '${fullNumber}'`,
-        `attributes->>'card_number' = '${fullNumber}'`,
-        `attributes->>'cardNumber' = '${fullNumber}'`
-      ];
+      // FIX: Properly use the .or() method in Supabase for JSONB filtering
+      // Instead of building a comma-separated string, we'll apply each condition separately
       
-      // Also search with normalized number if different
+      // First try exact matches on various JSONB paths
+      query = query
+        .or(`attributes->>'number'.eq.${fullNumber},attributes->>'Number'.eq.${fullNumber},attributes->>'card_number'.eq.${fullNumber},attributes->>'cardNumber'.eq.${fullNumber}`);
+      
+      // If number is normalized differently, add those conditions
       if (normalizedNumber !== fullNumber) {
-        directPaths.push(`attributes->>'number' = '${normalizedNumber}'`);
-        directPaths.push(`attributes->>'Number' = '${normalizedNumber}'`);
-        directPaths.push(`attributes->>'card_number' = '${normalizedNumber}'`);
-        directPaths.push(`attributes->>'cardNumber' = '${normalizedNumber}'`);
+        query = query.or(`attributes->>'number'.eq.${normalizedNumber},attributes->>'Number'.eq.${normalizedNumber},attributes->>'card_number'.eq.${normalizedNumber},attributes->>'cardNumber'.eq.${normalizedNumber}`);
       }
       
-      // Case-insensitive searches for partial matches
-      directPaths.push(`attributes->>'number' ILIKE '%${fullNumber}%'`);
-      directPaths.push(`attributes->>'Number' ILIKE '%${fullNumber}%'`);
-      directPaths.push(`attributes->>'card_number' ILIKE '%${fullNumber}%'`);
-      directPaths.push(`attributes->>'cardNumber' ILIKE '%${fullNumber}%'`);
+      // Add partial matches using ILIKE
+      query = query.or(`attributes->>'number'.ilike.%${fullNumber}%,attributes->>'Number'.ilike.%${fullNumber}%,attributes->>'card_number'.ilike.%${fullNumber}%,attributes->>'cardNumber'.ilike.%${fullNumber}%`);
       
-      // If we have a number before slash (like "4" in "4/102"), also search for that pattern
+      // If we have a number before slash, also search for that pattern
       if (numberBeforeSlash && numberBeforeSlash !== fullNumber) {
-        directPaths.push(`attributes->>'number' ILIKE '${numberBeforeSlash}/%'`);
-        directPaths.push(`attributes->>'Number' ILIKE '${numberBeforeSlash}/%'`);
-        directPaths.push(`attributes->>'card_number' ILIKE '${numberBeforeSlash}/%'`);
-        directPaths.push(`attributes->>'cardNumber' ILIKE '${numberBeforeSlash}/%'`);
+        query = query.or(`attributes->>'number'.ilike.${numberBeforeSlash}/%,attributes->>'Number'.ilike.${numberBeforeSlash}/%,attributes->>'card_number'.ilike.${numberBeforeSlash}/%,attributes->>'cardNumber'.ilike.${numberBeforeSlash}/%`);
       }
       
-      // Handle properties paths separately (nested JSONB)
-      const propertiesPaths = [
-        `attributes->'properties'->>'number' = '${fullNumber}'`,
-        `attributes->'properties'->>'Number' = '${fullNumber}'`,
-        `attributes->'properties'->>'card_number' = '${fullNumber}'`,
-        `attributes->'properties'->>'cardNumber' = '${fullNumber}'`
-      ];
+      // Add searches for nested properties paths
+      query = query.or(`attributes->'properties'->>'number'.eq.${fullNumber},attributes->'properties'->>'Number'.eq.${fullNumber},attributes->'properties'->>'card_number'.eq.${fullNumber},attributes->'properties'->>'cardNumber'.eq.${fullNumber}`);
       
-      // Case-insensitive searches for properties path
-      propertiesPaths.push(`attributes->'properties'->>'number' ILIKE '%${fullNumber}%'`);
-      propertiesPaths.push(`attributes->'properties'->>'Number' ILIKE '%${fullNumber}%'`);
-      propertiesPaths.push(`attributes->'properties'->>'card_number' ILIKE '%${fullNumber}%'`);
-      propertiesPaths.push(`attributes->'properties'->>'cardNumber' ILIKE '%${fullNumber}%'`);
-      
-      // Combine all paths into one filter string
-      const filterString = [...directPaths, ...propertiesPaths].join(',');
-      
-      // Apply the filter
-      query = query.or(filterString);
+      // Add partial matches for properties path
+      query = query.or(`attributes->'properties'->>'number'.ilike.%${fullNumber}%,attributes->'properties'->>'Number'.ilike.%${fullNumber}%,attributes->'properties'->>'card_number'.ilike.%${fullNumber}%,attributes->'properties'->>'cardNumber'.ilike.%${fullNumber}%`);
       
       if (DEBUG_MODE) {
         console.log(`Applied card number filter for: ${number}`);
-        console.log(`Using JSONB path extraction with proper syntax`);
+        console.log(`Using proper Supabase .or() syntax for JSONB queries`);
       }
     } catch (error) {
       // Handle any syntax errors in the filter generation
       console.error("Error building card number filter:", error);
       if (DEBUG_MODE) {
-        console.error("Failed to build card number filter with advanced syntax, falling back to basic filter");
+        console.error("Failed to build card number filter with advanced syntax, falling back to simpler filter");
       }
       
-      // Basic fallback - direct equality on card_number only (less comprehensive but safer)
-      query = query.or(`attributes->>'card_number'='${fullNumber}',attributes->>'Number'='${fullNumber}'`);
+      // Basic fallback - we'll use a simpler approach that's more reliable
+      // Using the proper PostgreSQL syntax for JSONB operations
+      query = query.or(`attributes->>'number'.eq.${fullNumber},attributes->>'Number'.eq.${fullNumber}`);
     }
   }
   
@@ -167,7 +139,7 @@ export const buildSearchQuery = async (
       category_id: categoryId || 'any',
       name: name ? (name.length <= 2 ? `${name}%` : `%${name}%`) : 'any',
       set_id: set ? (setOptions.find(s => s.name === set)?.id || 'not found') : 'any',
-      number: number ? `Enhanced search with proper JSONB extraction for: ${number}` : 'any'
+      number: number ? `Using proper Supabase .or() syntax for JSONB queries: ${number}` : 'any'
     });
   }
 
