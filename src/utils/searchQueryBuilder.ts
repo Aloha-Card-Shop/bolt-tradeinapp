@@ -68,7 +68,7 @@ export const buildSearchQuery = async (
     }
   }
   
-  // Enhanced card number search with PROPER string handling and JSONB paths
+  // Enhanced card number search with proper filter() method calls
   if (number) {
     // Normalize the card number for more consistent matching
     const normalizedNumber = number.toString().trim().replace(/^0+(\d+)/, '$1'); // Remove leading zeros from numeric part
@@ -76,60 +76,44 @@ export const buildSearchQuery = async (
     const fullNumber = number.toString();
     
     try {
-      // CRITICAL FIX: Build a proper filter for card number searches
-      // The problem was using string interpolation with .or() which doesn't quote values properly
+      // CRITICAL FIX: Use the filter method properly with chained OR conditions
       if (DEBUG_MODE) {
         console.log(`Searching for card number: "${fullNumber}" (normalized: "${normalizedNumber}", before slash: "${numberBeforeSlash}")`);
       }
       
-      // Start with empty filter - we'll use .or() to add conditions
+      // Create a filter group using .or()
+      query = query.or(`attributes->number.eq.${fullNumber},attributes->Number.eq.${fullNumber}`);
       
-      // IMPORTANT: Use the filter method with explicit JSON paths and operators
-      // This properly handles string values and quotes them correctly
+      // Add additional filters for different JSON paths
+      query = query.or(`attributes->number->value.eq.${fullNumber},attributes->Number->value.eq.${fullNumber}`);
       
-      // Direct path searches
-      query = query.or('attributes->number', 'eq', fullNumber);
-      query = query.or('attributes->Number', 'eq', fullNumber);
+      // Add filters for JSON text extraction
+      query = query.or(`attributes->>number.eq.${fullNumber},attributes->>Number.eq.${fullNumber}`);
       
-      // Nested JSON structure searches
-      query = query.or('attributes->number->value', 'eq', fullNumber);
-      query = query.or('attributes->Number->value', 'eq', fullNumber);
-      
-      // Try with ->> operator which extracts text
-      query = query.or('attributes->>number', 'eq', fullNumber);
-      query = query.or('attributes->>Number', 'eq', fullNumber);
-      
-      // Add normalized number searches (without leading zeros)
+      // Add normalized number searches (without leading zeros) if different from fullNumber
       if (normalizedNumber !== fullNumber) {
-        query = query.or('attributes->number->value', 'eq', normalizedNumber);
-        query = query.or('attributes->Number->value', 'eq', normalizedNumber);
-        query = query.or('attributes->>number', 'eq', normalizedNumber);
-        query = query.or('attributes->>Number', 'eq', normalizedNumber);
+        query = query.or(`attributes->number->value.eq.${normalizedNumber},attributes->Number->value.eq.${normalizedNumber}`);
+        query = query.or(`attributes->>number.eq.${normalizedNumber},attributes->>Number.eq.${normalizedNumber}`);
       }
       
       // Add searches for number patterns with leading zeros (e.g., "004")
       const paddedNumber = fullNumber.length === 1 ? "00" + fullNumber : fullNumber.length === 2 ? "0" + fullNumber : fullNumber;
       if (paddedNumber !== fullNumber) {
-        query = query.or('attributes->number->value', 'eq', paddedNumber);
-        query = query.or('attributes->Number->value', 'eq', paddedNumber);
-        query = query.or('attributes->>number', 'eq', paddedNumber);
-        query = query.or('attributes->>Number', 'eq', paddedNumber);
+        query = query.or(`attributes->number->value.eq.${paddedNumber},attributes->Number->value.eq.${paddedNumber}`);
+        query = query.or(`attributes->>number.eq.${paddedNumber},attributes->>Number.eq.${paddedNumber}`);
       }
       
       // Use ilike for partial matches (especially for split numbers like "4/102")
       if (numberBeforeSlash && numberBeforeSlash !== fullNumber) {
-        query = query.or('attributes->number->value', 'ilike', `${numberBeforeSlash}/%`);
-        query = query.or('attributes->Number->value', 'ilike', `${numberBeforeSlash}/%`);
-        query = query.or('attributes->>number', 'ilike', `${numberBeforeSlash}/%`);
-        query = query.or('attributes->>Number', 'ilike', `${numberBeforeSlash}/%`);
+        query = query.or(`attributes->number->value.ilike.${numberBeforeSlash}/%,attributes->Number->value.ilike.${numberBeforeSlash}/%`);
+        query = query.or(`attributes->>number.ilike.${numberBeforeSlash}/%,attributes->>Number.ilike.${numberBeforeSlash}/%`);
       }
       
       // Add card_number field variants
-      query = query.or('attributes->>card_number', 'eq', fullNumber);
-      query = query.or('attributes->card_number->value', 'eq', fullNumber);
+      query = query.or(`attributes->>card_number.eq.${fullNumber},attributes->card_number->value.eq.${fullNumber}`);
       
       if (DEBUG_MODE) {
-        console.log(`Applied comprehensive card number search with proper string handling`);
+        console.log(`Applied comprehensive card number search with proper filter syntax`);
       }
     } catch (error) {
       // Handle any syntax errors in the filter generation
@@ -137,12 +121,11 @@ export const buildSearchQuery = async (
       
       // Fallback to a simpler approach
       try {
-        // Basic fallback that won't break the search
-        query = query.filter('attributes->number->value', 'eq', fullNumber);
-        query = query.or('attributes->Number->value', 'eq', fullNumber);
+        // Basic fallback with simpler syntax
+        query = query.or(`attributes->>number.eq.${fullNumber},attributes->>Number.eq.${fullNumber}`);
         
         if (DEBUG_MODE) {
-          console.log(`Applied simplified fallback card number filter with explicit .filter() method`);
+          console.log(`Applied simplified fallback card number filter`);
         }
       } catch (secondError) {
         console.error("Even fallback filter failed:", secondError);
@@ -170,7 +153,7 @@ export const buildSearchQuery = async (
       category_id: categoryId || 'any',
       name: name ? (name.length <= 2 ? `${name}%` : `%${name}%`) : 'any',
       set_id: set ? (setOptions.find(s => s.name === set)?.id || 'not found') : 'any',
-      number: number ? `Using comprehensive JSONB path search for: ${number}` : 'any'
+      number: number ? `Using comprehensive filter syntax for: ${number}` : 'any'
     });
   }
 
