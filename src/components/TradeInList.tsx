@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { TradeInItem as TradeInItemType } from '../hooks/useTradeInList';
 import { useCustomers } from '../hooks/useCustomers';
 import { Customer } from '../hooks/useCustomers';
@@ -10,6 +10,7 @@ import TradeInHeader from './TradeInHeader';
 import TradeInEmptyState from './TradeInEmptyState';
 import { useTradeInSubmission } from '../hooks/useTradeInSubmission';
 import { toast } from 'react-hot-toast'; // Import toast for notifications
+import CharizardDetails from './trade-in/CharizardDetails';
 
 interface TradeInListProps {
   items: TradeInItemType[];
@@ -28,6 +29,20 @@ const TradeInList: React.FC<TradeInListProps> = ({
   const { customers, isLoading: isLoadingCustomers, createCustomer } = useCustomers();
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [itemValuesMap, setItemValuesMap] = useState<Record<string, { tradeValue: number; cashValue: number }>>({});
+  const [hasCharizard, setHasCharizard] = useState<boolean>(false);
+  const [charizardSetName, setCharizardSetName] = useState<string | undefined>(undefined);
+  
+  // Check if there's a Charizard in the list
+  useEffect(() => {
+    const charizardCard = items.find(item => 
+      item.card.name.toLowerCase().includes('charizard')
+    );
+    
+    setHasCharizard(!!charizardCard);
+    if (charizardCard) {
+      setCharizardSetName(charizardCard.card.set);
+    }
+  }, [items]);
   
   const { 
     isSubmitting, 
@@ -128,6 +143,13 @@ const TradeInList: React.FC<TradeInListProps> = ({
         totalCashValue={totalCashValue} 
         totalTradeValue={totalTradeValue} 
       />
+
+      {hasCharizard && (
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-3">Charizard Details</h3>
+          <CharizardDetails setName={charizardSetName} />
+        </div>
+      )}
 
       {items.length ? (
         <div className="space-y-6">

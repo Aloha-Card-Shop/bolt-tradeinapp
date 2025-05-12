@@ -1,4 +1,3 @@
-
 import { CardNumberObject } from '../types/card';
 
 /**
@@ -273,5 +272,61 @@ export const getSearchHistory = (key: string): string[] => {
   } catch (e) {
     console.error('Error retrieving search history:', e);
     return [];
+  }
+};
+
+/**
+ * Pulls full data for a card by name, focusing specifically on Charizard cards
+ * @param cardName The name of the card to fetch (e.g., "Charizard")
+ * @returns Promise resolving to the complete card data
+ */
+export const pullFullCardData = async (cardName: string, setName?: string): Promise<any> => {
+  try {
+    console.log(`Fetching full data for card: ${cardName}${setName ? ` from set ${setName}` : ''}`);
+    
+    let query = supabase
+      .from('cards')
+      .select('*, attributes')
+      .ilike('name', `%${cardName}%`);
+      
+    // If set name is provided, filter by set as well
+    if (setName) {
+      query = query.ilike('set_name', `%${setName}%`);
+    }
+    
+    // Prioritize exact matches first
+    query = query.order('name', { ascending: true });
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching full card data:', error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      console.log(`No card data found for ${cardName}`);
+      return null;
+    }
+    
+    console.log(`Found ${data.length} cards matching ${cardName}`);
+    
+    // Find the best match - exact name match is preferred
+    const exactMatch = data.find(card => 
+      card.name.toLowerCase() === cardName.toLowerCase()
+    );
+    
+    // If we have an exact match, return it
+    if (exactMatch) {
+      console.log('Found exact match:', exactMatch);
+      return exactMatch;
+    }
+    
+    // Otherwise return the first result
+    console.log('Returning best match:', data[0]);
+    return data[0];
+  } catch (error) {
+    console.error('Error in pullFullCardData:', error);
+    throw error;
   }
 };
