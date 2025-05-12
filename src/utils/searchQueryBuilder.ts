@@ -1,7 +1,8 @@
+
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
-import { generateCardNumberVariants, buildCardNumberSearchQuery } from './cardSearchUtils';
+import { buildCardNumberSearchQuery } from './cardSearchUtils';
 
 // Debug mode flag - set to true to enable verbose logging
 const DEBUG_MODE = true;
