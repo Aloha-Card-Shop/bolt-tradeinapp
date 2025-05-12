@@ -34,6 +34,29 @@ export const extractNumberBeforeSlash = (cardNumber: string | CardNumberObject |
 };
 
 /**
+ * Normalize a card number by removing leading zeros from the numeric part before the slash
+ * @param cardNumber The card number to normalize
+ * @returns Normalized card number
+ */
+export const normalizeCardNumber = (cardNumber: string | CardNumberObject | undefined): string => {
+  const numberStr = getCardNumberString(cardNumber);
+  if (!numberStr) return '';
+  
+  // If it has a slash format like "004/102", normalize to "4/102"
+  if (numberStr.includes('/')) {
+    const [numPart, setPart] = numberStr.split('/', 2);
+    return parseInt(numPart, 10) + '/' + setPart;
+  }
+  
+  // If it's just a number with leading zeros like "004", normalize to "4"
+  if (/^0+\d+$/.test(numberStr)) {
+    return numberStr.replace(/^0+/, '');
+  }
+  
+  return numberStr;
+};
+
+/**
  * Creates card number filters for both exact and partial matches with improved handling
  * @param cardNumber The card number to search for
  * @returns Array of filter strings specifically for card number search
@@ -43,11 +66,18 @@ export const createCardNumberFilters = (cardNumber: string): string[] => {
   
   const filters = [];
   const numberBeforeSlash = extractNumberBeforeSlash(cardNumber);
+  const normalizedNumber = normalizeCardNumber(cardNumber);
   const isNumericOnly = /^\d+$/.test(cardNumber);
   
   // Priority 1: Exact matches (highest priority)
   filters.push(`attributes->>'card_number'.eq.${cardNumber}`);
   filters.push(`attributes->>'Number'.eq.${cardNumber}`);
+  
+  // Priority 1.5: Normalized matches (also high priority)
+  if (normalizedNumber !== cardNumber) {
+    filters.push(`attributes->>'card_number'.eq.${normalizedNumber}`);
+    filters.push(`attributes->>'Number'.eq.${normalizedNumber}`);
+  }
   
   // Priority 2: Prefix matches (card number starts with the search term)
   filters.push(`attributes->>'card_number'.ilike.${cardNumber}%`);
@@ -67,6 +97,15 @@ export const createCardNumberFilters = (cardNumber: string): string[] => {
     // Also look for the digits anywhere in the number
     filters.push(`attributes->>'card_number'.ilike.%${cardNumber}%`);
     filters.push(`attributes->>'Number'.ilike.%${cardNumber}%`);
+    
+    // Add padded number patterns (e.g., searching for "4" also finds "004")
+    const paddedNumber = cardNumber.padStart(3, '0');
+    if (paddedNumber !== cardNumber) {
+      filters.push(`attributes->>'card_number'.eq.${paddedNumber}`);
+      filters.push(`attributes->>'Number'.eq.${paddedNumber}`);
+      filters.push(`attributes->>'card_number'.ilike.${paddedNumber}%`);
+      filters.push(`attributes->>'Number'.ilike.${paddedNumber}%`);
+    }
   }
   
   // Handle specific case where numberBeforeSlash is different
@@ -74,6 +113,13 @@ export const createCardNumberFilters = (cardNumber: string): string[] => {
     // Add search for just the number before slash followed by slash
     filters.push(`attributes->>'card_number'.ilike.${numberBeforeSlash}/%`);
     filters.push(`attributes->>'Number'.ilike.${numberBeforeSlash}/%`);
+    
+    // Also try with padded number before slash
+    const paddedNumberBeforeSlash = numberBeforeSlash.padStart(3, '0');
+    if (paddedNumberBeforeSlash !== numberBeforeSlash) {
+      filters.push(`attributes->>'card_number'.ilike.${paddedNumberBeforeSlash}/%`);
+      filters.push(`attributes->>'Number'.ilike.${paddedNumberBeforeSlash}/%`);
+    }
   }
   
   // Add pattern matches for common formats
@@ -92,58 +138,6 @@ export const createCardNumberFilters = (cardNumber: string): string[] => {
     
     filters.push(`attributes->>'card_number'.ilike.${cardNumber}/%`); // Before slash
     filters.push(`attributes->>'Number'.ilike.${cardNumber}/%`);
-  }
-  
-  return filters;
-};
-
-/**
- * Creates filters for the card search query with improved ranking
- * @param searchTerms Array of search terms for card name
- * @param formattedNumber Formatted card number (if any)
- * @returns Array of filter strings for the query
- */
-export const createSearchFilters = (searchTerms: string[], formattedNumber?: string) => {
-  let filters = [];
-  
-  // Add name filters with enhanced search capabilities and ranking
-  if (searchTerms.length > 0) {
-    // Create exact match filters first (higher priority)
-    const exactMatchFilters = searchTerms.map(term => {
-      return `name.ilike.${term}%`; // Starts with term (highest priority)
-    });
-    
-    if (exactMatchFilters.length > 0) {
-      filters.push(`or(${exactMatchFilters.join(',')})`);
-    }
-    
-    // Then add partial match filters (lower priority)
-    const nameFilters = searchTerms.map(term => {
-      const termFilters = [
-        // Search in the regular name field
-        `name.ilike.%${term}%`,
-        
-        // Also search in clean_name field which typically has no special characters
-        `clean_name.ilike.%${term}%`
-      ];
-      // Combine each term's filters with OR logic
-      return `or(${termFilters.join(',')})`;
-    });
-    
-    // Combine name filters with AND logic (each term must be found in either name or clean_name)
-    if (nameFilters.length > 0) {
-      filters.push(`and(${nameFilters.join(',')})`);
-    }
-  }
-  
-  // Add card number filter if present using the improved method
-  if (formattedNumber) {
-    const cardNumberFilters = createCardNumberFilters(formattedNumber);
-    
-    // Combine all card number filters with OR logic
-    if (cardNumberFilters.length > 0) {
-      filters.push(`or(${cardNumberFilters.join(',')})`);
-    }
   }
   
   return filters;

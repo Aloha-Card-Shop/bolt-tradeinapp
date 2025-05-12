@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { CardDetails } from '../types/card';
 import { SetOption } from './useSetOptions';
@@ -80,6 +79,7 @@ export const useCardSearchQuery = () => {
       const startTime = performance.now();
       
       // Build and execute query using the utility function
+      // Now always using unified_products table
       const { query, foundSetIds } = await buildSearchQuery(cardDetails, setOptions, 0);
       
       // Execute query with improved timeout handling
@@ -166,18 +166,8 @@ export const useCardSearchQuery = () => {
         }
 
         data.forEach((item: any) => {
-          // For cards table results, look up the set ID by name
-          if (item.set_name) {
-            const setId = findSetIdByName(item.set_name, setOptions);
-            if (setId) {
-              resultSetIds.add(setId);
-              if (DEBUG_MODE) {
-                console.log(`Found card "${item.name}" in set "${item.set_name}" (ID: ${setId})`);
-              }
-            }
-          }
           // For unified_products table, use the direct group_id
-          else if (item.group_id) {
+          if (item.group_id) {
             resultSetIds.add(item.group_id);
             if (DEBUG_MODE) {
               const setName = setOptions.find(s => s.id === item.group_id)?.name;
