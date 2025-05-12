@@ -29,6 +29,7 @@ const CardNumberInput: React.FC<CardNumberInputProps> = ({
     if (e.key === 'Enter') {
       e.preventDefault();
       // The input change handler in useCardSearch already triggers search
+      console.log('Search triggered via Enter key in CardNumberInput');
     }
   };
   
@@ -45,7 +46,7 @@ const CardNumberInput: React.FC<CardNumberInputProps> = ({
           value={getCardNumberString(cardNumber)}
           onChange={onChange}
           onKeyDown={handleKeyDown}
-          placeholder="e.g. 12, 12/107, or SW123"
+          placeholder="e.g. 4, 004, 4/102, or 004/102"
           className={`w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${isSearching ? 'pr-10' : ''}`}
         />
         {isSearching && (
@@ -55,7 +56,7 @@ const CardNumberInput: React.FC<CardNumberInputProps> = ({
         )}
       </div>
       <p className="mt-1 text-xs text-gray-500">
-        Enter full or partial card number (works with just digits, with set number, or prefix)
+        Enter full or partial card number (works with "4", "004", "4/102", or "004/102")
       </p>
     </div>
   );

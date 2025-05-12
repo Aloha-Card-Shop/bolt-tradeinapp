@@ -106,6 +106,41 @@ export const generateCardNumberVariants = (cardNumber: string | CardNumberObject
 };
 
 /**
+ * Builds a card number search query with proper JSONB extraction
+ * @param query The Supabase query to add filters to
+ * @param cardNumber The card number to search for
+ * @returns The modified query with card number filters
+ */
+export const buildCardNumberSearchQuery = (query: any, cardNumber: string): any => {
+  if (!cardNumber) return query;
+  
+  console.log(`Building card number search for: "${cardNumber}"`);
+  
+  // Generate all possible variants for this card number
+  const variants = generateCardNumberVariants(cardNumber);
+  console.log(`Generated ${variants.length} search variants:`, variants);
+  
+  // Create filter conditions using the correct JSONB path syntax
+  const filterConditions: string[] = [];
+  
+  variants.forEach(variant => {
+    // Correct JSONB path syntax with text extraction operator ->>
+    filterConditions.push(`attributes->'Number'->>'value'.ilike.%${variant}%`);
+    filterConditions.push(`attributes->'number'->>'value'.ilike.%${variant}%`);
+    filterConditions.push(`attributes->>'Number'.ilike.%${variant}%`);
+    filterConditions.push(`attributes->>'number'.ilike.%${variant}%`);
+    filterConditions.push(`attributes->>'card_number'.ilike.%${variant}%`);
+  });
+  
+  // Join filter conditions with commas for Supabase OR syntax
+  const orConditionString = filterConditions.join(',');
+  console.log(`Final OR condition string: ${orConditionString}`);
+  
+  // Apply the OR condition to the query
+  return query.or(orConditionString);
+};
+
+/**
  * Creates card number filters for both exact and partial matches with improved handling
  * @param cardNumber The card number to search for
  * @returns Array of filter strings specifically for card number search

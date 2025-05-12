@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
-import { generateCardNumberVariants } from './cardSearchUtils';
+import { generateCardNumberVariants, buildCardNumberSearchQuery } from './cardSearchUtils';
 
 // Debug mode flag - set to true to enable verbose logging
 const DEBUG_MODE = true;
@@ -68,71 +68,33 @@ export const buildSearchQuery = async (
     }
   }
   
-  // Enhanced card number search with proper OR conditions
+  // Enhanced card number search with proper JSONB path syntax
   if (number) {
+    // Use the new dedicated card number search function
     try {
-      // Generate all possible card number variants for comprehensive search
-      const cardNumberVariants = generateCardNumberVariants(number);
-      
+      const cardNumberStr = typeof number === 'object' ? 
+                            (number.displayName || number.value || '') : 
+                            number.toString();
+                             
       if (DEBUG_MODE) {
-        console.log(`Searching for card number variants:`, cardNumberVariants);
+        console.log(`Applying card number search for: "${cardNumberStr}"`);
       }
       
-      // Create array of filter conditions for all variants
-      const filterConditions: string[] = [];
+      query = buildCardNumberSearchQuery(query, cardNumberStr);
       
-      // Generate filter conditions for each variant and each possible JSON path
-      cardNumberVariants.forEach(variant => {
-        // Direct properties at root level - as value
-        filterConditions.push(`attributes->number.eq.${variant}`);
-        filterConditions.push(`attributes->Number.eq.${variant}`);
-        
-        // Nested object properties - value inside object
-        filterConditions.push(`attributes->number->value.eq.${variant}`);
-        filterConditions.push(`attributes->Number->value.eq.${variant}`);
-        
-        // Text extraction with ->> operator
-        filterConditions.push(`attributes->>number.eq.${variant}`);
-        filterConditions.push(`attributes->>Number.eq.${variant}`);
-        
-        // Card number field
-        filterConditions.push(`attributes->>card_number.eq.${variant}`);
-        filterConditions.push(`attributes->card_number->value.eq.${variant}`);
-        
-        // For numbers that might be part of a pattern with slash
-        if (!variant.includes('/')) {
-          filterConditions.push(`attributes->number->value.ilike.${variant}/%`);
-          filterConditions.push(`attributes->Number->value.ilike.${variant}/%`);
-          filterConditions.push(`attributes->>number.ilike.${variant}/%`);
-          filterConditions.push(`attributes->>Number.ilike.${variant}/%`);
-        }
-      });
-      
-      // Log the generated filter conditions
       if (DEBUG_MODE) {
-        console.log(`Generated ${filterConditions.length} filter conditions for card number search`);
-        console.log('Filter conditions:', filterConditions);
-      }
-      
-      // Apply the filter conditions with OR logic - using the proper Supabase syntax
-      if (filterConditions.length > 0) {
-        // Join all conditions with comma for supabase .or() method
-        const orConditionString = filterConditions.join(',');
-        query = query.or(orConditionString);
-        
-        if (DEBUG_MODE) {
-          console.log('Applied OR condition string:', orConditionString);
-        }
+        console.log('Card number search applied successfully');
       }
     } catch (error) {
-      // Handle any syntax errors in the filter generation
+      // Handle any errors in the filter generation
       console.error("Error building card number filter:", error);
       
-      // Fallback to a simpler approach
+      // Fall back to a simpler approach if needed
       try {
-        // Basic fallback with simpler syntax for direct property access
-        const originalNumber = typeof number === 'object' ? (number.displayName || number.value || '') : number.toString();
-        query = query.or(`attributes->>number.eq.${originalNumber},attributes->>Number.eq.${originalNumber}`);
+        const originalNumber = typeof number === 'object' ? 
+                             (number.displayName || number.value || '') : 
+                             number.toString();
+        query = query.or(`attributes->>'number'.eq.${originalNumber},attributes->>'Number'.eq.${originalNumber}`);
         
         if (DEBUG_MODE) {
           console.log(`Applied simplified fallback card number filter for "${originalNumber}"`);
