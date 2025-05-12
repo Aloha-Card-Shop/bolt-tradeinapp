@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { CardDetails, CardNumberObject } from '../types/card';
+import { CardDetails } from '../types/card';
 import { SetOption } from './useSetOptions';
 import { buildSearchQuery, formatResultsToCardDetails, RESULTS_PER_PAGE } from '../utils/searchQueryBuilder';
 import { toast } from 'react-hot-toast';
