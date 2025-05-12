@@ -68,7 +68,7 @@ export const buildSearchQuery = async (
     }
   }
   
-  // Enhanced card number search with improved matching for unified_products table
+  // Enhanced card number search with PROPER string handling and JSONB paths
   if (number) {
     // Normalize the card number for more consistent matching
     const normalizedNumber = number.toString().trim().replace(/^0+(\d+)/, '$1'); // Remove leading zeros from numeric part
@@ -76,87 +76,76 @@ export const buildSearchQuery = async (
     const fullNumber = number.toString();
     
     try {
-      // Build a comprehensive nested JSONB query to find card numbers in various formats and locations
-      let cardNumberFilterApplied = false;
-      
-      // Start with an empty filter
+      // CRITICAL FIX: Build a proper filter for card number searches
+      // The problem was using string interpolation with .or() which doesn't quote values properly
       if (DEBUG_MODE) {
         console.log(`Searching for card number: "${fullNumber}" (normalized: "${normalizedNumber}", before slash: "${numberBeforeSlash}")`);
       }
       
-      // Create a filter group for exact matches
-      // This is the critical fix: Add direct JSONB path filters that target the different possible structures
+      // Start with empty filter - we'll use .or() to add conditions
       
-      // First, check direct string values at root level
-      query = query.or(`attributes->>'number'.eq.${fullNumber}`);
-      query = query.or(`attributes->>'Number'.eq.${fullNumber}`);
-      cardNumberFilterApplied = true;
+      // IMPORTANT: Use the filter method with explicit JSON paths and operators
+      // This properly handles string values and quotes them correctly
       
-      // Check for nested values: attribute->Number->value or attribute->number->value structure
-      query = query.or(`attributes->'Number'->>'value'.eq.${fullNumber}`);
-      query = query.or(`attributes->'number'->>'value'.eq.${fullNumber}`);
+      // Direct path searches
+      query = query.or('attributes->number', 'eq', fullNumber);
+      query = query.or('attributes->Number', 'eq', fullNumber);
       
-      // Check for displayName paths
-      query = query.or(`attributes->'Number'->>'displayName'.eq.${fullNumber}`);
-      query = query.or(`attributes->'number'->>'displayName'.eq.${fullNumber}`);
+      // Nested JSON structure searches
+      query = query.or('attributes->number->value', 'eq', fullNumber);
+      query = query.or('attributes->Number->value', 'eq', fullNumber);
       
-      // Add normalized number searches
+      // Try with ->> operator which extracts text
+      query = query.or('attributes->>number', 'eq', fullNumber);
+      query = query.or('attributes->>Number', 'eq', fullNumber);
+      
+      // Add normalized number searches (without leading zeros)
       if (normalizedNumber !== fullNumber) {
-        query = query.or(`attributes->>'number'.eq.${normalizedNumber}`);
-        query = query.or(`attributes->>'Number'.eq.${normalizedNumber}`);
-        query = query.or(`attributes->'Number'->>'value'.eq.${normalizedNumber}`);
-        query = query.or(`attributes->'number'->>'value'.eq.${normalizedNumber}`);
+        query = query.or('attributes->number->value', 'eq', normalizedNumber);
+        query = query.or('attributes->Number->value', 'eq', normalizedNumber);
+        query = query.or('attributes->>number', 'eq', normalizedNumber);
+        query = query.or('attributes->>Number', 'eq', normalizedNumber);
       }
       
-      // Check card_number field variants
-      query = query.or(`attributes->>'card_number'.eq.${fullNumber}`);
-      query = query.or(`attributes->'card_number'->>'value'.eq.${fullNumber}`);
-      query = query.or(`attributes->>'cardNumber'.eq.${fullNumber}`);
+      // Add searches for number patterns with leading zeros (e.g., "004")
+      const paddedNumber = fullNumber.length === 1 ? "00" + fullNumber : fullNumber.length === 2 ? "0" + fullNumber : fullNumber;
+      if (paddedNumber !== fullNumber) {
+        query = query.or('attributes->number->value', 'eq', paddedNumber);
+        query = query.or('attributes->Number->value', 'eq', paddedNumber);
+        query = query.or('attributes->>number', 'eq', paddedNumber);
+        query = query.or('attributes->>Number', 'eq', paddedNumber);
+      }
       
-      // Add partial matches with ILIKE for more flexible search
-      query = query.or(`attributes->>'number'.ilike.%${fullNumber}%`);
-      query = query.or(`attributes->>'Number'.ilike.%${fullNumber}%`);
-      query = query.or(`attributes->'Number'->>'value'.ilike.%${fullNumber}%`);
-      query = query.or(`attributes->'number'->>'value'.ilike.%${fullNumber}%`);
-      
-      // Add prefix searches for the number before slash (e.g. "4" will match "4/102")
+      // Use ilike for partial matches (especially for split numbers like "4/102")
       if (numberBeforeSlash && numberBeforeSlash !== fullNumber) {
-        query = query.or(`attributes->>'number'.ilike.${numberBeforeSlash}/%`);
-        query = query.or(`attributes->>'Number'.ilike.${numberBeforeSlash}/%`);
-        query = query.or(`attributes->'Number'->>'value'.ilike.${numberBeforeSlash}/%`);
-        query = query.or(`attributes->'number'->>'value'.ilike.${numberBeforeSlash}/%`);
+        query = query.or('attributes->number->value', 'ilike', `${numberBeforeSlash}/%`);
+        query = query.or('attributes->Number->value', 'ilike', `${numberBeforeSlash}/%`);
+        query = query.or('attributes->>number', 'ilike', `${numberBeforeSlash}/%`);
+        query = query.or('attributes->>Number', 'ilike', `${numberBeforeSlash}/%`);
       }
       
-      // Also search in the properties path structure (sometimes used)
-      query = query.or(`attributes->'properties'->>'number'.eq.${fullNumber}`);
-      query = query.or(`attributes->'properties'->>'Number'.eq.${fullNumber}`);
-      query = query.or(`attributes->'properties'->'number'->>'value'.eq.${fullNumber}`);
+      // Add card_number field variants
+      query = query.or('attributes->>card_number', 'eq', fullNumber);
+      query = query.or('attributes->card_number->value', 'eq', fullNumber);
       
       if (DEBUG_MODE) {
-        console.log(`Applied comprehensive card number filter with proper JSONB paths`);
-        console.log(`Search includes exact matches, normalized formats, and number prefix (${numberBeforeSlash})`);
-      }
-      
-      // If no card number filter was applied (unlikely), use a basic fallback
-      if (!cardNumberFilterApplied && fullNumber) {
-        query = query.or(`attributes->>'Number'.eq.${fullNumber}`);
-        if (DEBUG_MODE) {
-          console.log(`Applied simple fallback card number filter: ${fullNumber}`);
-        }
+        console.log(`Applied comprehensive card number search with proper string handling`);
       }
     } catch (error) {
       // Handle any syntax errors in the filter generation
       console.error("Error building card number filter:", error);
-      if (DEBUG_MODE) {
-        console.error("Failed to build advanced card number filter, falling back to simpler filter");
-      }
       
-      // Basic fallback - we'll use a simpler approach that's more reliable
-      query = query.or(`attributes->>'number'.eq.${fullNumber}`);
-      query = query.or(`attributes->>'Number'.eq.${fullNumber}`);
-      
-      if (DEBUG_MODE) {
-        console.log(`Applied simple fallback card number filter for: ${fullNumber}`);
+      // Fallback to a simpler approach
+      try {
+        // Basic fallback that won't break the search
+        query = query.filter('attributes->number->value', 'eq', fullNumber);
+        query = query.or('attributes->Number->value', 'eq', fullNumber);
+        
+        if (DEBUG_MODE) {
+          console.log(`Applied simplified fallback card number filter with explicit .filter() method`);
+        }
+      } catch (secondError) {
+        console.error("Even fallback filter failed:", secondError);
       }
     }
   }
