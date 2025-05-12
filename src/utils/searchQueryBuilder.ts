@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
@@ -71,39 +70,47 @@ export const buildSearchQuery = async (
   
   // Enhanced card number search with proper JSONB path syntax
   if (number) {
-    // Use the new dedicated card number search function
-    try {
-      const cardNumberStr = typeof number === 'object' ? 
-                            (number.displayName || number.value || '') : 
-                            number.toString();
-                             
-      if (DEBUG_MODE) {
-        console.log(`Applying card number search for: "${cardNumberStr}"`);
-      }
-      
-      query = buildCardNumberSearchQuery(query, cardNumberStr);
-      
-      if (DEBUG_MODE) {
-        console.log('Card number search applied successfully');
-      }
-    } catch (error) {
-      // Handle any errors in the filter generation
-      console.error("Error building card number filter:", error);
-      
-      // Fall back to a simpler approach if needed
-      try {
-        const originalNumber = typeof number === 'object' ? 
-                             (number.displayName || number.value || '') : 
-                             number.toString();
-        query = query.or(`attributes->>'number'.eq.${originalNumber},attributes->>'Number'.eq.${originalNumber}`);
-        
-        if (DEBUG_MODE) {
-          console.log(`Applied simplified fallback card number filter for "${originalNumber}"`);
-        }
-      } catch (secondError) {
-        console.error("Even fallback filter failed:", secondError);
-      }
+    // Get the clean card number string
+    const cardNumberStr = typeof number === 'object' ? 
+                        (number.displayName || number.value || '') : 
+                        number.toString();
+                         
+    if (DEBUG_MODE) {
+      console.log(`Applying card number search for: "${cardNumberStr}"`);
     }
+    
+    // Create normalized variants of the card number for comprehensive searching
+    const variants = generateCardNumberVariants(cardNumberStr);
+    
+    if (DEBUG_MODE) {
+      console.log(`Generated search variants for card number:`, variants);
+    }
+    
+    // Build filter conditions using the correct JSONB path syntax
+    const filterConditions: string[] = [];
+    
+    variants.forEach(variant => {
+      // Use the correct JSONB path with text extraction operator ->>
+      // Primary path: attributes->'Number'->>'value'
+      filterConditions.push(`attributes->'Number'->>'value'.ilike.%${variant}%`);
+      
+      // Secondary paths for fallback
+      filterConditions.push(`attributes->'number'->>'value'.ilike.%${variant}%`);
+      filterConditions.push(`attributes->'card_number'->>'value'.ilike.%${variant}%`);
+      
+      // Alternative paths for some legacy data formats
+      filterConditions.push(`attributes->>'card_number'.ilike.%${variant}%`);
+    });
+    
+    // Join filter conditions with commas for Supabase OR syntax
+    const orConditionString = filterConditions.join(',');
+    
+    if (DEBUG_MODE) {
+      console.log('Final card number search OR condition:', orConditionString);
+    }
+    
+    // Apply the OR condition to the query
+    query = query.or(orConditionString);
   }
   
   // Apply name filter last - this is typically the broadest
@@ -128,9 +135,62 @@ export const buildSearchQuery = async (
       set_id: set ? (setOptions.find(s => s.name === set)?.id || 'not found') : 'any',
       number: number ? `Using comprehensive filter syntax with ${typeof number === 'object' ? (number.displayName || number.value || '') : number.toString()}` : 'any'
     });
+    
+    // Log the raw query SQL for debugging
+    if (typeof query.toSQL === 'function') {
+      try {
+        const sqlDebug = query.toSQL();
+        console.log('Generated SQL query:', sqlDebug);
+      } catch (e) {
+        console.log('Could not extract SQL query for debugging');
+      }
+    }
   }
 
   return { query, foundSetIds };
+};
+
+// Helper function to generate all possible variants of a card number for search
+const generateCardNumberVariants = (cardNumber: string): string[] => {
+  if (!cardNumber) return [];
+  
+  const variants = new Set<string>();
+  
+  // Add the original number
+  variants.add(cardNumber);
+  
+  // Handle card numbers with slashes (e.g., "004/102")
+  if (cardNumber.includes('/')) {
+    const [numPart, setPart] = cardNumber.split('/', 2);
+    
+    // Add variants with/without leading zeros
+    if (/^0+\d+$/.test(numPart)) {
+      // Strip leading zeros (e.g. "004" -> "4")
+      const strippedNum = numPart.replace(/^0+/, '');
+      variants.add(`${strippedNum}/${setPart}`);
+      variants.add(strippedNum);
+    }
+    
+    // Add just the number part
+    variants.add(numPart);
+  } 
+  // Handle simple numbers
+  else if (/^\d+$/.test(cardNumber)) {
+    // Add variants with leading zeros for single digits
+    if (cardNumber.length === 1) {
+      variants.add(`00${cardNumber}`);
+      variants.add(`0${cardNumber}`);
+    } else if (cardNumber.length === 2) {
+      variants.add(`0${cardNumber}`);
+    }
+    
+    // If it has leading zeros, add version without them
+    if (/^0+\d+$/.test(cardNumber)) {
+      variants.add(cardNumber.replace(/^0+/, ''));
+    }
+  }
+  
+  return [...variants];
 };
 
 // Helper function to extract set ID for a set name
