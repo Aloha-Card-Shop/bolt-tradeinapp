@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { CardDetails } from '../types/card';
 import { SetOption } from './useSetOptions';
@@ -128,8 +127,8 @@ export const useCardSearchQuery = () => {
       if (error) {
         console.error('Error from Supabase query:', error);
         
-        // Better error handling for database schema errors
-        if (error.code === '42703') {
+        // Better error handling for specific database errors
+        if (error.code === '42703' || error.message?.includes('does not exist')) {
           // This is a database schema error (column doesn't exist)
           console.error('Database schema error details:', {
             message: error.message,
@@ -140,7 +139,16 @@ export const useCardSearchQuery = () => {
           toast.error('There was a database error. Please try again in a moment.');
           setSearchResults([]);
           return new Set<number>();
-        } else {
+        } 
+        // Error for failed to parse logic tree
+        else if (error.message?.includes('failed to parse')) {
+          console.error('Query parsing error:', error.message);
+          toast.error('Search syntax error. Try a simpler search term.');
+          setSearchResults([]);
+          return new Set<number>();
+        }
+        // Generic error
+        else {
           toast.error(`Search error: ${error.message || 'Unknown error'}`);
         }
         
@@ -207,9 +215,12 @@ export const useCardSearchQuery = () => {
         if (error.message.includes('timeout') || error.message === 'Search timeout') {
           console.error('Search timeout error details:', error);
           toast.error('The search is taking longer than expected. Try a more specific search term.');
-        } else if (error.message.includes('JSON') || error.message.includes('jsonb')) {
-          console.error('JSON parsing error details:', error);
+        } else if (error.message.includes('JSON') || error.message.includes('jsonb') || error.message.includes('operator does not exist')) {
+          console.error('JSONB query syntax error details:', error);
           toast.error('We\'re fixing an issue with the card search. Please try again in a moment.');
+        } else if (error.message.includes('parse') || error.message.includes('syntax')) {
+          console.error('Query parsing error details:', error);
+          toast.error('Search syntax error. Please try a simpler search term.');
         } else if (error.name !== 'AbortError') {
           // Don't show toast for aborted requests
           toast.error(`Search failed: ${error.message}`);

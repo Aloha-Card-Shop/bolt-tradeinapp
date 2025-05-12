@@ -1,9 +1,10 @@
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { Loader2, ImageOff, PlusCircle, Search, AlertCircle, Info } from 'lucide-react';
 import { CardDetails, SavedCard, CardNumberObject } from '../types/card';
 import { extractNumberBeforeSlash, getCardNumberString } from '../utils/cardSearchUtils';
 import { toast } from 'react-hot-toast';
+import SearchErrorDisplay from './card-search/SearchErrorDisplay';
 
 interface CardResultsProps {
   results: CardDetails[];
@@ -12,6 +13,8 @@ interface CardResultsProps {
   hasMoreResults?: boolean;
   loadMoreResults?: () => void;
   totalResults?: number;
+  error?: string | null;
+  onRetrySearch?: () => void;
 }
 
 const CardResults: React.FC<CardResultsProps> = ({ 
@@ -20,10 +23,30 @@ const CardResults: React.FC<CardResultsProps> = ({
   onAddToList,
   hasMoreResults = false,
   loadMoreResults = () => {},
-  totalResults = 0
+  totalResults = 0,
+  error = null,
+  onRetrySearch
 }) => {
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const [errorType, setErrorType] = useState<string>('unknown');
+  
+  // Determine the type of error for better display
+  useEffect(() => {
+    if (error) {
+      if (error.toLowerCase().includes('timeout')) {
+        setErrorType('timeout');
+      } else if (error.toLowerCase().includes('json') || error.toLowerCase().includes('jsonb')) {
+        setErrorType('json');
+      } else if (error.toLowerCase().includes('does not exist') || error.toLowerCase().includes('schema')) {
+        setErrorType('schema');
+      } else if (error.toLowerCase().includes('parse') || error.toLowerCase().includes('syntax')) {
+        setErrorType('syntax');
+      } else {
+        setErrorType('unknown');
+      }
+    }
+  }, [error]);
   
   // Setup intersection observer for infinite scrolling
   const lastCardElementRef = useCallback(
@@ -115,7 +138,19 @@ const CardResults: React.FC<CardResultsProps> = ({
         </div>
       </div>
 
-      {results.length === 0 ? (
+      {/* Display any search errors */}
+      {error && (
+        <SearchErrorDisplay 
+          error={error}
+          isTimeout={errorType === 'timeout'}
+          isJsonError={errorType === 'json'}
+          isSchemaError={errorType === 'schema'}
+          isSyntaxError={errorType === 'syntax'}
+          onRetry={onRetrySearch}
+        />
+      )}
+
+      {results.length === 0 && !error ? (
         <div className="p-8 text-center">
           <p className="text-gray-500">Start typing to search for cards</p>
         </div>
