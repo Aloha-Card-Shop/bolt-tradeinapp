@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
@@ -76,30 +75,33 @@ export const buildSearchQuery = async (
     const numberBeforeSlash = extractNumberBeforeSlash(number);
     const fullNumber = number.toString();
     
-    // Build a comprehensive filter to search in attributes object
+    // Build a comprehensive filter to search in attributes object using proper JSONB syntax
     let cardNumberFilters: string[] = [];
     
-    // Attributes-level searches for different possible paths
+    // Attributes-level searches for different possible paths with corrected JSONB syntax
     const possiblePaths = ['number', 'Number', 'card_number', 'cardNumber'];
     
     possiblePaths.forEach(path => {
+      // Use proper JSONB text extraction with ->>, not -> with .ilike
+      // This fixes the "operator does not exist: jsonb ~~* unknown" error
+      
       // Exact match (highest priority)
-      cardNumberFilters.push(`attributes->${path}.eq.${fullNumber}`);
+      cardNumberFilters.push(`attributes->>'${path}' = '${fullNumber}'`);
       
       // Also try with normalized number (without leading zeros)
       if (normalizedNumber !== fullNumber) {
-        cardNumberFilters.push(`attributes->${path}.eq.${normalizedNumber}`);
+        cardNumberFilters.push(`attributes->>'${path}' = '${normalizedNumber}'`);
       }
       
       // Exact match but case-insensitive
-      cardNumberFilters.push(`attributes->${path}.ilike.${fullNumber}`);
+      cardNumberFilters.push(`attributes->>'${path}' ilike '${fullNumber}'`);
       
       // Contains match (number appears anywhere)
-      cardNumberFilters.push(`attributes->${path}.ilike.%${fullNumber}%`);
+      cardNumberFilters.push(`attributes->>'${path}' ilike '%${fullNumber}%'`);
       
       // Match with normalized number (without leading zeros)
       if (normalizedNumber !== fullNumber) {
-        cardNumberFilters.push(`attributes->${path}.ilike.%${normalizedNumber}%`);
+        cardNumberFilters.push(`attributes->>'${path}' ilike '%${normalizedNumber}%'`);
       }
       
       // For pattern like "4/102", also check for "004/102"
@@ -107,25 +109,32 @@ export const buildSearchQuery = async (
         const parts = fullNumber.split('/');
         if (parts.length === 2) {
           const paddedNumber = parts[0].padStart(3, '0') + '/' + parts[1];
-          cardNumberFilters.push(`attributes->${path}.eq.${paddedNumber}`);
-          cardNumberFilters.push(`attributes->${path}.ilike.${paddedNumber}`);
+          cardNumberFilters.push(`attributes->>'${path}' = '${paddedNumber}'`);
+          cardNumberFilters.push(`attributes->>'${path}' ilike '${paddedNumber}'`);
         }
       }
       
       // Partial number match within attributes (if applicable)
       if (numberBeforeSlash && numberBeforeSlash !== fullNumber) {
-        cardNumberFilters.push(`attributes->${path}.ilike.${numberBeforeSlash}/%`);
+        cardNumberFilters.push(`attributes->>'${path}' ilike '${numberBeforeSlash}/%'`);
       }
     });
     
-    // Use OR logic to match any of these paths
-    query = query.or(cardNumberFilters.join(','));
+    // Handle nested properties object that might contain number
+    possiblePaths.forEach(path => {
+      cardNumberFilters.push(`attributes->'properties'->>'${path}' = '${fullNumber}'`);
+      cardNumberFilters.push(`attributes->'properties'->>'${path}' ilike '%${fullNumber}%'`);
+    });
     
-    if (DEBUG_MODE) {
-      console.log(`Added enhanced card number filter for: ${number}`);
-      console.log(`Using attributes search with paths: ${possiblePaths.join(', ')}`);
-      console.log(`Also searching for normalized form: ${normalizedNumber}`);
-      console.log(`And partial matches with: ${numberBeforeSlash}`);
+    // Combine all the filters with OR logic
+    if (cardNumberFilters.length > 0) {
+      const orCondition = cardNumberFilters.join(',');
+      query = query.or(orCondition);
+      
+      if (DEBUG_MODE) {
+        console.log(`Added enhanced card number filter for: ${number}`);
+        console.log(`Using corrected JSONB search with proper extraction`);
+      }
     }
   }
   
