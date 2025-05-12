@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
@@ -72,90 +71,92 @@ export const buildSearchQuery = async (
   // Enhanced card number search with improved matching for unified_products table
   if (number) {
     // Normalize the card number for more consistent matching
-    const normalizedNumber = number.trim().replace(/^0+(\d+)/, '$1'); // Remove leading zeros from numeric part
+    const normalizedNumber = number.toString().trim().replace(/^0+(\d+)/, '$1'); // Remove leading zeros from numeric part
     const numberBeforeSlash = extractNumberBeforeSlash(number);
     const fullNumber = number.toString();
     
     try {
-      // FIX: Correctly use the .or() method in Supabase for JSONB filtering
-      // Instead of using a comma-separated string, chain multiple .or() calls
-      
-      // Start with an empty filter
+      // Build a comprehensive nested JSONB query to find card numbers in various formats and locations
       let cardNumberFilterApplied = false;
       
-      // First check for exact matches
-      if (fullNumber) {
-        // Use individual .or() calls for different JSONB paths
-        query = query.or(`attributes->>number.eq.${fullNumber}`);
-        cardNumberFilterApplied = true;
-        
-        // Add exact matches on other common JSON paths
-        query = query.or(`attributes->>Number.eq.${fullNumber}`);
-        query = query.or(`attributes->>card_number.eq.${fullNumber}`);
-        query = query.or(`attributes->>cardNumber.eq.${fullNumber}`);
-        
-        // If normalized number is different, add those conditions
-        if (normalizedNumber !== fullNumber) {
-          query = query.or(`attributes->>number.eq.${normalizedNumber}`);
-          query = query.or(`attributes->>Number.eq.${normalizedNumber}`);
-          query = query.or(`attributes->>card_number.eq.${normalizedNumber}`);
-          query = query.or(`attributes->>cardNumber.eq.${normalizedNumber}`);
-        }
-        
-        // Add partial matches with ILIKE
-        query = query.or(`attributes->>number.ilike.%${fullNumber}%`);
-        query = query.or(`attributes->>Number.ilike.%${fullNumber}%`);
-        query = query.or(`attributes->>card_number.ilike.%${fullNumber}%`);
-        query = query.or(`attributes->>cardNumber.ilike.%${fullNumber}%`);
-        
-        // If we have a number before slash, also search for that pattern
-        if (numberBeforeSlash && numberBeforeSlash !== fullNumber) {
-          query = query.or(`attributes->>number.ilike.${numberBeforeSlash}/%`);
-          query = query.or(`attributes->>Number.ilike.${numberBeforeSlash}/%`);
-          query = query.or(`attributes->>card_number.ilike.${numberBeforeSlash}/%`);
-          query = query.or(`attributes->>cardNumber.ilike.${numberBeforeSlash}/%`);
-        }
-        
-        // Add searches for nested properties paths
-        query = query.or(`attributes->properties->>number.eq.${fullNumber}`);
-        query = query.or(`attributes->properties->>Number.eq.${fullNumber}`);
-        query = query.or(`attributes->properties->>card_number.eq.${fullNumber}`);
-        query = query.or(`attributes->properties->>cardNumber.eq.${fullNumber}`);
-        
-        // Add partial matches for properties path
-        query = query.or(`attributes->properties->>number.ilike.%${fullNumber}%`);
-        query = query.or(`attributes->properties->>Number.ilike.%${fullNumber}%`);
-        query = query.or(`attributes->properties->>card_number.ilike.%${fullNumber}%`);
-        query = query.or(`attributes->properties->>cardNumber.ilike.%${fullNumber}%`);
+      // Start with an empty filter
+      if (DEBUG_MODE) {
+        console.log(`Searching for card number: "${fullNumber}" (normalized: "${normalizedNumber}", before slash: "${numberBeforeSlash}")`);
       }
+      
+      // Create a filter group for exact matches
+      // This is the critical fix: Add direct JSONB path filters that target the different possible structures
+      
+      // First, check direct string values at root level
+      query = query.or(`attributes->>'number'.eq.${fullNumber}`);
+      query = query.or(`attributes->>'Number'.eq.${fullNumber}`);
+      cardNumberFilterApplied = true;
+      
+      // Check for nested values: attribute->Number->value or attribute->number->value structure
+      query = query.or(`attributes->'Number'->>'value'.eq.${fullNumber}`);
+      query = query.or(`attributes->'number'->>'value'.eq.${fullNumber}`);
+      
+      // Check for displayName paths
+      query = query.or(`attributes->'Number'->>'displayName'.eq.${fullNumber}`);
+      query = query.or(`attributes->'number'->>'displayName'.eq.${fullNumber}`);
+      
+      // Add normalized number searches
+      if (normalizedNumber !== fullNumber) {
+        query = query.or(`attributes->>'number'.eq.${normalizedNumber}`);
+        query = query.or(`attributes->>'Number'.eq.${normalizedNumber}`);
+        query = query.or(`attributes->'Number'->>'value'.eq.${normalizedNumber}`);
+        query = query.or(`attributes->'number'->>'value'.eq.${normalizedNumber}`);
+      }
+      
+      // Check card_number field variants
+      query = query.or(`attributes->>'card_number'.eq.${fullNumber}`);
+      query = query.or(`attributes->'card_number'->>'value'.eq.${fullNumber}`);
+      query = query.or(`attributes->>'cardNumber'.eq.${fullNumber}`);
+      
+      // Add partial matches with ILIKE for more flexible search
+      query = query.or(`attributes->>'number'.ilike.%${fullNumber}%`);
+      query = query.or(`attributes->>'Number'.ilike.%${fullNumber}%`);
+      query = query.or(`attributes->'Number'->>'value'.ilike.%${fullNumber}%`);
+      query = query.or(`attributes->'number'->>'value'.ilike.%${fullNumber}%`);
+      
+      // Add prefix searches for the number before slash (e.g. "4" will match "4/102")
+      if (numberBeforeSlash && numberBeforeSlash !== fullNumber) {
+        query = query.or(`attributes->>'number'.ilike.${numberBeforeSlash}/%`);
+        query = query.or(`attributes->>'Number'.ilike.${numberBeforeSlash}/%`);
+        query = query.or(`attributes->'Number'->>'value'.ilike.${numberBeforeSlash}/%`);
+        query = query.or(`attributes->'number'->>'value'.ilike.${numberBeforeSlash}/%`);
+      }
+      
+      // Also search in the properties path structure (sometimes used)
+      query = query.or(`attributes->'properties'->>'number'.eq.${fullNumber}`);
+      query = query.or(`attributes->'properties'->>'Number'.eq.${fullNumber}`);
+      query = query.or(`attributes->'properties'->'number'->>'value'.eq.${fullNumber}`);
       
       if (DEBUG_MODE) {
-        console.log(`Applied card number filter for: ${number}`);
-        console.log(`Using proper Supabase chained .or() syntax for JSONB queries`);
+        console.log(`Applied comprehensive card number filter with proper JSONB paths`);
+        console.log(`Search includes exact matches, normalized formats, and number prefix (${numberBeforeSlash})`);
       }
       
-      // If no card number filter was applied (unlikely but possible), add a simple one
+      // If no card number filter was applied (unlikely), use a basic fallback
       if (!cardNumberFilterApplied && fullNumber) {
-        // Basic fallback filter
-        query = query.or(`attributes->>Number.eq.${fullNumber},attributes->>number.eq.${fullNumber}`);
-        
+        query = query.or(`attributes->>'Number'.eq.${fullNumber}`);
         if (DEBUG_MODE) {
-          console.log(`Applied fallback card number filter for: ${number}`);
+          console.log(`Applied simple fallback card number filter: ${fullNumber}`);
         }
       }
     } catch (error) {
       // Handle any syntax errors in the filter generation
       console.error("Error building card number filter:", error);
       if (DEBUG_MODE) {
-        console.error("Failed to build card number filter with advanced syntax, falling back to simpler filter");
+        console.error("Failed to build advanced card number filter, falling back to simpler filter");
       }
       
       // Basic fallback - we'll use a simpler approach that's more reliable
-      query = query.or(`attributes->>number.eq.${fullNumber}`);
-      query = query.or(`attributes->>Number.eq.${fullNumber}`);
+      query = query.or(`attributes->>'number'.eq.${fullNumber}`);
+      query = query.or(`attributes->>'Number'.eq.${fullNumber}`);
       
       if (DEBUG_MODE) {
-        console.log(`Applied simple fallback card number filter for: ${number}`);
+        console.log(`Applied simple fallback card number filter for: ${fullNumber}`);
       }
     }
   }
@@ -180,7 +181,7 @@ export const buildSearchQuery = async (
       category_id: categoryId || 'any',
       name: name ? (name.length <= 2 ? `${name}%` : `%${name}%`) : 'any',
       set_id: set ? (setOptions.find(s => s.name === set)?.id || 'not found') : 'any',
-      number: number ? `Using proper Supabase chained .or() syntax for JSONB queries: ${number}` : 'any'
+      number: number ? `Using comprehensive JSONB path search for: ${number}` : 'any'
     });
   }
 

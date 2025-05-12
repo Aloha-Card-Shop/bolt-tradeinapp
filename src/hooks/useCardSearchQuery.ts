@@ -80,10 +80,15 @@ export const useCardSearchQuery = () => {
     
     // Log search criteria in detail
     if (DEBUG_MODE) {
+      // Convert any CardNumberObject to string for logging
+      const numberStr = cardDetails.number ? 
+                        (typeof cardDetails.number === 'object' ? 
+                         getCardNumberString(cardDetails.number) : 
+                         cardDetails.number) : 'not specified';
+                         
       console.log('📝 Search initiated with criteria:', {
         name: cardDetails.name || 'not specified',
-        number: cardDetails.number ? (typeof cardDetails.number === 'object' ? 
-               getCardNumberString(cardDetails.number) : cardDetails.number) : 'not specified',
+        number: numberStr,
         set: cardDetails.set || 'not specified',
         categoryId: cardDetails.categoryId || 'not specified'
       });
@@ -291,15 +296,18 @@ export const useCardSearchQuery = () => {
         } else if (error.message.includes('parse') || error.message.includes('syntax')) {
           console.error('Query parsing error details:', error);
           
+          // Convert CardNumberObject to string for error display if needed
+          const cardNumberStr = typeof cardDetails.number === 'object' ? 
+                               getCardNumberString(cardDetails.number) : 
+                               cardDetails.number;
+          
           setSearchError({
             message: 'Search syntax error. Please try a simpler search term.',
             isSyntaxError: true,
             isJsonError: false,
             isTimeout: false,
             isSchemaError: false,
-            cardNumber: typeof cardDetails.number === 'object' ? 
-                      getCardNumberString(cardDetails.number) : 
-                      cardDetails.number
+            cardNumber: cardNumberStr
           });
           
           toast.error('Search syntax error. Please try a simpler search term.');
