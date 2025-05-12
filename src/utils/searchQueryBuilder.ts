@@ -1,7 +1,8 @@
+
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
-import { extractNumberBeforeSlash } from './cardSearchUtils';
+import { extractNumberBeforeSlash, generateCardNumberVariants } from './cardSearchUtils';
 
 // Debug mode flag - set to true to enable verbose logging
 const DEBUG_MODE = true;
@@ -68,52 +69,61 @@ export const buildSearchQuery = async (
     }
   }
   
-  // Enhanced card number search with proper filter() method calls
+  // Enhanced card number search with proper OR conditions
   if (number) {
-    // Normalize the card number for more consistent matching
-    const normalizedNumber = number.toString().trim().replace(/^0+(\d+)/, '$1'); // Remove leading zeros from numeric part
-    const numberBeforeSlash = extractNumberBeforeSlash(number);
-    const fullNumber = number.toString();
-    
     try {
-      // CRITICAL FIX: Use the filter method properly with chained OR conditions
-      if (DEBUG_MODE) {
-        console.log(`Searching for card number: "${fullNumber}" (normalized: "${normalizedNumber}", before slash: "${numberBeforeSlash}")`);
-      }
-      
-      // Create a filter group using .or()
-      query = query.or(`attributes->number.eq.${fullNumber},attributes->Number.eq.${fullNumber}`);
-      
-      // Add additional filters for different JSON paths
-      query = query.or(`attributes->number->value.eq.${fullNumber},attributes->Number->value.eq.${fullNumber}`);
-      
-      // Add filters for JSON text extraction
-      query = query.or(`attributes->>number.eq.${fullNumber},attributes->>Number.eq.${fullNumber}`);
-      
-      // Add normalized number searches (without leading zeros) if different from fullNumber
-      if (normalizedNumber !== fullNumber) {
-        query = query.or(`attributes->number->value.eq.${normalizedNumber},attributes->Number->value.eq.${normalizedNumber}`);
-        query = query.or(`attributes->>number.eq.${normalizedNumber},attributes->>Number.eq.${normalizedNumber}`);
-      }
-      
-      // Add searches for number patterns with leading zeros (e.g., "004")
-      const paddedNumber = fullNumber.length === 1 ? "00" + fullNumber : fullNumber.length === 2 ? "0" + fullNumber : fullNumber;
-      if (paddedNumber !== fullNumber) {
-        query = query.or(`attributes->number->value.eq.${paddedNumber},attributes->Number->value.eq.${paddedNumber}`);
-        query = query.or(`attributes->>number.eq.${paddedNumber},attributes->>Number.eq.${paddedNumber}`);
-      }
-      
-      // Use ilike for partial matches (especially for split numbers like "4/102")
-      if (numberBeforeSlash && numberBeforeSlash !== fullNumber) {
-        query = query.or(`attributes->number->value.ilike.${numberBeforeSlash}/%,attributes->Number->value.ilike.${numberBeforeSlash}/%`);
-        query = query.or(`attributes->>number.ilike.${numberBeforeSlash}/%,attributes->>Number.ilike.${numberBeforeSlash}/%`);
-      }
-      
-      // Add card_number field variants
-      query = query.or(`attributes->>card_number.eq.${fullNumber},attributes->card_number->value.eq.${fullNumber}`);
+      // Generate all possible card number variants for comprehensive search
+      const cardNumberVariants = generateCardNumberVariants(number);
       
       if (DEBUG_MODE) {
-        console.log(`Applied comprehensive card number search with proper filter syntax`);
+        console.log(`Searching for card number variants:`, cardNumberVariants);
+      }
+      
+      // Create array of filter conditions for all variants
+      const filterConditions: string[] = [];
+      
+      // Generate filter conditions for each variant and each possible JSON path
+      cardNumberVariants.forEach(variant => {
+        // Direct properties at root level - as value
+        filterConditions.push(`attributes->number.eq.${variant}`);
+        filterConditions.push(`attributes->Number.eq.${variant}`);
+        
+        // Nested object properties - value inside object
+        filterConditions.push(`attributes->number->value.eq.${variant}`);
+        filterConditions.push(`attributes->Number->value.eq.${variant}`);
+        
+        // Text extraction with ->> operator
+        filterConditions.push(`attributes->>number.eq.${variant}`);
+        filterConditions.push(`attributes->>Number.eq.${variant}`);
+        
+        // Card number field
+        filterConditions.push(`attributes->>card_number.eq.${variant}`);
+        filterConditions.push(`attributes->card_number->value.eq.${variant}`);
+        
+        // For numbers that might be part of a pattern with slash
+        if (!variant.includes('/')) {
+          filterConditions.push(`attributes->number->value.ilike.${variant}/%`);
+          filterConditions.push(`attributes->Number->value.ilike.${variant}/%`);
+          filterConditions.push(`attributes->>number.ilike.${variant}/%`);
+          filterConditions.push(`attributes->>Number.ilike.${variant}/%`);
+        }
+      });
+      
+      // Log the generated filter conditions
+      if (DEBUG_MODE) {
+        console.log(`Generated ${filterConditions.length} filter conditions for card number search`);
+        console.log('Filter conditions:', filterConditions);
+      }
+      
+      // Apply the filter conditions with OR logic - using the proper Supabase syntax
+      if (filterConditions.length > 0) {
+        // Join all conditions with comma for supabase .or() method
+        const orConditionString = filterConditions.join(',');
+        query = query.or(orConditionString);
+        
+        if (DEBUG_MODE) {
+          console.log('Applied OR condition string:', orConditionString);
+        }
       }
     } catch (error) {
       // Handle any syntax errors in the filter generation
@@ -121,11 +131,12 @@ export const buildSearchQuery = async (
       
       // Fallback to a simpler approach
       try {
-        // Basic fallback with simpler syntax
-        query = query.or(`attributes->>number.eq.${fullNumber},attributes->>Number.eq.${fullNumber}`);
+        // Basic fallback with simpler syntax for direct property access
+        const originalNumber = typeof number === 'object' ? (number.displayName || number.value || '') : number.toString();
+        query = query.or(`attributes->>number.eq.${originalNumber},attributes->>Number.eq.${originalNumber}`);
         
         if (DEBUG_MODE) {
-          console.log(`Applied simplified fallback card number filter`);
+          console.log(`Applied simplified fallback card number filter for "${originalNumber}"`);
         }
       } catch (secondError) {
         console.error("Even fallback filter failed:", secondError);
@@ -153,7 +164,7 @@ export const buildSearchQuery = async (
       category_id: categoryId || 'any',
       name: name ? (name.length <= 2 ? `${name}%` : `%${name}%`) : 'any',
       set_id: set ? (setOptions.find(s => s.name === set)?.id || 'not found') : 'any',
-      number: number ? `Using comprehensive filter syntax for: ${number}` : 'any'
+      number: number ? `Using comprehensive filter syntax with ${typeof number === 'object' ? (number.displayName || number.value || '') : number.toString()}` : 'any'
     });
   }
 

@@ -1,3 +1,4 @@
+
 import { CardNumberObject } from '../types/card';
 
 /**
@@ -54,6 +55,54 @@ export const normalizeCardNumber = (cardNumber: string | CardNumberObject | unde
   }
   
   return numberStr;
+};
+
+/**
+ * Generate all possible variations of a card number for comprehensive searching
+ * @param cardNumber The original card number
+ * @returns Array of card number variants to search for
+ */
+export const generateCardNumberVariants = (cardNumber: string | CardNumberObject | undefined): string[] => {
+  const originalStr = getCardNumberString(cardNumber);
+  if (!originalStr) return [];
+  
+  const variants = new Set<string>();
+  
+  // Add the original string
+  variants.add(originalStr);
+  
+  // Add normalized version (without leading zeros)
+  const normalized = normalizeCardNumber(originalStr);
+  if (normalized !== originalStr) {
+    variants.add(normalized);
+  }
+  
+  // If it contains a slash, add variants with and without leading zeros
+  if (originalStr.includes('/')) {
+    const [numPart, setPart] = originalStr.split('/', 2);
+    
+    // Add variant with leading zeros removed
+    variants.add(parseInt(numPart, 10) + '/' + setPart);
+    
+    // Add just the number part before the slash
+    variants.add(numPart);
+    variants.add(parseInt(numPart, 10).toString());
+    
+    // Add version with up to 3 leading zeros
+    variants.add(numPart.padStart(3, '0') + '/' + setPart);
+    variants.add(numPart.padStart(2, '0') + '/' + setPart);
+  } else {
+    // For numbers without slash, add versions with leading zeros
+    if (/^\d+$/.test(originalStr)) {
+      variants.add(originalStr.padStart(3, '0'));
+      variants.add(originalStr.padStart(2, '0'));
+      
+      // Add version with leading zeros removed
+      variants.add(originalStr.replace(/^0+/, ''));
+    }
+  }
+  
+  return [...variants];
 };
 
 /**
