@@ -32,7 +32,6 @@ interface CardSearchProps {
     isSyntaxError: boolean;
     cardNumber?: string | null;
   } | null;
-  onClearError?: () => void;
   onRetrySearch?: () => void;
 }
 
@@ -49,7 +48,6 @@ const CardSearch: React.FC<CardSearchProps> = ({
   isFiltered = false,
   onShowAllSets,
   searchError = null,
-  onClearError = () => {},
   onRetrySearch = () => {}
 }) => {
   const [searchTerm, setSearchTerm] = useState('');

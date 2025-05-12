@@ -1,9 +1,10 @@
 
 import { useState } from 'react';
-import { CardDetails } from '../types/card';
+import { CardDetails, CardNumberObject } from '../types/card';
 import { SetOption } from './useSetOptions';
 import { buildSearchQuery, formatResultsToCardDetails, RESULTS_PER_PAGE } from '../utils/searchQueryBuilder';
 import { toast } from 'react-hot-toast';
+import { getCardNumberString } from '../utils/cardSearchUtils';
 
 // Debug mode flag - set to true to enable verbose logging
 const DEBUG_MODE = true;
@@ -81,7 +82,8 @@ export const useCardSearchQuery = () => {
     if (DEBUG_MODE) {
       console.log('📝 Search initiated with criteria:', {
         name: cardDetails.name || 'not specified',
-        number: cardDetails.number || 'not specified',
+        number: cardDetails.number ? (typeof cardDetails.number === 'object' ? 
+               getCardNumberString(cardDetails.number) : cardDetails.number) : 'not specified',
         set: cardDetails.set || 'not specified',
         categoryId: cardDetails.categoryId || 'not specified'
       });
@@ -177,7 +179,9 @@ export const useCardSearchQuery = () => {
             isJsonError: false,
             isTimeout: false,
             isSyntaxError: true,
-            cardNumber: cardDetails.number || null
+            cardNumber: typeof cardDetails.number === 'object' ? 
+                       getCardNumberString(cardDetails.number) : 
+                       cardDetails.number
           });
           
           toast.error('Search syntax error. Try a simpler search term.');
@@ -293,7 +297,9 @@ export const useCardSearchQuery = () => {
             isJsonError: false,
             isTimeout: false,
             isSchemaError: false,
-            cardNumber: cardDetails.number || null
+            cardNumber: typeof cardDetails.number === 'object' ? 
+                      getCardNumberString(cardDetails.number) : 
+                      cardDetails.number
           });
           
           toast.error('Search syntax error. Please try a simpler search term.');
