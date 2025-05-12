@@ -10,6 +10,7 @@ import SearchNameInput from './card-search/SearchNameInput';
 import CardNumberSuggestion from './card-search/CardNumberSuggestion';
 import SearchSetSelect from './card-search/SearchSetSelect';
 import CardNumberInput from './card-search/CardNumberInput';
+import SearchErrorDisplay from './card-search/SearchErrorDisplay';
 
 interface CardSearchProps {
   cardDetails: CardDetails;
@@ -23,6 +24,16 @@ interface CardSearchProps {
   performSearch?: () => void;
   isFiltered?: boolean;
   onShowAllSets?: () => void;
+  searchError?: {
+    message: string;
+    isTimeout: boolean;
+    isJsonError: boolean;
+    isSchemaError: boolean;
+    isSyntaxError: boolean;
+    cardNumber?: string | null;
+  } | null;
+  onClearError?: () => void;
+  onRetrySearch?: () => void;
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
@@ -36,7 +47,10 @@ const CardSearch: React.FC<CardSearchProps> = ({
   onUseAsCardNumber = () => {},
   performSearch = () => {},
   isFiltered = false,
-  onShowAllSets
+  onShowAllSets,
+  searchError = null,
+  onClearError = () => {},
+  onRetrySearch = () => {}
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -73,6 +87,19 @@ const CardSearch: React.FC<CardSearchProps> = ({
         </div>
         <h2 className="ml-3 text-xl font-semibold text-gray-800">Find Cards</h2>
       </div>
+      
+      {/* Display search errors if any */}
+      {searchError && (
+        <SearchErrorDisplay 
+          error={searchError.message}
+          isTimeout={searchError.isTimeout}
+          isJsonError={searchError.isJsonError}
+          isSchemaError={searchError.isSchemaError}
+          isSyntaxError={searchError.isSyntaxError}
+          onRetry={onRetrySearch}
+          cardNumber={searchError.cardNumber}
+        />
+      )}
       
       <div className="space-y-4">
         {/* Game Selection */}

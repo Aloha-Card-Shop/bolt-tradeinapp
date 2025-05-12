@@ -43,7 +43,10 @@ export const useCardSearch = () => {
     searchCards, 
     hasMoreResults, 
     loadMoreResults,
-    totalResults
+    totalResults,
+    searchError,
+    clearError,
+    retrySearch
   } = useCardSearchQuery();
   
   const { 
@@ -280,6 +283,9 @@ export const useCardSearch = () => {
     handleUseAsCardNumber,
     performSearch,
     isSetFiltered,
-    handleShowAllSets
+    handleShowAllSets,
+    searchError,
+    clearError,
+    retrySearch
   };
 };

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { AlertCircle, Database, Code, Clock } from 'lucide-react';
+import { AlertCircle, Database, Code, Clock, RefreshCw } from 'lucide-react';
 
 interface SearchErrorDisplayProps {
   error: string | null;
@@ -9,6 +9,7 @@ interface SearchErrorDisplayProps {
   isSchemaError?: boolean;
   isSyntaxError?: boolean;
   onRetry?: () => void;
+  cardNumber?: string | null;
 }
 
 const SearchErrorDisplay: React.FC<SearchErrorDisplayProps> = ({ 
@@ -17,7 +18,8 @@ const SearchErrorDisplay: React.FC<SearchErrorDisplayProps> = ({
   isJsonError = false,
   isSchemaError = false,
   isSyntaxError = false,
-  onRetry
+  onRetry,
+  cardNumber
 }) => {
   if (!error) return null;
   
@@ -41,6 +43,11 @@ const SearchErrorDisplay: React.FC<SearchErrorDisplayProps> = ({
     title = 'Query Syntax Error';
     message = 'There was a problem with the search query syntax.';
     helpText = 'Try searching with simpler terms or a different format.';
+    
+    // Add special help for card number syntax issues
+    if (cardNumber) {
+      helpText = `Try searching by name or set instead of card number "${cardNumber}".`;
+    }
   }
 
   return (
@@ -57,8 +64,9 @@ const SearchErrorDisplay: React.FC<SearchErrorDisplayProps> = ({
           {onRetry && (
             <button 
               onClick={onRetry}
-              className="mt-2 text-xs font-medium text-red-700 hover:text-red-900 bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-md transition-colors"
+              className="mt-2 text-xs font-medium flex items-center text-red-700 hover:text-red-900 bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-md transition-colors"
             >
+              <RefreshCw className="h-3 w-3 mr-1" />
               Try Again
             </button>
           )}
