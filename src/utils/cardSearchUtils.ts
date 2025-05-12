@@ -118,7 +118,7 @@ export const createCardNumberFilters = (cardNumber: string): string[] => {
   const normalizedNumber = normalizeCardNumber(cardNumber);
   const isNumericOnly = /^\d+$/.test(cardNumber);
   
-  // Priority 1: Exact matches (highest priority)
+  // Priority 1: Exact matches (highest priority) - Using ->> for text extraction
   filters.push(`attributes->>'card_number'.eq.${cardNumber}`);
   filters.push(`attributes->>'Number'.eq.${cardNumber}`);
   

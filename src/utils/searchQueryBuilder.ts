@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
@@ -68,7 +69,7 @@ export const buildSearchQuery = async (
     }
   }
   
-  // Enhanced card number search with proper OR conditions
+  // Enhanced card number search with proper OR conditions and fixed JSONB path expressions
   if (number) {
     try {
       // Generate all possible card number variants for comprehensive search
@@ -81,30 +82,29 @@ export const buildSearchQuery = async (
       // Create array of filter conditions for all variants
       const filterConditions: string[] = [];
       
-      // Generate filter conditions for each variant and each possible JSON path
+      // Generate filter conditions for each variant with proper JSONB path expressions
       cardNumberVariants.forEach(variant => {
+        // Use ->> for text extraction from JSONB before applying text operators
         // Direct properties at root level - as value
-        filterConditions.push(`attributes->number.eq.${variant}`);
-        filterConditions.push(`attributes->Number.eq.${variant}`);
+        filterConditions.push(`attributes->>'number'.eq.${variant}`);
+        filterConditions.push(`attributes->>'Number'.eq.${variant}`);
         
         // Nested object properties - value inside object
-        filterConditions.push(`attributes->number->value.eq.${variant}`);
-        filterConditions.push(`attributes->Number->value.eq.${variant}`);
-        
-        // Text extraction with ->> operator
-        filterConditions.push(`attributes->>number.eq.${variant}`);
-        filterConditions.push(`attributes->>Number.eq.${variant}`);
+        // Extract text with ->> before applying .eq
+        filterConditions.push(`attributes->'number'->>'value'.eq.${variant}`);
+        filterConditions.push(`attributes->'Number'->>'value'.eq.${variant}`);
         
         // Card number field
-        filterConditions.push(`attributes->>card_number.eq.${variant}`);
-        filterConditions.push(`attributes->card_number->value.eq.${variant}`);
+        filterConditions.push(`attributes->>'card_number'.eq.${variant}`);
+        filterConditions.push(`attributes->'card_number'->>'value'.eq.${variant}`);
         
         // For numbers that might be part of a pattern with slash
         if (!variant.includes('/')) {
-          filterConditions.push(`attributes->number->value.ilike.${variant}/%`);
-          filterConditions.push(`attributes->Number->value.ilike.${variant}/%`);
-          filterConditions.push(`attributes->>number.ilike.${variant}/%`);
-          filterConditions.push(`attributes->>Number.ilike.${variant}/%`);
+          // Proper text extraction with ->> before applying .ilike
+          filterConditions.push(`attributes->'number'->>'value'.ilike.${variant}/%`);
+          filterConditions.push(`attributes->'Number'->>'value'.ilike.${variant}/%`);
+          filterConditions.push(`attributes->>'number'.ilike.${variant}/%`);
+          filterConditions.push(`attributes->>'Number'.ilike.${variant}/%`);
         }
       });
       
@@ -132,7 +132,8 @@ export const buildSearchQuery = async (
       try {
         // Basic fallback with simpler syntax for direct property access
         const originalNumber = typeof number === 'object' ? (number.displayName || number.value || '') : number.toString();
-        query = query.or(`attributes->>number.eq.${originalNumber},attributes->>Number.eq.${originalNumber}`);
+        // Use ->> for text extraction before applying .eq
+        query = query.or(`attributes->>'number'.eq.${originalNumber},attributes->>'Number'.eq.${originalNumber}`);
         
         if (DEBUG_MODE) {
           console.log(`Applied simplified fallback card number filter for "${originalNumber}"`);
