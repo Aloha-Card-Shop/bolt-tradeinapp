@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { CardDetails } from '../../types/card';
 import { SetOption } from '../../hooks/useSetOptions';
 import { buildSearchQueryFilter, buildSearchSortOptions } from './queryBuilder';
-import { RESULTS_PER_PAGE } from './types';
+import { RESULTS_PER_PAGE, SearchParams } from './types';
 
 /**
  * Build a complete search query based on card details and set options
@@ -18,7 +18,7 @@ export const buildSearchQuery = async (
   page: number = 0
 ) => {
   // Extract search parameters from card details
-  const searchParams = {
+  const searchParams: SearchParams = {
     name: cardDetails.name,
     set: cardDetails.set,
     cardNumber: cardDetails.number,

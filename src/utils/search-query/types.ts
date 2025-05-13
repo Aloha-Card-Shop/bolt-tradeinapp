@@ -1,5 +1,5 @@
 
-import { CardDetails, GameType } from '../../types/card';
+import { CardDetails, GameType, CardNumberObject } from '../../types/card';
 
 export interface QueryResult {
   query: any;
@@ -14,7 +14,7 @@ export interface FormattedSearchResults {
 export interface SearchParams {
   name?: string;
   set?: string;
-  cardNumber?: string | number;
+  cardNumber?: string | CardNumberObject | undefined;
   game?: GameType;
   sortBy?: string;
   sortDirection?: 'asc' | 'desc';

@@ -9,7 +9,7 @@ import { generateCardNumberVariants } from './variants';
  * @param cardNumber Card number to search for
  * @returns SQL condition fragment for searching
  */
-export const generateCardNumberSearchFilter = (cardNumber?: string | CardNumberObject): string | null => {
+export const generateCardNumberSearchFilter = (cardNumber?: string | CardNumberObject | number): string | null => {
   if (!cardNumber) return null;
 
   // First get a standardized string representation

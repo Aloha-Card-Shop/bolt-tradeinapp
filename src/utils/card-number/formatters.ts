@@ -1,3 +1,4 @@
+
 import { CardNumberObject } from '../../types/card';
 
 /**
@@ -5,7 +6,7 @@ import { CardNumberObject } from '../../types/card';
  * @param cardNumber The card number which might be string or object
  * @returns String representation of the card number
  */
-export const getCardNumberString = (cardNumber: string | CardNumberObject | undefined): string => {
+export const getCardNumberString = (cardNumber: string | CardNumberObject | number | undefined): string => {
   if (!cardNumber) return '';
   
   if (typeof cardNumber === 'object') {
@@ -25,7 +26,7 @@ export const getCardNumberString = (cardNumber: string | CardNumberObject | unde
  * @param cardNumber The card number to format
  * @returns Formatted card number
  */
-export const formatCardNumberForSearch = (cardNumber: string | CardNumberObject | any): string => {
+export const formatCardNumberForSearch = (cardNumber: string | CardNumberObject | number | any): string => {
   // Get string representation first using our helper
   const cardNumberStr = getCardNumberString(cardNumber);
   
@@ -38,7 +39,7 @@ export const formatCardNumberForSearch = (cardNumber: string | CardNumberObject 
  * @param cardNumber The card number string or object
  * @returns Just the number before the slash, or the full number if no slash is present
  */
-export const extractNumberBeforeSlash = (cardNumber: string | CardNumberObject | undefined): string => {
+export const extractNumberBeforeSlash = (cardNumber: string | CardNumberObject | number | undefined): string => {
   const numberStr = getCardNumberString(cardNumber);
   if (!numberStr) return '';
   
@@ -53,7 +54,7 @@ export const extractNumberBeforeSlash = (cardNumber: string | CardNumberObject |
  * @param cardNumber The card number to normalize
  * @returns Normalized card number
  */
-export const normalizeCardNumber = (cardNumber: string | CardNumberObject | undefined): string => {
+export const normalizeCardNumber = (cardNumber: string | CardNumberObject | number | undefined): string => {
   const numberStr = getCardNumberString(cardNumber);
   if (!numberStr) return '';
   
