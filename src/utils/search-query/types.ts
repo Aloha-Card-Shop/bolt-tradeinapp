@@ -14,7 +14,7 @@ export interface FormattedSearchResults {
 export interface SearchParams {
   name?: string;
   set?: string;
-  cardNumber?: string | CardNumberObject | undefined;
+  cardNumber?: string | CardNumberObject | number | undefined;
   game?: GameType;
   sortBy?: string;
   sortDirection?: 'asc' | 'desc';

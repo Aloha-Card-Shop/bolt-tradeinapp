@@ -1,5 +1,4 @@
-
-import { GameType, CardNumberObject } from '../../types/card';
+import { GameType } from '../../types/card';
 import { generateCardNumberSearchFilter } from '../card-number/searchFilters';
 import { isLikelyCardNumber } from '../card-number/variants';
 import { SearchParams } from './types';
