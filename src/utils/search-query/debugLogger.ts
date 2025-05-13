@@ -66,6 +66,18 @@ export const logRawResponse = (data: any, error: any, count: number | null) => {
 };
 
 /**
+ * Log search query details
+ * @param queryFilter SQL filter string
+ * @param params Search parameters
+ */
+export const debugLogQuery = (queryFilter: string, params: any) => {
+  if (!DEBUG_MODE) return;
+  
+  console.log('🔍 Generated SQL filter:', queryFilter);
+  console.log('🔍 Search parameters:', params);
+};
+
+/**
  * Log information about formatted search results
  * @param formattedResults Formatted card results
  */

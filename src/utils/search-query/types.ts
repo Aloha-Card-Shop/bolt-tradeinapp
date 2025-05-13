@@ -1,5 +1,5 @@
 
-import { CardDetails } from '../../types/card';
+import { CardDetails, GameType } from '../../types/card';
 
 export interface QueryResult {
   query: any;
@@ -9,6 +9,17 @@ export interface QueryResult {
 export interface FormattedSearchResults {
   cards: CardDetails[];
   setIds: Set<number>;
+}
+
+export interface SearchParams {
+  name?: string;
+  set?: string;
+  cardNumber?: string | number;
+  game?: GameType;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
 }
 
 export const RESULTS_PER_PAGE = 48;
