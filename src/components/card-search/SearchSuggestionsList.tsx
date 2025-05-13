@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { CardDetails } from '../../types/card';
-import { getCardNumberString } from '../../utils/cardSearchUtils';
+import { getCardNumberString } from '../../utils/card-number/formatters';
 
 interface SearchSuggestionsListProps {
   suggestions: CardDetails[];

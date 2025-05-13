@@ -54,14 +54,14 @@ export const buildSearchQuery = async (
     try {
       const cardNumberFilter = generateCardNumberSearchFilter(number);
       if (cardNumberFilter) {
-        // Fix: Use correct syntax for raw SQL filtering in Supabase
-        // The .filter() method needs column, operator, value format
-        // For raw SQL we need to use the special syntax with 'raw' as the operator
-        query = query.filter('id', 'in', supabase
+        // Create a subquery to get IDs of cards matching the card number
+        const subQuery = supabase
           .from('unified_products')
           .select('id')
-          .or(cardNumberFilter)
-        );
+          .or(cardNumberFilter);
+        
+        // Apply this as a filter to the main query
+        query = query.filter('id', 'in', subQuery);
         
         if (DEBUG_MODE) {
           console.log(`Added card number filter with subquery approach: ${cardNumberFilter}`);

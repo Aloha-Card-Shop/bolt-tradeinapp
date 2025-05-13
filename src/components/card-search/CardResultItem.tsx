@@ -56,6 +56,9 @@ const CardResultItem: React.FC<CardResultItemProps> = ({
     onAddToList(card, 0);
   };
 
+  // Debug logging for card numbers
+  console.log('Card number for rendering:', card.name, card.number, getCardNumberString(card.number));
+
   return (
     <div 
       className={`bg-white rounded-xl border ${hasProductId ? 'border-gray-200' : 'border-red-200'} p-4 hover:border-blue-200 hover:shadow-md transition duration-200`}

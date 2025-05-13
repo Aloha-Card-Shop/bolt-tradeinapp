@@ -10,10 +10,11 @@ export const getCardNumberString = (cardNumber: string | CardNumberObject | unde
   if (!cardNumber) return '';
   
   if (typeof cardNumber === 'object') {
+    // Try display name first, then value
     return cardNumber.displayName || cardNumber.value || '';
   }
   
-  return cardNumber;
+  return String(cardNumber);
 };
 
 /**
@@ -39,7 +40,8 @@ export const extractNumberBeforeSlash = (cardNumber: string | CardNumberObject |
   if (!numberStr) return '';
   
   // Extract the part before the slash if it exists
-  const match = numberStr.match(/^(\d+|[A-Za-z]+\d*)/);
+  // Updated to better handle alphanumeric card numbers like "SM12" or "BW01"
+  const match = numberStr.match(/^([A-Za-z0-9]+)(?:\/|$)/);
   return match ? match[1] : numberStr;
 };
 

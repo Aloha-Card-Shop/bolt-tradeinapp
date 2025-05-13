@@ -56,6 +56,20 @@ const extractCardNumber = (attributes: any): string => {
       cardNumber = numberAttr.value || '';
     }
   }
+  
+  // Additional search for any attribute with 'number' in its key
+  if (!cardNumber) {
+    for (const key in attributes) {
+      if (key.toLowerCase().includes('number') && attributes[key]) {
+        if (typeof attributes[key] === 'object') {
+          cardNumber = attributes[key].displayName || attributes[key].value || '';
+        } else {
+          cardNumber = attributes[key];
+        }
+        if (cardNumber) break;
+      }
+    }
+  }
 
   return cardNumber ? String(cardNumber).trim() : '';
 };
@@ -80,6 +94,11 @@ export const formatResultsToCardDetails = (
     
     // Extract card number with enhanced function
     const cardNumber = extractCardNumber(item.attributes);
+    
+    // Log for debugging
+    if (!cardNumber) {
+      console.log('Could not extract card number for:', item.name, item.attributes);
+    }
     
     // Create the card details object
     return {
