@@ -6,9 +6,6 @@ import { CardDetails } from '../../types/card';
 const SEARCH_DEBOUNCE_MS = 300; // Increased from 200ms for better user experience
 const SUGGESTION_DEBOUNCE_MS = 300;
 
-// Track if initial mount has happened to prevent first-render searches
-let initialSearchPerformed = false;
-
 /**
  * Custom hook to handle search debouncing
  */
@@ -23,28 +20,38 @@ export const useSearchDebouncing = (
   const suggestionDebounceRef = useRef<NodeJS.Timeout | null>(null);
   
   // Track previous values to detect actual changes
-  const prevNameRef = useRef<string>(cardDetails.name);
+  const prevNameRef = useRef<string>(cardDetails.name || '');
   const prevNumberRef = useRef<string>(cardDetails.number?.toString() || '');
   const prevSetRef = useRef<string>(cardDetails.set || '');
 
   // Detect if this is the initial effect run
   const isInitialMount = useRef(true);
+  
+  // Use a dedicated ref for tracking if filter has already been initialized
+  const isFilterInitialized = useRef(false);
 
   useEffect(() => {
-    // Only process if not the initial mount or if a controlled search is requested
+    // Only initialize filter once on first mount to avoid repeated filtering with empty terms
+    if (!isFilterInitialized.current) {
+      if (cardDetails.name?.length) {
+        // Only filter if we have a name to search with
+        const searchTerms = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
+        filterSetOptions(searchTerms);
+      }
+      isFilterInitialized.current = true;
+      return;
+    }
+
+    // Skip all other processing on initial mount
     if (isInitialMount.current) {
-      // Set initial values on mount
-      prevNameRef.current = cardDetails.name || '';
-      prevNumberRef.current = cardDetails.number?.toString() || '';
-      prevSetRef.current = cardDetails.set || '';
       isInitialMount.current = false;
-      return; // Skip processing on initial mount
+      return;
     }
 
     // Determine if there was an actual change in search criteria
-    const nameChanged = prevNameRef.current !== cardDetails.name;
+    const nameChanged = prevNameRef.current !== (cardDetails.name || '');
     const numberChanged = prevNumberRef.current !== (cardDetails.number?.toString() || '');
-    const setChanged = prevSetRef.current !== cardDetails.set;
+    const setChanged = prevSetRef.current !== (cardDetails.set || '');
     
     // Update references for next comparison
     prevNameRef.current = cardDetails.name || '';
@@ -65,14 +72,16 @@ export const useSearchDebouncing = (
           const categoryIdToUse = cardDetails.categoryId ?? GAME_OPTIONS[0].categoryId;
           fetchSuggestions(cardDetails.name, cardDetails.game, categoryIdToUse);
         }, SUGGESTION_DEBOUNCE_MS);
+        
+        // Only update set options when name changes AND we have search terms
+        const searchTerms = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
+        if (searchTerms.length > 0) {
+          filterSetOptions(searchTerms);
+        }
+      } else if (!cardDetails.name) {
+        // Reset set filtering if name becomes empty
+        filterSetOptions([]);
       }
-    }
-    
-    // Only update set options when name changes to avoid unnecessary filtering
-    if (nameChanged || initialSearchPerformed === false) {
-      // Always update set options to show all sets when no name search is active
-      const searchTerms = cardDetails.name ? cardDetails.name.toLowerCase().split(' ').filter(Boolean) : [];
-      filterSetOptions(searchTerms);
     }
     
     // Clear previous search debounce
@@ -93,9 +102,8 @@ export const useSearchDebouncing = (
         const debounceTime = nameChanged ? SEARCH_DEBOUNCE_MS : 50;
         
         searchDebounceRef.current = setTimeout(() => {
-          console.log("Auto-triggering search for:", cardDetails);
+          console.log(`Auto-triggering search for: ${cardDetails.name || 'empty name'}, number: ${cardDetails.number || 'none'}, set: ${cardDetails.set || 'none'}`);
           setShouldSearch(true);
-          initialSearchPerformed = true; // Mark that a search has been performed
         }, debounceTime);
       }
     }
@@ -113,4 +121,3 @@ export const useSearchDebouncing = (
 
 // Import this at the top of the file
 import { GAME_OPTIONS } from '../../types/card';
-

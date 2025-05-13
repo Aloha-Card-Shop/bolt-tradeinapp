@@ -20,6 +20,9 @@ export const useSearchState = () => {
   
   // Track if this is the initial page load
   const isInitialLoad = useRef(true);
+  
+  // Ref to track if an auto search has happened already
+  const hasAutoSearched = useRef(false);
 
   // Perform a manual search - should only happen when explicitly triggered
   const performSearch = useCallback((cardDetails: CardDetails) => {
@@ -29,8 +32,14 @@ export const useSearchState = () => {
     if (cardDetails.name || cardDetails.number || cardDetails.set) {
       // Mark that we're no longer in initial load state
       isInitialLoad.current = false;
+      hasAutoSearched.current = true;
       setShouldSearch(true);
     }
+  }, []);
+  
+  // Set the flag when auto-search is triggered
+  const setAutoSearched = useCallback((value: boolean) => {
+    hasAutoSearched.current = value;
   }, []);
 
   return {
@@ -41,7 +50,8 @@ export const useSearchState = () => {
     lastSearchRef,
     searchCacheRef,
     isInitialLoad,
-    performSearch
+    performSearch,
+    hasAutoSearched,
+    setAutoSearched
   };
 };
-
