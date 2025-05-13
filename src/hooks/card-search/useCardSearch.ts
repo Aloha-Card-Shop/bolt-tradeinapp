@@ -1,6 +1,5 @@
 
 import { useCallback, useEffect } from 'react';
-import { CardDetails } from '../../types/card';
 import { useSetOptions } from '../useSetOptions';
 import { useCardSearchQuery } from './useCardSearchQuery';
 import { useCardSuggestions } from '../useCardSuggestions';
@@ -56,7 +55,13 @@ export const useCardSearch = () => {
   } = useCardSuggestions();
 
   // Setup debouncing for searches and suggestions
-  useSearchDebouncing(cardDetails, setShouldSearch, fetchSuggestions, filterSetOptions);
+  useSearchDebouncing(
+    cardDetails, 
+    setShouldSearch, 
+    // Type correction: convert fetchSuggestions to match the expected signature
+    (name: string, game: string, categoryId: number) => fetchSuggestions(name, game as any, categoryId),
+    filterSetOptions
+  );
 
   // Perform search when shouldSearch is true
   useEffect(() => {

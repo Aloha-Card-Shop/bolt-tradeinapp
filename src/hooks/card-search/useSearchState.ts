@@ -1,7 +1,6 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { CardDetails } from '../../types/card';
-import { SetOption } from '../useSetOptions';
 
 /**
  * Custom hook to manage search state and caching
