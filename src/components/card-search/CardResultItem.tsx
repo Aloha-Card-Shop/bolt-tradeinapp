@@ -24,6 +24,8 @@ const CardResultItem: React.FC<CardResultItemProps> = ({
     if (!cardNumber) return null;
     
     const fullNumber = getCardNumberString(cardNumber);
+    if (!fullNumber) return null;
+    
     const beforeSlash = extractNumberBeforeSlash(cardNumber);
     
     // If there's no slash, just show the number

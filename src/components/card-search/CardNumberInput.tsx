@@ -59,7 +59,7 @@ const CardNumberInput: React.FC<CardNumberInputProps> = ({
         )}
       </div>
       <p className="mt-1 text-xs text-gray-500">
-        Card number searches will narrow down results, combining with other filters
+        Card number searches work with other filters to narrow down results
       </p>
     </div>
   );

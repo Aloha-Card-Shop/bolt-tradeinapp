@@ -41,6 +41,16 @@ export const generateCardNumberSearchFilter = (cardNumber?: string | CardNumberO
     conditions.push(`(attributes->'number'->>'displayName') ILIKE '%${safeNumber}%'`);
     conditions.push(`(attributes->'number'->>'value') ILIKE '%${safeNumber}%'`);
     
+    // Search in card_number field as well
+    conditions.push(`attributes->>'card_number' ILIKE '%${safeNumber}%'`);
+    conditions.push(`(attributes->'card_number'->>'displayName') ILIKE '%${safeNumber}%'`);
+    conditions.push(`(attributes->'card_number'->>'value') ILIKE '%${safeNumber}%'`);
+    
+    // Search in properties.number field
+    conditions.push(`(attributes->'properties'->>'number') ILIKE '%${safeNumber}%'`);
+    conditions.push(`(attributes->'properties'->'number'->>'displayName') ILIKE '%${safeNumber}%'`);
+    conditions.push(`(attributes->'properties'->'number'->>'value') ILIKE '%${safeNumber}%'`);
+    
     // Combine all conditions with OR
     return '(' + conditions.join(' OR ') + ')';
   } catch (error) {
