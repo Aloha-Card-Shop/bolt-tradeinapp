@@ -1,10 +1,64 @@
+
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
-import { getCardNumberString } from './cardSearchUtils';
+import { getCardNumberString, generateCardNumberVariants } from './cardSearchUtils';
 
 const DEBUG_MODE = true;
 export const RESULTS_PER_PAGE = 48;
+
+/**
+ * Format the search results into CardDetails objects
+ * @param results Raw search results from Supabase
+ * @param setOptions Available set options for mapping group IDs to set names
+ * @param searchCriteria Original search criteria for fallback values
+ * @returns Array of formatted CardDetails objects
+ */
+export const formatResultsToCardDetails = (
+  results: any[],
+  setOptions: SetOption[],
+  searchCriteria: CardDetails
+): CardDetails[] => {
+  if (!results || !Array.isArray(results) || results.length === 0) {
+    return [];
+  }
+
+  if (DEBUG_MODE) {
+    console.log(`Formatting ${results.length} search results`);
+  }
+
+  return results.map(item => {
+    // Get set name from setOptions using the group_id
+    const setName = item.group_id 
+      ? setOptions.find(s => s.id === item.group_id)?.name || null
+      : searchCriteria.set || null;
+    
+    // Extract card number from attributes if available
+    let cardNumber = null;
+    if (item.attributes) {
+      cardNumber = 
+        (item.attributes.Number && item.attributes.Number.value) ||
+        (item.attributes.number && item.attributes.number.value) ||
+        item.attributes.card_number || 
+        searchCriteria.number || 
+        null;
+    }
+    
+    // Build the card details
+    const card: CardDetails = {
+      name: item.name || searchCriteria.name || '',
+      set: setName,
+      number: cardNumber,
+      game: searchCriteria.game,
+      categoryId: item.category_id || searchCriteria.categoryId,
+      imageUrl: item.image_url || null,
+      productId: item.tcgplayer_product_id || item.product_id?.toString() || null,
+      id: item.id?.toString() || null,
+    };
+
+    return card;
+  });
+};
 
 export const buildSearchQuery = async (
   cardDetails: CardDetails,
@@ -40,23 +94,29 @@ export const buildSearchQuery = async (
 
   if (number) {
     const cardNumberStr = getCardNumberString(number).trim();
-    const padded = cardNumberStr.padStart(3, '0');
-    const variants = Array.from(
-      new Set([
-        cardNumberStr,
-        padded,
-        `${cardNumberStr}/102`,
-        `${padded}/102`
-      ])
-    );
-
-    const filters = variants.map(
-      v => `attributes->'Number'->>'value'.ilike.%${v}%`
-    );
-
-    const orString = filters.join(',');
-    if (DEBUG_MODE) console.log('Card number filter OR string:', orString);
-
+    
+    // Generate normalized variants for robust searching
+    const variants = generateCardNumberVariants(cardNumberStr);
+    
+    // Create filter conditions using the correct JSONB path syntax
+    const filterConditions: string[] = [];
+    
+    variants.forEach(variant => {
+      // Use the correct JSONB path syntax for Supabase
+      filterConditions.push(`attributes->'Number'->>'value'.ilike.%${variant}%`);
+      
+      // Add fallback paths for different attribute structures
+      filterConditions.push(`attributes->'number'->>'value'.ilike.%${variant}%`);
+      filterConditions.push(`attributes->>'card_number'.ilike.%${variant}%`);
+    });
+    
+    // Join filter conditions with commas for OR syntax
+    const orString = filterConditions.join(',');
+    if (DEBUG_MODE) {
+      console.log('Card number filter variants:', variants);
+      console.log('Card number filter OR string:', orString);
+    }
+    
     query = query.or(orString);
   }
 
@@ -66,5 +126,10 @@ export const buildSearchQuery = async (
     if (DEBUG_MODE) console.log(`Added name filter: ${pattern}`);
   }
 
+  // Log the final query for debugging
+  if (DEBUG_MODE) {
+    console.log('Final search query:', JSON.stringify(query));
+  }
+
   return { query, foundSetIds };
-  };
+};
