@@ -143,8 +143,6 @@ const CardSearch: React.FC<CardSearchProps> = ({
           onKeyDown={handleKeyDown}
           isSearching={isSearching}
         />
-        
-        {/* Search button has been removed */}
       </div>
     </div>
   );

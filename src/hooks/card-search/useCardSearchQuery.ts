@@ -38,26 +38,8 @@ export const useCardSearchQuery = () => {
     lastSearchParams
   );
   
-  // Declare searchCards first to avoid reference issues
-  async function searchCards(
-    cardDetails: CardDetails,
-    setOptions: SetOption[]
-  ): Promise<Set<number>> {
-    // Implementation will be added later
-    return new Set<number>();
-  }
-  
-  // Use extracted error handling functionality
-  const {
-    searchError,
-    clearError,
-    handleSearchError,
-    retrySearch
-  } = useSearchErrorHandler(lastSearchParams, searchCards);
-
-  // Overwrite with the real implementation
-  // Optimized search function with faster response and better error handling
-  searchCards = async (
+  // Create the searchCards function
+  const searchCards = async (
     cardDetails: CardDetails,
     setOptions: SetOption[]
   ): Promise<Set<number>> => {
@@ -224,6 +206,14 @@ export const useCardSearchQuery = () => {
       setIsSearching(false);
     }
   };
+  
+  // Use extracted error handling functionality
+  const {
+    searchError,
+    clearError,
+    handleSearchError,
+    retrySearch
+  } = useSearchErrorHandler(lastSearchParams, searchCards);
 
   return {
     searchResults,

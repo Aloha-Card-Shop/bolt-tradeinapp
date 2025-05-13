@@ -1,6 +1,6 @@
 
 import { CardNumberObject } from '../../types/card';
-import { getCardNumberString, extractNumberBeforeSlash, normalizeCardNumber } from './formatters';
+import { getCardNumberString, normalizeCardNumber } from './formatters';
 
 /**
  * Generate all possible variations of a card number for comprehensive searching
