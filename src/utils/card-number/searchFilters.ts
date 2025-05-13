@@ -23,13 +23,26 @@ export const generateCardNumberSearchFilter = (cardNumber?: string | CardNumberO
     // Escape single quotes to prevent SQL injection
     const safeNumber = normalizedNumber.replace(/'/g, "''");
     
-    // For card numbers with slash format (e.g., "123/456")
-    if (safeNumber.includes('/')) {
-      return `attributes->>'number' ILIKE '%${safeNumber}%'`;
-    }
+    // Search for both capitalization variants (Number and number)
+    // Also search in the nested structure for both displayName and value
+    let conditions = [];
     
-    // For simple number search (e.g., "123"), match either standalone or as part of "123/456"
-    return `attributes->>'number' ILIKE '%${safeNumber}%'`;
+    // Search for uppercase "Number" (most common in the database)
+    conditions.push(`attributes->>'Number' ILIKE '%${safeNumber}%'`);
+    
+    // Search for lowercase "number" as a fallback
+    conditions.push(`attributes->>'number' ILIKE '%${safeNumber}%'`);
+    
+    // Search in nested Number object structure
+    conditions.push(`(attributes->'Number'->>'displayName') ILIKE '%${safeNumber}%'`);
+    conditions.push(`(attributes->'Number'->>'value') ILIKE '%${safeNumber}%'`);
+    
+    // Search in nested number object structure
+    conditions.push(`(attributes->'number'->>'displayName') ILIKE '%${safeNumber}%'`);
+    conditions.push(`(attributes->'number'->>'value') ILIKE '%${safeNumber}%'`);
+    
+    // Combine all conditions with OR
+    return '(' + conditions.join(' OR ') + ')';
   } catch (error) {
     console.error("Error generating card number filter:", error);
     return null;

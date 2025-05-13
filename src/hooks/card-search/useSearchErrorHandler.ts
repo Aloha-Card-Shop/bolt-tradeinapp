@@ -56,7 +56,24 @@ export const useSearchErrorHandler = (
         });
         
         toast.error('The search is taking longer than expected. Try a more specific search term.');
-      } else if (error.message.includes('JSON') || error.message.includes('jsonb') || error.message.includes('operator does not exist')) {
+      } else if (error.message.includes('operator does not exist')) {
+        // Special handler for PostgreSQL "operator does not exist" errors
+        // This happens with JSONB queries when the field doesn't exist or the structure is different
+        const message = isCardNumberSearch ? 
+          `Card number "${cardNumber}" couldn't be found in the database format. Try searching by name instead.` :
+          'Database query error. Please try a different search term.';
+        
+        setSearchError({
+          message,
+          isJsonError: true,
+          isTimeout: false,
+          isSchemaError: false,
+          isSyntaxError: false,
+          cardNumber
+        });
+        
+        toast.error(message);
+      } else if (error.message.includes('JSON') || error.message.includes('jsonb')) {
         const message = isCardNumberSearch ? 
                       `Card number "${cardNumber}" format not recognized. Try a different format.` :
                       'We\'re fixing an issue with the card search.';
