@@ -39,7 +39,7 @@ export const extractNumberBeforeSlash = (cardNumber: string | CardNumberObject |
   if (!numberStr) return '';
   
   // Extract the part before the slash if it exists
-  const match = numberStr.match(/^(\d+)/);
+  const match = numberStr.match(/^(\d+|[A-Za-z]+\d*)/);
   return match ? match[1] : numberStr;
 };
 
@@ -55,7 +55,10 @@ export const normalizeCardNumber = (cardNumber: string | CardNumberObject | unde
   // If it has a slash format like "004/102", normalize to "4/102"
   if (numberStr.includes('/')) {
     const [numPart, setPart] = numberStr.split('/', 2);
-    return parseInt(numPart, 10) + '/' + setPart;
+    if (/^\d+$/.test(numPart)) {
+      return parseInt(numPart, 10) + '/' + setPart;
+    }
+    return numPart + '/' + setPart;
   }
   
   // If it's just a number with leading zeros like "004", normalize to "4"

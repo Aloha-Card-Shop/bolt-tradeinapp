@@ -46,6 +46,17 @@ const extractCardNumber = (attributes: any): string => {
     }
   }
 
+  // Add additional checks for nested arrays that might contain number info
+  if (!cardNumber && attributes.otherAttributes && Array.isArray(attributes.otherAttributes)) {
+    const numberAttr = attributes.otherAttributes.find((attr: any) => 
+      attr.name === 'Number' || attr.name === 'number' || attr.name === 'card_number'
+    );
+    
+    if (numberAttr) {
+      cardNumber = numberAttr.value || '';
+    }
+  }
+
   return cardNumber ? String(cardNumber).trim() : '';
 };
 

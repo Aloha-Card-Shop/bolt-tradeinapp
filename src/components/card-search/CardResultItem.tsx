@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { ImageOff, PlusCircle, AlertCircle } from 'lucide-react';
 import { CardDetails, SavedCard, CardNumberObject } from '../../types/card';
-import { extractNumberBeforeSlash, getCardNumberString } from '../../utils/cardSearchUtils';
+import { extractNumberBeforeSlash, getCardNumberString } from '../../utils/card-number/formatters';
 import { toast } from 'react-hot-toast';
 
 interface CardResultItemProps {
