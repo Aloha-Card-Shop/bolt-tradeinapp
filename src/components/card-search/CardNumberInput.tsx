@@ -1,7 +1,7 @@
 
 import React, { KeyboardEvent } from 'react';
 import { CardNumberObject } from '../../types/card';
-import { getCardNumberString } from '../../utils/cardSearchUtils';
+import { getCardNumberString } from '../../utils/card-number/formatters';
 import { Loader2 } from 'lucide-react';
 
 interface CardNumberInputProps {
@@ -59,7 +59,7 @@ const CardNumberInput: React.FC<CardNumberInputProps> = ({
         )}
       </div>
       <p className="mt-1 text-xs text-gray-500">
-        Enter full or partial card number (works with "4", "004", "4/102", or "004/102")
+        Card number searches will narrow down results, combining with other filters
       </p>
     </div>
   );

@@ -54,9 +54,11 @@ export const buildSearchQuery = async (
     try {
       const cardNumberFilter = generateCardNumberSearchFilter(number);
       if (cardNumberFilter) {
-        query = query.or(cardNumberFilter);
+        // Using .and() instead of .or() to ensure the card number filter
+        // narrows down results rather than expanding the search
+        query = query.and(cardNumberFilter);
         if (DEBUG_MODE) {
-          console.log(`Added card number filter: ${cardNumberFilter}`);
+          console.log(`Added card number filter with .and(): ${cardNumberFilter}`);
           console.log(`Searching for card number: ${getCardNumberString(number)}`);
         }
       } else if (DEBUG_MODE) {

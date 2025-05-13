@@ -106,6 +106,13 @@ export const useSearchExecution = () => {
         return { results: [], foundSetIds, count: null, error };
       }
 
+      // If no data was found and it's a card number search, provide a helpful message
+      if ((!data || data.length === 0) && cardDetails.number) {
+        console.log(`No results found for card number: ${getCardNumberString(cardDetails.number)}`);
+        // We don't return an error here as this is a valid state (no results)
+        // but we'll log it for debugging
+      }
+
       // Format the search results using the utility function
       const formattedResults = formatResultsToCardDetails(data || [], setOptions, cardDetails);
       
