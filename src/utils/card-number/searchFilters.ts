@@ -1,6 +1,7 @@
 
 import { CardNumberObject } from '../../types/card';
 import { normalizeCardNumber, getCardNumberString } from './formatters';
+import { generateCardNumberVariants } from './variants';
 
 /**
  * Handle searching when given a card number to match
@@ -23,10 +24,23 @@ export const generateCardNumberSearchFilter = (cardNumber?: string | CardNumberO
     // Escape single quotes to prevent SQL injection
     const safeNumber = normalizedNumber.replace(/'/g, "''");
     
+    // Generate all possible variants for card number
+    const variants = generateCardNumberVariants(cardNumberStr);
+    const variantConditions = variants.map(variant => {
+      const safeVariant = variant.replace(/'/g, "''");
+      return `card_number ILIKE '%${safeVariant}%'`;
+    });
+    
     // Search for both capitalization variants (Number and number)
     // Also search in the nested structure for both displayName and value
     let conditions = [];
     
+    // First prioritize the new dedicated card_number column
+    if (variantConditions.length > 0) {
+      conditions.push('(' + variantConditions.join(' OR ') + ')');
+    }
+    
+    // Fallback to searching in JSON for backwards compatibility
     // Search for uppercase "Number" (most common in the database)
     conditions.push(`attributes->>'Number' ILIKE '%${safeNumber}%'`);
     
