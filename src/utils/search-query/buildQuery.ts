@@ -31,6 +31,7 @@ export const buildSearchQuery = async (
   const filterString = buildSearchQueryFilter(searchParams);
   
   // Get sort options
+  // Fix: Pass the complete searchParams object to the sortOptions function
   const sortOptions = buildSearchSortOptions(searchParams);
   
   // Calculate pagination
