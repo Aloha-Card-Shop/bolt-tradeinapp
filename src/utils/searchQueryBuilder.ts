@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
@@ -148,49 +147,6 @@ export const buildSearchQuery = async (
   }
 
   return { query, foundSetIds };
-};
-
-// Helper function to generate all possible variants of a card number for search
-const generateCardNumberVariants = (cardNumber: string): string[] => {
-  if (!cardNumber) return [];
-  
-  const variants = new Set<string>();
-  
-  // Add the original number
-  variants.add(cardNumber);
-  
-  // Handle card numbers with slashes (e.g., "004/102")
-  if (cardNumber.includes('/')) {
-    const [numPart, setPart] = cardNumber.split('/', 2);
-    
-    // Add variants with/without leading zeros
-    if (/^0+\d+$/.test(numPart)) {
-      // Strip leading zeros (e.g. "004" -> "4")
-      const strippedNum = numPart.replace(/^0+/, '');
-      variants.add(`${strippedNum}/${setPart}`);
-      variants.add(strippedNum);
-    }
-    
-    // Add just the number part
-    variants.add(numPart);
-  } 
-  // Handle simple numbers
-  else if (/^\d+$/.test(cardNumber)) {
-    // Add variants with leading zeros for single digits
-    if (cardNumber.length === 1) {
-      variants.add(`00${cardNumber}`);
-      variants.add(`0${cardNumber}`);
-    } else if (cardNumber.length === 2) {
-      variants.add(`0${cardNumber}`);
-    }
-    
-    // If it has leading zeros, add version without them
-    if (/^0+\d+$/.test(cardNumber)) {
-      variants.add(cardNumber.replace(/^0+/, ''));
-    }
-  }
-  
-  return [...variants];
 };
 
 // Helper function to extract set ID for a set name
