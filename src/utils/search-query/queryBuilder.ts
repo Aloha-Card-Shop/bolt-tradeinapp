@@ -1,4 +1,5 @@
-import { GameType } from '../../types/card';
+
+// Remove GameType import since it's not used
 import { generateCardNumberSearchFilter } from '../card-number/searchFilters';
 import { isLikelyCardNumber } from '../card-number/variants';
 import { SearchParams } from './types';

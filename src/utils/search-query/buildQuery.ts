@@ -27,6 +27,7 @@ export const buildSearchQuery = async (
   };
   
   // Build filter string using the queryBuilder
+  // Fix: Pass the complete searchParams object to the function
   const filterString = buildSearchQueryFilter(searchParams);
   
   // Get sort options
