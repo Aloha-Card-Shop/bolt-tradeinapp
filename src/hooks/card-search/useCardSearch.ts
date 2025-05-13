@@ -27,6 +27,7 @@ export const useCardSearch = () => {
     setIsSetFiltered,
     lastSearchRef,
     searchCacheRef,
+    isInitialLoad,
     performSearch: triggerSearch
   } = useSearchState();
   
@@ -74,8 +75,11 @@ export const useCardSearch = () => {
         const cachedResult = searchCacheRef.current.get(searchSignature);
         if (cachedResult) {
           console.log('Using cached search results for:', searchSignature);
+          // We could use the cached results here instead of executing a new search
+          // For now we'll just log it and still perform the search
         }
         
+        // Skip search if it matches the last query to avoid duplicate searches
         if (searchSignature !== lastSearchRef.current) {
           lastSearchRef.current = searchSignature;
           
@@ -90,12 +94,14 @@ export const useCardSearch = () => {
           // Search cards and get set IDs from results
           const foundSetIds = await searchCards(cardDetails, setOptions);
           
-          // Filter set options based on search results
-          const searchTerms = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
-          filterSetOptions(searchTerms, foundSetIds);
-          
-          // Record if sets are being filtered
-          setIsSetFiltered(isFiltered);
+          // Filter set options based on search results, only if we have a name to search
+          if (cardDetails.name) {
+            const searchTerms = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
+            filterSetOptions(searchTerms, foundSetIds);
+            
+            // Record if sets are being filtered
+            setIsSetFiltered(isFiltered);
+          }
         }
         
         setShouldSearch(false);
@@ -107,14 +113,16 @@ export const useCardSearch = () => {
 
   // Wrapper for performSearch to expose to components
   const performSearch = useCallback(() => {
+    // Skip the initial load flag to ensure the search happens when manually triggered
+    isInitialLoad.current = false;
     triggerSearch(cardDetails);
-  }, [triggerSearch, cardDetails]);
+  }, [triggerSearch, cardDetails, isInitialLoad]);
 
   // Add new handleShowAllSets function
   const handleShowAllSets = useCallback(() => {
     showAllSets();
     setIsSetFiltered(false);
-  }, [showAllSets]);
+  }, [showAllSets, setIsSetFiltered]);
 
   return {
     cardDetails,
@@ -143,3 +151,4 @@ export const useCardSearch = () => {
     retrySearch
   };
 };
+
