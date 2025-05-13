@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
@@ -51,9 +50,8 @@ export const buildSearchQuery = async (
       ])
     );
 
-    // FIX: Properly escape single quotes with double single quotes
     const filters = variants.map(
-      v => `attributes->'Number'->>'value'.ilike.%${v.replace(/'/g, "''")}%`
+      v => `attributes->'Number'->>'value'.ilike.%${v.replace(/'/g, "'')}%`
     );
 
     const orString = filters.join(',');
@@ -76,42 +74,4 @@ export const buildSearchQuery = async (
   }
 
   return { query, foundSetIds };
-};
-
-// Implement the formatResultsToCardDetails function that we referenced in useCardSearchQuery.ts
-export const formatResultsToCardDetails = (
-  data: any[],
-  setOptions: SetOption[],
-  originalQuery: CardDetails
-): CardDetails[] => {
-  if (!data || data.length === 0) return [];
-  
-  return data.map(item => {
-    // Map group_id to set name using setOptions
-    const setName = setOptions.find(s => s.id === item.group_id)?.name || '';
-    
-    // Extract card number from attributes if available
-    let cardNumber: string | undefined;
-    if (item.attributes && item.attributes.Number && item.attributes.Number.value) {
-      cardNumber = item.attributes.Number.value;
-    } else if (item.attributes && item.attributes.number && item.attributes.number.value) {
-      cardNumber = item.attributes.number.value;
-    } else if (item.attributes && item.attributes.card_number) {
-      cardNumber = item.attributes.card_number;
-    }
-    
-    // Use tcgplayer_product_id as the product ID if available
-    const productId = item.tcgplayer_product_id || item.product_id || null;
-    
-    return {
-      name: item.name || '',
-      set: setName || undefined,
-      number: cardNumber || undefined,
-      imageUrl: item.image_url || null,
-      game: originalQuery.game || 'pokemon',
-      categoryId: originalQuery.categoryId,
-      productId: productId,
-      id: item.id
-    };
-  });
 };
