@@ -1,7 +1,8 @@
+
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
-import { buildCardNumberSearchQuery } from './cardSearchUtils';
+import { generateCardNumberVariants } from './cardSearchUtils';
 
 // Debug mode flag - set to true to enable verbose logging
 const DEBUG_MODE = true;
@@ -136,14 +137,13 @@ export const buildSearchQuery = async (
       number: number ? `Using comprehensive filter syntax with ${typeof number === 'object' ? (number.displayName || number.value || '') : number.toString()}` : 'any'
     });
     
-    // Log the raw query SQL for debugging
-    if (typeof query.toSQL === 'function') {
-      try {
-        const sqlDebug = query.toSQL();
-        console.log('Generated SQL query:', sqlDebug);
-      } catch (e) {
-        console.log('Could not extract SQL query for debugging');
-      }
+    // Log the query string for debugging
+    // Note: toSQL() is not available in the Supabase JS client, so we use a different approach
+    try {
+      const queryString = JSON.stringify(query);
+      console.log('Query object for debugging:', queryString);
+    } catch (e) {
+      console.log('Could not extract query for debugging');
     }
   }
 
