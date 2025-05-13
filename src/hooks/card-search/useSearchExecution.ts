@@ -1,11 +1,14 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { CardDetails } from '../../types/card';
 import { SetOption } from '../useSetOptions';
 import { buildSearchQuery, formatResultsToCardDetails, RESULTS_PER_PAGE } from '../../utils/search-query';
-import { getCardNumberString } from '../../utils/cardSearchUtils';
+import { 
+  logSearchCriteria,
+  logPerformance,
+  logRawResponse,
+  logFormattedResults
+} from '../../utils/search-query/debugLogger';
 
-// Debug mode flag
-const DEBUG_MODE = true;
 // Increased timeout for complex queries
 const SEARCH_TIMEOUT_MS = 12000;
 
@@ -43,22 +46,8 @@ export const useSearchExecution = () => {
       setIsSearching(true);
     }
     
-    // Log search criteria in detail
-    if (DEBUG_MODE) {
-      // Convert any CardNumberObject to string for logging
-      const numberStr = cardDetails.number ? 
-                      (typeof cardDetails.number === 'object' ? 
-                        getCardNumberString(cardDetails.number) : 
-                        cardDetails.number) : 'not specified';
-                        
-      console.log('📝 Search initiated with criteria:', {
-        name: cardDetails.name || 'not specified',
-        number: numberStr,
-        set: cardDetails.set || 'not specified',
-        categoryId: cardDetails.categoryId || 'not specified',
-        page
-      });
-    }
+    // Log search criteria
+    logSearchCriteria(cardDetails, page);
     
     try {
       // Start performance measurement
@@ -78,11 +67,8 @@ export const useSearchExecution = () => {
         timeoutPromise.then(() => { throw new Error('Search timeout'); })
       ]) as any;
 
-      // End performance measurement
-      const endTime = performance.now();
-      if (DEBUG_MODE) {
-        console.log(`🕒 Query execution time: ${(endTime - startTime).toFixed(2)}ms`);
-      }
+      // Log performance metrics
+      logPerformance(startTime);
 
       // Check if search was aborted
       if (controller.signal.aborted) {
@@ -90,24 +76,8 @@ export const useSearchExecution = () => {
         return { results: [], foundSetIds, count: null, error: null };
       }
 
-      // Log raw response for debugging
-      if (DEBUG_MODE) {
-        console.log('📊 Supabase response:', { 
-          success: !error, 
-          count: count || 'unknown',
-          resultCount: data?.length || 0,
-          error: error ? `${error.code}: ${error.message}` : null
-        });
-        
-        if (data && data.length > 0) {
-          console.log('Sample result item:', data[0]);
-          if (data[0].attributes) {
-            console.log('Sample attributes structure:', data[0].attributes);
-          }
-        } else {
-          console.log('No results returned from query');
-        }
-      }
+      // Log raw response
+      logRawResponse(data, error, count);
 
       if (error) {
         return { results: [], foundSetIds, count: null, error };
@@ -116,12 +86,8 @@ export const useSearchExecution = () => {
       // Format the search results using the utility function
       const formattedResults = formatResultsToCardDetails(data || [], setOptions, cardDetails);
       
-      if (DEBUG_MODE) {
-        console.log(`✅ Found ${formattedResults.length} formatted card results`);
-        if (formattedResults.length > 0) {
-          console.log('First formatted card:', formattedResults[0]);
-        }
-      }
+      // Log formatted results
+      logFormattedResults(formattedResults);
       
       // If this is a new search (page 0), replace results
       // Otherwise, if this is pagination, we'll handle appending elsewhere

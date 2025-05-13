@@ -5,12 +5,10 @@ import { SetOption } from '../useSetOptions';
 import { RESULTS_PER_PAGE } from '../../utils/search-query';
 import { toast } from 'react-hot-toast';
 import { useSearchExecution } from './useSearchExecution';
-
-// Debug mode flag
-const DEBUG_MODE = true;
+import { logLoadingMore, logAdditionalResults } from '../../utils/search-query/debugLogger';
 
 export const useSearchPagination = (
-  searchResults: CardDetails[], 
+  _searchResults: CardDetails[], // Renamed to _searchResults to indicate it's not used directly
   setSearchResults: Dispatch<SetStateAction<CardDetails[]>>,
   lastSearchParams: {
     cardDetails: CardDetails | null;
@@ -31,9 +29,8 @@ export const useSearchPagination = (
     const nextPage = currentPage + 1;
     setIsLoadingMore(true);
     
-    if (DEBUG_MODE) {
-      console.log(`📜 Loading more results - page ${nextPage + 1}`);
-    }
+    // Log loading more results
+    logLoadingMore(nextPage);
     
     try {
       // Execute search for the next page
@@ -49,9 +46,8 @@ export const useSearchPagination = (
         throw error;
       }
 
-      if (DEBUG_MODE) {
-        console.log(`Loaded ${newCards.length} additional results`);
-      }
+      // Log additional results
+      logAdditionalResults(newCards.length);
 
       // Append new results to existing ones
       setSearchResults(prev => [...prev, ...newCards]);

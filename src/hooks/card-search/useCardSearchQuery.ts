@@ -7,9 +7,6 @@ import { useSearchPagination } from './useSearchPagination';
 import { useSearchErrorHandler } from './useSearchErrorHandler';
 import { useSearchExecution } from './useSearchExecution';
 
-// Debug mode flag
-const DEBUG_MODE = true;
-
 export const useCardSearchQuery = () => {
   const [lastSearchParams, setLastSearchParams] = useState<{
     cardDetails: CardDetails | null;
@@ -49,7 +46,7 @@ export const useCardSearchQuery = () => {
     
     // Quick validation to avoid empty searches
     if (!cardDetails.name && !cardDetails.number && !cardDetails.set) {
-      if (DEBUG_MODE) console.log('Search aborted: No search criteria provided');
+      console.log('Search aborted: No search criteria provided');
       setSearchResults([]);
       setHasMoreResults(false);
       return new Set<number>();
@@ -62,7 +59,7 @@ export const useCardSearchQuery = () => {
     });
     
     // Execute the search
-    const { results, foundSetIds, count, error } = await executeSearch(
+    const { foundSetIds, count, error } = await executeSearch(
       cardDetails, 
       setOptions, 
       0 // First page
@@ -76,10 +73,6 @@ export const useCardSearchQuery = () => {
     // Set pagination status
     if (count !== null) {
       setHasMoreResults(count > RESULTS_PER_PAGE);
-      
-      if (DEBUG_MODE) {
-        console.log(`Total results: ${count}, showing first ${Math.min(RESULTS_PER_PAGE, count || 0)}`);
-      }
     }
 
     return foundSetIds;
