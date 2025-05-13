@@ -2,14 +2,15 @@
 import { useState, Dispatch, SetStateAction } from 'react';
 import { CardDetails } from '../../types/card';
 import { SetOption } from '../useSetOptions';
-import { buildSearchQuery, formatResultsToCardDetails, RESULTS_PER_PAGE } from '../../utils/search-query';
+import { RESULTS_PER_PAGE } from '../../utils/search-query';
 import { toast } from 'react-hot-toast';
+import { useSearchExecution } from './useSearchExecution';
 
 // Debug mode flag
 const DEBUG_MODE = true;
 
 export const useSearchPagination = (
-  _searchResults: CardDetails[], // Renamed with underscore to indicate it's not used
+  searchResults: CardDetails[], 
   setSearchResults: Dispatch<SetStateAction<CardDetails[]>>,
   lastSearchParams: {
     cardDetails: CardDetails | null;
@@ -18,8 +19,10 @@ export const useSearchPagination = (
 ) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [hasMoreResults, setHasMoreResults] = useState(false);
-  const [totalResults, setTotalResults] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  
+  // Use the search execution hook
+  const { executeSearch } = useSearchExecution();
 
   // Load more results (for infinite scrolling)
   const loadMoreResults = async () => {
@@ -33,28 +36,18 @@ export const useSearchPagination = (
     }
     
     try {
-      // Build query for the next page using the utility function
-      const { query } = await buildSearchQuery(
+      // Execute search for the next page
+      const { results: newCards, error } = await executeSearch(
         lastSearchParams.cardDetails,
         lastSearchParams.setOptions,
         nextPage
       );
-
-      // Execute query
-      const { data, error } = await query;
 
       if (error) {
         console.error('Error loading more results:', error);
         toast.error(`Failed to load more results: ${error.message}`);
         throw error;
       }
-
-      // Format and append new results
-      const newCards = formatResultsToCardDetails(
-        data || [], 
-        lastSearchParams.setOptions,
-        lastSearchParams.cardDetails
-      );
 
       if (DEBUG_MODE) {
         console.log(`Loaded ${newCards.length} additional results`);
@@ -80,8 +73,6 @@ export const useSearchPagination = (
     setCurrentPage,
     hasMoreResults,
     setHasMoreResults,
-    totalResults,
-    setTotalResults,
     loadMoreResults,
     isLoadingMore
   };
