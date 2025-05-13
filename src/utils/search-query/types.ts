@@ -1,6 +1,5 @@
 
 import { CardDetails } from '../../types/card';
-import { SetOption } from '../../hooks/useSetOptions';
 
 export interface QueryResult {
   query: any;

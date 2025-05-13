@@ -1,0 +1,39 @@
+
+import { useState, useRef, useCallback } from 'react';
+import { CardDetails } from '../../types/card';
+import { SetOption } from '../useSetOptions';
+
+/**
+ * Custom hook to manage search state and caching
+ */
+export const useSearchState = () => {
+  // Track if a search should be performed automatically
+  const [shouldSearch, setShouldSearch] = useState(false);
+  
+  // Track if sets are filtered
+  const [isSetFiltered, setIsSetFiltered] = useState(false);
+  
+  // Store the last search query to avoid duplicate searches
+  const lastSearchRef = useRef<string>('');
+  
+  // Cache for recent search results to avoid redundant DB queries
+  const searchCacheRef = useRef<Map<string, any>>(new Map());
+
+  // Perform a manual search
+  const performSearch = useCallback((cardDetails: CardDetails) => {
+    console.log("Manual search triggered with:", cardDetails);
+    if (cardDetails.name || cardDetails.number || cardDetails.set) {
+      setShouldSearch(true);
+    }
+  }, []);
+
+  return {
+    shouldSearch,
+    setShouldSearch,
+    isSetFiltered,
+    setIsSetFiltered,
+    lastSearchRef,
+    searchCacheRef,
+    performSearch
+  };
+};
