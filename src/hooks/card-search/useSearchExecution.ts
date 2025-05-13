@@ -1,7 +1,8 @@
+
 import { useState } from 'react';
 import { CardDetails } from '../../types/card';
 import { SetOption } from '../useSetOptions';
-import { buildSearchQuery, formatResultsToCardDetails, RESULTS_PER_PAGE } from '../../utils/search-query';
+import { buildSearchQuery, formatResultsToCardDetails } from '../../utils/search-query';
 import { 
   logSearchCriteria,
   logPerformance,
