@@ -54,11 +54,17 @@ export const buildSearchQuery = async (
     try {
       const cardNumberFilter = generateCardNumberSearchFilter(number);
       if (cardNumberFilter) {
-        // Correctly apply the raw SQL filter to narrow results using .filter() with an empty params object
-        query = query.filter(cardNumberFilter, {});
+        // Fix: Use correct syntax for raw SQL filtering in Supabase
+        // The .filter() method needs column, operator, value format
+        // For raw SQL we need to use the special syntax with 'raw' as the operator
+        query = query.filter('id', 'in', supabase
+          .from('unified_products')
+          .select('id')
+          .or(cardNumberFilter)
+        );
         
         if (DEBUG_MODE) {
-          console.log(`Added card number filter using .filter(): ${cardNumberFilter}`);
+          console.log(`Added card number filter with subquery approach: ${cardNumberFilter}`);
           console.log(`Searching for card number: ${getCardNumberString(number)}`);
         }
       } else if (DEBUG_MODE) {
