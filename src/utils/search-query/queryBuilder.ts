@@ -54,12 +54,12 @@ export const buildSearchQuery = async (
     try {
       const cardNumberFilter = generateCardNumberSearchFilter(number);
       if (cardNumberFilter) {
-        // Properly use filter() with raw SQL condition to AND it with other filters
-        // This ensures card number narrows results instead of expanding them
-        query = query.filter(cardNumberFilter);
+        // The .filter() method in Supabase requires a column, operator, and value
+        // But we're trying to use raw SQL. Let's fix this by using .or() correctly
+        query = query.or(cardNumberFilter);
         
         if (DEBUG_MODE) {
-          console.log(`Added card number filter using .filter(): ${cardNumberFilter}`);
+          console.log(`Added card number filter using .or(): ${cardNumberFilter}`);
           console.log(`Searching for card number: ${getCardNumberString(number)}`);
         }
       } else if (DEBUG_MODE) {
