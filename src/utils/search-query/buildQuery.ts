@@ -4,18 +4,18 @@ import { CardDetails } from '../../types/card';
 import { SetOption } from '../../hooks/useSetOptions';
 import { buildSearchQueryFilter, buildSearchSortOptions } from './queryBuilder';
 import { RESULTS_PER_PAGE, SearchParams } from './types';
-import { formatResultsToCardDetails } from './resultFormatter';
+// Remove the import of formatResultsToCardDetails to avoid conflicts
 
 /**
  * Build a complete search query based on card details and set options
  * @param cardDetails Card details to search for
- * @param setOptions Available set options
+ * @param setOptions Available set options (not used directly in this function but kept for API consistency)
  * @param page Page number (0-based)
  * @returns Query object and set of found set IDs
  */
 export const buildSearchQuery = async (
   cardDetails: CardDetails,
-  setOptions: SetOption[],
+  _setOptions: SetOption[], // Renamed with underscore to indicate it's not used
   page: number = 0
 ) => {
   // Extract search parameters from card details
@@ -58,21 +58,5 @@ export const buildSearchQuery = async (
   };
 };
 
-/**
- * Execute search query and format results
- * @param cardDetails Card details for search criteria
- * @param setOptions Available set options
- * @param page Page number for pagination
- * @returns Formatted search results
- */
-export const formatResultsToCardDetails = (
-  data: any[],
-  setOptions: SetOption[],
-  cardDetails: CardDetails
-) => {
-  // This is imported from resultFormatter.ts, so we don't need to implement it here
-  return data.map(item => ({
-    ...item,
-    // Add any additional formatting here if needed
-  }));
-};
+// This function doesn't need to be here as it's already in resultFormatter.ts
+// Removing to resolve the conflict

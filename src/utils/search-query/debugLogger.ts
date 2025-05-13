@@ -71,3 +71,23 @@ export const logFormattedResults = (results: any[]) => {
     console.groupEnd();
   }
 };
+
+/**
+ * Log when loading more results (for pagination)
+ * @param page Page number being loaded
+ */
+export const logLoadingMore = (page: number) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`Loading more results (page ${page})...`);
+  }
+};
+
+/**
+ * Log information about additional results loaded
+ * @param count Number of additional results loaded
+ */
+export const logAdditionalResults = (count: number) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`Loaded ${count} additional results`);
+  }
+};
