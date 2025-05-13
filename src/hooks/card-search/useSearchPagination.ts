@@ -9,7 +9,7 @@ import { toast } from 'react-hot-toast';
 const DEBUG_MODE = true;
 
 export const useSearchPagination = (
-  searchResults: CardDetails[],
+  _searchResults: CardDetails[], // Renamed with underscore to indicate it's not used
   setSearchResults: Dispatch<SetStateAction<CardDetails[]>>,
   lastSearchParams: {
     cardDetails: CardDetails | null;

@@ -3,15 +3,19 @@ import { useState } from 'react';
 import { CardDetails } from '../../types/card';
 import { SetOption } from '../useSetOptions';
 import { buildSearchQuery, formatResultsToCardDetails, RESULTS_PER_PAGE } from '../../utils/searchQueryBuilder';
+import { getCardNumberString } from '../../utils/cardSearchUtils';
 import { useSearchPagination } from './useSearchPagination';
 import { useSearchErrorHandler } from './useSearchErrorHandler';
 
 // Debug mode flag - set to true to enable verbose logging
 const DEBUG_MODE = true;
+// Increased timeout from 5 seconds to 12 seconds to allow for more complex queries
+const SEARCH_TIMEOUT_MS = 12000;
 
 export const useCardSearchQuery = () => {
   const [searchResults, setSearchResults] = useState<CardDetails[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [totalResults, setTotalResults] = useState(0);
   const [lastSearchParams, setLastSearchParams] = useState<{
     cardDetails: CardDetails | null;
     setOptions: SetOption[];
@@ -22,31 +26,41 @@ export const useCardSearchQuery = () => {
 
   // Track if any search is in progress to prevent duplicate requests
   const [activeSearchController, setActiveSearchController] = useState<AbortController | null>(null);
-
-  // Import pagination and error handling from separate hooks
+  
+  // Use extracted pagination functionality
   const { 
-    currentPage, 
-    setCurrentPage, 
     hasMoreResults, 
     setHasMoreResults, 
-    totalResults, 
-    setTotalResults,
     loadMoreResults
-  } = useSearchPagination(searchResults, setSearchResults, lastSearchParams);
-
-  const { 
-    searchError, 
-    setSearchError, 
-    clearError, 
-    handleSearchError,
-    retrySearch
-  } = useSearchErrorHandler(lastSearchParams, searchCards);
-
-  // Optimized search function with faster response and better error handling
+  } = useSearchPagination(
+    searchResults,
+    setSearchResults,
+    lastSearchParams
+  );
+  
+  // Declare searchCards first to avoid reference issues
   async function searchCards(
     cardDetails: CardDetails,
     setOptions: SetOption[]
   ): Promise<Set<number>> {
+    // Implementation will be added later
+    return new Set<number>();
+  }
+  
+  // Use extracted error handling functionality
+  const {
+    searchError,
+    clearError,
+    handleSearchError,
+    retrySearch
+  } = useSearchErrorHandler(lastSearchParams, searchCards);
+
+  // Overwrite with the real implementation
+  // Optimized search function with faster response and better error handling
+  searchCards = async (
+    cardDetails: CardDetails,
+    setOptions: SetOption[]
+  ): Promise<Set<number>> => {
     // Reset error state at the start of a new search
     clearError();
     
@@ -74,17 +88,17 @@ export const useCardSearchQuery = () => {
       setIsSearching(true);
     }
     
-    // Reset pagination for new searches
-    setCurrentPage(0);
-    
     // Log search criteria in detail
     if (DEBUG_MODE) {
+      // Convert any CardNumberObject to string for logging
+      const numberStr = cardDetails.number ? 
+                        (typeof cardDetails.number === 'object' ? 
+                         getCardNumberString(cardDetails.number) : 
+                         cardDetails.number) : 'not specified';
+                         
       console.log('📝 Search initiated with criteria:', {
         name: cardDetails.name || 'not specified',
-        number: cardDetails.number ? 
-               (typeof cardDetails.number === 'object' ? 
-                JSON.stringify(cardDetails.number) : 
-                cardDetails.number) : 'not specified',
+        number: numberStr,
         set: cardDetails.set || 'not specified',
         categoryId: cardDetails.categoryId || 'not specified'
       });
@@ -101,10 +115,19 @@ export const useCardSearchQuery = () => {
       const startTime = performance.now();
       
       // Build and execute query using the utility function
+      // Now always using unified_products table
       const { query, foundSetIds } = await buildSearchQuery(cardDetails, setOptions, 0);
       
-      // Execute query
-      const { data, error, count } = await query;
+      // Execute query with improved timeout handling
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Search timeout')), SEARCH_TIMEOUT_MS)
+      );
+      
+      // Race between the query and the timeout
+      const { data, error, count } = await Promise.race([
+        query,
+        timeoutPromise.then(() => { throw new Error('Search timeout'); })
+      ]) as any;
 
       // End performance measurement
       const endTime = performance.now();
@@ -129,11 +152,16 @@ export const useCardSearchQuery = () => {
         
         if (data && data.length > 0) {
           console.log('Sample result item:', data[0]);
+          if (data[0].attributes) {
+            console.log('Sample attributes structure:', data[0].attributes);
+          }
+        } else {
+          console.log('No results returned from query');
         }
       }
 
       if (error) {
-        throw error;
+        return handleSearchError(error, controller);
       }
 
       // Set total count if available
@@ -151,11 +179,24 @@ export const useCardSearchQuery = () => {
 
       // Process the results to get all sets that contain matching cards
       if (data && data.length > 0) {
+        if (DEBUG_MODE) {
+          console.log('Extracting set IDs from search results...');
+        }
+
         data.forEach((item: any) => {
+          // For unified_products table, use the direct group_id
           if (item.group_id) {
             resultSetIds.add(item.group_id);
+            if (DEBUG_MODE) {
+              const setName = setOptions.find(s => s.id === item.group_id)?.name;
+              console.log(`Found card "${item.name}" in set "${setName}" (ID: ${item.group_id})`);
+            }
           }
         });
+        
+        if (DEBUG_MODE) {
+          console.log(`Total unique sets containing search results: ${resultSetIds.size}`);
+        }
       }
 
       // Clear any previous error state on successful search
@@ -166,6 +207,9 @@ export const useCardSearchQuery = () => {
       
       if (DEBUG_MODE) {
         console.log(`✅ Found ${foundCards.length} formatted card results`);
+        if (foundCards.length > 0) {
+          console.log('First formatted card:', foundCards[0]);
+        }
       }
       
       setSearchResults(foundCards);
@@ -179,7 +223,7 @@ export const useCardSearchQuery = () => {
       }
       setIsSearching(false);
     }
-  }
+  };
 
   return {
     searchResults,

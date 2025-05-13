@@ -5,12 +5,6 @@ import { CardDetails } from '../../types/card';
 import { SetOption } from '../useSetOptions';
 import { getCardNumberString } from '../../utils/cardSearchUtils';
 
-// Search timeout in milliseconds
-const SEARCH_TIMEOUT_MS = 12000;
-
-// Debug mode flag
-const DEBUG_MODE = true;
-
 export interface SearchError {
   message: string;
   isTimeout: boolean;
@@ -82,7 +76,7 @@ export const useSearchErrorHandler = (
         });
         
         toast.error('Search syntax error. Please try a simpler search term.');
-      } else if (error.code === '42703' || error.message?.includes('does not exist')) {
+      } else if (error.message?.includes('does not exist')) {
         // This is a database schema error (column doesn't exist)
         setSearchError({
           message: 'Database schema error. Please try again with different search terms.',
