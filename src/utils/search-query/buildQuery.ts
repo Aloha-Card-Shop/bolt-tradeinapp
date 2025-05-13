@@ -62,3 +62,4 @@ export const buildSearchQuery = async (
 
 // This function doesn't need to be here as it's already in resultFormatter.ts
 // Removing to resolve the conflict
+

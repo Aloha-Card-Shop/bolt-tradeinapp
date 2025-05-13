@@ -1,25 +1,13 @@
 
-import { CardDetails, GameType, CardNumberObject } from '../../types/card';
+import { CardNumberObject } from "../../types/card";
 
-export interface QueryResult {
-  query: any;
-  foundSetIds: Set<number>;
-}
-
-export interface FormattedSearchResults {
-  cards: CardDetails[];
-  setIds: Set<number>;
-}
+export const RESULTS_PER_PAGE = 40;
 
 export interface SearchParams {
   name?: string;
   set?: string;
   cardNumber?: string | CardNumberObject | number | undefined;
-  game?: GameType;
+  game?: string;
   sortBy?: string;
   sortDirection?: 'asc' | 'desc';
-  page?: number;
-  limit?: number;
 }
-
-export const RESULTS_PER_PAGE = 48;
