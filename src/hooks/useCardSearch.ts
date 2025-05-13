@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CardDetails, GameType, GAME_OPTIONS } from '../types/card';
 import { useSetOptions } from './useSetOptions';
-import { useCardSearchQuery } from './useCardSearchQuery';
+import { useCardSearchQuery } from './card-search';
 import { useCardSuggestions } from './useCardSuggestions';
 import { isLikelyCardNumber } from '../utils/cardSearchUtils';
 

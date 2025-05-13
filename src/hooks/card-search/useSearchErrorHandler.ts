@@ -1,0 +1,139 @@
+
+import { useState } from 'react';
+import { toast } from 'react-hot-toast';
+import { CardDetails } from '../../types/card';
+import { SetOption } from '../useSetOptions';
+import { getCardNumberString } from '../../utils/cardSearchUtils';
+
+// Search timeout in milliseconds
+const SEARCH_TIMEOUT_MS = 12000;
+
+// Debug mode flag
+const DEBUG_MODE = true;
+
+export interface SearchError {
+  message: string;
+  isTimeout: boolean;
+  isJsonError: boolean;
+  isSchemaError: boolean;
+  isSyntaxError: boolean;
+  cardNumber?: string | null;
+}
+
+export const useSearchErrorHandler = (
+  lastSearchParams: {
+    cardDetails: CardDetails | null;
+    setOptions: SetOption[];
+  },
+  searchCardsFn: (cardDetails: CardDetails, setOptions: SetOption[]) => Promise<Set<number>>
+) => {
+  const [searchError, setSearchError] = useState<SearchError | null>(null);
+  
+  // Clear error state
+  const clearError = () => {
+    setSearchError(null);
+  };
+
+  // Handle search errors and provide appropriate error messages
+  const handleSearchError = (error: any, controller: AbortController): Set<number> => {
+    console.error('❌ Error searching cards:', error);
+    
+    // Skip error notifications if search was aborted
+    if (controller.signal.aborted) {
+      return new Set<number>();
+    }
+    
+    // Provide more specific error messages for different cases
+    if (error instanceof Error) {
+      if (error.message.includes('timeout') || error.message === 'Search timeout') {
+        setSearchError({
+          message: 'The search is taking longer than expected.',
+          isTimeout: true,
+          isJsonError: false,
+          isSchemaError: false,
+          isSyntaxError: false
+        });
+        
+        toast.error('The search is taking longer than expected. Try a more specific search term.');
+      } else if (error.message.includes('JSON') || error.message.includes('jsonb') || error.message.includes('operator does not exist')) {
+        setSearchError({
+          message: 'We\'re fixing an issue with the card search.',
+          isJsonError: true,
+          isTimeout: false,
+          isSchemaError: false,
+          isSyntaxError: false
+        });
+        
+        toast.error('We\'re fixing an issue with the card search. Please try again in a moment.');
+      } else if (error.message.includes('parse') || error.message.includes('syntax')) {
+        // Convert CardNumberObject to string for error display if needed
+        const cardNumberStr = lastSearchParams.cardDetails?.number ? 
+                            (typeof lastSearchParams.cardDetails.number === 'object' ? 
+                            getCardNumberString(lastSearchParams.cardDetails.number) : 
+                            lastSearchParams.cardDetails.number) : null;
+        
+        setSearchError({
+          message: 'Search syntax error. Please try a simpler search term.',
+          isSyntaxError: true,
+          isJsonError: false,
+          isTimeout: false,
+          isSchemaError: false,
+          cardNumber: cardNumberStr
+        });
+        
+        toast.error('Search syntax error. Please try a simpler search term.');
+      } else if (error.code === '42703' || error.message?.includes('does not exist')) {
+        // This is a database schema error (column doesn't exist)
+        setSearchError({
+          message: 'Database schema error. Please try again with different search terms.',
+          isSchemaError: true,
+          isJsonError: false,
+          isTimeout: false,
+          isSyntaxError: false
+        });
+        
+        toast.error('There was a database error. Please try again in a moment.');
+      } else if (error.name !== 'AbortError') {
+        // Don't show toast for aborted requests
+        setSearchError({
+          message: error.message,
+          isJsonError: false,
+          isTimeout: false,
+          isSchemaError: false,
+          isSyntaxError: false
+        });
+        
+        toast.error(`Search failed: ${error.message}`);
+      }
+    } else {
+      setSearchError({
+        message: 'Unknown error',
+        isJsonError: false,
+        isTimeout: false,
+        isSchemaError: false,
+        isSyntaxError: false
+      });
+      
+      toast.error('Search failed: Unknown error');
+    }
+    
+    return new Set<number>();
+  };
+
+  // Function to retry a failed search
+  const retrySearch = () => {
+    if (lastSearchParams.cardDetails) {
+      clearError();
+      return searchCardsFn(lastSearchParams.cardDetails, lastSearchParams.setOptions);
+    }
+    return Promise.resolve(new Set<number>());
+  };
+
+  return {
+    searchError,
+    setSearchError,
+    clearError,
+    handleSearchError,
+    retrySearch
+  };
+};
