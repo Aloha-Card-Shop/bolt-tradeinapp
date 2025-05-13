@@ -54,12 +54,12 @@ export const buildSearchQuery = async (
     try {
       const cardNumberFilter = generateCardNumberSearchFilter(number);
       if (cardNumberFilter) {
-        // Instead of using .and() which doesn't exist, filter directly using the raw SQL
-        // Include the filter in the WHERE clause which will naturally AND it with other filters
-        query = query.filter(cardNumberFilter);
+        // For raw SQL filtering, we need to add the condition with the appropriate method
+        // Using a raw SQL condition will be AND'ed with the other filters automatically
+        query = query.or(cardNumberFilter);
         
         if (DEBUG_MODE) {
-          console.log(`Added card number filter using .filter(): ${cardNumberFilter}`);
+          console.log(`Added card number filter using raw SQL: ${cardNumberFilter}`);
           console.log(`Searching for card number: ${getCardNumberString(number)}`);
         }
       } else if (DEBUG_MODE) {
