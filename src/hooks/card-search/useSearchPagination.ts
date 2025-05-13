@@ -2,7 +2,7 @@
 import { useState, Dispatch, SetStateAction } from 'react';
 import { CardDetails } from '../../types/card';
 import { SetOption } from '../useSetOptions';
-import { buildSearchQuery, formatResultsToCardDetails, RESULTS_PER_PAGE } from '../../utils/searchQueryBuilder';
+import { buildSearchQuery, formatResultsToCardDetails, RESULTS_PER_PAGE } from '../../utils/search-query';
 import { toast } from 'react-hot-toast';
 
 // Debug mode flag
