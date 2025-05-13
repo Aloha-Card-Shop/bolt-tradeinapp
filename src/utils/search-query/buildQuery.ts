@@ -4,6 +4,7 @@ import { CardDetails } from '../../types/card';
 import { SetOption } from '../../hooks/useSetOptions';
 import { buildSearchQueryFilter, buildSearchSortOptions } from './queryBuilder';
 import { RESULTS_PER_PAGE, SearchParams } from './types';
+import { formatResultsToCardDetails } from './resultFormatter';
 
 /**
  * Build a complete search query based on card details and set options
@@ -55,4 +56,23 @@ export const buildSearchQuery = async (
     query,
     foundSetIds
   };
+};
+
+/**
+ * Execute search query and format results
+ * @param cardDetails Card details for search criteria
+ * @param setOptions Available set options
+ * @param page Page number for pagination
+ * @returns Formatted search results
+ */
+export const formatResultsToCardDetails = (
+  data: any[],
+  setOptions: SetOption[],
+  cardDetails: CardDetails
+) => {
+  // This is imported from resultFormatter.ts, so we don't need to implement it here
+  return data.map(item => ({
+    ...item,
+    // Add any additional formatting here if needed
+  }));
 };

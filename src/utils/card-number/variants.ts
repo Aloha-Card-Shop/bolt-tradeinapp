@@ -7,7 +7,7 @@ import { getCardNumberString, normalizeCardNumber } from './formatters';
  * @param cardNumber The original card number
  * @returns Array of card number variants to search for
  */
-export const generateCardNumberVariants = (cardNumber: string | CardNumberObject | undefined): string[] => {
+export const generateCardNumberVariants = (cardNumber: string | CardNumberObject | number | undefined): string[] => {
   const originalStr = getCardNumberString(cardNumber);
   if (!originalStr) return [];
   
