@@ -4,6 +4,7 @@ import { CardDetails } from '../../types/card';
 import { SetOption } from '../../hooks/useSetOptions';
 import { generateCardNumberSearchFilter } from '../card-number/searchFilters';
 import { QueryResult, RESULTS_PER_PAGE } from './types';
+import { getCardNumberString } from '../card-number/formatters';
 
 const DEBUG_MODE = true;
 
@@ -50,12 +51,20 @@ export const buildSearchQuery = async (
 
   // Apply card number filter if provided
   if (number) {
-    const cardNumberFilter = generateCardNumberSearchFilter(number);
-    if (cardNumberFilter) {
-      query = query.or(cardNumberFilter);
-      if (DEBUG_MODE) {
-        console.log(`Added card number filter: ${cardNumberFilter}`);
+    try {
+      const cardNumberFilter = generateCardNumberSearchFilter(number);
+      if (cardNumberFilter) {
+        query = query.or(cardNumberFilter);
+        if (DEBUG_MODE) {
+          console.log(`Added card number filter: ${cardNumberFilter}`);
+          console.log(`Searching for card number: ${getCardNumberString(number)}`);
+        }
+      } else if (DEBUG_MODE) {
+        console.warn(`Could not generate filter for card number: ${getCardNumberString(number)}`);
       }
+    } catch (error) {
+      console.error("Error processing card number search:", error);
+      // Continue with other filters if card number filter fails
     }
   }
 

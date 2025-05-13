@@ -37,6 +37,12 @@ export const useSearchErrorHandler = (
       return new Set<number>();
     }
     
+    // Check if this is a card number search
+    const isCardNumberSearch = lastSearchParams.cardDetails?.number ? true : false;
+    const cardNumber = isCardNumberSearch ? 
+                      getCardNumberString(lastSearchParams.cardDetails?.number) : 
+                      null;
+    
     // Provide more specific error messages for different cases
     if (error instanceof Error) {
       if (error.message.includes('timeout') || error.message === 'Search timeout') {
@@ -45,34 +51,34 @@ export const useSearchErrorHandler = (
           isTimeout: true,
           isJsonError: false,
           isSchemaError: false,
-          isSyntaxError: false
+          isSyntaxError: false,
+          cardNumber
         });
         
         toast.error('The search is taking longer than expected. Try a more specific search term.');
       } else if (error.message.includes('JSON') || error.message.includes('jsonb') || error.message.includes('operator does not exist')) {
+        const message = isCardNumberSearch ? 
+                      `Card number "${cardNumber}" format not recognized. Try a different format.` :
+                      'We\'re fixing an issue with the card search.';
+        
         setSearchError({
-          message: 'We\'re fixing an issue with the card search.',
-          isJsonError: true,
+          message,
+          isJsonError: !isCardNumberSearch,
           isTimeout: false,
           isSchemaError: false,
-          isSyntaxError: false
+          isSyntaxError: isCardNumberSearch,
+          cardNumber
         });
         
-        toast.error('We\'re fixing an issue with the card search. Please try again in a moment.');
+        toast.error(message);
       } else if (error.message.includes('parse') || error.message.includes('syntax')) {
-        // Convert CardNumberObject to string for error display if needed
-        const cardNumberStr = lastSearchParams.cardDetails?.number ? 
-                            (typeof lastSearchParams.cardDetails.number === 'object' ? 
-                            getCardNumberString(lastSearchParams.cardDetails.number) : 
-                            lastSearchParams.cardDetails.number) : null;
-        
         setSearchError({
           message: 'Search syntax error. Please try a simpler search term.',
           isSyntaxError: true,
           isJsonError: false,
           isTimeout: false,
           isSchemaError: false,
-          cardNumber: cardNumberStr
+          cardNumber
         });
         
         toast.error('Search syntax error. Please try a simpler search term.');
@@ -83,7 +89,8 @@ export const useSearchErrorHandler = (
           isSchemaError: true,
           isJsonError: false,
           isTimeout: false,
-          isSyntaxError: false
+          isSyntaxError: false,
+          cardNumber
         });
         
         toast.error('There was a database error. Please try again in a moment.');
@@ -94,7 +101,8 @@ export const useSearchErrorHandler = (
           isJsonError: false,
           isTimeout: false,
           isSchemaError: false,
-          isSyntaxError: false
+          isSyntaxError: false,
+          cardNumber
         });
         
         toast.error(`Search failed: ${error.message}`);
@@ -105,7 +113,8 @@ export const useSearchErrorHandler = (
         isJsonError: false,
         isTimeout: false,
         isSchemaError: false,
-        isSyntaxError: false
+        isSyntaxError: false,
+        cardNumber
       });
       
       toast.error('Search failed: Unknown error');

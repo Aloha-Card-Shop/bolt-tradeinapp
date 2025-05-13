@@ -33,6 +33,9 @@ const CardNumberInput: React.FC<CardNumberInputProps> = ({
     }
   };
   
+  // Get the string value to display for the input
+  const displayValue = getCardNumberString(cardNumber);
+  
   return (
     <div>
       <label htmlFor="card-number" className="block mb-1 text-sm font-medium text-gray-700">
@@ -43,7 +46,7 @@ const CardNumberInput: React.FC<CardNumberInputProps> = ({
           id="card-number"
           type="text"
           name="number"
-          value={getCardNumberString(cardNumber)}
+          value={displayValue}
           onChange={onChange}
           onKeyDown={handleKeyDown}
           placeholder="e.g. 4, 004, 4/102, or 004/102"

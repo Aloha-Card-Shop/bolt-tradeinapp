@@ -2,22 +2,31 @@
 import { CardNumberObject } from '../../types/card';
 
 /**
+ * Safely get string value from a card number that might be an object
+ * @param cardNumber The card number which might be string or object
+ * @returns String representation of the card number
+ */
+export const getCardNumberString = (cardNumber: string | CardNumberObject | undefined): string => {
+  if (!cardNumber) return '';
+  
+  if (typeof cardNumber === 'object') {
+    return cardNumber.displayName || cardNumber.value || '';
+  }
+  
+  return cardNumber;
+};
+
+/**
  * Format card number for search matching
  * @param cardNumber The card number to format
  * @returns Formatted card number
  */
 export const formatCardNumberForSearch = (cardNumber: string | CardNumberObject | any): string => {
-  // Check if cardNumber is an object and extract the value safely
-  if (typeof cardNumber === 'object' && cardNumber !== null) {
-    // Type assertion to tell TypeScript that cardNumber is a CardNumberObject
-    const numberObj = cardNumber as CardNumberObject;
-    cardNumber = numberObj.displayName || numberObj.value || '';
-  }
-
-  // Clean the card number to remove spaces and convert to lowercase
-  const cleanNumber = String(cardNumber).trim().toLowerCase();
+  // Get string representation first using our helper
+  const cardNumberStr = getCardNumberString(cardNumber);
   
-  return cleanNumber;
+  // Clean the card number to remove spaces and convert to lowercase
+  return cardNumberStr.trim().toLowerCase();
 };
 
 /**
@@ -55,19 +64,4 @@ export const normalizeCardNumber = (cardNumber: string | CardNumberObject | unde
   }
   
   return numberStr;
-};
-
-/**
- * Safely get string value from a card number that might be an object
- * @param cardNumber The card number which might be string or object
- * @returns String representation of the card number
- */
-export const getCardNumberString = (cardNumber: string | CardNumberObject | undefined): string => {
-  if (!cardNumber) return '';
-  
-  if (typeof cardNumber === 'object') {
-    return cardNumber.displayName || cardNumber.value || '';
-  }
-  
-  return cardNumber;
 };

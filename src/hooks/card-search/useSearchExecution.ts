@@ -9,6 +9,7 @@ import {
   logRawResponse,
   logFormattedResults
 } from '../../utils/search-query/debugLogger';
+import { getCardNumberString } from '../../utils/card-number/formatters';
 
 // Increased timeout for complex queries
 const SEARCH_TIMEOUT_MS = 12000;
@@ -47,7 +48,11 @@ export const useSearchExecution = () => {
       setIsSearching(true);
     }
     
-    // Log search criteria
+    // Log search criteria with improved card number handling
+    if (cardDetails.number) {
+      const formattedNumber = getCardNumberString(cardDetails.number);
+      console.log(`Searching with card number: ${formattedNumber}`);
+    }
     logSearchCriteria(cardDetails, page);
     
     try {
@@ -81,6 +86,23 @@ export const useSearchExecution = () => {
       logRawResponse(data, error, count);
 
       if (error) {
+        console.error("Search execution error:", error);
+        
+        // Add specific handling for card number search errors
+        if (cardDetails.number && error.message?.includes('operator does not exist')) {
+          console.error(`Error with card number search format: ${getCardNumberString(cardDetails.number)}`, error);
+          return { 
+            results: [], 
+            foundSetIds, 
+            count: null, 
+            error: { 
+              ...error, 
+              message: 'Card number format error. Try a different format.',
+              cardNumber: getCardNumberString(cardDetails.number)
+            } 
+          };
+        }
+        
         return { results: [], foundSetIds, count: null, error };
       }
 
@@ -109,6 +131,12 @@ export const useSearchExecution = () => {
       };
     } catch (error) {
       console.error('❌ Error executing search:', error);
+      
+      // More detailed error for card number searches
+      if (cardDetails.number && error instanceof Error) {
+        console.error(`Error searching with card number '${getCardNumberString(cardDetails.number)}'`, error);
+      }
+      
       return { results: [], foundSetIds: new Set(), count: null, error };
     } finally {
       // Clear the abort controller reference if this is still the active search
