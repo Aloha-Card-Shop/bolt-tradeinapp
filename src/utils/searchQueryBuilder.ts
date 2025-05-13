@@ -30,18 +30,18 @@ export const formatResultsToCardDetails = (
   return results.map(item => {
     // Get set name from setOptions using the group_id
     const setName = item.group_id 
-      ? setOptions.find(s => s.id === item.group_id)?.name || null
-      : searchCriteria.set || null;
+      ? setOptions.find(s => s.id === item.group_id)?.name || undefined
+      : searchCriteria.set || undefined;
     
     // Extract card number from attributes if available
-    let cardNumber = null;
+    let cardNumber: string | undefined = undefined;
     if (item.attributes) {
       cardNumber = 
         (item.attributes.Number && item.attributes.Number.value) ||
         (item.attributes.number && item.attributes.number.value) ||
         item.attributes.card_number || 
         searchCriteria.number || 
-        null;
+        undefined;
     }
     
     // Build the card details
@@ -51,9 +51,9 @@ export const formatResultsToCardDetails = (
       number: cardNumber,
       game: searchCriteria.game,
       categoryId: item.category_id || searchCriteria.categoryId,
-      imageUrl: item.image_url || null,
-      productId: item.tcgplayer_product_id || item.product_id?.toString() || null,
-      id: item.id?.toString() || null,
+      imageUrl: item.image_url || undefined,
+      productId: item.tcgplayer_product_id || item.product_id?.toString() || undefined,
+      id: item.id?.toString() || undefined,
     };
 
     return card;
