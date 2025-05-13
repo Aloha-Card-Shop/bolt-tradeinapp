@@ -1,4 +1,3 @@
-
 import { CardNumberObject } from '../../types/card';
 
 /**
@@ -10,7 +9,11 @@ export const getCardNumberString = (cardNumber: string | CardNumberObject | unde
   if (!cardNumber) return '';
   
   if (typeof cardNumber === 'object') {
-    // Try display name first, then value
+    // Special case: if displayName is literally "Card Number", use value instead
+    if (cardNumber.displayName === 'Card Number' && cardNumber.value) {
+      return cardNumber.value;
+    }
+    // Otherwise try display name first, then value
     return cardNumber.displayName || cardNumber.value || '';
   }
   

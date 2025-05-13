@@ -16,7 +16,12 @@ const extractCardNumber = (attributes: any): string => {
   // 1. Check for Number field (most common)
   if (attributes.Number) {
     if (typeof attributes.Number === 'object') {
-      cardNumber = attributes.Number.displayName || attributes.Number.value || '';
+      // Special case: if displayName is literally "Card Number", use value instead
+      if (attributes.Number.displayName === 'Card Number' && attributes.Number.value) {
+        cardNumber = attributes.Number.value;
+      } else {
+        cardNumber = attributes.Number.displayName || attributes.Number.value || '';
+      }
     } else {
       cardNumber = attributes.Number;
     }
@@ -24,7 +29,12 @@ const extractCardNumber = (attributes: any): string => {
   // 2. Check for lowercase number field
   else if (attributes.number) {
     if (typeof attributes.number === 'object') {
-      cardNumber = attributes.number.displayName || attributes.number.value || '';
+      // Special case: if displayName is literally "Card Number", use value instead
+      if (attributes.number.displayName === 'Card Number' && attributes.number.value) {
+        cardNumber = attributes.number.value;
+      } else {
+        cardNumber = attributes.number.displayName || attributes.number.value || '';
+      }
     } else {
       cardNumber = attributes.number;
     }
@@ -32,7 +42,12 @@ const extractCardNumber = (attributes: any): string => {
   // 3. Check for card_number field
   else if (attributes.card_number) {
     if (typeof attributes.card_number === 'object') {
-      cardNumber = attributes.card_number.displayName || attributes.card_number.value || '';
+      // Special case: if displayName is literally "Card Number", use value instead
+      if (attributes.card_number.displayName === 'Card Number' && attributes.card_number.value) {
+        cardNumber = attributes.card_number.value;
+      } else {
+        cardNumber = attributes.card_number.displayName || attributes.card_number.value || '';
+      }
     } else {
       cardNumber = attributes.card_number;
     }
@@ -40,7 +55,12 @@ const extractCardNumber = (attributes: any): string => {
   // 4. Check for properties.number field
   else if (attributes.properties && attributes.properties.number) {
     if (typeof attributes.properties.number === 'object') {
-      cardNumber = attributes.properties.number.displayName || attributes.properties.number.value || '';
+      // Special case: if displayName is literally "Card Number", use value instead
+      if (attributes.properties.number.displayName === 'Card Number' && attributes.properties.number.value) {
+        cardNumber = attributes.properties.number.value;
+      } else {
+        cardNumber = attributes.properties.number.displayName || attributes.properties.number.value || '';
+      }
     } else {
       cardNumber = attributes.properties.number;
     }
@@ -53,7 +73,16 @@ const extractCardNumber = (attributes: any): string => {
     );
     
     if (numberAttr) {
-      cardNumber = numberAttr.value || '';
+      if (typeof numberAttr.value === 'object') {
+        // Special case: if displayName is literally "Card Number", use value property instead
+        if (numberAttr.value.displayName === 'Card Number' && numberAttr.value.value) {
+          cardNumber = numberAttr.value.value;
+        } else {
+          cardNumber = numberAttr.value.displayName || numberAttr.value.value || '';
+        }
+      } else {
+        cardNumber = numberAttr.value || '';
+      }
     }
   }
   
@@ -62,7 +91,12 @@ const extractCardNumber = (attributes: any): string => {
     for (const key in attributes) {
       if (key.toLowerCase().includes('number') && attributes[key]) {
         if (typeof attributes[key] === 'object') {
-          cardNumber = attributes[key].displayName || attributes[key].value || '';
+          // Special case: if displayName is literally "Card Number", use value instead
+          if (attributes[key].displayName === 'Card Number' && attributes[key].value) {
+            cardNumber = attributes[key].value;
+          } else {
+            cardNumber = attributes[key].displayName || attributes[key].value || '';
+          }
         } else {
           cardNumber = attributes[key];
         }
