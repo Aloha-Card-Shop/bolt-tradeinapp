@@ -1,10 +1,15 @@
 
 // Export all search query related functions
 export * from './types';
-// Export only from queryBuilder to avoid ambiguity
+
+// Export from queryBuilder
 export { buildSearchQueryFilter, buildSearchSortOptions } from './queryBuilder';
+
+// Export logger functions
 export * from './debugLogger';
-// Export only non-conflicting functions from buildQuery
+
+// Export from buildQuery
 export { buildSearchQuery } from './buildQuery';
-// Explicitly re-export to resolve ambiguity
+
+// Export from resultFormatter
 export { formatResultsToCardDetails } from './resultFormatter';

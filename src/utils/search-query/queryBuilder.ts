@@ -23,11 +23,7 @@ export const buildSearchQueryFilter = (params: SearchParams): string => {
     // If the name looks like a card number, we also check the card_number column
     if (isLikelyCardNumber(name)) {
       // Add card number search to conditions (this will be ORed with name search)
-      const cardNumberFilter = generateCardNumberSearchFilter(
-        name,
-        'attributes',
-        'card_number'
-      );
+      const cardNumberFilter = generateCardNumberSearchFilter(name);
       if (cardNumberFilter) {
         conditions.push(
           `(name ILIKE '%${name.replace(/'/g, "''")}%' OR ${cardNumberFilter} OR card_number ILIKE '%${name.replace(/'/g, "''")}%')`
@@ -48,11 +44,7 @@ export const buildSearchQueryFilter = (params: SearchParams): string => {
 
   // Handle specific card number search — now using both JSON attributes and the dedicated column
   if (cardNumber && cardNumber.toString().trim()) {
-    const cardNumberFilter = generateCardNumberSearchFilter(
-      cardNumber,
-      'attributes',
-      'card_number'
-    );
+    const cardNumberFilter = generateCardNumberSearchFilter(cardNumber);
     if (cardNumberFilter) {
       conditions.push(
         `(${cardNumberFilter} OR card_number ILIKE '%${cardNumber

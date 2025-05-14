@@ -10,4 +10,5 @@ export interface SearchParams {
   game?: string;
   sortBy?: string;
   sortDirection?: 'asc' | 'desc';
+  page?: number; // Add page parameter for pagination
 }
