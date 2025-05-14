@@ -1,14 +1,14 @@
 
-import { CardNumberObject } from "../../types/card";
-
-export const RESULTS_PER_PAGE = 40;
-
+// Search parameters types
 export interface SearchParams {
-  name?: string;
-  set?: string;
-  cardNumber?: string | CardNumberObject | number | undefined;
+  name: string;
+  set: string;
+  cardNumber?: string | number | null;
   game?: string;
   sortBy?: string;
   sortDirection?: 'asc' | 'desc';
-  page?: number; // Add page parameter for pagination
+  page?: number;
 }
+
+// Define constants for pagination to be shared across the application
+export const RESULTS_PER_PAGE = 40;

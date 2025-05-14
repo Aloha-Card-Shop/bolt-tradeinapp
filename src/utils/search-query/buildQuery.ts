@@ -12,13 +12,13 @@ export const RESULTS_PER_PAGE = 40;
 /**
  * Build a complete search query for cards using the unified_products table
  * @param cardDetails Card search parameters
- * @param setOptions Available set options
+ * @param setOptions Available set options (used for set filtering in some cases)
  * @param page Page number for pagination
  * @returns Query and related metadata
  */
 export const buildSearchQuery = async (
   cardDetails: CardDetails,
-  setOptions: SetOption[],
+  setOptions: SetOption[], // Keeping parameter for API consistency, even if not directly used
   page: number = 0
 ): Promise<{
   query: any;
@@ -56,7 +56,6 @@ export const buildSearchQuery = async (
   // Apply filter if it exists - FIXED: use proper filter method
   if (filter && filter.trim() !== '') {
     console.log('Applying filter:', filter);
-    // Using .or() was incorrect - we should use the filter method instead
     query = query.filter(filter);
   }
   

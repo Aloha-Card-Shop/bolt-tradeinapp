@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { CardDetails } from '../../types/card';
 import { SetOption } from '../useSetOptions';
@@ -65,6 +64,7 @@ export const useSearchExecution = () => {
       
       // Build and execute query using the utility function
       // Now uses the unified_products table
+      // Make sure we pass all three arguments: cardDetails, setOptions, page
       const { query, foundSetIds } = await buildSearchQuery(cardDetails, setOptions, page);
       
       // Log raw response
