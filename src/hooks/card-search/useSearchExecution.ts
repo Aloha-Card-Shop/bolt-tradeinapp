@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { CardDetails } from '../../types/card';
 import { SetOption } from '../useSetOptions';
@@ -11,8 +12,8 @@ import {
 } from '../../utils/search-query/debugLogger';
 import { getCardNumberString } from '../../utils/card-number/formatters';
 
-// Increased timeout for complex queries
-const SEARCH_TIMEOUT_MS = 12000;
+// We'll remove the unused constant since it's not being used anywhere in the code
+// const SEARCH_TIMEOUT_MS = 12000;
 
 export const useSearchExecution = () => {
   const [searchResults, setSearchResults] = useState<CardDetails[]>([]);
