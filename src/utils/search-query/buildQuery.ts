@@ -18,7 +18,7 @@ export const RESULTS_PER_PAGE = 40;
  */
 export const buildSearchQuery = async (
   cardDetails: CardDetails,
-  setOptions: SetOption[], // Keeping parameter for API consistency, even if not directly used
+  setOptions: SetOption[], // Keeping parameter for API consistency, even though not directly used
   page: number = 0
 ): Promise<{
   query: any;
