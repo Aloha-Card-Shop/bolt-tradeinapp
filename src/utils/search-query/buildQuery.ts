@@ -49,9 +49,9 @@ export const buildSearchQuery = async (
       .select('*', { count: 'exact' });
 
     if (filter && filter.trim() !== '') {
-      console.log('Applying filter with .or():', filter);
-      // Fix: Instead of using .or() with the filter string directly,
-      // Use the Supabase filter() method which accepts the raw filter string
+      console.log('Applying filter with .filter():', filter);
+      // Fix: Pass an empty object as the second parameter to fix the TypeScript error
+      // The filter method expects 2 parameters: the filter string and a parameters object
       query = query.filter(filter, {});
     }
 
