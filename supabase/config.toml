@@ -1,46 +1,13 @@
 
+# A string used as a secret to generate JWT tokens for functions.
+# Function invocations with invalid JWT tokens are not executed.
+# Set this value when deploying to production!
 project_id = "qgsabaicokoynabxgdco"
 
-[api]
-enabled = true
-port = 54321
-schemas = ["public", "storage"]
-
-[db]
-port = 54322
-
-[studio]
-enabled = true
-port = 54323
-
-[inbucket]
-enabled = true
-port = 54324
-
-[auth]
-enabled = true
-port = 54325
-
-[storage]
-enabled = true
-port = 54328
-
-[realtime]
-enabled = true
-port = 54329
-
+# Docker image to use for local development
+# docs: https://supabase.com/docs/guides/functions/local-development
 [functions]
-[functions.create-user]
-verify_jwt = true
-[functions.delete-user]
-verify_jwt = true
-[functions.list-users]
-verify_jwt = true
-[functions.market-price]
-verify_jwt = true
-[functions.update-user-role]
-verify_jwt = true
-[functions.update-user]
-verify_jwt = true
-[functions.print-barcode]
+node_version = "18"
+
+[functions.shopify-sync]
 verify_jwt = true
