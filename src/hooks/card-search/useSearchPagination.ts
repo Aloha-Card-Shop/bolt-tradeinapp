@@ -8,7 +8,7 @@ import { useSearchExecution } from './useSearchExecution';
 import { logLoadingMore, logAdditionalResults } from '../../utils/search-query/debugLogger';
 
 export const useSearchPagination = (
-  _searchResults: CardDetails[], // Renamed to _searchResults to indicate it's not used directly
+  _searchResults: CardDetails[], // Renamed to indicate it's not used directly
   setSearchResults: Dispatch<SetStateAction<CardDetails[]>>,
   lastSearchParams: {
     cardDetails: CardDetails | null;

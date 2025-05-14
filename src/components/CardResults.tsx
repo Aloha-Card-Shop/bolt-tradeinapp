@@ -2,8 +2,6 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { CardDetails, SavedCard } from '../types/card';
-
-// Import our new components
 import ResultsHeader from './card-search/ResultsHeader';
 import CardResultItem from './card-search/CardResultItem';
 import SearchErrorDisplay from './card-search/SearchErrorDisplay';

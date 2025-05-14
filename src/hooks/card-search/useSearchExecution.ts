@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { CardDetails } from '../../types/card';
 import { SetOption } from '../useSetOptions';
@@ -93,13 +92,6 @@ export const useSearchExecution = () => {
         }
         
         return { results: [], foundSetIds, count: null, error: query.error };
-      }
-
-      // If no data was found and it's a card number search, provide a helpful message
-      if ((!query.data || query.data.length === 0) && cardDetails.number) {
-        console.log(`No results found for card number: ${getCardNumberString(cardDetails.number)}`);
-        // We don't return an error here as this is a valid state (no results)
-        // but we'll log it for debugging
       }
 
       // Log performance metrics

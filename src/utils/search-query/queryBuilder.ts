@@ -1,6 +1,6 @@
 
-import { isLikelyCardNumber } from '../card-number/variants';
 import { SearchParams } from './types';
+import { isLikelyCardNumber } from '../card-number/variants';
 import { debugLogQuery } from './debugLogger';
 
 /**
@@ -9,12 +9,15 @@ import { debugLogQuery } from './debugLogger';
  * @returns SQL filter string for use in Supabase query
  */
 export const buildSearchQueryFilter = (params: SearchParams): string => {
-  const { name, set, cardNumber, game } = params;
+  const { name, set, cardNumber, game, categoryId } = params;
   const conditions: string[] = [];
 
-  // Always filter by game type if provided
-  // Map game to category_id for unified_products table
-  if (game) {
+  // Add category filter (from game type)
+  if (categoryId) {
+    conditions.push(`category_id = ${categoryId}`);
+  }
+  // Or add game type filter if no categoryId but game is provided
+  else if (game) {
     if (game === 'pokemon') {
       conditions.push('category_id = 3');
     } else if (game === 'japanese-pokemon') {
@@ -26,33 +29,29 @@ export const buildSearchQueryFilter = (params: SearchParams): string => {
 
   // Handle card name search
   if (name && name.trim()) {
-    // If the name looks like a card number, we also check the card_number column
+    // If the name looks like a card number, check both name and card_number
     if (isLikelyCardNumber(name)) {
       conditions.push(
         `(name ILIKE '%${name.replace(/'/g, "''")}%' OR card_number ILIKE '%${name.replace(/'/g, "''")}%')`
       );
     } else {
-      // Standard name search
+      // Standard name search with improved ILIKE pattern
       conditions.push(`name ILIKE '%${name.replace(/'/g, "''")}%'`);
     }
   }
 
-  // Handle set name filter by mapping to group_id
+  // Handle set name filter using group_id
   if (set && set.trim()) {
-    // In unified_products we need to join with groups or use a subquery
-    // For now, we'll use a simplified approach that works with our existing data model
     conditions.push(`group_id IN (SELECT groupid FROM public.groups WHERE name = '${set.replace(/'/g, "''")}')`);
   }
 
-  // Handle specific card number search - simpler with unified_products as it has a dedicated card_number column
+  // Handle card number search - use direct column in unified_products
   if (cardNumber) {
     let cardNumberStr = '';
     
     if (typeof cardNumber === 'object' && cardNumber !== null) {
-      // Handle card number object format
       cardNumberStr = cardNumber.displayName || cardNumber.value || '';
     } else {
-      // Handle string or number format
       cardNumberStr = String(cardNumber);
     }
     

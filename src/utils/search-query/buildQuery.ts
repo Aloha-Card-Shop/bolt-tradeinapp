@@ -1,12 +1,9 @@
 
-import { SearchParams } from './types';
+import { SearchParams, RESULTS_PER_PAGE, SearchQueryResult } from './types';
 import { buildSearchQueryFilter, buildSearchSortOptions } from './queryBuilder';
 import { debugLogQuery } from './debugLogger';
 import { CardDetails } from '../../types/card';
 import { supabase } from '../../lib/supabase';
-
-// Define constants for pagination
-export const RESULTS_PER_PAGE = 40;
 
 /**
  * Build a complete search query for cards using the unified_products table
@@ -18,7 +15,7 @@ export const buildSearchQuery = async (
   cardDetails: CardDetails,
   page: number = 0
 ): Promise<{
-  query: any;
+  query: SearchQueryResult;
   foundSetIds: Set<number>;
 }> => {
   console.log('Building search query with:', { cardDetails, page });
@@ -29,28 +26,28 @@ export const buildSearchQuery = async (
     set: cardDetails.set || '',
     cardNumber: cardDetails.number,
     game: cardDetails.game,
+    categoryId: cardDetails.categoryId,
     sortBy: 'name',
     sortDirection: 'asc',
     page // Include page parameter
   };
 
-  // Build filter string using queryBuilder's implementation
+  // Build filter string using queryBuilder implementation
   const filter = buildSearchQueryFilter(searchParams);
   
-  // Get sort options using queryBuilder's implementation
+  // Get sort options using queryBuilder implementation
   const sort = buildSearchSortOptions(searchParams);
 
   // Debug log the query parameters
-  debugLogQuery(filter, searchParams);
   console.log('Search filter:', filter);
   console.log('Sort options:', sort);
   
-  // Create a real Supabase query targeting the unified_products table
+  // Create a Supabase query targeting the unified_products table
   let query = supabase
     .from('unified_products')
     .select('*', { count: 'exact' });
 
-  // Apply filter if it exists - FIXED: use proper filter method
+  // Apply filter if it exists
   if (filter && filter.trim() !== '') {
     console.log('Applying filter:', filter);
     query = query.filter(filter);

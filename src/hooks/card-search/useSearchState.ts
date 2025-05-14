@@ -36,11 +36,6 @@ export const useSearchState = () => {
       setShouldSearch(true);
     }
   }, []);
-  
-  // Set the flag when auto-search is triggered
-  const setAutoSearched = useCallback((value: boolean) => {
-    hasAutoSearched.current = value;
-  }, []);
 
   return {
     shouldSearch,
@@ -52,6 +47,5 @@ export const useSearchState = () => {
     isInitialLoad,
     performSearch,
     hasAutoSearched,
-    setAutoSearched
   };
 };

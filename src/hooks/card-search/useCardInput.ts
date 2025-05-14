@@ -45,8 +45,6 @@ export const useCardInput = () => {
         setCardDetails(prev => ({ ...prev, name: '' }));
         setPotentialCardNumber(null);
       }
-    } else if (name === 'set') {
-      setCardDetails(prev => ({ ...prev, [name]: value }));
     } else {
       setCardDetails(prev => ({ ...prev, [name]: value }));
     }
