@@ -1,13 +1,10 @@
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
-import { useSession } from '../hooks/useSession';
-import { useAdminUsers } from '../hooks/useAdminUsers';
+import { toast } from 'react-hot-toast';
 import AdminPageHeader from '../components/admin/AdminPageHeader';
 import AdminPageContent from '../components/admin/AdminPageContent';
 import RoleViewSelector from '../components/admin/RoleViewSelector';
-import { toast } from 'react-hot-toast';
+import { useAdminUsers } from '../hooks/useAdminUsers';
 import AuthGuard from '../components/AuthGuard';
 
 const AdminPage: React.FC = () => {
