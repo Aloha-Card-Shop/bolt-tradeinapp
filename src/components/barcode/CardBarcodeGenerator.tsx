@@ -1,9 +1,9 @@
-
 import React, { useEffect, useRef } from 'react';
 import JsBarcode from 'jsbarcode';
 import { TradeIn } from '../../types/tradeIn';
 import { TradeInItem } from '../../types/tradeIn';
 import { formatCurrency } from '../../utils/formatters';
+import { generateSku } from '../../utils/skuGenerator';
 
 interface CardBarcodeGeneratorProps {
   tradeIn: TradeIn;
@@ -27,7 +27,32 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
   useEffect(() => {
     if (barcodeRef.current && tradeIn.id) {
       try {
-        JsBarcode(barcodeRef.current, tradeIn.id, {
+        // If we have a card item with TCGplayer ID, use it to generate a SKU,
+        // otherwise fall back to the trade-in ID
+        let barcodeValue = tradeIn.id;
+        
+        if (item && item.cards && item.cards.tcgplayer_url) {
+          // Extract TCGPlayer ID from URL
+          const tcgplayerIdMatch = item.cards.tcgplayer_url.match(/\/(\d+)/);
+          const tcgplayerId = tcgplayerIdMatch ? tcgplayerIdMatch[1] : undefined;
+          
+          // If we have a TCGPlayer ID, generate a SKU
+          if (tcgplayerId) {
+            const isFirstEdition = !!item.attributes?.isFirstEdition;
+            const isHolo = !!item.attributes?.isHolo;
+            const isReverseHolo = !!item.attributes?.isReverseHolo;
+            
+            barcodeValue = generateSku(
+              tcgplayerId,
+              isFirstEdition,
+              isHolo,
+              item.condition,
+              isReverseHolo
+            );
+          }
+        }
+        
+        JsBarcode(barcodeRef.current, barcodeValue, {
           format: "CODE128",
           width,
           height,
@@ -41,7 +66,7 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
         console.error('Error generating barcode:', error);
       }
     }
-  }, [tradeIn.id, width, height, displayValue, fontSize]);
+  }, [tradeIn.id, item, width, height, displayValue, fontSize]);
   
   // Get card details if an item is provided
   const cardName = item?.card_name || 'Card';
@@ -58,6 +83,27 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
     setName,
     cardNumber
   ].filter(Boolean).join(' • ');
+
+  // Create SKU display if applicable
+  let skuDisplay = '';
+  if (item && item.cards && item.cards.tcgplayer_url) {
+    const tcgplayerIdMatch = item.cards.tcgplayer_url.match(/\/(\d+)/);
+    const tcgplayerId = tcgplayerIdMatch ? tcgplayerIdMatch[1] : undefined;
+    
+    if (tcgplayerId) {
+      const isFirstEdition = !!item.attributes?.isFirstEdition;
+      const isHolo = !!item.attributes?.isHolo;
+      const isReverseHolo = !!item.attributes?.isReverseHolo;
+      
+      skuDisplay = generateSku(
+        tcgplayerId,
+        isFirstEdition,
+        isHolo,
+        item.condition,
+        isReverseHolo
+      );
+    }
+  }
   
   return (
     <div className="bg-white p-1 rounded-lg shadow" style={{ aspectRatio: '2/1', width: '100%', maxWidth: '384px' }}>
@@ -66,6 +112,11 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
         <div className="text-3xl font-bold w-full px-1 flex justify-center items-center">
           <span className="truncate text-center w-full">{cardPrice} | {cardCondition}</span>
         </div>
+        {skuDisplay && (
+          <div className="text-xs text-gray-600 -mt-1 mb-1">
+            SKU: {skuDisplay}
+          </div>
+        )}
       </div>
       
       {/* Middle section: Barcode - height reduced */}

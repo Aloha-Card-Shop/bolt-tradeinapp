@@ -104,12 +104,14 @@ export const barcodeService = {
       }
       
       // Create a new card template with updated format and adjusted coordinates for 2" x 1" label
+      // Now including SKU in the template
       const cardTemplate = {
         name: "Card Barcode Template",
         description: "Template for printing individual card barcodes with price, condition, name and number",
         zpl_template: `^XA
 ^FO20,30^A0N,70,70^FD\${{cardPrice}} | {{cardCondition}}^FS
-^FO50,120^BY3^BCN,50,Y,N,N^FD{{tradeInId}}^FS
+^FO20,90^A0N,25,25^FDSKU: {{sku}}^FS
+^FO50,140^BY3^BCN,50,Y,N,N^FD{{sku}}^FS
 ^FO20,180^A0N,30,30^FD{{cardName}} • {{setName}} • {{cardNumber}}^FS
 ^XZ`,
         is_default: false

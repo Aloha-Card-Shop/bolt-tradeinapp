@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { formatCurrency } from '../../utils/formatters';
-import { Tag, DollarSign } from 'lucide-react';
+import { Tag, DollarSign, Barcode } from 'lucide-react';
+import { generateSku } from '../../utils/skuGenerator';
 
 interface TradeInItemRowProps {
   item: {
@@ -16,6 +17,9 @@ interface TradeInItemRowProps {
       paymentType?: 'cash' | 'trade';
       cashValue?: number;
       tradeValue?: number;
+    };
+    cards?: {
+      tcgplayer_url?: string;
     };
   };
 }
@@ -46,8 +50,32 @@ const TradeInItemRow: React.FC<TradeInItemRowProps> = ({ item }) => {
     return item.price;
   };
 
+  // Generate SKU if possible
+  const getSku = () => {
+    if (item.cards?.tcgplayer_url) {
+      const tcgplayerIdMatch = item.cards.tcgplayer_url.match(/\/(\d+)/);
+      const tcgplayerId = tcgplayerIdMatch ? tcgplayerIdMatch[1] : undefined;
+      
+      if (tcgplayerId) {
+        const isFirstEdition = !!item.attributes?.isFirstEdition;
+        const isHolo = !!item.attributes?.isHolo;
+        const isReverseHolo = !!item.attributes?.isReverseHolo;
+        
+        return generateSku(
+          tcgplayerId,
+          isFirstEdition,
+          isHolo,
+          item.condition,
+          isReverseHolo
+        );
+      }
+    }
+    return null;
+  };
+
   const itemValue = getItemValue();
   const paymentType = item.attributes?.paymentType || 'cash';
+  const sku = getSku();
 
   return (
     <tr className="border-t border-gray-200">
@@ -62,6 +90,12 @@ const TradeInItemRow: React.FC<TradeInItemRowProps> = ({ item }) => {
           )}
           {item.attributes?.isFirstEdition && (
             <span className="text-xs bg-purple-100 text-purple-800 px-1 rounded">1st Ed</span>
+          )}
+          {sku && (
+            <span className="text-xs bg-blue-50 text-blue-800 px-1 rounded flex items-center">
+              <Barcode className="h-3 w-3 mr-1" />
+              {sku}
+            </span>
           )}
         </div>
       </td>

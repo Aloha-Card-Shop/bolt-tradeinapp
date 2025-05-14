@@ -81,7 +81,7 @@ serve(async (req) => {
           price,
           condition,
           attributes,
-          cards (name, card_number)
+          cards (name, card_number, tcgplayer_url)
         `)
         .eq('id', cardId)
         .eq('trade_in_id', tradeInId)
@@ -179,6 +179,46 @@ serve(async (req) => {
                        (card?.attributes && typeof card.attributes === 'object' && 'cardNumber' in card.attributes ? card.attributes.cardNumber : '');
       const cardPrice = card?.price?.toFixed(2) || '0.00';
       const cardCondition = card?.condition || '';
+      
+      // Generate SKU if possible
+      let sku = '';
+      if (card && card.cards && card.cards.tcgplayer_url) {
+        const tcgplayerIdMatch = card.cards.tcgplayer_url.match(/\/(\d+)/);
+        const tcgplayerId = tcgplayerIdMatch ? tcgplayerIdMatch[1] : undefined;
+        
+        if (tcgplayerId) {
+          const isFirstEdition = !!card.attributes?.isFirstEdition;
+          const isHolo = !!card.attributes?.isHolo;
+          const isReverseHolo = !!card.attributes?.isReverseHolo;
+          
+          // Import the generateSku function or recreate its logic here
+          // Since this is an edge function, we recreate the logic
+          const getEditionHoloCode = (isFirstEd: boolean, isHoloCard: boolean, isReverseHoloCard: boolean) => {
+            if (isFirstEd && isHoloCard) return 'fh'; // 1st edition holo
+            if (isFirstEd) return 'fe'; // 1st edition
+            if (isHoloCard) return 'ho'; // regular holo
+            if (isReverseHoloCard) return 'rh'; // reverse holo
+            return 'un'; // unlimited/normal
+          };
+          
+          const getConditionCode = (cond: string) => {
+            const conditionMap: Record<string, string> = {
+              'near_mint': 'N',
+              'lightly_played': 'L',
+              'moderately_played': 'M',
+              'heavily_played': 'H',
+              'damaged': 'D'
+            };
+            
+            return conditionMap[cond] || 'N';
+          };
+          
+          const editionHoloCode = getEditionHoloCode(isFirstEdition, isHolo, isReverseHolo);
+          const conditionCode = getConditionCode(card.condition);
+          
+          sku = `${tcgplayerId}-${editionHoloCode}${conditionCode}`;
+        }
+      }
 
       // Replace template placeholders with actual values
       zpl = template.zpl_template
@@ -192,18 +232,61 @@ serve(async (req) => {
         .replace(/\{\{setName\}\}/g, setName)
         .replace(/\{\{cardNumber\}\}/g, cardNumber)
         .replace(/\{\{cardPrice\}\}/g, cardPrice)
-        .replace(/\{\{cardCondition\}\}/g, cardCondition);
+        .replace(/\{\{cardCondition\}\}/g, cardCondition)
+        .replace(/\{\{sku\}\}/g, sku);
     } else {
       // Fallback to hardcoded ZPL if no template is found
       if (card) {
+        // Generate SKU if possible
+        let sku = '';
+        if (card.cards && card.cards.tcgplayer_url) {
+          const tcgplayerIdMatch = card.cards.tcgplayer_url.match(/\/(\d+)/);
+          const tcgplayerId = tcgplayerIdMatch ? tcgplayerIdMatch[1] : undefined;
+          
+          if (tcgplayerId) {
+            const isFirstEdition = !!card.attributes?.isFirstEdition;
+            const isHolo = !!card.attributes?.isHolo;
+            const isReverseHolo = !!card.attributes?.isReverseHolo;
+            
+            // Recreate the SKU generation logic
+            const getEditionHoloCode = (isFirstEd: boolean, isHoloCard: boolean, isReverseHoloCard: boolean) => {
+              if (isFirstEd && isHoloCard) return 'fh';
+              if (isFirstEd) return 'fe';
+              if (isHoloCard) return 'ho';
+              if (isReverseHoloCard) return 'rh';
+              return 'un';
+            };
+            
+            const getConditionCode = (cond: string) => {
+              const conditionMap: Record<string, string> = {
+                'near_mint': 'N',
+                'lightly_played': 'L',
+                'moderately_played': 'M',
+                'heavily_played': 'H',
+                'damaged': 'D'
+              };
+              
+              return conditionMap[cond] || 'N';
+            };
+            
+            const editionHoloCode = getEditionHoloCode(isFirstEdition, isHolo, isReverseHolo);
+            const conditionCode = getConditionCode(card.condition);
+            
+            sku = `${tcgplayerId}-${editionHoloCode}${conditionCode}`;
+          }
+        }
+        
         // Updated card-specific template with set name
         const setName = card.attributes?.setName || '';
         const cardInfo = [card.card_name, setName, card?.cards?.card_number || card?.attributes?.cardNumber || '']
           .filter(Boolean).join(' • ');
+        
+        const skuDisplay = sku ? `SKU: ${sku}` : '';
           
         zpl = `^XA
 ^FO20,50^A0N,40,40^FD$${card.price?.toFixed(2) || '0.00'} | ${card.condition || ''}^FS
-^FO50,120^BY3^BCN,100,Y,N,N^FD${tradeIn.id}^FS
+${skuDisplay ? `^FO20,90^A0N,25,25^FD${skuDisplay}^FS` : ''}
+^FO50,${skuDisplay ? '140' : '120'}^BY3^BCN,100,Y,N,N^FD${sku || tradeIn.id}^FS
 ^FO20,250^A0N,25,25^FD${cardInfo}^FS
 ^XZ`;
       } else {
