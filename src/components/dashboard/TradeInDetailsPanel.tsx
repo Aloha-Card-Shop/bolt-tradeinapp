@@ -14,8 +14,7 @@ interface TradeInDetailsPanelProps {
 
 const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
   tradeIn,
-  loadingItems,
-  setTradeIns,
+  loadingItems
 }) => {
   const { updatingItemId, updateTradeInItem } = useTradeInItemUpdate();
   

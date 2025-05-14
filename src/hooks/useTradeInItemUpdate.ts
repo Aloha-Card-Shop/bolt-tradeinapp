@@ -47,6 +47,7 @@ export const useTradeInItemUpdate = () => {
       return true;
     } catch (error) {
       console.error('Error updating trade-in item:', error);
+      toast.error(`Update failed: ${(error as Error).message}`);
       throw error;
     } finally {
       setIsLoading(false);
@@ -71,6 +72,7 @@ export const useTradeInItemUpdate = () => {
       return true;
     } catch (error) {
       console.error('Error updating trade-in notes:', error);
+      toast.error(`Update failed: ${(error as Error).message}`);
       throw error;
     } finally {
       setIsLoading(false);
