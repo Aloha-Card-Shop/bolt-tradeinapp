@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Settings, ClipboardList, UserCircle, DollarSign, LogOut, Barcode } from 'lucide-react';
+import { Home, Settings, ClipboardList, UserCircle, DollarSign, LogOut, Barcode, Printer } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
 import { supabase } from '../lib/supabase';
 
@@ -98,6 +98,18 @@ const AdminNav: React.FC<AdminNavProps> = ({ userRole }) => {
                 >
                   <Barcode className="h-4 w-4 mr-2" />
                   Barcodes
+                </button>
+
+                <button
+                  onClick={() => navigate('/admin/printers')}
+                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                    isActive('/admin/printers')
+                      ? 'text-green-600 bg-green-50'
+                      : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
+                  }`}
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Printers
                 </button>
 
                 <button

@@ -1,3 +1,4 @@
+
 export interface UserMetadata {
   role: 'admin' | 'manager' | 'user';
 }
