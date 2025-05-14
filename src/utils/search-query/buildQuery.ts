@@ -55,7 +55,7 @@ export const buildSearchQuery = async (
       query = query.filter(filter, {});
     }
 
-    query = query.order(sort.column, { ascending: sort.ascending });
+    query = query.order(sort.column, { ascending: sort.ascending }, undefined);
 
     const start = page * RESULTS_PER_PAGE;
     const end = (page + 1) * RESULTS_PER_PAGE - 1;
