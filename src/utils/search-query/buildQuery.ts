@@ -3,7 +3,6 @@ import { SearchParams } from './types';
 import { buildSearchQueryFilter, buildSearchSortOptions } from './queryBuilder';
 import { debugLogQuery } from './debugLogger';
 import { CardDetails } from '../../types/card';
-import { SetOption } from '../../hooks/useSetOptions';
 import { supabase } from '../../lib/supabase';
 
 // Define constants for pagination
@@ -12,13 +11,11 @@ export const RESULTS_PER_PAGE = 40;
 /**
  * Build a complete search query for cards using the unified_products table
  * @param cardDetails Card search parameters
- * @param setOptions Available set options (used for set filtering in some cases)
  * @param page Page number for pagination
  * @returns Query and related metadata
  */
 export const buildSearchQuery = async (
   cardDetails: CardDetails,
-  setOptions: SetOption[], 
   page: number = 0
 ): Promise<{
   query: any;
