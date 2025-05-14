@@ -1,63 +1,93 @@
-
-import { supabase } from '../../lib/supabase';
-import { CardDetails } from '../../types/card';
-import { SetOption } from '../../hooks/useSetOptions';
-import { buildSearchQueryFilter, buildSearchSortOptions } from './queryBuilder';
-import { RESULTS_PER_PAGE, SearchParams } from './types';
+import { generateCardNumberSearchFilter } from '../card-number/searchFilters';
+import { isLikelyCardNumber } from '../card-number/variants';
+import { SearchParams } from './types';
+import { debugLogQuery } from './debugLogger';
 
 /**
- * Build a complete search query based on card details and set options
- * @param cardDetails Card details to search for
- * @param setOptions Available set options (not used directly in this function but kept for API consistency)
- * @param page Page number (0-based)
- * @returns Query object and set of found set IDs
+ * Build a Supabase query filter for card searches
+ * @param params Search parameters 
+ * @returns SQL filter string for use in Supabase query
  */
-export const buildSearchQuery = async (
-  cardDetails: CardDetails,
-  _setOptions: SetOption[], // Renamed with underscore to indicate it's not used
-  page: number = 0
-) => {
-  // Extract search parameters from card details
-  const searchParams: SearchParams = {
-    name: cardDetails.name,
-    set: cardDetails.set,
-    cardNumber: cardDetails.number,
-    game: cardDetails.game
-  };
-  
-  // Build filter string using the queryBuilder
-  // Pass only the searchParams object as expected by the function
-  const filterString = buildSearchQueryFilter(searchParams);
-  
-  // Get sort options
-  // Pass only the searchParams object as expected by the function
-  const sortOptions = buildSearchSortOptions(searchParams);
-  
-  // Calculate pagination
-  const from = page * RESULTS_PER_PAGE;
-  const to = from + RESULTS_PER_PAGE - 1;
-  
-  // Set found set IDs
-  const foundSetIds = new Set<number>();
-  
-  // Build and execute query
-  const query = supabase
-    .from('unified_products')
-    .select('*', { count: 'exact' })
-    .order(sortOptions.column, { ascending: sortOptions.ascending })
-    .range(from, to);
-  
-  // Add filter if one exists
-  if (filterString) {
-    query.filter(filterString);
+export const buildSearchQueryFilter = (params: SearchParams): string => {
+  const { name, set, cardNumber, game } = params;
+  const conditions: string[] = [];
+
+  // Always filter by game type
+  if (game) {
+    conditions.push(`game = '${game}'`);
   }
-  
-  // Return query and found set IDs
-  return {
-    query,
-    foundSetIds
-  };
+
+  // Handle card name search
+  if (name && name.trim()) {
+    if (isLikelyCardNumber(name)) {
+      // Pass all three args: (searchValue, jsonField, cardNumberColumn)
+      const cardNumberFilter = generateCardNumberSearchFilter(
+        name,
+        'attributes',
+        'card_number'
+      );
+      if (cardNumberFilter) {
+        conditions.push(
+          `(name ILIKE '%${name.replace(/'/g, "''")}%' OR ` +
+          `${cardNumberFilter} OR ` +
+          `card_number ILIKE '%${name.replace(/'/g, "''")}%' )`
+        );
+      } else {
+        conditions.push(`name ILIKE '%${name.replace(/'/g, "''")}%'`);
+      }
+    } else {
+      // Standard name search
+      conditions.push(`name ILIKE '%${name.replace(/'/g, "''")}%'`);
+    }
+  }
+
+  // Handle set name filter
+  if (set && set.trim()) {
+    conditions.push(`set_name = '${set.replace(/'/g, "''")}'`);
+  }
+
+  // Handle explicit card-number search
+  if (cardNumber !== undefined && `${cardNumber}`.trim()) {
+    const cnFilter = generateCardNumberSearchFilter(
+      cardNumber,
+      'attributes',
+      'card_number'
+    );
+    if (cnFilter) {
+      conditions.push(
+        `(${cnFilter} OR ` +
+        `card_number ILIKE '%${`${cardNumber}`.replace(/'/g, "''")}%' )`
+      );
+    }
+  }
+
+  // Combine conditions
+  const filterString = conditions.length
+    ? conditions.join(' AND ')
+    : '';
+
+  // Debug log
+  debugLogQuery(filterString, params);
+
+  return filterString;
 };
 
-// This function doesn't need to be here as it's already in resultFormatter.ts
-// Removing to resolve the conflict
+/**
+ * Builds sort options for card searches
+ * @param params Search parameters
+ * @returns Sort configuration for Supabase query
+ */
+export const buildSearchSortOptions = (
+  params: SearchParams
+): { column: string; ascending: boolean } => {
+  const { sortBy, sortDirection } = params;
+  const defaultSort = { column: 'name', ascending: true };
+
+  if (sortBy) {
+    return {
+      column: sortBy,
+      ascending: sortDirection !== 'desc',
+    };
+  }
+  return defaultSort;
+};
