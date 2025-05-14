@@ -3,7 +3,7 @@
 export interface SearchParams {
   name: string;
   set: string;
-  cardNumber?: string | number | null;
+  cardNumber?: string | number | null | { displayName?: string; value?: string };
   game?: string;
   sortBy?: string;
   sortDirection?: 'asc' | 'desc';

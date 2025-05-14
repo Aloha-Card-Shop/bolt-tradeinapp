@@ -45,12 +45,20 @@ export const buildSearchQueryFilter = (params: SearchParams): string => {
   }
 
   // Handle specific card number search - simpler with unified_products as it has a dedicated card_number column
-  if (cardNumber && cardNumber.toString().trim()) {
-    const cardNumberStr = typeof cardNumber === 'object' ? 
-      (cardNumber.displayName || cardNumber.value || '') : 
-      cardNumber.toString();
-      
-    conditions.push(`card_number ILIKE '%${cardNumberStr.replace(/'/g, "''")}%'`);
+  if (cardNumber) {
+    let cardNumberStr = '';
+    
+    if (typeof cardNumber === 'object' && cardNumber !== null) {
+      // Handle card number object format
+      cardNumberStr = cardNumber.displayName || cardNumber.value || '';
+    } else {
+      // Handle string or number format
+      cardNumberStr = String(cardNumber);
+    }
+    
+    if (cardNumberStr.trim()) {
+      conditions.push(`card_number ILIKE '%${cardNumberStr.replace(/'/g, "''")}%'`);
+    }
   }
 
   // Combine all conditions with AND
