@@ -9,11 +9,13 @@ import { useTradeInItemUpdate } from '../../hooks/useTradeInItemUpdate';
 interface TradeInDetailsPanelProps {
   tradeIn: TradeIn;
   loadingItems: string | null;
+  setTradeIns?: React.Dispatch<React.SetStateAction<TradeIn[]>>;
 }
 
 const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
   tradeIn,
   loadingItems,
+  setTradeIns,
 }) => {
   const { updatingItemId, updateTradeInItem } = useTradeInItemUpdate();
   

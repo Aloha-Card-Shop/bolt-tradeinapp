@@ -1,6 +1,6 @@
 
 export interface UserMetadata {
-  role: 'admin' | 'manager' | 'user';
+  role: 'admin' | 'manager' | 'user' | 'shopify_manager';
 }
 
 export interface User {

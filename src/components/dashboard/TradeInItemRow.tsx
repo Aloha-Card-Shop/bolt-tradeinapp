@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { formatCurrency } from '../../utils/formatters';
 import { Tag, DollarSign, Barcode } from 'lucide-react';
@@ -22,9 +21,11 @@ interface TradeInItemRowProps {
       tcgplayer_url?: string;
     };
   };
+  isUpdating?: boolean;
+  onUpdate?: (updates: Partial<any>) => void;
 }
 
-const TradeInItemRow: React.FC<TradeInItemRowProps> = ({ item }) => {
+const TradeInItemRow: React.FC<TradeInItemRowProps> = ({ item, isUpdating, onUpdate }) => {
   const getConditionDisplay = (condition: string) => {
     const conditionMap: Record<string, string> = {
       'near_mint': 'Near Mint',

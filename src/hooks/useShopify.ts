@@ -11,7 +11,9 @@ export const useShopify = () => {
 
   const sendToShopify = async (tradeInId: string) => {
     if (!user) {
-      throw new Error('User must be logged in to send items to Shopify');
+      const errorMessage = 'User must be logged in to send items to Shopify';
+      toast.error(errorMessage);
+      throw new Error(errorMessage);
     }
 
     setIsLoading(true);
@@ -25,10 +27,15 @@ export const useShopify = () => {
         .eq('id', tradeInId)
         .single();
       
-      if (tradeInError) throw tradeInError;
+      if (tradeInError) {
+        toast.error(`Error checking trade-in: ${tradeInError.message}`);
+        throw tradeInError;
+      }
       
       if (tradeIn.shopify_synced) {
-        throw new Error('This trade-in has already been synced to Shopify');
+        const errorMessage = 'This trade-in has already been synced to Shopify';
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
       }
       
       // Call the Shopify sync edge function
@@ -39,11 +46,17 @@ export const useShopify = () => {
         })
       });
       
-      if (functionError) throw functionError;
+      if (functionError) {
+        toast.error(`Function error: ${functionError.message}`);
+        throw functionError;
+      }
       
       if (!data.success) {
+        toast.error(data.error || 'Failed to sync with Shopify');
         throw new Error(data.error || 'Failed to sync with Shopify');
       }
+
+      toast.success('Successfully synced with Shopify!');
 
       // Refresh the data by fetching the updated trade-in
       const { error: refreshError } = await supabase
