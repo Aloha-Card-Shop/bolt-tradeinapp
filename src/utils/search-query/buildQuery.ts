@@ -1,3 +1,4 @@
+
 import { SearchParams, RESULTS_PER_PAGE, SearchQueryResult } from './types';
 import { buildSearchQueryFilter, buildSearchSortOptions } from './queryBuilder';
 import { CardDetails } from '../../types/card';
@@ -49,7 +50,9 @@ export const buildSearchQuery = async (
 
     if (filter && filter.trim() !== '') {
       console.log('Applying filter with .or():', filter);
-      query = query.or(filter);
+      // Fix: Instead of using .or() with the filter string directly,
+      // Use the Supabase filter() method which accepts the raw filter string
+      query = query.filter(filter, {});
     }
 
     query = query.order(sort.column, { ascending: sort.ascending });
