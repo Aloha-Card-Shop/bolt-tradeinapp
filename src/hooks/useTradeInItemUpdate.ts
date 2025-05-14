@@ -6,9 +6,11 @@ import { toast } from 'react-hot-toast';
 
 export const useTradeInItemUpdate = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
 
   const updateTradeInItem = async (itemId: string, updates: Partial<TradeInItem>) => {
     setIsLoading(true);
+    setUpdatingItemId(itemId);
     try {
       // Convert TradeInItem updates to match the database schema
       const dbUpdates: any = {};
@@ -36,14 +38,19 @@ export const useTradeInItemUpdate = () => {
         .update(dbUpdates)
         .eq('id', itemId);
 
-      if (error) throw error;
+      if (error) {
+        toast.error(`Error updating item: ${error.message}`);
+        throw error;
+      }
       
+      toast.success('Item updated successfully');
       return true;
     } catch (error) {
       console.error('Error updating trade-in item:', error);
       throw error;
     } finally {
       setIsLoading(false);
+      setUpdatingItemId(null);
     }
   };
 
@@ -55,8 +62,12 @@ export const useTradeInItemUpdate = () => {
         .update({ staff_notes: notes })
         .eq('id', tradeInId);
 
-      if (error) throw error;
+      if (error) {
+        toast.error(`Error updating notes: ${error.message}`);
+        throw error;
+      }
       
+      toast.success('Notes updated successfully');
       return true;
     } catch (error) {
       console.error('Error updating trade-in notes:', error);
@@ -68,6 +79,7 @@ export const useTradeInItemUpdate = () => {
 
   return {
     isLoading,
+    updatingItemId,
     updateTradeInItem,
     updateStaffNotes
   };

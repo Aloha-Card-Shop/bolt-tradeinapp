@@ -15,7 +15,7 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
   const [staffNotes, setStaffNotes] = useState(tradeIn.staff_notes || '');
   const [isUpdating, setIsUpdating] = useState(false);
   const [loadingItems, setLoadingItems] = useState(false);
-  const { updateTradeInItem, updateStaffNotes } = useTradeInItemUpdate();
+  const { updateTradeInItem, updateStaffNotes, updatingItemId } = useTradeInItemUpdate();
   
   // Fetch items if they're not already loaded
   useEffect(() => {
@@ -29,12 +29,14 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
   const handleItemUpdate = async (item: TradeInItem, updates: Partial<TradeInItem>) => {
     try {
       setIsUpdating(true);
-      await updateTradeInItem(item.id!, updates);
+      if (!item.id) {
+        toast.error("Cannot update item without ID");
+        return;
+      }
+      await updateTradeInItem(item.id, updates);
       setIsUpdating(false);
-      toast.success('Item updated successfully');
     } catch (error) {
       console.error('Error updating item:', error);
-      toast.error('Failed to update item');
       setIsUpdating(false);
     }
   };
@@ -44,10 +46,8 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
       setIsUpdating(true);
       await updateStaffNotes(tradeIn.id, staffNotes);
       setIsUpdating(false);
-      toast.success('Notes updated successfully');
     } catch (error) {
       console.error('Error updating notes:', error);
-      toast.error('Failed to update notes');
       setIsUpdating(false);
     }
   };
@@ -118,7 +118,7 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
                         <EditableTradeInItemRow
                           key={item.id}
                           item={item}
-                          isUpdating={isUpdating}
+                          isUpdating={updatingItemId === item.id || isUpdating}
                           onUpdate={(updates) => handleItemUpdate(item, updates)}
                         />
                       ))}

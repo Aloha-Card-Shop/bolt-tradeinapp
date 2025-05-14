@@ -17,7 +17,7 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
   loadingItems,
   setTradeIns 
 }) => {
-  const { updatingItemId, updateTradeInItem } = useTradeInItemUpdate(setTradeIns);
+  const { updatingItemId, updateTradeInItem } = useTradeInItemUpdate();
   
   const getStatusMessage = (status: string) => {
     switch (status) {
@@ -34,7 +34,7 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
 
   const handleItemUpdate = (itemId: string) => (updates: Partial<TradeInItem>) => {
     if (!itemId) return;
-    updateTradeInItem(tradeIn.id, itemId, updates);
+    updateTradeInItem(itemId, updates);
   };
 
   const statusMessage = getStatusMessage(tradeIn.status);
