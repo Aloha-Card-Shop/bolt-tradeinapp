@@ -22,6 +22,7 @@ const ShopifySettingsForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [hasExistingSettings, setHasExistingSettings] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch existing settings if available
   useEffect(() => {
@@ -29,6 +30,8 @@ const ShopifySettingsForm: React.FC = () => {
       if (!user) return;
       
       setIsLoading(true);
+      setError(null);
+      
       try {
         const { data, error } = await supabase
           .from('shopify_settings')
@@ -36,9 +39,12 @@ const ShopifySettingsForm: React.FC = () => {
           .limit(1)
           .single();
           
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error fetching Shopify settings:', error);
-          toast.error('Failed to load Shopify settings');
+        if (error) {
+          if (error.code !== 'PGRST116') { // Not found error
+            console.error('Error fetching Shopify settings:', error);
+            setError('Failed to load Shopify settings');
+            toast.error('Failed to load Shopify settings');
+          }
           return;
         }
         
@@ -50,9 +56,11 @@ const ShopifySettingsForm: React.FC = () => {
             api_secret: data.api_secret || ''
           });
           setHasExistingSettings(true);
+          toast.success('Shopify settings loaded successfully');
         }
       } catch (err) {
         console.error('Unexpected error:', err);
+        setError('An unexpected error occurred while fetching settings');
       } finally {
         setIsLoading(false);
       }
@@ -74,6 +82,8 @@ const ShopifySettingsForm: React.FC = () => {
     }
     
     setIsSaving(true);
+    setError(null);
+    
     try {
       const { shop_domain, access_token, api_key, api_secret } = settings;
       
@@ -91,28 +101,25 @@ const ShopifySettingsForm: React.FC = () => {
         updated_at: new Date().toISOString()
       };
       
-      let error;
+      let response;
       
       if (hasExistingSettings) {
         // Update existing settings
-        const result = await supabase
+        response = await supabase
           .from('shopify_settings')
           .update(payload)
           .is('id', 'not.null');
-          
-        error = result.error;
       } else {
         // Insert new settings
-        const result = await supabase
+        response = await supabase
           .from('shopify_settings')
           .insert(payload);
-          
-        error = result.error;
       }
       
-      if (error) {
-        console.error('Error saving settings:', error);
-        toast.error('Failed to save settings');
+      if (response.error) {
+        console.error('Error saving settings:', response.error);
+        setError(response.error.message);
+        toast.error(`Failed to save settings: ${response.error.message}`);
         return;
       }
       
@@ -120,6 +127,7 @@ const ShopifySettingsForm: React.FC = () => {
       setHasExistingSettings(true);
     } catch (err) {
       console.error('Unexpected error:', err);
+      setError('An unexpected error occurred');
       toast.error('An unexpected error occurred');
     } finally {
       setIsSaving(false);
@@ -127,11 +135,31 @@ const ShopifySettingsForm: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div className="p-6 text-center">Loading settings...</div>;
+    return (
+      <div className="p-6 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-2">Loading settings...</p>
+      </div>
+    );
   }
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <h2 className="text-xl font-semibold mb-4">Shopify API Settings</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
