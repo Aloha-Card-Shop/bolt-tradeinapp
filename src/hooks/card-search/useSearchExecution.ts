@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { CardDetails } from '../../types/card';
 import { SetOption } from '../useSetOptions';
@@ -61,6 +60,7 @@ export const useSearchExecution = () => {
       const startTime = performance.now();
       
       // Build and execute query using the utility function
+      // Now uses the unified_products table
       const { query, foundSetIds } = await buildSearchQuery(cardDetails, setOptions, page);
       
       // Execute query with improved timeout handling

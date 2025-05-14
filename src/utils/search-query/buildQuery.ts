@@ -4,9 +4,10 @@ import { buildSearchQueryFilter, buildSearchSortOptions } from './queryBuilder';
 import { debugLogQuery } from './debugLogger';
 import { CardDetails } from '../../types/card';
 import { SetOption } from '../../hooks/useSetOptions';
+import { supabase } from '../../lib/supabase';
 
 /**
- * Build a complete search query for cards
+ * Build a complete search query for cards using the unified_products table
  * @param cardDetails Card search parameters
  * @param setOptions Available set options
  * @param page Page number for pagination
@@ -41,20 +42,43 @@ export const buildSearchQuery = async (
   // Use the filter and sort options to enhance the query
   debugLogQuery(filter, searchParams);
 
-  // Mock query - in a real application, this would be a database query
-  const query = {
-    data: [],
-    error: null,
-    count: 0,
-    filter, // Use the filter string
-    sort    // Use the sort options
-  };
+  const RESULTS_PER_PAGE = 40;
+  
+  // Create a real Supabase query targeting the unified_products table
+  const query = supabase
+    .from('unified_products')
+    .select('*', { count: 'exact' })
+    .order(sort.column, { ascending: sort.ascending })
+    .range(page * RESULTS_PER_PAGE, (page + 1) * RESULTS_PER_PAGE - 1);
 
+  // Apply filter if it exists
+  if (filter) {
+    query.or(filter);
+  }
+  
+  // Execute the query
+  const result = await query;
+  
   // Set of found set IDs (for filtering)
   const foundSetIds = new Set<number>();
   
-  // In a real implementation, we would use the setOptions parameter
-  // to further refine the search or process the results
+  // Extract group_ids from the results
+  if (result.data && result.data.length > 0) {
+    result.data.forEach(item => {
+      if (item.group_id) {
+        foundSetIds.add(item.group_id);
+      }
+    });
+  }
   
-  return { query, foundSetIds };
+  return { 
+    query: {
+      data: result.data || [],
+      error: result.error,
+      count: result.count || 0,
+      filter,
+      sort
+    }, 
+    foundSetIds 
+  };
 };
