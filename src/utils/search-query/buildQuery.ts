@@ -19,6 +19,9 @@ export const buildSearchQuery = async (
   foundSetIds: Set<number>;
 }> => {
   console.log('Building search query with:', { cardDetails, page });
+  
+  // Log search criteria for debugging
+  logSearchCriteria(cardDetails, page);
 
   // Convert CardDetails to SearchParams
   const searchParams: SearchParams = {
