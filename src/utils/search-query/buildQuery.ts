@@ -26,9 +26,11 @@ export const buildSearchQuery = async (
   };
   
   // Build filter string using the queryBuilder
+  // Pass only the searchParams object as expected by the function
   const filterString = buildSearchQueryFilter(searchParams);
   
   // Get sort options
+  // Pass only the searchParams object as expected by the function
   const sortOptions = buildSearchSortOptions(searchParams);
   
   // Calculate pagination
