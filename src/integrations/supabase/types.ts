@@ -374,6 +374,84 @@ export type Database = {
         }
         Relationships: []
       }
+      shopify_settings: {
+        Row: {
+          access_token: string
+          api_key: string
+          api_secret: string
+          created_at: string | null
+          id: string
+          shop_domain: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          access_token: string
+          api_key: string
+          api_secret: string
+          created_at?: string | null
+          id?: string
+          shop_domain: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          access_token?: string
+          api_key?: string
+          api_secret?: string
+          created_at?: string | null
+          id?: string
+          shop_domain?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      shopify_sync_logs: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          item_id: string | null
+          message: string | null
+          status: string
+          trade_in_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          item_id?: string | null
+          message?: string | null
+          status: string
+          trade_in_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          item_id?: string | null
+          message?: string | null
+          status?: string
+          trade_in_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopify_sync_logs_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "trade_in_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shopify_sync_logs_trade_in_id_fkey"
+            columns: ["trade_in_id"]
+            isOneToOne: false
+            referencedRelation: "trade_ins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trade_in_items: {
         Row: {
           attributes: Json | null
@@ -383,6 +461,11 @@ export type Database = {
           id: string
           price: number
           quantity: number
+          shopify_inventory_item_id: string | null
+          shopify_product_id: string | null
+          shopify_sync_status: string | null
+          shopify_synced_at: string | null
+          shopify_variant_id: string | null
           trade_in_id: string
         }
         Insert: {
@@ -393,6 +476,11 @@ export type Database = {
           id?: string
           price: number
           quantity?: number
+          shopify_inventory_item_id?: string | null
+          shopify_product_id?: string | null
+          shopify_sync_status?: string | null
+          shopify_synced_at?: string | null
+          shopify_variant_id?: string | null
           trade_in_id: string
         }
         Update: {
@@ -403,6 +491,11 @@ export type Database = {
           id?: string
           price?: number
           quantity?: number
+          shopify_inventory_item_id?: string | null
+          shopify_product_id?: string | null
+          shopify_sync_status?: string | null
+          shopify_synced_at?: string | null
+          shopify_variant_id?: string | null
           trade_in_id?: string
         }
         Relationships: [
@@ -437,6 +530,9 @@ export type Database = {
           printed: boolean | null
           printed_by: string | null
           printer_id: string | null
+          shopify_synced: boolean | null
+          shopify_synced_at: string | null
+          shopify_synced_by: string | null
           staff_notes: string | null
           status: string
           total_value: number
@@ -457,6 +553,9 @@ export type Database = {
           printed?: boolean | null
           printed_by?: string | null
           printer_id?: string | null
+          shopify_synced?: boolean | null
+          shopify_synced_at?: string | null
+          shopify_synced_by?: string | null
           staff_notes?: string | null
           status?: string
           total_value?: number
@@ -477,6 +576,9 @@ export type Database = {
           printed?: boolean | null
           printed_by?: string | null
           printer_id?: string | null
+          shopify_synced?: boolean | null
+          shopify_synced_at?: string | null
+          shopify_synced_by?: string | null
           staff_notes?: string | null
           status?: string
           total_value?: number

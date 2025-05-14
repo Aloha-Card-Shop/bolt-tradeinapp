@@ -1,178 +1,74 @@
 
 import { useState } from 'react';
-import { TradeIn, TradeInItem } from '../types/tradeIn';
 import { supabase } from '../lib/supabase';
+import { TradeInItem } from '../types/tradeIn';
 import { toast } from 'react-hot-toast';
 
-export const useTradeInItemUpdate = (
-  setTradeIns: React.Dispatch<React.SetStateAction<TradeIn[]>>
-) => {
-  const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+export const useTradeInItemUpdate = () => {
+  const [isLoading, setIsLoading] = useState(false);
 
-  const updateTradeInItem = async (
-    tradeInId: string,
-    itemId: string,
-    updates: Partial<TradeInItem>
-  ) => {
-    if (!itemId) {
-      setErrorMessage('Missing item ID for update');
-      return false;
-    }
-
-    setUpdatingItemId(itemId);
-    setErrorMessage(null);
-
+  const updateTradeInItem = async (itemId: string, updates: Partial<TradeInItem>) => {
+    setIsLoading(true);
     try {
-      // Extract fields we need to update in the database
+      // Convert TradeInItem updates to match the database schema
       const dbUpdates: any = {};
       
-      // Only include fields that are actually being updated
-      if (updates.condition !== undefined) dbUpdates.condition = updates.condition;
-      if (updates.quantity !== undefined) dbUpdates.quantity = updates.quantity;
-      if (updates.price !== undefined) dbUpdates.price = updates.price;
-      if (updates.attributes !== undefined) dbUpdates.attributes = updates.attributes;
+      // Handle basic properties
+      if (updates.quantity !== undefined) {
+        dbUpdates.quantity = updates.quantity;
+      }
+      
+      if (updates.price !== undefined) {
+        dbUpdates.price = updates.price;
+      }
+      
+      if (updates.condition !== undefined) {
+        dbUpdates.condition = updates.condition;
+      }
+      
+      // Handle attributes object
+      if (updates.attributes) {
+        dbUpdates.attributes = updates.attributes;
+      }
 
-      // Update the trade_in_items table
       const { error } = await supabase
         .from('trade_in_items')
         .update(dbUpdates)
-        .eq('id', itemId)
-        .eq('trade_in_id', tradeInId);
+        .eq('id', itemId);
 
       if (error) throw error;
-
-      // Optimistically update the UI
-      setTradeIns(prevTradeIns => {
-        return prevTradeIns.map(tradeIn => {
-          if (tradeIn.id !== tradeInId) return tradeIn;
-
-          // Clone the trade-in to avoid mutating the original
-          const updatedTradeIn = { ...tradeIn };
-          
-          // Update the specific item
-          if (updatedTradeIn.items) {
-            updatedTradeIn.items = updatedTradeIn.items.map(item => {
-              if (item.id !== itemId) return item;
-              return { ...item, ...updates };
-            });
-          }
-
-          // Recalculate trade-in totals
-          const { cashTotal, tradeTotal, grandTotal } = calculateTotals(updatedTradeIn.items || []);
-          updatedTradeIn.cash_value = cashTotal;
-          updatedTradeIn.trade_value = tradeTotal;
-          updatedTradeIn.total_value = grandTotal;
-
-          // Update payment_type based on the new totals
-          updatedTradeIn.payment_type = getPaymentType(cashTotal, tradeTotal);
-
-          return updatedTradeIn;
-        });
-      });
-
-      // Now update the trade_ins table with the new totals
-      await updateTradeInTotals(tradeInId);
       
-      toast.success('Item updated successfully');
       return true;
-    } catch (err) {
-      console.error('Error updating trade-in item:', err);
-      setErrorMessage(`Failed to update item: ${(err as Error).message}`);
-      toast.error(`Failed to update item: ${(err as Error).message}`);
-      return false;
+    } catch (error) {
+      console.error('Error updating trade-in item:', error);
+      throw error;
     } finally {
-      setUpdatingItemId(null);
+      setIsLoading(false);
     }
   };
 
-  // Helper function to calculate totals from items
-  const calculateTotals = (items: TradeInItem[]) => {
-    let cashTotal = 0;
-    let tradeTotal = 0;
-    
-    items.forEach(item => {
-      const paymentType = item.attributes?.paymentType || 'cash';
-      const itemPrice = item.price;
-      const quantity = item.quantity || 1;
-      
-      if (paymentType === 'cash') {
-        cashTotal += itemPrice * quantity;
-      } else {
-        tradeTotal += itemPrice * quantity;
-      }
-    });
-    
-    const grandTotal = cashTotal + tradeTotal;
-    
-    return {
-      cashTotal,
-      tradeTotal,
-      grandTotal
-    };
-  };
-
-  // Helper function to determine payment type
-  const getPaymentType = (cashValue: number, tradeValue: number): 'cash' | 'trade' | 'mixed' => {
-    if (cashValue > 0 && tradeValue > 0) return 'mixed';
-    if (tradeValue > 0) return 'trade';
-    return 'cash';
-  };
-
-  // Helper function to update the trade-in totals in the database
-  const updateTradeInTotals = async (tradeInId: string) => {
+  const updateStaffNotes = async (tradeInId: string, notes: string | null) => {
+    setIsLoading(true);
     try {
-      // First get the current items to calculate new totals
-      const { data, error } = await supabase
-        .from('trade_in_items')
-        .select('price, quantity, attributes')
-        .eq('trade_in_id', tradeInId);
-        
+      const { error } = await supabase
+        .from('trade_ins')
+        .update({ staff_notes: notes })
+        .eq('id', tradeInId);
+
       if (error) throw error;
       
-      if (!data || data.length === 0) return;
-      
-      // Calculate new totals
-      let cashTotal = 0;
-      let tradeTotal = 0;
-      
-      data.forEach(item => {
-        const paymentType = item.attributes?.paymentType || 'cash';
-        const itemPrice = item.price || 0;
-        const quantity = item.quantity || 1;
-        
-        if (paymentType === 'cash') {
-          cashTotal += itemPrice * quantity;
-        } else {
-          tradeTotal += itemPrice * quantity;
-        }
-      });
-      
-      const grandTotal = cashTotal + tradeTotal;
-      const paymentType = getPaymentType(cashTotal, tradeTotal);
-      
-      // Update the trade_ins table with new totals
-      const { error: updateError } = await supabase
-        .from('trade_ins')
-        .update({
-          cash_value: cashTotal,
-          trade_value: tradeTotal,
-          total_value: grandTotal,
-          payment_type: paymentType
-        })
-        .eq('id', tradeInId);
-        
-      if (updateError) throw updateError;
-      
-    } catch (err) {
-      console.error('Error updating trade-in totals:', err);
-      // Don't show a toast here as we already showed one for the item update
+      return true;
+    } catch (error) {
+      console.error('Error updating trade-in notes:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return {
-    updatingItemId,
-    errorMessage,
-    updateTradeInItem
+    isLoading,
+    updateTradeInItem,
+    updateStaffNotes
   };
 };

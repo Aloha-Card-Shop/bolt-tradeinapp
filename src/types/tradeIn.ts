@@ -22,6 +22,11 @@ export interface TradeInItem {
   };
   tcgplayer_url?: string;
   image_url?: string;
+  shopify_product_id?: string;
+  shopify_variant_id?: string;
+  shopify_inventory_item_id?: string;
+  shopify_sync_status?: string;
+  shopify_synced_at?: string;
 }
 
 export interface TradeIn {
@@ -48,6 +53,10 @@ export interface TradeIn {
   last_printed_at?: string;
   printed_by?: string;
   printer_id?: string;
+  // Shopify-related properties
+  shopify_synced?: boolean;
+  shopify_synced_at?: string;
+  shopify_synced_by?: string;
 }
 
 export type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected';
