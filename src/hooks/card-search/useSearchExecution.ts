@@ -1,8 +1,8 @@
-
 import { useState } from 'react';
 import { CardDetails } from '../../types/card';
 import { SetOption } from '../useSetOptions';
-import { buildSearchQuery, formatResultsToCardDetails } from '../../utils/search-query';
+import { buildSearchQuery } from '../../utils/search-query';
+import { formatResultsToCardDetails } from '../../utils/search-query/resultFormatter';
 import { 
   logSearchCriteria,
   logPerformance,
@@ -113,7 +113,7 @@ export const useSearchExecution = () => {
         // but we'll log it for debugging
       }
 
-      // Format the search results using the utility function
+      // Format the search results using the utility function from resultFormatter.ts
       const formattedResults = formatResultsToCardDetails(data || [], setOptions, cardDetails);
       
       // Log formatted results

@@ -2,7 +2,7 @@
 import { useState, Dispatch, SetStateAction } from 'react';
 import { CardDetails } from '../../types/card';
 import { SetOption } from '../useSetOptions';
-import { RESULTS_PER_PAGE } from '../../utils/search-query';
+import { RESULTS_PER_PAGE } from '../../utils/search-query/types';
 import { toast } from 'react-hot-toast';
 import { useSearchExecution } from './useSearchExecution';
 import { logLoadingMore, logAdditionalResults } from '../../utils/search-query/debugLogger';

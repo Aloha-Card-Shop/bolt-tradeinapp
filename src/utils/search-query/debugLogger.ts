@@ -1,93 +1,67 @@
 
-import { SearchParams } from './types';
+import { CardDetails } from "../../types/card";
+import { SearchParams } from "./types";
 
 /**
- * Log search query parameters for debugging purposes
- * @param query The SQL filter string
- * @param params Search parameters used to generate the query
+ * Logs search criteria for debugging
  */
-export const debugLogQuery = (query: string, params: SearchParams) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.group('Card Search Query');
-    console.log('Filter:', query || '(No filters)');
-    console.log('Parameters:', params);
-    console.groupEnd();
-  }
+export const logSearchCriteria = (cardDetails: CardDetails, page: number) => {
+  console.log(`🔍 Searching with criteria:`, {
+    name: cardDetails.name,
+    set: cardDetails.set,
+    number: cardDetails.number,
+    game: cardDetails.game,
+    page
+  });
 };
 
 /**
- * Log search criteria with detailed information
- * @param cardDetails Card details used for search
- * @param page Current page number
- */
-export const logSearchCriteria = (cardDetails: any, page: number) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.group('Search Criteria');
-    console.log('Card Details:', cardDetails);
-    console.log('Page:', page);
-    console.groupEnd();
-  }
-};
-
-/**
- * Log performance metrics for search execution
- * @param startTime Performance start time
+ * Logs performance metrics for search operations
  */
 export const logPerformance = (startTime: number) => {
-  if (process.env.NODE_ENV === 'development') {
-    const endTime = performance.now();
-    const executionTime = endTime - startTime;
-    console.log(`Search execution time: ${executionTime.toFixed(2)}ms`);
-  }
+  const endTime = performance.now();
+  console.log(`⏱️ Search executed in ${Math.round(endTime - startTime)}ms`);
 };
 
 /**
- * Log raw response data from the search query
- * @param data Response data
- * @param error Any errors that occurred
- * @param count Total count if available
+ * Logs raw database response for debugging
  */
 export const logRawResponse = (data: any, error: any, count: number | null) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.group('Search Response');
-    console.log('Count:', count);
-    console.log('Data:', data);
-    if (error) {
-      console.error('Error:', error);
-    }
-    console.groupEnd();
+  if (error) {
+    console.error('❌ Search error:', error);
+  } else {
+    console.log(`✅ Found ${data?.length || 0} results${count !== null ? ` (total: ${count})` : ''}`);
   }
 };
 
 /**
- * Log formatted search results
- * @param results Formatted search results
+ * Logs formatted results for debugging
  */
-export const logFormattedResults = (results: any[]) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.group('Formatted Results');
-    console.log('Results Count:', results.length);
-    console.log('First Result:', results[0] || 'No results');
-    console.groupEnd();
+export const logFormattedResults = (results: CardDetails[]) => {
+  console.log(`🔢 Formatted results: ${results.length}`);
+  if (results.length > 0) {
+    console.log('Example result:', results[0]);
   }
 };
 
 /**
- * Log when loading more results (for pagination)
- * @param page Page number being loaded
+ * Logs the generated query filter string for debugging
+ */
+export const debugLogQuery = (filterString: string, params: SearchParams) => {
+  console.log('🔍 Generated filter:', filterString);
+  console.log('🔍 From params:', params);
+};
+
+/**
+ * Log when loading more results (pagination)
  */
 export const logLoadingMore = (page: number) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`Loading more results (page ${page})...`);
-  }
+  console.log(`📄 Loading more results (page ${page + 1})`);
 };
 
 /**
- * Log information about additional results loaded
- * @param count Number of additional results loaded
+ * Log additional results loaded
  */
 export const logAdditionalResults = (count: number) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`Loaded ${count} additional results`);
-  }
+  console.log(`✅ Loaded ${count} additional results`);
 };

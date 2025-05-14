@@ -4,7 +4,6 @@ import { CardDetails } from '../../types/card';
 import { SetOption } from '../../hooks/useSetOptions';
 import { buildSearchQueryFilter, buildSearchSortOptions } from './queryBuilder';
 import { RESULTS_PER_PAGE, SearchParams } from './types';
-// Remove the import of formatResultsToCardDetails to avoid conflicts
 
 /**
  * Build a complete search query based on card details and set options
@@ -27,11 +26,9 @@ export const buildSearchQuery = async (
   };
   
   // Build filter string using the queryBuilder
-  // Fix: Pass the complete searchParams object to the function
   const filterString = buildSearchQueryFilter(searchParams);
   
   // Get sort options
-  // Fix: Pass the complete searchParams object to the sortOptions function
   const sortOptions = buildSearchSortOptions(searchParams);
   
   // Calculate pagination
@@ -62,4 +59,3 @@ export const buildSearchQuery = async (
 
 // This function doesn't need to be here as it's already in resultFormatter.ts
 // Removing to resolve the conflict
-
