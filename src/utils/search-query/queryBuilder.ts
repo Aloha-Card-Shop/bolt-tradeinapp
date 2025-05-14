@@ -2,7 +2,7 @@
 import { SearchParams } from './types';
 import { isLikelyCardNumber } from '../card-number/variants';
 import { debugLogQuery } from './debugLogger';
-import { generateCardNumberSearchFilter } from '../card-number/searchFilters';
+import { getCardNumberString } from '../card-number/formatters';
 
 /**
  * Build a Supabase query filter for unified_products table searches
@@ -46,12 +46,18 @@ export const buildSearchQueryFilter = (params: SearchParams): string => {
     conditions.push(`group_id IN (SELECT groupid FROM public.groups WHERE name = '${set.replace(/'/g, "''")}')`);
   }
 
-  // Handle card number search - use direct column in unified_products and the helper function
+  // Handle card number search - use direct column in unified_products
   if (cardNumber) {
-    // Use the card number search filter helper with all required parameters
-    const cardNumberFilter = generateCardNumberSearchFilter(cardNumber, 'attributes', 'card_number');
-    if (cardNumberFilter) {
-      conditions.push(cardNumberFilter);
+    // Get the card number as a string
+    const cardNumberStr = getCardNumberString(cardNumber);
+    
+    if (cardNumberStr && cardNumberStr.trim()) {
+      // Build a simple ILIKE query for the card_number column - avoid complex function
+      conditions.push(`card_number ILIKE '%${cardNumberStr.replace(/'/g, "''")}%'`);
+      
+      // Also search in JSON attributes as fallback
+      conditions.push(`attributes->>'Number' ILIKE '%${cardNumberStr.replace(/'/g, "''")}%'`);
+      conditions.push(`attributes->>'number' ILIKE '%${cardNumberStr.replace(/'/g, "''")}%'`);
     }
   }
 

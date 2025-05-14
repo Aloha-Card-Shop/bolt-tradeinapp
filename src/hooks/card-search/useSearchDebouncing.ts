@@ -1,9 +1,10 @@
 
 import { useEffect } from 'react';
 import { CardDetails } from '../../types/card';
+import { isLikelyCardNumber } from '../../utils/card-number/variants';
 
 /**
- * Custom hook to handle search debouncing and auto-search triggers
+ * Custom hook to handle debouncing for search operations
  */
 export const useSearchDebouncing = (
   cardDetails: CardDetails,
@@ -12,67 +13,36 @@ export const useSearchDebouncing = (
 ) => {
   // Handle card name changes - debounce search
   useEffect(() => {
-    let debounceTimeout: NodeJS.Timeout;
-    
-    if (cardDetails.name && cardDetails.name.length >= 2) {
-      // Auto search after typing
-      debounceTimeout = setTimeout(() => {
-        console.log('Auto-searching after name input:', cardDetails.name);
-        setShouldSearch(true);
-        
-        // Also fetch suggestions after typing
-        if (cardDetails.game) {
-          fetchSuggestions(cardDetails.name, cardDetails.game, cardDetails.categoryId || 0);
-        }
-      }, 500); // 500ms debounce for normal searches
-    } else if (cardDetails.name === '') {
-      // Clear search when name is cleared
-      debounceTimeout = setTimeout(() => {
-        console.log('Clearing search results as name is empty');
-        setShouldSearch(true);
-      }, 100);
-    }
-
-    return () => {
-      if (debounceTimeout) {
-        clearTimeout(debounceTimeout);
+    // Auto-search when name or number changes
+    if (cardDetails.name || cardDetails.number || cardDetails.set) {
+      // Skip search if name is very short and doesn't look like a card number
+      if (cardDetails.name && cardDetails.name.length < 2 && !isLikelyCardNumber(cardDetails.name)) {
+        console.log('Name too short and not a card number, skipping search');
+        return;
       }
-    };
-  }, [
-    cardDetails.name, 
-    cardDetails.game, 
-    cardDetails.categoryId, 
-    setShouldSearch,
-    fetchSuggestions
-  ]);
 
-  // Handle card number changes
+      const timer = setTimeout(() => {
+        console.log('Debounce timer completed, triggering search');
+        setShouldSearch(true);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [cardDetails.name, cardDetails.number, cardDetails.set, setShouldSearch]);
+  
+  // Fetch auto-complete suggestions when name changes
   useEffect(() => {
-    if (!cardDetails.number) return;
+    if (cardDetails.name && cardDetails.name.length >= 2) {
+      // Don't fetch suggestions if the input looks like a card number
+      if (!isLikelyCardNumber(cardDetails.name)) {
+        fetchSuggestions(
+          cardDetails.name,
+          cardDetails.game,
+          cardDetails.categoryId || 0
+        );
+      }
+    }
+  }, [cardDetails.name, cardDetails.game, cardDetails.categoryId, fetchSuggestions]);
 
-    // When a card number is entered, search immediately
-    const debounceTimeout = setTimeout(() => {
-      console.log('Auto-searching after card number input:', cardDetails.number);
-      setShouldSearch(true);
-    }, 300); // Shorter debounce for card number searches
-
-    return () => {
-      clearTimeout(debounceTimeout);
-    };
-  }, [cardDetails.number, setShouldSearch]);
-
-  // Handle set changes
-  useEffect(() => {
-    if (!cardDetails.set) return;
-
-    // When a set is selected, search immediately
-    const debounceTimeout = setTimeout(() => {
-      console.log('Auto-searching after set selection:', cardDetails.set);
-      setShouldSearch(true);
-    }, 100); // Very short debounce for set selection
-
-    return () => {
-      clearTimeout(debounceTimeout);
-    };
-  }, [cardDetails.set, setShouldSearch]);
+  return null;
 };
