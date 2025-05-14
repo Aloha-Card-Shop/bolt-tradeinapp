@@ -8,8 +8,7 @@ import { CardDetails } from '../../types/card';
 export const useSearchDebouncing = (
   cardDetails: CardDetails,
   setShouldSearch: (value: boolean) => void,
-  fetchSuggestions: (name: string, game: string, categoryId: number) => void,
-  filterSetOptions: (searchTerms: string[], foundSetIds: Set<number>) => void
+  fetchSuggestions: (name: string, game: string, categoryId: number) => void
 ) => {
   // Handle card name changes - debounce search
   useEffect(() => {

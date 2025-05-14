@@ -1,9 +1,9 @@
 
 import { SearchParams, RESULTS_PER_PAGE, SearchQueryResult } from './types';
 import { buildSearchQueryFilter, buildSearchSortOptions } from './queryBuilder';
-import { debugLogQuery } from './debugLogger';
 import { CardDetails } from '../../types/card';
 import { supabase } from '../../lib/supabase';
+import { generateCardNumberSearchFilter } from '../card-number/searchFilters';
 
 /**
  * Build a complete search query for cards using the unified_products table

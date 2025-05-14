@@ -2,6 +2,7 @@
 import { SearchParams } from './types';
 import { isLikelyCardNumber } from '../card-number/variants';
 import { debugLogQuery } from './debugLogger';
+import { generateCardNumberSearchFilter } from '../card-number/searchFilters';
 
 /**
  * Build a Supabase query filter for unified_products table searches
@@ -45,18 +46,12 @@ export const buildSearchQueryFilter = (params: SearchParams): string => {
     conditions.push(`group_id IN (SELECT groupid FROM public.groups WHERE name = '${set.replace(/'/g, "''")}')`);
   }
 
-  // Handle card number search - use direct column in unified_products
+  // Handle card number search - use direct column in unified_products and the helper function
   if (cardNumber) {
-    let cardNumberStr = '';
-    
-    if (typeof cardNumber === 'object' && cardNumber !== null) {
-      cardNumberStr = cardNumber.displayName || cardNumber.value || '';
-    } else {
-      cardNumberStr = String(cardNumber);
-    }
-    
-    if (cardNumberStr.trim()) {
-      conditions.push(`card_number ILIKE '%${cardNumberStr.replace(/'/g, "''")}%'`);
+    // Use the card number search filter helper with all required parameters
+    const cardNumberFilter = generateCardNumberSearchFilter(cardNumber, 'attributes', 'card_number');
+    if (cardNumberFilter) {
+      conditions.push(cardNumberFilter);
     }
   }
 

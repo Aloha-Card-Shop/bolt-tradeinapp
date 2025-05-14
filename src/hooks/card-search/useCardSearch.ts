@@ -60,8 +60,7 @@ export const useCardSearch = () => {
     cardDetails, 
     setShouldSearch, 
     // Type correction: convert fetchSuggestions to match the expected signature
-    (name: string, game: string, categoryId: number) => fetchSuggestions(name, game as any, categoryId),
-    filterSetOptions
+    (name: string, game: string, categoryId: number) => fetchSuggestions(name, game as any, categoryId)
   );
 
   // Perform search when shouldSearch is true
