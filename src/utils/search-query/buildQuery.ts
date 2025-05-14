@@ -14,7 +14,8 @@ import { SetOption } from '../../hooks/useSetOptions';
  */
 export const buildSearchQuery = async (
   cardDetails: CardDetails,
-  setOptions: SetOption[],
+  // Mark setOptions with underscore to indicate it's intentionally unused
+  _setOptions: SetOption[],
   page: number = 0
 ): Promise<{
   query: any;
