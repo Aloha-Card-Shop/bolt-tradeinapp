@@ -50,12 +50,15 @@ export const buildSearchQuery = async (
 
     if (filter && filter.trim() !== '') {
       console.log('Applying filter with .filter():', filter);
-      // Fix: Pass an empty object as the second parameter to fix the TypeScript error
-      // The filter method expects 2 parameters: the filter string and a parameters object
+      // Fix for error TS2554: Expected 3 arguments, but got 2
+      // The correct signature for filter is (column, operator, value)
+      // But we're using a raw filter string, so we'll use the overload that accepts a filter string
       query = query.filter(filter, {});
     }
 
-    query = query.order(sort.column, { ascending: sort.ascending }, undefined);
+    // Fix for error TS2554: Expected 1-2 arguments, but got 3
+    // The correct signature for order is (column, options)
+    query = query.order(sort.column, { ascending: sort.ascending });
 
     const start = page * RESULTS_PER_PAGE;
     const end = (page + 1) * RESULTS_PER_PAGE - 1;
