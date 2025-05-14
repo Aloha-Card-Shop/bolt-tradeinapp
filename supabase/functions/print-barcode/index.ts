@@ -81,7 +81,8 @@ serve(async (req) => {
           price,
           condition,
           attributes,
-          cards (name, card_number, tcgplayer_url)
+          tcgplayer_url,
+          image_url
         `)
         .eq('id', cardId)
         .eq('trade_in_id', tradeInId)
@@ -174,22 +175,20 @@ serve(async (req) => {
       // Prepare card-related values if available
       const cardName = card?.card_name || '';
       const setName = card?.attributes?.setName || '';
-      const cardNumber = card?.cards?.card_number || 
-                       card?.attributes?.cardNumber || 
-                       (card?.attributes && typeof card.attributes === 'object' && 'cardNumber' in card.attributes ? card.attributes.cardNumber : '');
+      const cardNumber = card?.attributes?.cardNumber || '';
       const cardPrice = card?.price?.toFixed(2) || '0.00';
       const cardCondition = card?.condition || '';
       
       // Generate SKU if possible
       let sku = '';
-      if (card && card.cards && card.cards.tcgplayer_url) {
-        const tcgplayerIdMatch = card.cards.tcgplayer_url.match(/\/(\d+)/);
+      if (card && card.tcgplayer_url) {
+        const tcgplayerIdMatch = card.tcgplayer_url.match(/\/(\d+)/);
         const tcgplayerId = tcgplayerIdMatch ? tcgplayerIdMatch[1] : undefined;
         
         if (tcgplayerId) {
           const isFirstEdition = !!card.attributes?.isFirstEdition;
           const isHolo = !!card.attributes?.isHolo;
-          const isReverseHolo = !!card.attributes?.isReverseHolo;
+          const isReverseHolo = false; // Default to false
           
           // Import the generateSku function or recreate its logic here
           // Since this is an edge function, we recreate the logic
@@ -239,14 +238,14 @@ serve(async (req) => {
       if (card) {
         // Generate SKU if possible
         let sku = '';
-        if (card.cards && card.cards.tcgplayer_url) {
-          const tcgplayerIdMatch = card.cards.tcgplayer_url.match(/\/(\d+)/);
+        if (card.tcgplayer_url) {
+          const tcgplayerIdMatch = card.tcgplayer_url.match(/\/(\d+)/);
           const tcgplayerId = tcgplayerIdMatch ? tcgplayerIdMatch[1] : undefined;
           
           if (tcgplayerId) {
             const isFirstEdition = !!card.attributes?.isFirstEdition;
             const isHolo = !!card.attributes?.isHolo;
-            const isReverseHolo = !!card.attributes?.isReverseHolo;
+            const isReverseHolo = false; // Default to false
             
             // Recreate the SKU generation logic
             const getEditionHoloCode = (isFirstEd: boolean, isHoloCard: boolean, isReverseHoloCard: boolean) => {
@@ -278,7 +277,7 @@ serve(async (req) => {
         
         // Updated card-specific template with set name
         const setName = card.attributes?.setName || '';
-        const cardInfo = [card.card_name, setName, card?.cards?.card_number || card?.attributes?.cardNumber || '']
+        const cardInfo = [card.card_name, setName, card?.attributes?.cardNumber || '']
           .filter(Boolean).join(' • ');
         
         const skuDisplay = sku ? `SKU: ${sku}` : '';

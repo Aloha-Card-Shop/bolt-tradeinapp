@@ -20,8 +20,8 @@ export interface TradeInItem {
     cardNumber?: string;
     setName?: string;  // Add setName to attributes
   };
-  tcgplayer_url?: string | null;
-  image_url?: string | null;
+  tcgplayer_url?: string;
+  image_url?: string;
 }
 
 export interface TradeIn {

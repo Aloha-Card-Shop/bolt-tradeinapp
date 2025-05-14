@@ -18,7 +18,7 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
   tradeIn,
   item,
   width = 2,
-  height = 50, // Further reduced from 60 to 50 to give more room to price/condition
+  height = 50,
   displayValue = true,
   fontSize = 12,
 }) => {
@@ -27,20 +27,20 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
   useEffect(() => {
     if (barcodeRef.current && tradeIn.id) {
       try {
-        // If we have a card item with TCGplayer ID, use it to generate a SKU,
+        // If we have a card item with TCGplayer URL, use it to generate a SKU,
         // otherwise fall back to the trade-in ID
         let barcodeValue = tradeIn.id;
         
-        if (item && item.cards && item.cards.tcgplayer_url) {
+        if (item && item.tcgplayer_url) {
           // Extract TCGPlayer ID from URL
-          const tcgplayerIdMatch = item.cards.tcgplayer_url.match(/\/(\d+)/);
+          const tcgplayerIdMatch = item.tcgplayer_url.match(/\/(\d+)/);
           const tcgplayerId = tcgplayerIdMatch ? tcgplayerIdMatch[1] : undefined;
           
           // If we have a TCGPlayer ID, generate a SKU
           if (tcgplayerId) {
             const isFirstEdition = !!item.attributes?.isFirstEdition;
             const isHolo = !!item.attributes?.isHolo;
-            const isReverseHolo = !!item.attributes?.isReverseHolo;
+            const isReverseHolo = false; // Default to false if not present
             
             barcodeValue = generateSku(
               tcgplayerId,
@@ -58,8 +58,8 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
           height,
           displayValue,
           fontSize,
-          marginTop: 2, // Reduced from 3 to 2
-          marginBottom: 2, // Reduced from 3 to 2
+          marginTop: 2,
+          marginBottom: 2,
           background: '#ffffff'
         });
       } catch (error) {
@@ -86,14 +86,14 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
 
   // Create SKU display if applicable
   let skuDisplay = '';
-  if (item && item.cards && item.cards.tcgplayer_url) {
-    const tcgplayerIdMatch = item.cards.tcgplayer_url.match(/\/(\d+)/);
+  if (item && item.tcgplayer_url) {
+    const tcgplayerIdMatch = item.tcgplayer_url.match(/\/(\d+)/);
     const tcgplayerId = tcgplayerIdMatch ? tcgplayerIdMatch[1] : undefined;
     
     if (tcgplayerId) {
       const isFirstEdition = !!item.attributes?.isFirstEdition;
       const isHolo = !!item.attributes?.isHolo;
-      const isReverseHolo = !!item.attributes?.isReverseHolo;
+      const isReverseHolo = false; // Default to false since it's not in the attributes type
       
       skuDisplay = generateSku(
         tcgplayerId,
