@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { GameType } from '../types/card';
 
@@ -13,9 +13,6 @@ export const useSetOptions = (game: GameType, categoryId?: number) => {
   const [filteredSetOptions, setFilteredSetOptions] = useState<SetOption[]>([]);
   const [isLoadingSets, setIsLoadingSets] = useState(false);
   const [isFiltered, setIsFiltered] = useState(false);
-  
-  // Use a ref to track last filter operation to prevent duplicates
-  const lastFilterSignatureRef = useRef<string>('');
 
   // Fetch all sets for the selected game
   useEffect(() => {
@@ -59,21 +56,12 @@ export const useSetOptions = (game: GameType, categoryId?: number) => {
     fetchSetOptions();
   }, [game, categoryId]);
 
-  // Modified filter function with memoization to prevent redundant filtering
-  const filterSetOptions = useCallback((
+  // Modified filter function that only shows sets containing search results
+  const filterSetOptions = (
     searchTerms: string[],
     foundSetIds?: Set<number>
   ) => {
-    // Create a signature for this filter operation to detect duplicates
-    const filterSignature = `${searchTerms.join('|')}|${foundSetIds ? Array.from(foundSetIds).join(',') : ''}`;
-    
-    // Skip if this exact filter was just performed
-    if (filterSignature === lastFilterSignatureRef.current) {
-      return;
-    }
-    
-    // Update the last filter signature
-    lastFilterSignatureRef.current = filterSignature;
+    console.log(`Filtering sets with terms: [${searchTerms.join(', ')}], foundSetIds size: ${foundSetIds?.size || 0}`);
     
     // If search is empty, show all sets
     if (searchTerms.length === 0) {
@@ -99,13 +87,13 @@ export const useSetOptions = (game: GameType, categoryId?: number) => {
       setIsFiltered(false);
       console.log(`No matching sets found yet, showing all ${setOptions.length} sets`);
     }
-  }, [setOptions]);
+  };
 
-  const showAllSets = useCallback(() => {
+  const showAllSets = () => {
     setFilteredSetOptions([...setOptions].sort((a, b) => a.name.localeCompare(b.name)));
     setIsFiltered(false);
     console.log(`Reset filter to show all ${setOptions.length} sets`);
-  }, [setOptions]);
+  };
 
   return {
     setOptions,

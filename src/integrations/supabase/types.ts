@@ -542,7 +542,6 @@ export type Database = {
       unified_products: {
         Row: {
           attributes: Json | null
-          card_number: string | null
           category_id: number
           clean_name: string | null
           created_at: string | null
@@ -561,7 +560,6 @@ export type Database = {
         }
         Insert: {
           attributes?: Json | null
-          card_number?: string | null
           category_id: number
           clean_name?: string | null
           created_at?: string | null
@@ -580,7 +578,6 @@ export type Database = {
         }
         Update: {
           attributes?: Json | null
-          card_number?: string | null
           category_id?: number
           clean_name?: string | null
           created_at?: string | null

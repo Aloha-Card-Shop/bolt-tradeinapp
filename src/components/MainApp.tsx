@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { DatabaseIcon, Sparkles } from 'lucide-react';
 import { Toaster } from 'react-hot-toast'; // Import Toaster for notifications
 import CardSearch from './CardSearch';
@@ -13,8 +12,6 @@ import { CardDetails, SavedCard } from '../types/card';
 import { toast } from 'react-hot-toast';
 
 function MainApp() {
-  const [searchError, setSearchError] = useState<string | null>(null);
-  
   const { 
     cardDetails, 
     searchResults, 
@@ -78,19 +75,6 @@ function MainApp() {
     resetSearch(); // Reset search after adding card
     toast.success(`Added ${card.name} to trade-in list`);
   };
-  
-  const handleSearch = () => {
-    setSearchError(null); // Clear any previous errors
-    try {
-      performSearch();
-    } catch (error) {
-      if (error instanceof Error) {
-        setSearchError(error.message);
-      } else {
-        setSearchError('Unknown search error');
-      }
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -129,7 +113,7 @@ function MainApp() {
                 searchInputRef={searchInputRef}
                 potentialCardNumber={potentialCardNumber}
                 onUseAsCardNumber={handleUseAsCardNumber}
-                performSearch={handleSearch}
+                performSearch={performSearch}
                 isFiltered={isSetFiltered}
                 onShowAllSets={handleShowAllSets}
               />
@@ -155,8 +139,6 @@ function MainApp() {
                 hasMoreResults={hasMoreResults}
                 loadMoreResults={loadMoreResults}
                 totalResults={totalResults}
-                error={searchError}
-                onRetrySearch={handleSearch}
               />
             </div>
           </div>

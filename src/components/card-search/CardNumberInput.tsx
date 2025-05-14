@@ -1,7 +1,7 @@
 
 import React, { KeyboardEvent } from 'react';
 import { CardNumberObject } from '../../types/card';
-import { getCardNumberString } from '../../utils/card-number/formatters';
+import { getCardNumberString } from '../../utils/cardSearchUtils';
 import { Loader2 } from 'lucide-react';
 
 interface CardNumberInputProps {
@@ -29,12 +29,8 @@ const CardNumberInput: React.FC<CardNumberInputProps> = ({
     if (e.key === 'Enter') {
       e.preventDefault();
       // The input change handler in useCardSearch already triggers search
-      console.log('Search triggered via Enter key in CardNumberInput');
     }
   };
-  
-  // Get the string value to display for the input
-  const displayValue = getCardNumberString(cardNumber);
   
   return (
     <div>
@@ -46,10 +42,10 @@ const CardNumberInput: React.FC<CardNumberInputProps> = ({
           id="card-number"
           type="text"
           name="number"
-          value={displayValue}
+          value={getCardNumberString(cardNumber)}
           onChange={onChange}
           onKeyDown={handleKeyDown}
-          placeholder="e.g. 4, 004, 4/102, or 004/102"
+          placeholder="e.g. 12, 12/107, or SW123"
           className={`w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${isSearching ? 'pr-10' : ''}`}
         />
         {isSearching && (
@@ -59,7 +55,7 @@ const CardNumberInput: React.FC<CardNumberInputProps> = ({
         )}
       </div>
       <p className="mt-1 text-xs text-gray-500">
-        Card number searches work with other filters to narrow down results
+        Enter full or partial card number (works with just digits, with set number, or prefix)
       </p>
     </div>
   );
