@@ -44,14 +44,13 @@ export const buildSearchQuery = async (
   // Start building the query with select fields specified to reduce data transfer
   let query = supabase
     .from('unified_products')
-    .select('id, name, group_id, image_url, attributes, product_id, tcgplayer_product_id', { count: 'exact' })
+    .select('id, name, group_id, image_url, attributes, product_id, tcgplayer_product_id, card_number', { count: 'exact' })
     .order('name');
   
   // Apply pagination
   query = query.range(from, to);
 
   // Apply filters based on provided card details
-  // Apply filters for unified_products table
   if (categoryId) {
     query = query.eq('category_id', categoryId);
     if (DEBUG_MODE) console.log(`Added category filter: ${categoryId}`);
@@ -69,61 +68,53 @@ export const buildSearchQuery = async (
     }
   }
   
-  // Enhanced card number search with improved matching for unified_products table
+  // Enhanced card number search using the dedicated card_number column
   if (number) {
     // Normalize the card number for more consistent matching
     const normalizedNumber = number.trim().replace(/^0+(\d+)/, '$1'); // Remove leading zeros from numeric part
     const numberBeforeSlash = extractNumberBeforeSlash(number);
     const fullNumber = number.toString();
     
-    // Build a comprehensive filter to search in attributes object
-    let cardNumberFilters: string[] = [];
+    // Build card number filters for direct column search instead of JSON attribute search
+    let cardNumberFilters = [];
     
-    // Attributes-level searches for different possible paths
-    const possiblePaths = ['number', 'Number', 'card_number', 'cardNumber'];
+    // Exact match (highest priority)
+    cardNumberFilters.push(`card_number.eq.${fullNumber}`);
     
-    possiblePaths.forEach(path => {
-      // Exact match (highest priority)
-      cardNumberFilters.push(`attributes->${path}.eq.${fullNumber}`);
-      
-      // Also try with normalized number (without leading zeros)
-      if (normalizedNumber !== fullNumber) {
-        cardNumberFilters.push(`attributes->${path}.eq.${normalizedNumber}`);
-      }
-      
-      // Exact match but case-insensitive
-      cardNumberFilters.push(`attributes->${path}.ilike.${fullNumber}`);
-      
-      // Contains match (number appears anywhere)
-      cardNumberFilters.push(`attributes->${path}.ilike.%${fullNumber}%`);
-      
-      // Match with normalized number (without leading zeros)
-      if (normalizedNumber !== fullNumber) {
-        cardNumberFilters.push(`attributes->${path}.ilike.%${normalizedNumber}%`);
-      }
-      
-      // For pattern like "4/102", also check for "004/102"
-      if (fullNumber.includes('/') && normalizedNumber !== fullNumber) {
-        const parts = fullNumber.split('/');
-        if (parts.length === 2) {
-          const paddedNumber = parts[0].padStart(3, '0') + '/' + parts[1];
-          cardNumberFilters.push(`attributes->${path}.eq.${paddedNumber}`);
-          cardNumberFilters.push(`attributes->${path}.ilike.${paddedNumber}`);
-        }
-      }
-      
-      // Partial number match within attributes (if applicable)
-      if (numberBeforeSlash && numberBeforeSlash !== fullNumber) {
-        cardNumberFilters.push(`attributes->${path}.ilike.${numberBeforeSlash}/%`);
-      }
-    });
+    // Also try with normalized number (without leading zeros)
+    if (normalizedNumber !== fullNumber) {
+      cardNumberFilters.push(`card_number.eq.${normalizedNumber}`);
+    }
     
-    // Use OR logic to match any of these paths
+    // Case-insensitive contains match
+    cardNumberFilters.push(`card_number.ilike.%${fullNumber}%`);
+    
+    // Match with normalized number (without leading zeros)
+    if (normalizedNumber !== fullNumber) {
+      cardNumberFilters.push(`card_number.ilike.%${normalizedNumber}%`);
+    }
+    
+    // For pattern like "4/102", also check for "004/102"
+    if (fullNumber.includes('/') && normalizedNumber !== fullNumber) {
+      const parts = fullNumber.split('/');
+      if (parts.length === 2) {
+        const paddedNumber = parts[0].padStart(3, '0') + '/' + parts[1];
+        cardNumberFilters.push(`card_number.eq.${paddedNumber}`);
+        cardNumberFilters.push(`card_number.ilike.${paddedNumber}%`);
+      }
+    }
+    
+    // Partial number match (if applicable)
+    if (numberBeforeSlash && numberBeforeSlash !== fullNumber) {
+      cardNumberFilters.push(`card_number.ilike.${numberBeforeSlash}/%`);
+    }
+    
+    // Use OR logic to match any of these patterns
     query = query.or(cardNumberFilters.join(','));
     
     if (DEBUG_MODE) {
       console.log(`Added enhanced card number filter for: ${number}`);
-      console.log(`Using attributes search with paths: ${possiblePaths.join(', ')}`);
+      console.log(`Using direct card_number column search`);
       console.log(`Also searching for normalized form: ${normalizedNumber}`);
       console.log(`And partial matches with: ${numberBeforeSlash}`);
     }
@@ -149,7 +140,7 @@ export const buildSearchQuery = async (
       category_id: categoryId || 'any',
       name: name ? (name.length <= 2 ? `${name}%` : `%${name}%`) : 'any',
       set_id: set ? (setOptions.find(s => s.name === set)?.id || 'not found') : 'any',
-      number: number ? `Enhanced search with multiple patterns for: ${number}` : 'any'
+      number: number ? `Direct search on card_number column with multiple patterns for: ${number}` : 'any'
     });
   }
 
@@ -170,72 +161,54 @@ export const formatResultsToCardDetails = (
   if (DEBUG_MODE) {
     console.log(`Formatting ${results.length} raw results to CardDetails objects`);
     
-    // Log a sample of the results to help debug JSON structure
+    // Log a sample of the results to help debug structure
     if (results.length > 0) {
-      console.log('Sample result attributes structure:', {
+      console.log('Sample result structure:', {
         firstRecord: results[0],
-        attributesStructure: results[0].attributes ? 
-          JSON.stringify(results[0].attributes).substring(0, 200) + '...' :
-          'No attributes found'
+        hasCardNumber: results[0].card_number !== undefined,
+        cardNumberValue: results[0].card_number || 'Not available'
       });
     }
   }
   
   return results.map(item => {
-    // We're now always using unified_products table so handling is simplified
-    
     // Set name lookup for unified_products table
     const setName = (item.group_id && setOptions.find(s => s.id === item.group_id)?.name) || '';
     
-    // Card number extraction from attributes
-    let cardNumber = '';
-    
-    if (item.attributes) {
+    // Use the direct card_number column instead of extracting from attributes
+    let cardNumber = item.card_number || '';
+
+    // If card_number from the direct column is empty, fall back to the attributes as a last resort
+    if (!cardNumber && item.attributes) {
       try {
-        // Log the actual attributes structure for better debugging
         if (DEBUG_MODE && item.name.includes(searchCriteria.name || '')) {
-          console.log(`Card "${item.name}" attributes:`, item.attributes);
+          console.log(`Card "${item.name}" missing card_number column value, falling back to attributes`);
         }
         
-        // Try various paths for the card number in the attributes object
+        // This fallback logic is just temporary until the database is fully migrated
         if (typeof item.attributes === 'object') {
-          // Direct properties at the root level
-          if (item.attributes.number !== undefined) {
+          if (item.attributes.number) {
             cardNumber = typeof item.attributes.number === 'object' 
               ? (item.attributes.number.value || item.attributes.number.displayName || '') 
               : String(item.attributes.number);
           } 
-          else if (item.attributes.Number !== undefined) {
+          else if (item.attributes.Number) {
             cardNumber = typeof item.attributes.Number === 'object'
               ? (item.attributes.Number.value || item.attributes.Number.displayName || '')
               : String(item.attributes.Number);
           }
-          else if (item.attributes.card_number !== undefined) {
-            cardNumber = typeof item.attributes.card_number === 'object'
-              ? (item.attributes.card_number.value || item.attributes.card_number.displayName || '')
-              : String(item.attributes.card_number);
-          }
-          // Look for a properties field that might contain the number
-          else if (item.attributes.properties && typeof item.attributes.properties === 'object') {
-            const props = item.attributes.properties;
-            if (props.number) {
-              cardNumber = typeof props.number === 'object' 
-                ? (props.number.value || props.number.displayName || '') 
-                : String(props.number);
-            }
-          }
         }
       } catch (error) {
-        console.error(`Failed to parse attributes for card "${item.name}":`, error);
+        console.error(`Failed to extract fallback card number for "${item.name}":`, error);
       }
     }
     
     // Extract product ID with improved priority hierarchy
     const productId = extractProductId(item);
     
-    // Debug output to trace productId extraction
+    // Debug output to trace card number usage
     if (DEBUG_MODE && cardNumber) {
-      console.log(`Card: ${item.name}, Number: ${cardNumber}, Extracted ID: ${productId}`);
+      console.log(`Card: ${item.name}, Using card_number column: ${item.card_number !== undefined}, Value: ${cardNumber}`);
     }
 
     return {

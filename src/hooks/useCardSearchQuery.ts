@@ -79,7 +79,6 @@ export const useCardSearchQuery = () => {
       const startTime = performance.now();
       
       // Build and execute query using the utility function
-      // Now always using unified_products table
       const { query, foundSetIds } = await buildSearchQuery(cardDetails, setOptions, 0);
       
       // Execute query with improved timeout handling
@@ -116,9 +115,7 @@ export const useCardSearchQuery = () => {
         
         if (data && data.length > 0) {
           console.log('Sample result item:', data[0]);
-          if (data[0].attributes) {
-            console.log('Sample attributes structure:', data[0].attributes);
-          }
+          console.log('Sample card_number:', data[0].card_number);
         } else {
           console.log('No results returned from query');
         }
