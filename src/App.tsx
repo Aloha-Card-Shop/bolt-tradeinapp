@@ -15,6 +15,7 @@ import MyTradeIns from './pages/my-trade-ins';
 import AdminNav from './components/AdminNav';
 import AuthGuard from './components/AuthGuard';
 import HomeNavigation from './components/common/HomeNavigation';
+import ShopifySettingsPage from './pages/admin/shopify-settings';
 import { useSession } from './hooks/useSession';
 
 function App() {
@@ -88,6 +89,12 @@ function App() {
         <Route path="/admin/barcodes" element={
           <AuthGuard allowedRoles={['admin']}>
             <BarcodesAdmin />
+          </AuthGuard>
+        } />
+
+        <Route path="/admin/shopify-settings" element={
+          <AuthGuard allowedRoles={['admin', 'shopify_manager']}>
+            <ShopifySettingsPage />
           </AuthGuard>
         } />
         

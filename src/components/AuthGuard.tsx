@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast';
 
 interface AuthGuardProps {
   children: React.ReactNode;
-  allowedRoles: ('admin' | 'manager' | 'user')[];
+  allowedRoles: ('admin' | 'manager' | 'user' | 'shopify_manager')[];
 }
 
 const AuthGuard: React.FC<AuthGuardProps> = ({ children, allowedRoles }) => {

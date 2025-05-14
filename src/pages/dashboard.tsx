@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
@@ -10,7 +9,8 @@ import {
   Settings,
   ChevronRight,
   Receipt,
-  Barcode
+  Barcode,
+  ShoppingCart
 } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
 import { supabase } from '../lib/supabase';
@@ -21,7 +21,9 @@ const Dashboard: React.FC = () => {
   const userRole = user?.user_metadata?.role || 'user';
   const isAdmin = userRole === 'admin';
   const isManager = userRole === 'manager';
+  const isShopifyManager = userRole === 'shopify_manager';
   const isStaff = isAdmin || isManager;
+  const canManageShopify = isAdmin || isShopifyManager;
 
   const handleSignOut = async () => {
     try {
@@ -53,6 +55,11 @@ const Dashboard: React.FC = () => {
                 {isManager && !isAdmin && (
                   <span className="ml-2 px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">
                     Manager
+                  </span>
+                )}
+                {isShopifyManager && !isAdmin && !isManager && (
+                  <span className="ml-2 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">
+                    Shopify Manager
                   </span>
                 )}
               </div>
@@ -161,6 +168,26 @@ const Dashboard: React.FC = () => {
               >
                 <span>Configure Values</span>
                 <ChevronRight className="h-5 w-5 text-purple-500 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          )}
+
+          {/* Shopify Settings Card - New addition */}
+          {canManageShopify && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center mb-4">
+                <div className="p-3 bg-cyan-100 rounded-lg">
+                  <ShoppingCart className="h-6 w-6 text-cyan-600" />
+                </div>
+                <h2 className="ml-3 text-xl font-semibold text-gray-900">Shopify Integration</h2>
+              </div>
+              <p className="text-gray-600 mb-6">Configure Shopify integration settings and API keys</p>
+              <Link 
+                to="/admin/shopify-settings" 
+                className="group flex items-center justify-between px-4 py-2 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 rounded-lg transition-colors"
+              >
+                <span>Shopify Settings</span>
+                <ChevronRight className="h-5 w-5 text-cyan-500 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
           )}

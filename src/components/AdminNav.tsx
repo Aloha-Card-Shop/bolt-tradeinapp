@@ -1,12 +1,12 @@
 
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Settings, ClipboardList, UserCircle, DollarSign, LogOut, Barcode, Printer } from 'lucide-react';
+import { Home, Settings, ClipboardList, UserCircle, DollarSign, LogOut, Barcode, Printer, ShoppingCart } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
 import { supabase } from '../lib/supabase';
 
 interface AdminNavProps {
-  userRole: 'admin' | 'manager' | 'user';
+  userRole: 'admin' | 'manager' | 'user' | 'shopify_manager';
 }
 
 const AdminNav: React.FC<AdminNavProps> = ({ userRole }) => {
@@ -14,7 +14,7 @@ const AdminNav: React.FC<AdminNavProps> = ({ userRole }) => {
   const location = useLocation();
   const {  } = useSession();
 
-  if (userRole !== 'admin' && userRole !== 'manager') {
+  if (userRole !== 'admin' && userRole !== 'manager' && userRole !== 'shopify_manager') {
     return null;
   }
 
@@ -72,6 +72,21 @@ const AdminNav: React.FC<AdminNavProps> = ({ userRole }) => {
                   Trade-Ins
                 </button>
               </>
+            )}
+
+            {/* Shopify Settings Link */}
+            {(userRole === 'admin' || userRole === 'shopify_manager') && (
+              <button
+                onClick={() => navigate('/admin/shopify-settings')}
+                className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                  isActive('/admin/shopify-settings')
+                    ? 'text-cyan-600 bg-cyan-50'
+                    : 'text-gray-600 hover:text-cyan-600 hover:bg-cyan-50'
+                }`}
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Shopify
+              </button>
             )}
 
             {userRole === 'admin' && (
