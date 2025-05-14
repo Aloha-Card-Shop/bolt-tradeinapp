@@ -1,5 +1,4 @@
 
-import { generateCardNumberSearchFilter } from '../card-number/searchFilters';
 import { isLikelyCardNumber } from '../card-number/variants';
 import { SearchParams } from './types';
 import { debugLogQuery } from './debugLogger';

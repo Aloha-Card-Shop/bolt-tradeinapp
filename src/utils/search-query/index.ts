@@ -9,7 +9,7 @@ export { buildSearchQueryFilter, buildSearchSortOptions } from './queryBuilder';
 export * from './debugLogger';
 
 // Export from buildQuery
-export { buildSearchQuery } from './buildQuery';
+export { buildSearchQuery, RESULTS_PER_PAGE } from './buildQuery';
 
 // Export from resultFormatter
 export { formatResultsToCardDetails } from './resultFormatter';

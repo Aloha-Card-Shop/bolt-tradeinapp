@@ -14,11 +14,22 @@ export const formatResultsToCardDetails = (
   setOptions: SetOption[],
   originalCardDetails: CardDetails
 ): CardDetails[] => {
-  if (!data || data.length === 0) return [];
+  if (!data || data.length === 0) {
+    console.log('No data to format into CardDetails');
+    return [];
+  }
+  
+  console.log(`Formatting ${data.length} results to CardDetails`);
+  console.log('Sample data item:', data[0]);
   
   return data.map(item => {
     // Get set name from setOptions using group_id
-    const setName = setOptions.find(s => s.id === item.group_id)?.name || '';
+    const setOption = setOptions.find(s => s.id === item.group_id);
+    const setName = setOption?.name || '';
+    
+    if (!setName && item.group_id) {
+      console.log(`Could not find set name for group_id: ${item.group_id}`);
+    }
     
     // Card number is directly available in unified_products
     const cardNumber = item.card_number || '';
@@ -28,12 +39,15 @@ export const formatResultsToCardDetails = (
       console.log('No card number found for:', item.name);
     }
     
+    // Product ID can come from tcgplayer_product_id or product_id
+    const productId = item.tcgplayer_product_id || item.product_id || null;
+    
     // Create the card details object
     return {
       name: item.name || '',
       set: setName,
       number: cardNumber,
-      productId: item.tcgplayer_product_id || item.product_id || null,
+      productId: productId,
       imageUrl: item.image_url || '',
       game: originalCardDetails.game,
       categoryId: item.category_id || originalCardDetails.categoryId,
