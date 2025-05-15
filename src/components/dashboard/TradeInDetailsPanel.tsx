@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { TradeIn, TradeInItem } from '../../types/tradeIn';
 import TradeInEmptyState from '../TradeInEmptyState';
@@ -25,11 +24,6 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
       case 'rejected': return 'Trade-in has been rejected';
       default: return '';
     }
-  };
-
-  const handleItemUpdate = (itemId: string) => (updates: Partial<TradeInItem>) => {
-    if (!itemId) return;
-    updateTradeInItem(itemId, updates);
   };
 
   const statusMessage = getStatusMessage(tradeIn.status);
@@ -109,9 +103,7 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
                 {tradeIn.items.map((item) => (
                   <TradeInItemRow 
                     key={item.id} 
-                    item={item} 
-                    isUpdating={updatingItemId === item.id}
-                    onUpdate={handleItemUpdate(item.id || '')}
+                    item={item}
                   />
                 ))}
               </tbody>

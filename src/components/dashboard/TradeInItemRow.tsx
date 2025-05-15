@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { TradeInItem } from '../../types/tradeIn';
 import { formatCurrency } from '../../utils/formatters';
@@ -6,15 +5,9 @@ import { Tag, DollarSign, ExternalLink } from 'lucide-react';
 
 interface TradeInItemRowProps {
   item: TradeInItem;
-  isUpdating: boolean;
-  onUpdate: (updates: Partial<TradeInItem>) => void;
 }
 
-const TradeInItemRow: React.FC<TradeInItemRowProps> = ({ 
-  item, 
-  isUpdating,
-  onUpdate
-}) => {
+const TradeInItemRow: React.FC<TradeInItemRowProps> = ({ item }) => {
   const getConditionDisplay = (condition: string) => {
     const conditionMap: Record<string, string> = {
       'near_mint': 'Near Mint',

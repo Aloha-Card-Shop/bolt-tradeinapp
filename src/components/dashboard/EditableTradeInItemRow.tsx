@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { TradeInItem } from '../../types/tradeIn';
 import { formatCurrency } from '../../utils/formatters';
@@ -36,7 +35,6 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
   const handleSaveChanges = () => {
     // Calculate the payment type specific values
     const paymentType = editedItem.attributes?.paymentType || 'cash';
-    const marketPrice = editedItem.price || 0;
     
     // Prepare the updates with the attributes
     const updates: Partial<TradeInItem> = {
