@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { TradeIn, TradeInItem } from '../../types/tradeIn';
+import React from 'react';
+import { TradeIn } from '../../types/tradeIn';
 import TradeInEmptyState from '../TradeInEmptyState';
 import StatusBadge from './StatusBadge';
 import TradeInItemRow from './TradeInItemRow';
