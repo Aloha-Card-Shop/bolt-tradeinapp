@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Loader2, UserPlus } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Loader2, UserPlus, Home, Settings, ClipboardList, UserCircle, DollarSign, Barcode, Printer, ShoppingCart, Map } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { useAdminApi } from '../../components/AdminWrapper';
 import UserTable from '../../components/admin/UserTable';
@@ -156,7 +156,80 @@ const AdminPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="max-w-7xl mx-auto px-4 py-12">
+      {/* Admin Nav Bar - Similar to AdminNav component */}
+      <div className="bg-white shadow-sm border-b border-gray-200 mb-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 overflow-x-auto">
+            <div className="flex items-center space-x-4">
+              <Link
+                to="/dashboard"
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+              >
+                <Home className="h-4 w-4 mr-2" />
+                Dashboard
+              </Link>
+
+              <Link
+                to="/admin/customers"
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-gray-600 hover:text-red-600 hover:bg-red-50"
+              >
+                <UserCircle className="h-4 w-4 mr-2" />
+                Customers
+              </Link>
+
+              <Link
+                to="/dashboard/manager"
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+              >
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Trade-Ins
+              </Link>
+
+              <Link
+                to="/admin/shopify-settings"
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-gray-600 hover:text-cyan-600 hover:bg-cyan-50"
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Shopify Settings
+              </Link>
+
+              <Link
+                to="/admin/shopify-mappings"
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-gray-600 hover:text-cyan-600 hover:bg-cyan-50"
+              >
+                <Map className="h-4 w-4 mr-2" />
+                Shopify Mappings
+              </Link>
+
+              <Link
+                to="/admin/trade-values"
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-gray-600 hover:text-purple-600 hover:bg-purple-50"
+              >
+                <DollarSign className="h-4 w-4 mr-2" />
+                Trade Values
+              </Link>
+
+              <Link
+                to="/admin/barcodes"
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
+              >
+                <Barcode className="h-4 w-4 mr-2" />
+                Barcodes
+              </Link>
+
+              <Link
+                to="/admin/printers"
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-gray-600 hover:text-green-600 hover:bg-green-50"
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Printers
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-6">
         <AdminPageHeader />
 
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
