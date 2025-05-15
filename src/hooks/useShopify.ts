@@ -3,11 +3,13 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { useSession } from './useSession';
+import { useShopifyMappings } from './useShopifyMappings';
 
 export const useShopify = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useSession();
+  const { transformData, isLoading: mappingsLoading } = useShopifyMappings();
 
   const sendToShopify = async (tradeInId: string) => {
     if (!user) {
@@ -15,10 +17,39 @@ export const useShopify = () => {
       return;
     }
 
+    if (mappingsLoading) {
+      toast.info('Loading mapping configuration...');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
+      // Validate the tradeInId
+      if (!tradeInId) {
+        throw new Error('Invalid trade-in ID');
+      }
+
+      // Check if the trade-in exists
+      const { data: tradeInCheck, error: checkError } = await supabase
+        .from('trade_ins')
+        .select('id, shopify_synced')
+        .eq('id', tradeInId)
+        .maybeSingle();
+
+      if (checkError) {
+        throw new Error(`Error checking trade-in: ${checkError.message}`);
+      }
+
+      if (!tradeInCheck) {
+        throw new Error(`Trade-in with ID ${tradeInId} not found`);
+      }
+
+      if (tradeInCheck.shopify_synced) {
+        throw new Error('This trade-in has already been synced to Shopify');
+      }
+
       // Call the edge function to handle the Shopify synchronization
       const { data, error: functionError } = await supabase.functions.invoke('shopify-sync', {
         body: { tradeInId, userId: user.id }

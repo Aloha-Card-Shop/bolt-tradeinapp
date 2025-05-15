@@ -374,6 +374,48 @@ export type Database = {
         }
         Relationships: []
       }
+      shopify_field_mappings: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          mapping_type: string
+          sort_order: number | null
+          source_field: string
+          target_field: string
+          transform_template: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          mapping_type?: string
+          sort_order?: number | null
+          source_field: string
+          target_field: string
+          transform_template?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          mapping_type?: string
+          sort_order?: number | null
+          source_field?: string
+          target_field?: string
+          transform_template?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       shopify_settings: {
         Row: {
           access_token: string

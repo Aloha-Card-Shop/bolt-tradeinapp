@@ -1,8 +1,10 @@
+
 import React from 'react';
 import { TradeIn } from '../../types/tradeIn';
 import TradeInEmptyState from '../TradeInEmptyState';
 import StatusBadge from './StatusBadge';
 import TradeInItemRow from './TradeInItemRow';
+import ShopifySync from '../shopify/ShopifySync';
 
 interface TradeInDetailsPanelProps {
   tradeIn: TradeIn;
@@ -13,8 +15,7 @@ interface TradeInDetailsPanelProps {
 const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
   tradeIn,
   loadingItems,
-  // We're keeping setTradeIns in the props but removing it from the destructuring
-  // since it's not being used directly in this component
+  setTradeIns
 }) => {
   // We'll read directly from tradeIn.items and not maintain a separate local state
   // This ensures we always use the latest data from the parent component
@@ -32,6 +33,19 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
   
   // Always use the items from the latest tradeIn prop
   const displayItems = tradeIn.items;
+
+  // Handle refresh after Shopify sync
+  const handleSyncSuccess = () => {
+    if (setTradeIns) {
+      setTradeIns(prevTradeIns => 
+        prevTradeIns.map(ti => 
+          ti.id === tradeIn.id 
+            ? { ...ti, shopify_synced: true, shopify_synced_at: new Date().toISOString() } 
+            : ti
+        )
+      );
+    }
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden">
@@ -72,6 +86,11 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
             </div>
           )}
         </div>
+
+        {/* Add Shopify sync button */}
+        {(tradeIn.status === 'accepted' || tradeIn.status === 'pending') && (
+          <ShopifySync tradeIn={tradeIn} onSuccess={handleSyncSuccess} />
+        )}
       </div>
 
       {/* Staff notes if available */}

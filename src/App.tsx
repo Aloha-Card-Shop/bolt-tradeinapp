@@ -16,6 +16,7 @@ import AdminNav from './components/AdminNav';
 import AuthGuard from './components/AuthGuard';
 import HomeNavigation from './components/common/HomeNavigation';
 import ShopifySettingsPage from './pages/admin/shopify-settings';
+import ShopifyMappingsPage from './pages/admin/shopify-mappings';
 import { useSession } from './hooks/useSession';
 
 function App() {
@@ -95,6 +96,12 @@ function App() {
         <Route path="/admin/shopify-settings" element={
           <AuthGuard allowedRoles={['admin', 'shopify_manager']}>
             <ShopifySettingsPage />
+          </AuthGuard>
+        } />
+
+        <Route path="/admin/shopify-mappings" element={
+          <AuthGuard allowedRoles={['admin', 'shopify_manager']}>
+            <ShopifyMappingsPage />
           </AuthGuard>
         } />
         

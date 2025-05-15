@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Settings, ClipboardList, UserCircle, DollarSign, LogOut, Barcode, Printer, ShoppingCart } from 'lucide-react';
+import { Home, Settings, ClipboardList, UserCircle, DollarSign, LogOut, Barcode, Printer, ShoppingCart, Map } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
 import { supabase } from '../lib/supabase';
 
@@ -74,19 +74,33 @@ const AdminNav: React.FC<AdminNavProps> = ({ userRole }) => {
               </>
             )}
 
-            {/* Shopify Settings Link */}
+            {/* Shopify Integration Links */}
             {(userRole === 'admin' || userRole === 'shopify_manager') && (
-              <button
-                onClick={() => navigate('/admin/shopify-settings')}
-                className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                  isActive('/admin/shopify-settings')
-                    ? 'text-cyan-600 bg-cyan-50'
-                    : 'text-gray-600 hover:text-cyan-600 hover:bg-cyan-50'
-                }`}
-              >
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                Shopify
-              </button>
+              <>
+                <button
+                  onClick={() => navigate('/admin/shopify-settings')}
+                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                    isActive('/admin/shopify-settings')
+                      ? 'text-cyan-600 bg-cyan-50'
+                      : 'text-gray-600 hover:text-cyan-600 hover:bg-cyan-50'
+                  }`}
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Shopify Settings
+                </button>
+
+                <button
+                  onClick={() => navigate('/admin/shopify-mappings')}
+                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                    isActive('/admin/shopify-mappings')
+                      ? 'text-cyan-600 bg-cyan-50'
+                      : 'text-gray-600 hover:text-cyan-600 hover:bg-cyan-50'
+                  }`}
+                >
+                  <Map className="h-4 w-4 mr-2" />
+                  Shopify Mappings
+                </button>
+              </>
             )}
 
             {userRole === 'admin' && (

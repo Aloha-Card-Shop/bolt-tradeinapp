@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import TradeInRowActions from './TradeInRowActions';
 import StatusBadge from './StatusBadge';
@@ -73,15 +73,22 @@ const TradeInRow: React.FC<TradeInRowProps> = ({
           <StatusBadge status={localTradeIn.status} />
         </td>
         <td className="px-5 py-5 border-b border-gray-200 text-sm">
-          <TradeInRowActions 
-            tradeInId={localTradeIn.id}
-            status={localTradeIn.status}
-            actionLoading={actionLoading}
-            onApprove={onApprove}
-            onDeny={onDeny}
-            onDelete={onDelete}
-            tradeIn={localTradeIn} // Pass the full trade-in object
-          />
+          <div className="flex items-center space-x-2">
+            {localTradeIn.shopify_synced && (
+              <span className="text-green-600" title={`Synced to Shopify on ${new Date(localTradeIn.shopify_synced_at || '').toLocaleString()}`}>
+                <ShoppingCart className="h-4 w-4" />
+              </span>
+            )}
+            <TradeInRowActions 
+              tradeInId={localTradeIn.id}
+              status={localTradeIn.status}
+              actionLoading={actionLoading}
+              onApprove={onApprove}
+              onDeny={onDeny}
+              onDelete={onDelete}
+              tradeIn={localTradeIn}
+            />
+          </div>
         </td>
       </tr>
       
