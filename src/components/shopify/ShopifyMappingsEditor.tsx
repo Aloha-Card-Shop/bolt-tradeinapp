@@ -354,6 +354,7 @@ const ShopifyMappingsEditor: React.FC = () => {
               <li><code>{'{condition}'}</code> - Card condition</li>
               <li><code>{'{price}'}</code> - Card price</li>
               <li><code>{'{quantity}'}</code> - Quantity</li>
+              <li><code>{'{game_type}'}</code> - Card game type</li>
             </ul>
           </div>
           <div>
@@ -371,6 +372,7 @@ const ShopifyMappingsEditor: React.FC = () => {
               <li>Leave template blank to use direct mapping</li>
               <li>HTML is allowed in <code>body_html</code> fields</li>
               <li>Use <code>{'{field_name|default}'}</code> for fallbacks</li>
+              <li>Combine multiple fields in one template</li>
             </ul>
           </div>
         </div>

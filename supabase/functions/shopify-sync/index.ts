@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -169,7 +168,7 @@ serve(async (req) => {
           price,
           condition,
           attributes,
-          cards:card_id (name, image_url, set_name)
+          cards:card_id (name, image_url, set_name, game)
         )
       `)
       .eq("id", tradeInId)
@@ -189,7 +188,7 @@ serve(async (req) => {
       );
     }
 
-    // Get Shopify API credentials
+    // Get Shopify API credentials and mappings
     const { data: shopifySettings, error: settingsError } = await supabase
       .from("shopify_settings")
       .select("*")
@@ -212,7 +211,6 @@ serve(async (req) => {
 
     const { shop_domain, access_token } = shopifySettings;
 
-    // Get field mappings
     const { data: mappingsData, error: mappingsError } = await supabase
       .from("shopify_field_mappings")
       .select("*")
@@ -274,6 +272,7 @@ serve(async (req) => {
           price: item.price,
           quantity: item.quantity,
           image_url: item.cards.image_url || "",
+          game_type: item.cards.game || "unknown",
           customer_name: customerName,
           trade_in_id: tradeIn.id,
           trade_in_date: new Date(tradeIn.trade_in_date).toISOString().split('T')[0],
