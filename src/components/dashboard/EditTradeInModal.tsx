@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { TradeIn, TradeInItem } from '../../types/tradeIn';
@@ -92,20 +91,35 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
         return;
       }
       
-      const success = await updateTradeInItem(item.id, updates);
+      // Call the updateTradeInItem function and get the updated data
+      const updatedData = await updateTradeInItem(item.id, updates);
       
-      if (success) {
-        // Update local state to reflect changes
+      if (updatedData && typeof updatedData !== 'boolean') {
+        // Directly update the local state with the returned data
+        setItems(prevItems => 
+          prevItems.map(prevItem => 
+            prevItem.id === item.id ? { ...prevItem, ...updatedData } : prevItem
+          )
+        );
+        
+        return updatedData;
+      } else if (updatedData) {
+        // If we just got a boolean success response, update with the updates we sent
         setItems(prevItems => 
           prevItems.map(prevItem => 
             prevItem.id === item.id ? { ...prevItem, ...updates } : prevItem
           )
         );
+        
+        return { ...item, ...updates };
       }
+      
       setIsUpdating(false);
+      return false;
     } catch (error) {
       console.error('Error updating item:', error);
       setIsUpdating(false);
+      return false;
     }
   };
 

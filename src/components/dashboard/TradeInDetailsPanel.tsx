@@ -1,9 +1,10 @@
 
-import React from 'react';
-import { TradeIn } from '../../types/tradeIn';
+import React, { useState } from 'react';
+import { TradeIn, TradeInItem } from '../../types/tradeIn';
 import TradeInEmptyState from '../TradeInEmptyState';
 import StatusBadge from './StatusBadge';
 import TradeInItemRow from './TradeInItemRow';
+import { useTradeInItemUpdate } from '../../hooks/useTradeInItemUpdate';
 
 interface TradeInDetailsPanelProps {
   tradeIn: TradeIn;
@@ -13,9 +14,11 @@ interface TradeInDetailsPanelProps {
 
 const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
   tradeIn,
-  loadingItems
+  loadingItems,
+  setTradeIns
 }) => {
-  // We can remove the hook call entirely since we're not using it anymore
+  // Add local state to manage the items
+  const [localItems, setLocalItems] = useState<TradeInItem[] | undefined>(tradeIn.items);
   
   const getStatusMessage = (status: string) => {
     switch (status) {
@@ -26,7 +29,34 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
     }
   };
 
+  // Function to update the item locally after an edit
+  const updateLocalItem = (itemId: string, updatedItem: TradeInItem) => {
+    if (!localItems) return;
+    
+    // Update the local items
+    const updatedItems = localItems.map(item => 
+      item.id === itemId ? { ...item, ...updatedItem } : item
+    );
+    
+    // Update local state
+    setLocalItems(updatedItems);
+    
+    // Update parent state if setTradeIns is provided
+    if (setTradeIns) {
+      setTradeIns(prevTradeIns => 
+        prevTradeIns.map(prevTradeIn => 
+          prevTradeIn.id === tradeIn.id 
+          ? { ...prevTradeIn, items: updatedItems } 
+          : prevTradeIn
+        )
+      );
+    }
+  };
+
   const statusMessage = getStatusMessage(tradeIn.status);
+  
+  // Use items from local state if available, otherwise fallback to tradeIn.items
+  const displayItems = localItems || tradeIn.items;
 
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden">
@@ -83,7 +113,7 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
         
         {loadingItems === tradeIn.id ? (
           <p className="text-center py-4 text-gray-500">Loading items...</p>
-        ) : !tradeIn.items || tradeIn.items.length === 0 ? (
+        ) : !displayItems || displayItems.length === 0 ? (
           <TradeInEmptyState />
         ) : (
           <div className="overflow-x-auto">
@@ -100,7 +130,7 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {tradeIn.items.map((item) => (
+                {displayItems.map((item) => (
                   <TradeInItemRow 
                     key={item.id} 
                     item={item}

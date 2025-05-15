@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { TradeInItem } from '../types/tradeIn';
+import { TradeInItem, TradeIn } from '../types/tradeIn';
 import { toast } from 'react-hot-toast';
 import { useSession } from './useSession';
 
@@ -66,7 +66,7 @@ export const useTradeInItemUpdate = () => {
       
       console.log('Update successful, returned data:', data);
       toast.success('Item updated successfully');
-      return true;
+      return data && data.length > 0 ? data[0] : true;
     } catch (error) {
       console.error('Error updating trade-in item:', error);
       toast.error(`Update failed: ${(error as Error).message}`);

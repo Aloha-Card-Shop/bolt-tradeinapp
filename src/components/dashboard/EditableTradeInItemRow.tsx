@@ -32,7 +32,7 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
     return conditionMap[condition] || condition;
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     // Calculate the payment type specific values
     const paymentType = editedItem.attributes?.paymentType || 'cash';
     
@@ -49,7 +49,23 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
       }
     };
     
-    onUpdate(updates);
+    // Pass the updates to the parent component for processing
+    // and immediately update the UI with the result
+    const result = await onUpdate(updates);
+    
+    // If we got updated data back (not just a boolean true), update our local state
+    if (result && typeof result !== 'boolean') {
+      // Update our local state with the response from the server
+      setEditedItem(prev => ({
+        ...prev,
+        ...result,
+        attributes: {
+          ...(prev.attributes || {}),
+          ...(result.attributes || {})
+        }
+      }));
+    }
+    
     setIsEditing(false);
   };
 
