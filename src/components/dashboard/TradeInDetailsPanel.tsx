@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { TradeIn, TradeInItem } from '../../types/tradeIn';
+import { TradeIn } from '../../types/tradeIn';
 import TradeInEmptyState from '../TradeInEmptyState';
 import StatusBadge from './StatusBadge';
 import TradeInItemRow from './TradeInItemRow';
@@ -15,7 +16,7 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
   tradeIn,
   loadingItems
 }) => {
-  const { updatingItemId, updateTradeInItem } = useTradeInItemUpdate();
+  // We can remove the hook call entirely since we're not using it anymore
   
   const getStatusMessage = (status: string) => {
     switch (status) {
