@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -269,6 +268,7 @@ serve(async (req) => {
         const templateData = {
           card_name: item.cards.name || "Unknown Card",
           set_name: item.cards.set_name || "",
+          card_number: item.cards.card_number || "",
           condition: formatCondition(item.condition),
           price: item.price,
           quantity: item.quantity,
@@ -277,7 +277,15 @@ serve(async (req) => {
           customer_name: customerName,
           trade_in_id: tradeIn.id,
           trade_in_date: new Date(tradeIn.trade_in_date).toISOString().split('T')[0],
-          payment_type: tradeIn.payment_type || "cash"
+          payment_type: tradeIn.payment_type || "cash",
+          is_first_edition: item.attributes?.isFirstEdition || false,
+          is_holo: item.attributes?.isHolo || false,
+          is_reverse_holo: item.attributes?.isReverseHolo || false,
+          card_type: formatCardType(
+            item.attributes?.isFirstEdition || false, 
+            item.attributes?.isHolo || false, 
+            item.attributes?.isReverseHolo || false
+          )
         };
 
         // Apply mappings to create product data
@@ -469,6 +477,15 @@ function formatCondition(condition: string): string {
     .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+// Helper function to format card type based on attributes
+function formatCardType(isFirstEdition: boolean, isHolo: boolean, isReverseHolo: boolean): string {
+  if (isFirstEdition && isHolo) return "1st Edition Holo";
+  if (isFirstEdition) return "1st Edition";
+  if (isHolo) return "Holo";
+  if (isReverseHolo) return "Reverse Holo";
+  return "Standard";
 }
 
 // Helper function to apply mappings

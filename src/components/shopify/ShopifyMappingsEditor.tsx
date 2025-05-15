@@ -355,6 +355,10 @@ const ShopifyMappingsEditor: React.FC = () => {
               <li><code>{'{price}'}</code> - Card price</li>
               <li><code>{'{quantity}'}</code> - Quantity</li>
               <li><code>{'{game_type}'}</code> - Card game type</li>
+              <li><code>{'{is_first_edition}'}</code> - Is first edition (true/false)</li>
+              <li><code>{'{is_holo}'}</code> - Is holo (true/false)</li>
+              <li><code>{'{is_reverse_holo}'}</code> - Is reverse holo (true/false)</li>
+              <li><code>{'{card_type}'}</code> - Card type description (1st Edition, Holo, etc.)</li>
             </ul>
           </div>
           <div>
