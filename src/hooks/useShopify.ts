@@ -9,7 +9,7 @@ export const useShopify = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useSession();
-  const { transformData, isLoading: mappingsLoading } = useShopifyMappings();
+  const { isLoading: mappingsLoading } = useShopifyMappings();
 
   const sendToShopify = async (tradeInId: string) => {
     if (!user) {
@@ -18,7 +18,7 @@ export const useShopify = () => {
     }
 
     if (mappingsLoading) {
-      toast.info('Loading mapping configuration...');
+      toast.error('Loading mapping configuration...');
       return;
     }
 

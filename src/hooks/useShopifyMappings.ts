@@ -45,7 +45,7 @@ export const useShopifyMappings = () => {
   const applyTemplate = (template: string | null, data: Record<string, any>): string => {
     if (!template) return '';
     
-    return template.replace(/{([^}]+)}/g, (match, key) => {
+    return template.replace(/{([^}]+)}/g, (_match, key) => {
       const [fieldName, defaultValue] = key.split('|');
       const value = data[fieldName.trim()];
       return (value !== undefined && value !== null) ? String(value) : (defaultValue || '');
