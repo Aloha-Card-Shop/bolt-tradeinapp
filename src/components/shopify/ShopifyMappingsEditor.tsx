@@ -94,6 +94,40 @@ const ShopifyMappingsEditor: React.FC = () => {
       });
     }
     
+    // Check for product_type mapping
+    const hasProductTypeMapping = mappings.some(m => 
+      m.mapping_type === 'product' && m.target_field === 'product_type'
+    );
+    
+    if (!hasProductTypeMapping) {
+      defaultMappings.push({
+        source_field: 'game_type',
+        target_field: 'product_type',
+        transform_template: '{game_type} Card',
+        is_active: true,
+        description: 'Product type (e.g. Pokemon Card, Magic Card)',
+        mapping_type: 'product' as const,
+        sort_order: mappings.filter(m => m.mapping_type === 'product').length + 1
+      });
+    }
+    
+    // Check for tags mapping
+    const hasTagsMapping = mappings.some(m => 
+      m.mapping_type === 'product' && m.target_field === 'tags'
+    );
+    
+    if (!hasTagsMapping) {
+      defaultMappings.push({
+        source_field: 'set_name',
+        target_field: 'tags',
+        transform_template: 'Trade-In,{game_type},{set_name},{condition}',
+        is_active: true,
+        description: 'Product tags for filtering and organization',
+        mapping_type: 'product' as const,
+        sort_order: mappings.filter(m => m.mapping_type === 'product').length + 1 + (!hasProductTypeMapping ? 1 : 0)
+      });
+    }
+    
     // Add all default mappings at once if any
     if (defaultMappings.length > 0) {
       setMappings(prev => [...prev, ...defaultMappings]);
