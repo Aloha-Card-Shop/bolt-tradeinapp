@@ -5,6 +5,7 @@ import { TradeIn, TradeInItem } from '../../types/tradeIn';
 import { useTradeInItemUpdate } from '../../hooks/useTradeInItemUpdate';
 import EditableTradeInItemRow from './EditableTradeInItemRow';
 import { toast } from 'react-hot-toast';
+import { supabase } from '../../lib/supabase';
 
 interface EditTradeInModalProps {
   tradeIn: TradeIn;
@@ -15,15 +16,70 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
   const [staffNotes, setStaffNotes] = useState(tradeIn.staff_notes || '');
   const [isUpdating, setIsUpdating] = useState(false);
   const [loadingItems, setLoadingItems] = useState(false);
+  const [items, setItems] = useState<TradeInItem[]>(tradeIn.items || []);
   const { updateTradeInItem, updateStaffNotes, updatingItemId } = useTradeInItemUpdate();
   
   // Fetch items if they're not already loaded
   useEffect(() => {
-    if (!tradeIn.items && !loadingItems) {
-      setLoadingItems(true);
-      // This would be handled by the TradeInDetailsPanel, which already fetches the items
-      setLoadingItems(false);
-    }
+    const fetchItems = async () => {
+      if (!tradeIn.items && !loadingItems) {
+        setLoadingItems(true);
+        
+        try {
+          const { data, error } = await supabase
+            .from('trade_in_items')
+            .select(`
+              id,
+              trade_in_id,
+              card_id,
+              quantity,
+              price,
+              condition,
+              attributes,
+              cards:card_id(name, tcgplayer_url, image_url, rarity)
+            `)
+            .eq('trade_in_id', tradeIn.id);
+            
+          if (error) {
+            console.error('Error fetching items:', error);
+            toast.error('Failed to load trade-in items');
+            return;
+          }
+          
+          if (data) {
+            const formattedItems = data.map(item => {
+              const cardData = item.cards ? 
+                (typeof item.cards === 'object' ? item.cards : null) : null;
+                
+              return {
+                id: item.id,
+                trade_in_id: item.trade_in_id,
+                card_id: item.card_id,
+                quantity: item.quantity,
+                price: item.price,
+                condition: item.condition,
+                attributes: item.attributes || {},
+                card_name: cardData?.name || 'Unknown Card',
+                set_name: cardData?.set_name || '',
+                image_url: cardData?.image_url,
+                rarity: cardData?.rarity,
+                tcgplayer_url: cardData?.tcgplayer_url
+              };
+            });
+            
+            setItems(formattedItems);
+          }
+        } catch (err) {
+          console.error('Error fetching items:', err);
+        } finally {
+          setLoadingItems(false);
+        }
+      } else if (tradeIn.items) {
+        setItems(tradeIn.items);
+      }
+    };
+    
+    fetchItems();
   }, [tradeIn]);
 
   const handleItemUpdate = async (item: TradeInItem, updates: Partial<TradeInItem>) => {
@@ -33,7 +89,17 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
         toast.error("Cannot update item without ID");
         return;
       }
-      await updateTradeInItem(item.id, updates);
+      
+      const success = await updateTradeInItem(item.id, updates);
+      
+      if (success) {
+        // Update local state to reflect changes
+        setItems(prevItems => 
+          prevItems.map(prevItem => 
+            prevItem.id === item.id ? { ...prevItem, ...updates } : prevItem
+          )
+        );
+      }
       setIsUpdating(false);
     } catch (error) {
       console.error('Error updating item:', error);
@@ -44,7 +110,11 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
   const handleNotesUpdate = async () => {
     try {
       setIsUpdating(true);
-      await updateStaffNotes(tradeIn.id, staffNotes);
+      const success = await updateStaffNotes(tradeIn.id, staffNotes);
+      
+      if (success) {
+        toast.success('Notes updated successfully');
+      }
       setIsUpdating(false);
     } catch (error) {
       console.error('Error updating notes:', error);
@@ -100,7 +170,7 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
                   <Loader2 className="h-5 w-5 text-blue-500 animate-spin mx-auto" />
                   <p className="mt-2 text-gray-600 text-sm">Loading items...</p>
                 </div>
-              ) : tradeIn.items && tradeIn.items.length > 0 ? (
+              ) : items.length > 0 ? (
                 <div className="bg-white rounded-lg border overflow-hidden">
                   <table className="w-full">
                     <thead>
@@ -114,7 +184,7 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
                       </tr>
                     </thead>
                     <tbody>
-                      {tradeIn.items.map((item) => (
+                      {items.map((item) => (
                         <EditableTradeInItemRow
                           key={item.id}
                           item={item}

@@ -737,6 +737,10 @@ export type Database = {
         }
         Returns: number
       }
+      has_required_role: {
+        Args: { required_roles: string[] }
+        Returns: boolean
+      }
     }
     Enums: {
       card_condition:

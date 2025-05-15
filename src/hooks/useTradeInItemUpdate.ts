@@ -3,12 +3,19 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { TradeInItem } from '../types/tradeIn';
 import { toast } from 'react-hot-toast';
+import { useSession } from './useSession';
 
 export const useTradeInItemUpdate = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
+  const { user } = useSession();
 
   const updateTradeInItem = async (itemId: string, updates: Partial<TradeInItem>) => {
+    if (!user) {
+      toast.error('You must be logged in to update items');
+      return false;
+    }
+    
     setIsLoading(true);
     setUpdatingItemId(itemId);
     try {
@@ -39,7 +46,12 @@ export const useTradeInItemUpdate = () => {
         .eq('id', itemId);
 
       if (error) {
-        toast.error(`Error updating item: ${error.message}`);
+        console.error('Error updating item:', error);
+        if (error.code === 'PGRST301') {
+          toast.error('Permission denied: You do not have the required role to update this item');
+        } else {
+          toast.error(`Error updating item: ${error.message}`);
+        }
         throw error;
       }
       
@@ -56,6 +68,11 @@ export const useTradeInItemUpdate = () => {
   };
 
   const updateStaffNotes = async (tradeInId: string, notes: string | null) => {
+    if (!user) {
+      toast.error('You must be logged in to update notes');
+      return false;
+    }
+    
     setIsLoading(true);
     try {
       const { error } = await supabase
@@ -64,7 +81,12 @@ export const useTradeInItemUpdate = () => {
         .eq('id', tradeInId);
 
       if (error) {
-        toast.error(`Error updating notes: ${error.message}`);
+        console.error('Error updating notes:', error);
+        if (error.code === 'PGRST301') {
+          toast.error('Permission denied: You do not have the required role to update notes');
+        } else {
+          toast.error(`Error updating notes: ${error.message}`);
+        }
         throw error;
       }
       

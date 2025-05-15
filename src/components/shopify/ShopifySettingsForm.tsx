@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { useSession } from '../../hooks/useSession';
+import { Shield, AlertCircle } from 'lucide-react';
 
 interface ShopifySettings {
   shop_domain: string;
@@ -23,11 +24,30 @@ const ShopifySettingsForm: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [hasExistingSettings, setHasExistingSettings] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [permission, setPermission] = useState<{canView: boolean, canEdit: boolean}>({
+    canView: false,
+    canEdit: false
+  });
+
+  // Check user permissions based on role
+  useEffect(() => {
+    if (user) {
+      const role = user.user_metadata?.role || '';
+      const canView = ['admin', 'manager', 'shopify_manager'].includes(role);
+      const canEdit = ['admin', 'manager'].includes(role);
+      
+      setPermission({ canView, canEdit });
+      
+      if (!canView) {
+        setError('You do not have permission to view these settings');
+      }
+    }
+  }, [user]);
 
   // Fetch existing settings if available
   useEffect(() => {
     const fetchSettings = async () => {
-      if (!user) return;
+      if (!user || !permission.canView) return;
       
       setIsLoading(true);
       setError(null);
@@ -67,7 +87,7 @@ const ShopifySettingsForm: React.FC = () => {
     };
     
     fetchSettings();
-  }, [user]);
+  }, [user, permission.canView]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -78,6 +98,11 @@ const ShopifySettingsForm: React.FC = () => {
     e.preventDefault();
     if (!user) {
       toast.error('You must be logged in to save settings');
+      return;
+    }
+    
+    if (!permission.canEdit) {
+      toast.error('You do not have permission to edit these settings');
       return;
     }
     
@@ -143,15 +168,26 @@ const ShopifySettingsForm: React.FC = () => {
     );
   }
 
+  if (!permission.canView) {
+    return (
+      <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200 text-center">
+        <Shield className="h-12 w-12 text-yellow-500 mx-auto mb-3" />
+        <h2 className="text-lg font-medium text-yellow-700">Access Restricted</h2>
+        <p className="text-yellow-600 mt-2">
+          You don't have permission to view Shopify settings. 
+          Please contact an administrator if you need access.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-lg shadow p-6">
       {error && (
         <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
           <div className="flex">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
+              <AlertCircle className="h-5 w-5 text-red-400" />
             </div>
             <div className="ml-3">
               <p className="text-sm text-red-700">{error}</p>
@@ -174,6 +210,7 @@ const ShopifySettingsForm: React.FC = () => {
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             required
+            readOnly={!permission.canEdit}
           />
         </div>
         
@@ -189,6 +226,7 @@ const ShopifySettingsForm: React.FC = () => {
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             required
+            readOnly={!permission.canEdit}
           />
         </div>
         
@@ -202,6 +240,7 @@ const ShopifySettingsForm: React.FC = () => {
             value={settings.api_key}
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            readOnly={!permission.canEdit}
           />
         </div>
         
@@ -215,18 +254,21 @@ const ShopifySettingsForm: React.FC = () => {
             value={settings.api_secret}
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            readOnly={!permission.canEdit}
           />
         </div>
         
-        <div className="pt-2">
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
-          >
-            {isSaving ? 'Saving...' : (hasExistingSettings ? 'Update Settings' : 'Save Settings')}
-          </button>
-        </div>
+        {permission.canEdit && (
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+            >
+              {isSaving ? 'Saving...' : (hasExistingSettings ? 'Update Settings' : 'Save Settings')}
+            </button>
+          </div>
+        )}
       </form>
       
       <div className="mt-4 text-sm text-gray-600">

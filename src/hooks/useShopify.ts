@@ -1,8 +1,8 @@
 
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { useSession } from './useSession';
 import { toast } from 'react-hot-toast';
+import { useSession } from './useSession';
 
 export const useShopify = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,77 +11,66 @@ export const useShopify = () => {
 
   const sendToShopify = async (tradeInId: string) => {
     if (!user) {
-      const errorMessage = 'User must be logged in to send items to Shopify';
-      toast.error(errorMessage);
-      throw new Error(errorMessage);
+      toast.error('You must be logged in to use this feature');
+      return;
     }
 
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      // First, check if this trade-in has already been synced
-      const { data: tradeIn, error: tradeInError } = await supabase
-        .from('trade_ins')
-        .select('shopify_synced')
-        .eq('id', tradeInId)
-        .single();
-      
-      if (tradeInError) {
-        toast.error(`Error checking trade-in: ${tradeInError.message}`);
-        throw tradeInError;
-      }
-      
-      if (tradeIn.shopify_synced) {
-        const errorMessage = 'This trade-in has already been synced to Shopify';
-        toast.error(errorMessage);
-        throw new Error(errorMessage);
-      }
-      
-      // Call the Shopify sync edge function
+      // Call the edge function to handle the Shopify synchronization
       const { data, error: functionError } = await supabase.functions.invoke('shopify-sync', {
-        body: JSON.stringify({
-          tradeInId,
-          userId: user.id
-        })
+        body: { tradeInId, userId: user.id }
       });
-      
+
       if (functionError) {
-        toast.error(`Function error: ${functionError.message}`);
-        throw functionError;
-      }
-      
-      if (!data.success) {
-        toast.error(data.error || 'Failed to sync with Shopify');
-        throw new Error(data.error || 'Failed to sync with Shopify');
+        console.error('Edge function error:', functionError);
+        setError(functionError.message);
+        toast.error(`Shopify sync failed: ${functionError.message}`);
+        return;
       }
 
-      toast.success('Successfully synced with Shopify!');
-
-      // Refresh the data by fetching the updated trade-in
-      const { error: refreshError } = await supabase
-        .from('trade_ins')
-        .select('shopify_synced, shopify_synced_at')
-        .eq('id', tradeInId)
-        .single();
-      
-      if (refreshError) {
-        console.error('Error refreshing trade-in data:', refreshError);
+      if (data?.error) {
+        console.error('Shopify sync error:', data.error);
+        setError(data.error);
+        toast.error(`Shopify sync failed: ${data.error}`);
+        return;
       }
-      
-      return data;
+
+      if (data?.success) {
+        // Update the trade-in to mark it as synced
+        const { error: updateError } = await supabase
+          .from('trade_ins')
+          .update({
+            shopify_synced: true,
+            shopify_synced_at: new Date().toISOString(),
+            shopify_synced_by: user.id
+          })
+          .eq('id', tradeInId);
+
+        if (updateError) {
+          console.error('Error updating trade-in sync status:', updateError);
+          setError(`Sync completed but failed to update status: ${updateError.message}`);
+          toast.error('Sync completed but failed to update status');
+          return;
+        }
+
+        toast.success('Successfully synced trade-in to Shopify');
+        return data;
+      }
     } catch (err) {
-      console.error('Error syncing to Shopify:', err);
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
-      throw err;
+      console.error('Unexpected error during Shopify sync:', err);
+      setError(`An unexpected error occurred: ${(err as Error).message}`);
+      toast.error('An unexpected error occurred during Shopify sync');
     } finally {
       setIsLoading(false);
     }
   };
 
   return {
+    sendToShopify,
     isLoading,
-    error,
-    sendToShopify
+    error
   };
 };
