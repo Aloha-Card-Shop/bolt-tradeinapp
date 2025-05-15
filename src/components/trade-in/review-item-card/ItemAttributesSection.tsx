@@ -42,7 +42,10 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
 
   // Use our shared price hook
   const { 
-    displayValue
+    displayValue,
+    cashValue,
+    tradeValue,
+    handlePriceChange
   } = useItemPrice({
     item,
     onUpdate: handleUpdate
@@ -51,6 +54,15 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
   // Handle custom price change format from review screen
   const handleCustomPriceChange = (price: number) => {
     handleUpdate({ price, isPriceUnavailable: false });
+  };
+
+  // Handle manual value adjustment
+  const handleValueChange = (value: number) => {
+    if (item.paymentType === 'cash') {
+      handleUpdate({ cashValue: value });
+    } else {
+      handleUpdate({ tradeValue: value });
+    }
   };
 
   // Create adapter functions to match the expected types
@@ -97,8 +109,11 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
       />
 
       <ValueDisplay
-        value={displayValue}
+        value={item.paymentType === 'cash' ? 
+          (item.cashValue !== undefined ? item.cashValue : cashValue) : 
+          (item.tradeValue !== undefined ? item.tradeValue : tradeValue)}
         quantity={item.quantity}
+        onValueChange={handleValueChange}
       />
     </div>
   );

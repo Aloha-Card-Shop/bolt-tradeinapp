@@ -21,6 +21,22 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
   onConditionChange, 
   onValueChange 
 }) => {
+  // Handle manual value adjustment
+  const handleValueAdjustment = (value: number) => {
+    const updates = item.paymentType === 'cash' 
+      ? { cashValue: value } 
+      : { tradeValue: value };
+      
+    // Update the item
+    onUpdate(index, { ...item, ...updates });
+    
+    // Notify parent about the value change
+    onValueChange({
+      cashValue: updates.cashValue || item.cashValue || 0,
+      tradeValue: updates.tradeValue || item.tradeValue || 0
+    });
+  };
+
   return (
     <TradeInItem 
       item={item}
@@ -29,6 +45,7 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
       onUpdate={onUpdate}
       onConditionChange={onConditionChange}
       onValueChange={onValueChange}
+      onValueAdjustment={handleValueAdjustment}
     />
   );
 };
