@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react';
+import { ChevronDown, ChevronUp, ShoppingCart, Printer } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import TradeInRowActions from './TradeInRowActions';
 import StatusBadge from './StatusBadge';
@@ -74,11 +74,34 @@ const TradeInRow: React.FC<TradeInRowProps> = ({
         </td>
         <td className="px-5 py-5 border-b border-gray-200 text-sm">
           <div className="flex items-center space-x-2">
+            {/* Display printing status */}
+            {localTradeIn.printed && (
+              <span 
+                className="text-blue-600" 
+                title={`Printed ${localTradeIn.print_count || 0} times. Last printed: ${
+                  localTradeIn.last_printed_at 
+                    ? new Date(localTradeIn.last_printed_at).toLocaleString() 
+                    : 'Unknown'
+                }`}
+              >
+                <Printer className="h-4 w-4" />
+              </span>
+            )}
+            
+            {/* Display Shopify sync status */}
             {localTradeIn.shopify_synced && (
-              <span className="text-green-600" title={`Synced to Shopify on ${new Date(localTradeIn.shopify_synced_at || '').toLocaleString()}`}>
+              <span 
+                className="text-green-600" 
+                title={`Synced to Shopify on ${
+                  localTradeIn.shopify_synced_at 
+                    ? new Date(localTradeIn.shopify_synced_at).toLocaleString() 
+                    : 'Unknown'
+                }`}
+              >
                 <ShoppingCart className="h-4 w-4" />
               </span>
             )}
+            
             <TradeInRowActions 
               tradeInId={localTradeIn.id}
               status={localTradeIn.status}

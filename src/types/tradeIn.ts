@@ -18,7 +18,7 @@ export interface TradeInItem {
     cashValue?: number;
     tradeValue?: number;
     cardNumber?: string;
-    setName?: string;  // Add setName to attributes
+    setName?: string;
   };
   tcgplayer_url?: string;
   image_url?: string;

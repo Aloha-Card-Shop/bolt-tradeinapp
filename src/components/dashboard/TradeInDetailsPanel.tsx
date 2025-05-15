@@ -5,6 +5,7 @@ import TradeInEmptyState from '../TradeInEmptyState';
 import StatusBadge from './StatusBadge';
 import TradeInItemRow from './TradeInItemRow';
 import ShopifySync from '../shopify/ShopifySync';
+import { Printer, Clock } from 'lucide-react';
 
 interface TradeInDetailsPanelProps {
   tradeIn: TradeIn;
@@ -76,15 +77,38 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
             <p className="font-medium capitalize">{tradeIn.payment_type || 'Cash'}</p>
           </div>
           
-          {/* Show Shopify sync status if available */}
-          {tradeIn.shopify_synced !== undefined && (
-            <div>
-              <p className="text-xs text-gray-500">Shopify</p>
-              <p className={`font-medium ${tradeIn.shopify_synced ? 'text-green-600' : 'text-yellow-600'}`}>
-                {tradeIn.shopify_synced ? 'Synced' : 'Not synced'}
+          {/* Show Printing Status */}
+          <div>
+            <p className="text-xs text-gray-500">Printing</p>
+            <div className="flex items-center gap-1">
+              <Printer className={`h-3 w-3 ${tradeIn.printed ? 'text-blue-600' : 'text-gray-400'}`} />
+              <p className={`font-medium ${tradeIn.printed ? 'text-blue-600' : 'text-gray-500'}`}>
+                {tradeIn.printed 
+                  ? `Printed ${tradeIn.print_count || 1} times` 
+                  : 'Not printed'}
               </p>
             </div>
-          )}
+            {tradeIn.last_printed_at && (
+              <p className="text-xs text-gray-500 mt-1">
+                <Clock className="h-3 w-3 inline mr-1" />
+                {new Date(tradeIn.last_printed_at).toLocaleString()}
+              </p>
+            )}
+          </div>
+          
+          {/* Show Shopify sync status */}
+          <div>
+            <p className="text-xs text-gray-500">Shopify</p>
+            <p className={`font-medium ${tradeIn.shopify_synced ? 'text-green-600' : 'text-yellow-600'}`}>
+              {tradeIn.shopify_synced ? 'Synced' : 'Not synced'}
+            </p>
+            {tradeIn.shopify_synced_at && (
+              <p className="text-xs text-gray-500 mt-1">
+                <Clock className="h-3 w-3 inline mr-1" />
+                {new Date(tradeIn.shopify_synced_at).toLocaleString()}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Add Shopify sync button */}
@@ -121,6 +145,7 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
                   <th className="text-xs font-medium text-gray-500 px-4 py-2 text-left border-b">Value</th>
                   <th className="text-xs font-medium text-gray-500 px-4 py-2 text-left border-b">Type</th>
                   <th className="text-xs font-medium text-gray-500 px-4 py-2 text-left border-b">Total</th>
+                  <th className="text-xs font-medium text-gray-500 px-4 py-2 text-left border-b">Status</th>
                 </tr>
               </thead>
               <tbody>
