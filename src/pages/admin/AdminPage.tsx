@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Loader2, UserPlus, Home, Settings, ClipboardList, UserCircle, DollarSign, Barcode, Printer, ShoppingCart, Map } from 'lucide-react';
+import { Loader2, UserPlus, Home, ClipboardList, UserCircle, DollarSign, Barcode, Printer, ShoppingCart, Map } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { useAdminApi } from '../../components/AdminWrapper';
 import UserTable from '../../components/admin/UserTable';
