@@ -15,8 +15,14 @@ const TradeInItemRow: React.FC<TradeInItemRowProps> = ({ item }) => {
     : (item.attributes?.tradeValue || 0);
   const totalValue = value * item.quantity;
 
+  // Get row background color based on sync status
+  const getRowBackgroundColor = () => {
+    if (isShopifySynced) return 'bg-green-50';
+    return '';
+  };
+
   return (
-    <tr className="hover:bg-gray-50">
+    <tr className={`hover:bg-gray-50 ${getRowBackgroundColor()}`}>
       <td className="px-4 py-2 border-b">
         <div className="flex items-center">
           <div>

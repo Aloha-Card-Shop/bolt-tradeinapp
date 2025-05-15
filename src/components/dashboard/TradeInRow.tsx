@@ -39,10 +39,29 @@ const TradeInRow: React.FC<TradeInRowProps> = ({
     setLocalTradeIn({...tradeIn});
   }, [tradeIn]);
 
+  // Determine row background color based on status
+  const getRowBackgroundColor = () => {
+    // Base expanded color
+    if (isExpanded) return 'bg-blue-50';
+    
+    // Status-based colors
+    if (localTradeIn.status === 'accepted') return 'bg-green-50';
+    if (localTradeIn.status === 'rejected') return 'bg-red-50';
+    
+    // Check for printed status
+    if (localTradeIn.printed) return 'bg-yellow-50';
+    
+    // Check for Shopify sync status
+    if (localTradeIn.shopify_synced) return 'bg-indigo-50';
+    
+    // Default color
+    return 'bg-white';
+  };
+
   return (
     <React.Fragment>
       <tr 
-        className={`hover:bg-gray-50 cursor-pointer ${isExpanded ? 'bg-blue-50' : 'bg-white'}`}
+        className={`hover:bg-gray-50 cursor-pointer ${getRowBackgroundColor()}`}
         onClick={() => onToggleDetails(localTradeIn.id)}
       >
         <td className="px-5 py-5 border-b border-gray-200 text-sm">
