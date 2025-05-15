@@ -24,7 +24,12 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
         `)
         .eq('trade_in_id', tradeInId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching trade-in items:', error);
+        throw error;
+      }
+
+      console.log('Fetched trade-in items:', data);
 
       // Fix the type issue with cards.name and handle attributes correctly
       const items = data.map(item => {
@@ -32,6 +37,9 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
         const cardName = cardData?.name || 'Unknown Card';
         const tcgplayer_url = cardData?.tcgplayer_url || null;
         const image_url = cardData?.image_url || null;
+        
+        // Log the raw attributes to help debug the issue
+        console.log(`Item ${item.id} attributes:`, item.attributes);
         
         // Ensure attributes is an object with the expected properties
         const attributes = item.attributes || {};
@@ -77,6 +85,8 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
           image_url
         };
       });
+
+      console.log('Processed items:', items);
 
       // Update the trade-ins state with the fetched items
       setTradeIns(prev => prev.map(tradeIn => 

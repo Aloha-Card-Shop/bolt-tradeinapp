@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { TradeInItem } from '../../types/tradeIn';
 import { formatCurrency } from '../../utils/formatters';

@@ -19,6 +19,8 @@ export const useTradeInItemUpdate = () => {
     setIsLoading(true);
     setUpdatingItemId(itemId);
     try {
+      console.log('Updating item with ID:', itemId, 'Updates:', updates);
+      
       // Convert TradeInItem updates to match the database schema
       const dbUpdates: any = {};
       
@@ -35,15 +37,18 @@ export const useTradeInItemUpdate = () => {
         dbUpdates.condition = updates.condition;
       }
       
-      // Handle attributes object
+      // Handle attributes object - ensure we're using the JSONB format expected by Postgres
       if (updates.attributes) {
         dbUpdates.attributes = updates.attributes;
       }
 
-      const { error } = await supabase
+      console.log('Database updates:', dbUpdates);
+
+      const { data, error } = await supabase
         .from('trade_in_items')
         .update(dbUpdates)
-        .eq('id', itemId);
+        .eq('id', itemId)
+        .select();
 
       if (error) {
         console.error('Error updating item:', error);
@@ -55,6 +60,7 @@ export const useTradeInItemUpdate = () => {
         throw error;
       }
       
+      console.log('Update successful, returned data:', data);
       toast.success('Item updated successfully');
       return true;
     } catch (error) {
