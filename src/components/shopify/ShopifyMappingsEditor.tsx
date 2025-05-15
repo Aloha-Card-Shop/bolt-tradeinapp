@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PlusCircle, Trash2, Save, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
@@ -20,9 +19,10 @@ const ShopifyMappingsEditor: React.FC = () => {
   const [mappings, setMappings] = useState<ShopifyFieldMapping[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const { user } = useSession();
 
-  const fetchMappings = async () => {
+  const fetchMappings = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     
@@ -43,12 +43,38 @@ const ShopifyMappingsEditor: React.FC = () => {
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
+      setInitialLoadComplete(true);
     }
-  };
+  }, []);
 
+  // Initial data loading
   useEffect(() => {
     fetchMappings();
-  }, []);
+  }, [fetchMappings]);
+  
+  // Add default card_type mapping if needed (separate effect to avoid render loops)
+  useEffect(() => {
+    // Only run after initial data load and when not loading
+    if (!initialLoadComplete || isLoading) return;
+    
+    const hasCardTypeMapping = mappings.some(m => 
+      m.mapping_type === 'variant' && m.source_field === 'card_type'
+    );
+    
+    if (!hasCardTypeMapping) {
+      const newMapping: ShopifyFieldMapping = {
+        source_field: 'card_type',
+        target_field: 'option2',
+        transform_template: null,
+        is_active: true,
+        description: 'Card type/edition',
+        mapping_type: 'variant',
+        sort_order: mappings.filter(m => m.mapping_type === 'variant').length + 1
+      };
+      
+      setMappings(prev => [...prev, newMapping]);
+    }
+  }, [initialLoadComplete, isLoading, mappings]);
 
   const handleAddMapping = () => {
     const newMapping: ShopifyFieldMapping = {
@@ -196,29 +222,6 @@ const ShopifyMappingsEditor: React.FC = () => {
 
     return grouped;
   };
-
-  useEffect(() => {
-    fetchMappings();
-    
-    // If no variant mappings with card_type exist, add one automatically
-    const variantMappings = mappings.filter(m => 
-      m.mapping_type === 'variant' && m.source_field === 'card_type'
-    );
-    
-    if (variantMappings.length === 0 && !isLoading) {
-      const newMapping: ShopifyFieldMapping = {
-        source_field: 'card_type',
-        target_field: 'option2',
-        transform_template: null,
-        is_active: true,
-        description: 'Card type/edition',
-        mapping_type: 'variant',
-        sort_order: mappings.filter(m => m.mapping_type === 'variant').length + 1
-      };
-      
-      setMappings([...mappings, newMapping]);
-    }
-  }, [isLoading]); // Only run once when loading state changes
 
   const groupedMappings = getGroupedMappings();
 
