@@ -83,12 +83,12 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
     fetchItems();
   }, [tradeIn]);
 
-  const handleItemUpdate = async (item: TradeInItem, updates: Partial<TradeInItem>) => {
+  const handleItemUpdate = async (item: TradeInItem, updates: Partial<TradeInItem>): Promise<TradeInItem | boolean> => {
     try {
       setIsUpdating(true);
       if (!item.id) {
         toast.error("Cannot update item without ID");
-        return;
+        return false;
       }
       
       // Call the updateTradeInItem function and get the updated data
@@ -102,7 +102,7 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
           )
         );
         
-        return updatedData;
+        return updatedData as TradeInItem;
       } else if (updatedData) {
         // If we just got a boolean success response, update with the updates we sent
         setItems(prevItems => 
@@ -114,12 +114,12 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
         return { ...item, ...updates };
       }
       
-      setIsUpdating(false);
       return false;
     } catch (error) {
       console.error('Error updating item:', error);
-      setIsUpdating(false);
       return false;
+    } finally {
+      setIsUpdating(false);
     }
   };
 

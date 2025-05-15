@@ -10,7 +10,7 @@ import PaymentTypeSelector from '../trade-in/shared/PaymentTypeSelector';
 interface EditableTradeInItemRowProps {
   item: TradeInItem;
   isUpdating: boolean;
-  onUpdate: (updates: Partial<TradeInItem>) => void;
+  onUpdate: (updates: Partial<TradeInItem>) => Promise<TradeInItem | boolean | void>;
 }
 
 const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({ 
@@ -49,24 +49,28 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
       }
     };
     
-    // Pass the updates to the parent component for processing
-    // and immediately update the UI with the result
-    const result = await onUpdate(updates);
-    
-    // If we got updated data back (not just a boolean true), update our local state
-    if (result && typeof result !== 'boolean') {
-      // Update our local state with the response from the server
-      setEditedItem(prev => ({
-        ...prev,
-        ...result,
-        attributes: {
-          ...(prev.attributes || {}),
-          ...(result.attributes || {})
-        }
-      }));
+    try {
+      // Pass the updates to the parent component for processing
+      const result = await onUpdate(updates);
+      
+      // If we got updated data back (not just a boolean true), update our local state
+      if (result && typeof result !== 'boolean') {
+        // Update our local state with the response from the server
+        setEditedItem(prev => ({
+          ...prev,
+          ...result,
+          attributes: {
+            ...(prev.attributes || {}),
+            ...(result.attributes || {})
+          }
+        }));
+      }
+      
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating item:", error);
+      // Keep edit mode open on error
     }
-    
-    setIsEditing(false);
   };
 
   const handleConditionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

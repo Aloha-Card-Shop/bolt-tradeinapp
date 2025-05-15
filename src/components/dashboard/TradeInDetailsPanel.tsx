@@ -1,10 +1,8 @@
-
 import React, { useState } from 'react';
 import { TradeIn, TradeInItem } from '../../types/tradeIn';
 import TradeInEmptyState from '../TradeInEmptyState';
 import StatusBadge from './StatusBadge';
 import TradeInItemRow from './TradeInItemRow';
-import { useTradeInItemUpdate } from '../../hooks/useTradeInItemUpdate';
 
 interface TradeInDetailsPanelProps {
   tradeIn: TradeIn;
@@ -26,30 +24,6 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
       case 'accepted': return 'Trade-in has been accepted';
       case 'rejected': return 'Trade-in has been rejected';
       default: return '';
-    }
-  };
-
-  // Function to update the item locally after an edit
-  const updateLocalItem = (itemId: string, updatedItem: TradeInItem) => {
-    if (!localItems) return;
-    
-    // Update the local items
-    const updatedItems = localItems.map(item => 
-      item.id === itemId ? { ...item, ...updatedItem } : item
-    );
-    
-    // Update local state
-    setLocalItems(updatedItems);
-    
-    // Update parent state if setTradeIns is provided
-    if (setTradeIns) {
-      setTradeIns(prevTradeIns => 
-        prevTradeIns.map(prevTradeIn => 
-          prevTradeIn.id === tradeIn.id 
-          ? { ...prevTradeIn, items: updatedItems } 
-          : prevTradeIn
-        )
-      );
     }
   };
 
