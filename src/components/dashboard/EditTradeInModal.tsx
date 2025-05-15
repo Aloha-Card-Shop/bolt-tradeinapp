@@ -71,9 +71,9 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
             
             setItems(formattedItems);
             
-            // If the parent tradeIn object was passed with items, update it there as well
-            if (tradeIn.setItems) {
-              tradeIn.setItems(formattedItems);
+            // Update tradeIn.items directly
+            if (tradeIn.items) {
+              tradeIn.items = formattedItems;
             }
           }
         } catch (err) {

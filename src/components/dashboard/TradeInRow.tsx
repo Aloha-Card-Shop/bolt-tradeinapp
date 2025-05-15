@@ -36,7 +36,7 @@ const TradeInRow: React.FC<TradeInRowProps> = ({
   
   // Update local state whenever the tradeIn prop changes
   useEffect(() => {
-    setLocalTradeIn(tradeIn);
+    setLocalTradeIn({...tradeIn});
   }, [tradeIn]);
 
   return (
