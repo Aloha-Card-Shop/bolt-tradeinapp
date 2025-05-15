@@ -42,19 +42,28 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
         console.log(`Item ${item.id} attributes:`, item.attributes);
         
         // Parse attributes safely, ensuring we have a valid object
-        let attributes = {};
+        let attributes: Record<string, any> = {};
         try {
-          attributes = item.attributes || {};
-          
-          if (typeof attributes !== 'object') {
-            console.warn(`Item ${item.id} has non-object attributes:`, attributes);
+          // Handle case when attributes might be null or not an object
+          if (item.attributes && typeof item.attributes === 'object') {
+            attributes = item.attributes;
+          } else if (typeof item.attributes === 'string') {
+            // If attributes is stored as JSON string (shouldn't happen, but safety check)
+            try {
+              attributes = JSON.parse(item.attributes);
+            } catch (e) {
+              console.warn(`Failed to parse attributes string for item ${item.id}:`, e);
+              attributes = {};
+            }
+          } else {
+            console.warn(`Item ${item.id} has invalid attributes type:`, typeof item.attributes);
             attributes = {};
           }
           
           // Ensure core attribute properties exist
-          if (!('isFirstEdition' in attributes)) attributes = { ...attributes, isFirstEdition: false };
-          if (!('isHolo' in attributes)) attributes = { ...attributes, isHolo: false };
-          if (!('paymentType' in attributes)) attributes = { ...attributes, paymentType: 'cash' };
+          if (!('isFirstEdition' in attributes)) attributes.isFirstEdition = false;
+          if (!('isHolo' in attributes)) attributes.isHolo = false;
+          if (!('paymentType' in attributes)) attributes.paymentType = 'cash';
           
           // Make sure cashValue and tradeValue are properly extracted and converted to numbers
           let cashValue: number | undefined = undefined;
@@ -63,13 +72,13 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
           if ('cashValue' in attributes && attributes.cashValue !== undefined && attributes.cashValue !== null) {
             cashValue = typeof attributes.cashValue === 'number' 
               ? attributes.cashValue 
-              : parseFloat(attributes.cashValue);
+              : parseFloat(attributes.cashValue as string);
           }
           
           if ('tradeValue' in attributes && attributes.tradeValue !== undefined && attributes.tradeValue !== null) {
             tradeValue = typeof attributes.tradeValue === 'number' 
               ? attributes.tradeValue 
-              : parseFloat(attributes.tradeValue);
+              : parseFloat(attributes.tradeValue as string);
           }
           
           // If no specific values were saved, default to using the price
