@@ -10,7 +10,8 @@ import {
   ChevronRight,
   Receipt,
   Barcode,
-  ShoppingCart
+  ShoppingCart,
+  Map
 } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
 import { supabase } from '../lib/supabase';
@@ -172,7 +173,7 @@ const Dashboard: React.FC = () => {
             </div>
           )}
 
-          {/* Shopify Settings Card - New addition */}
+          {/* Shopify Settings Card */}
           {canManageShopify && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <div className="flex items-center mb-4">
@@ -187,6 +188,26 @@ const Dashboard: React.FC = () => {
                 className="group flex items-center justify-between px-4 py-2 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 rounded-lg transition-colors"
               >
                 <span>Shopify Settings</span>
+                <ChevronRight className="h-5 w-5 text-cyan-500 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          )}
+
+          {/* Shopify Mappings Card - New addition */}
+          {canManageShopify && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center mb-4">
+                <div className="p-3 bg-cyan-100 rounded-lg">
+                  <Map className="h-6 w-6 text-cyan-600" />
+                </div>
+                <h2 className="ml-3 text-xl font-semibold text-gray-900">Shopify Mappings</h2>
+              </div>
+              <p className="text-gray-600 mb-6">Configure field mappings for Shopify product integration</p>
+              <Link 
+                to="/admin/shopify-mappings" 
+                className="group flex items-center justify-between px-4 py-2 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 rounded-lg transition-colors"
+              >
+                <span>Field Mappings</span>
                 <ChevronRight className="h-5 w-5 text-cyan-500 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
