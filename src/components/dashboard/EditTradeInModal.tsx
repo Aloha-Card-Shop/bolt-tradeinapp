@@ -36,7 +36,7 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
               price,
               condition,
               attributes,
-              cards:card_id(name, tcgplayer_url, image_url, rarity)
+              cards:card_id(name, tcgplayer_url, image_url, rarity, set_name)
             `)
             .eq('trade_in_id', tradeIn.id);
             
