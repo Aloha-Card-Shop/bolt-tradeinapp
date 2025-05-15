@@ -58,7 +58,7 @@ const ShopifyMappingsEditor: React.FC = () => {
     // Only run after initial data load and when not loading
     if (!initialLoadComplete || isLoading) return;
     
-    const defaultMappings = [];
+    const defaultMappings: ShopifyFieldMapping[] = [];
     
     // Check for card_type mapping
     const hasCardTypeMapping = mappings.some(m => 
@@ -86,9 +86,9 @@ const ShopifyMappingsEditor: React.FC = () => {
       defaultMappings.push({
         source_field: 'cost',
         target_field: 'cost',
-        transform_template: '{price}',
+        transform_template: '{paymentType === "cash" ? cashValue : tradeValue}',
         is_active: true,
-        description: 'Product cost',
+        description: 'Trade-in cost (cash/trade value given)',
         mapping_type: 'variant' as const,
         sort_order: mappings.filter(m => m.mapping_type === 'variant').length + 1 + (!hasCardTypeMapping ? 1 : 0)
       });
@@ -403,14 +403,17 @@ const ShopifyMappingsEditor: React.FC = () => {
               <li><code>{'{set_name}'}</code> - Card set name</li>
               <li><code>{'{card_number}'}</code> - Card number</li>
               <li><code>{'{condition}'}</code> - Card condition</li>
-              <li><code>{'{price}'}</code> - Card price</li>
-              <li><code>{'{cost}'}</code> - Card cost (same as price)</li>
+              <li><code>{'{price}'}</code> - Card market price</li>
+              <li><code>{'{cost}'}</code> - Trade-in cost (cash/trade value given)</li>
+              <li><code>{'{cashValue}'}</code> - Cash value given for the card</li>
+              <li><code>{'{tradeValue}'}</code> - Trade value given for the card</li>
               <li><code>{'{quantity}'}</code> - Quantity</li>
               <li><code>{'{game_type}'}</code> - Card game type</li>
               <li><code>{'{is_first_edition}'}</code> - Is first edition (true/false)</li>
               <li><code>{'{is_holo}'}</code> - Is holo (true/false)</li>
               <li><code>{'{is_reverse_holo}'}</code> - Is reverse holo (true/false)</li>
               <li><code>{'{card_type}'}</code> - Card type description (1st Edition, Holo, etc.)</li>
+              <li><code>{'{paymentType}'}</code> - Payment type for this card (cash/trade)</li>
             </ul>
           </div>
           <div>

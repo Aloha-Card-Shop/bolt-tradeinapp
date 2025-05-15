@@ -272,7 +272,13 @@ serve(async (req) => {
           card_number: item.cards.card_number || "",
           condition: formatCondition(item.condition),
           price: item.price,
-          cost: item.price, // Add cost as alias for price
+          // For cost, use the appropriate value based on payment type
+          cost: item.attributes?.paymentType === "cash" 
+            ? (item.attributes?.cashValue || item.price) 
+            : (item.attributes?.tradeValue || item.price),
+          cashValue: item.attributes?.cashValue || item.price,
+          tradeValue: item.attributes?.tradeValue || item.price,
+          paymentType: item.attributes?.paymentType || "cash",
           quantity: item.quantity,
           image_url: item.cards.image_url || "",
           game_type: item.cards.game || "unknown",
