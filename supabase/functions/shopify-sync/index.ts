@@ -169,7 +169,7 @@ serve(async (req) => {
           price,
           condition,
           attributes,
-          cards:card_id (name, image_url, set_name, game, card_number)
+          cards:card_id (name, image_url, set_name, game, card_number, rarity)
         )
       `)
       .eq("id", tradeInId)
@@ -293,7 +293,8 @@ serve(async (req) => {
             item.attributes?.isFirstEdition || false, 
             item.attributes?.isHolo || false, 
             item.attributes?.isReverseHolo || false
-          )
+          ),
+          rarity: item.cards.rarity || ""
         };
 
         // Apply mappings to create product data

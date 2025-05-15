@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { PlusCircle, Trash2, Save, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -125,6 +124,23 @@ const ShopifyMappingsEditor: React.FC = () => {
         description: 'Product tags for filtering and organization',
         mapping_type: 'product' as const,
         sort_order: mappings.filter(m => m.mapping_type === 'product').length + 1 + (!hasProductTypeMapping ? 1 : 0)
+      });
+    }
+    
+    // Check for rarity mapping
+    const hasRarityMapping = mappings.some(m => 
+      m.mapping_type === 'product' && m.target_field === 'rarity'
+    );
+    
+    if (!hasRarityMapping) {
+      defaultMappings.push({
+        source_field: 'rarity',
+        target_field: 'rarity',
+        transform_template: '{rarity}',
+        is_active: true,
+        description: 'Product rarity',
+        mapping_type: 'product' as const,
+        sort_order: mappings.filter(m => m.mapping_type === 'product').length + 1 + (!hasProductTypeMapping ? 1 : 0) + (!hasTagsMapping ? 1 : 0)
       });
     }
     
@@ -448,6 +464,7 @@ const ShopifyMappingsEditor: React.FC = () => {
               <li><code>{'{is_reverse_holo}'}</code> - Is reverse holo (true/false)</li>
               <li><code>{'{card_type}'}</code> - Card type description (1st Edition, Holo, etc.)</li>
               <li><code>{'{paymentType}'}</code> - Payment type for this card (cash/trade)</li>
+              <li><code>{'{rarity}'}</code> - Card rarity</li>
             </ul>
           </div>
           <div>
