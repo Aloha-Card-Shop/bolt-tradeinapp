@@ -13,10 +13,11 @@ interface TradeInDetailsPanelProps {
 const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
   tradeIn,
   loadingItems,
-  setTradeIns
+  // We're keeping setTradeIns in the props but removing it from the destructuring
+  // since it's not being used directly in this component
 }) => {
-  // Add local state to manage the items
-  const [localItems, setLocalItems] = useState<TradeInItem[] | undefined>(tradeIn.items);
+  // Since we're not using setLocalItems, we can simplify this to just read the items
+  const [items] = useState<TradeInItem[] | undefined>(tradeIn.items);
   
   const getStatusMessage = (status: string) => {
     switch (status) {
@@ -30,7 +31,7 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
   const statusMessage = getStatusMessage(tradeIn.status);
   
   // Use items from local state if available, otherwise fallback to tradeIn.items
-  const displayItems = localItems || tradeIn.items;
+  const displayItems = items || tradeIn.items;
 
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden">
