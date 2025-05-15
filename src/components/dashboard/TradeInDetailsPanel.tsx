@@ -4,7 +4,6 @@ import { TradeIn } from '../../types/tradeIn';
 import TradeInEmptyState from '../TradeInEmptyState';
 import StatusBadge from './StatusBadge';
 import TradeInItemRow from './TradeInItemRow';
-import { useTradeInItemUpdate } from '../../hooks/useTradeInItemUpdate';
 
 interface TradeInDetailsPanelProps {
   tradeIn: TradeIn;
