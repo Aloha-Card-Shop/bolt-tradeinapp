@@ -20,14 +20,16 @@ const TradeInItemRow: React.FC<TradeInItemRowProps> = ({ item }) => {
     return conditionMap[condition] || condition;
   };
 
-  // Get the payment type from attributes
+  // Get the payment type from attributes, defaulting to cash
   const paymentType = item.attributes?.paymentType || 'cash';
   
-  // Calculate market value (if available) - using original price as market value
+  // Get market price (always use item.price as the market value)
   const marketValue = item.price || 0;
 
-  // Get the actual value given based on payment type
-  const itemValue = item.attributes?.[paymentType === 'cash' ? 'cashValue' : 'tradeValue'] || item.price;
+  // Get the actual value given based on payment type from attributes
+  const itemValue = paymentType === 'cash' 
+    ? (item.attributes?.cashValue !== undefined ? item.attributes.cashValue : marketValue) 
+    : (item.attributes?.tradeValue !== undefined ? item.attributes.tradeValue : marketValue);
   
   // Calculate the total value
   const totalValue = itemValue * item.quantity;

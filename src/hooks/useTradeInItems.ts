@@ -41,31 +41,58 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
         // Log the raw attributes to help debug the issue
         console.log(`Item ${item.id} attributes:`, item.attributes);
         
-        // Ensure attributes is an object with the expected properties
-        const attributes = item.attributes || {};
-        const isFirstEdition = !!attributes.isFirstEdition;
-        const isHolo = !!attributes.isHolo;
-        const paymentType = attributes.paymentType || 'cash';
-        
-        // Make sure cashValue and tradeValue are properly extracted and converted to numbers
-        let cashValue: number | undefined = undefined;
-        let tradeValue: number | undefined = undefined;
-        
-        if (attributes.cashValue !== undefined && attributes.cashValue !== null) {
-          cashValue = typeof attributes.cashValue === 'number' 
-            ? attributes.cashValue 
-            : parseFloat(attributes.cashValue);
+        // Parse attributes safely, ensuring we have a valid object
+        let attributes = {};
+        try {
+          attributes = item.attributes || {};
+          
+          if (typeof attributes !== 'object') {
+            console.warn(`Item ${item.id} has non-object attributes:`, attributes);
+            attributes = {};
+          }
+          
+          // Ensure core attribute properties exist
+          if (!('isFirstEdition' in attributes)) attributes = { ...attributes, isFirstEdition: false };
+          if (!('isHolo' in attributes)) attributes = { ...attributes, isHolo: false };
+          if (!('paymentType' in attributes)) attributes = { ...attributes, paymentType: 'cash' };
+          
+          // Make sure cashValue and tradeValue are properly extracted and converted to numbers
+          let cashValue: number | undefined = undefined;
+          let tradeValue: number | undefined = undefined;
+          
+          if ('cashValue' in attributes && attributes.cashValue !== undefined && attributes.cashValue !== null) {
+            cashValue = typeof attributes.cashValue === 'number' 
+              ? attributes.cashValue 
+              : parseFloat(attributes.cashValue);
+          }
+          
+          if ('tradeValue' in attributes && attributes.tradeValue !== undefined && attributes.tradeValue !== null) {
+            tradeValue = typeof attributes.tradeValue === 'number' 
+              ? attributes.tradeValue 
+              : parseFloat(attributes.tradeValue);
+          }
+          
+          // If no specific values were saved, default to using the price
+          if (cashValue === undefined) cashValue = item.price;
+          if (tradeValue === undefined) tradeValue = item.price * 1.3; // 30% more for trade
+          
+          // Update the attributes object with the processed values
+          attributes = { 
+            ...attributes, 
+            cashValue, 
+            tradeValue,
+            paymentType: attributes.paymentType || 'cash'
+          };
+        } catch (err) {
+          console.error(`Error processing attributes for item ${item.id}:`, err);
+          attributes = {
+            isFirstEdition: false,
+            isHolo: false,
+            paymentType: 'cash',
+            cashValue: item.price,
+            tradeValue: item.price * 1.3
+          };
         }
-        
-        if (attributes.tradeValue !== undefined && attributes.tradeValue !== null) {
-          tradeValue = typeof attributes.tradeValue === 'number' 
-            ? attributes.tradeValue 
-            : parseFloat(attributes.tradeValue);
-        }
-        
-        // If no specific values were saved, default to using the price
-        if (cashValue === undefined) cashValue = item.price;
-        if (tradeValue === undefined) tradeValue = item.price;
         
         return {
           id: item.id,
@@ -74,13 +101,7 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
           quantity: item.quantity,
           price: item.price,
           condition: item.condition,
-          attributes: {
-            isFirstEdition,
-            isHolo,
-            paymentType,
-            cashValue,
-            tradeValue
-          },
+          attributes,
           tcgplayer_url,
           image_url
         };

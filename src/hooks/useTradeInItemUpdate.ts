@@ -31,6 +31,7 @@ export const useTradeInItemUpdate = () => {
       
       if (updates.price !== undefined) {
         dbUpdates.price = updates.price;
+        console.log(`Setting price to ${updates.price}`);
       }
       
       if (updates.condition !== undefined) {
@@ -39,11 +40,14 @@ export const useTradeInItemUpdate = () => {
       
       // Handle attributes object - ensure we're using the JSONB format expected by Postgres
       if (updates.attributes) {
-        dbUpdates.attributes = updates.attributes;
+        // Make a clean copy of attributes to avoid any reactivity issues
+        dbUpdates.attributes = JSON.parse(JSON.stringify(updates.attributes));
+        console.log('Setting attributes:', dbUpdates.attributes);
       }
 
       console.log('Database updates:', dbUpdates);
 
+      // Perform the update with return data for verification
       const { data, error } = await supabase
         .from('trade_in_items')
         .update(dbUpdates)
