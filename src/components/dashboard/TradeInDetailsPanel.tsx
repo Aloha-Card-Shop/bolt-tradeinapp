@@ -99,6 +99,7 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
                   <th className="text-xs font-medium text-gray-500 px-4 py-2 text-left border-b">Card</th>
                   <th className="text-xs font-medium text-gray-500 px-4 py-2 text-left border-b">Condition</th>
                   <th className="text-xs font-medium text-gray-500 px-4 py-2 text-left border-b">Qty</th>
+                  <th className="text-xs font-medium text-gray-500 px-4 py-2 text-left border-b">Market</th>
                   <th className="text-xs font-medium text-gray-500 px-4 py-2 text-left border-b">Value</th>
                   <th className="text-xs font-medium text-gray-500 px-4 py-2 text-left border-b">Type</th>
                   <th className="text-xs font-medium text-gray-500 px-4 py-2 text-left border-b">Total</th>

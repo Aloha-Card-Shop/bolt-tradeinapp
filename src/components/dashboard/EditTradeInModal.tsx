@@ -180,6 +180,7 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
                         <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Card</th>
                         <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Condition</th>
                         <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Qty</th>
+                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Market</th>
                         <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Value</th>
                         <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Type</th>
                         <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Total</th>

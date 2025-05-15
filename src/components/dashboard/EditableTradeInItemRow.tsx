@@ -34,12 +34,24 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
   };
 
   const handleSaveChanges = () => {
-    onUpdate({
+    // Calculate the payment type specific values
+    const paymentType = editedItem.attributes?.paymentType || 'cash';
+    const marketPrice = editedItem.price || 0;
+    
+    // Prepare the updates with the attributes
+    const updates: Partial<TradeInItem> = {
       condition: editedItem.condition,
       quantity: editedItem.quantity,
-      price: editedItem.price,
-      attributes: editedItem.attributes
-    });
+      price: editedItem.price, // Market price
+      attributes: {
+        ...editedItem.attributes,
+        paymentType,
+        cashValue: paymentType === 'cash' ? editedItem.attributes.cashValue : editedItem.attributes.cashValue,
+        tradeValue: paymentType === 'trade' ? editedItem.attributes.tradeValue : editedItem.attributes.tradeValue
+      }
+    };
+    
+    onUpdate(updates);
     setIsEditing(false);
   };
 
@@ -58,11 +70,24 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
     });
   };
 
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMarketPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const price = parseFloat(e.target.value) || 0;
     setEditedItem({
       ...editedItem,
       price: Math.max(0, price)
+    });
+  };
+  
+  const handleValuePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value) || 0;
+    const paymentType = editedItem.attributes?.paymentType || 'cash';
+    
+    setEditedItem({
+      ...editedItem,
+      attributes: {
+        ...editedItem.attributes,
+        [paymentType === 'cash' ? 'cashValue' : 'tradeValue']: Math.max(0, value)
+      }
     });
   };
   
@@ -92,8 +117,15 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
     }
   };
 
+  const getPaymentTypeValue = () => {
+    const paymentType = editedItem.attributes?.paymentType || 'cash';
+    return paymentType === 'cash' 
+      ? (editedItem.attributes?.cashValue || editedItem.price || 0) 
+      : (editedItem.attributes?.tradeValue || editedItem.price || 0);
+  };
+
   const getTotalValue = () => {
-    return editedItem.price * editedItem.quantity;
+    return getPaymentTypeValue() * editedItem.quantity;
   };
 
   if (isEditing) {
@@ -142,15 +174,23 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
         </td>
         <td className="px-4 py-2 text-sm">
           <PriceInput 
-            price={editedItem.price}
-            onChange={handlePriceChange}
-            label="Card Value"
+            price={editedItem.price || 0}
+            onChange={handleMarketPriceChange}
+            label="Market Value"
+            readOnly={isUpdating}
+          />
+        </td>
+        <td className="px-4 py-2 text-sm">
+          <PriceInput 
+            price={getPaymentTypeValue()}
+            onChange={handleValuePriceChange}
+            label={`${editedItem.attributes?.paymentType === 'trade' ? 'Trade' : 'Cash'} Value`}
             readOnly={isUpdating}
           />
         </td>
         <td className="px-4 py-2 text-sm">
           <PaymentTypeSelector
-            paymentType={editedItem.attributes.paymentType || 'cash'}
+            paymentType={editedItem.attributes?.paymentType || 'cash'}
             onSelect={handlePaymentTypeChange}
             disabled={isUpdating}
           />
@@ -230,7 +270,18 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
         {getConditionDisplay(item.condition)}
       </td>
       <td className="px-4 py-2 text-sm text-gray-700">{item.quantity}</td>
-      <td className="px-4 py-2 text-sm text-gray-700">${formatCurrency(itemValue)}</td>
+      <td className="px-4 py-2 text-sm">
+        <div className="flex flex-col">
+          <span className="text-gray-700">${formatCurrency(item.price || 0)}</span>
+          <span className="text-xs text-gray-500">Market</span>
+        </div>
+      </td>
+      <td className="px-4 py-2 text-sm">
+        <div className="flex flex-col">
+          <span className="text-gray-700">${formatCurrency(itemValue || 0)}</span>
+          <span className="text-xs text-gray-500">Value</span>
+        </div>
+      </td>
       <td className="px-4 py-2 text-sm">
         {paymentType === 'trade' ? (
           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
@@ -246,7 +297,7 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
       </td>
       <td className="px-4 py-2 text-sm">
         <div className="flex items-center justify-between">
-          <span className="font-medium text-gray-900">${formatCurrency(itemValue * item.quantity)}</span>
+          <span className="font-medium text-gray-900">${formatCurrency((itemValue || 0) * item.quantity)}</span>
           <button
             onClick={() => setIsEditing(true)}
             className="p-1 rounded text-blue-600 hover:bg-blue-100"
