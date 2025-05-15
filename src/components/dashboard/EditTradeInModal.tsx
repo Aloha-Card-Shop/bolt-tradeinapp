@@ -48,8 +48,10 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
           
           if (data) {
             const formattedItems = data.map(item => {
+              // Fix: Check if cards is an array and get first element, or use directly if it's an object
               const cardData = item.cards ? 
-                (typeof item.cards === 'object' ? item.cards : null) : null;
+                (Array.isArray(item.cards) ? item.cards[0] : 
+                 typeof item.cards === 'object' ? item.cards : null) : null;
                 
               return {
                 id: item.id,
