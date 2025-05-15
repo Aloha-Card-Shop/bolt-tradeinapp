@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, Trash2, Save, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -351,6 +350,7 @@ const ShopifyMappingsEditor: React.FC = () => {
             <ul className="text-sm text-blue-700">
               <li><code>{'{card_name}'}</code> - Name of the card</li>
               <li><code>{'{set_name}'}</code> - Card set name</li>
+              <li><code>{'{card_number}'}</code> - Card number</li>
               <li><code>{'{condition}'}</code> - Card condition</li>
               <li><code>{'{price}'}</code> - Card price</li>
               <li><code>{'{quantity}'}</code> - Quantity</li>

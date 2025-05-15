@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -168,7 +169,7 @@ serve(async (req) => {
           price,
           condition,
           attributes,
-          cards:card_id (name, image_url, set_name, game)
+          cards:card_id (name, image_url, set_name, game, card_number)
         )
       `)
       .eq("id", tradeInId)
