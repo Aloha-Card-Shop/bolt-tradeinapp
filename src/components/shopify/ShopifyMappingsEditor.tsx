@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, Trash2, Save, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -195,6 +196,29 @@ const ShopifyMappingsEditor: React.FC = () => {
 
     return grouped;
   };
+
+  useEffect(() => {
+    fetchMappings();
+    
+    // If no variant mappings with card_type exist, add one automatically
+    const variantMappings = mappings.filter(m => 
+      m.mapping_type === 'variant' && m.source_field === 'card_type'
+    );
+    
+    if (variantMappings.length === 0 && !isLoading) {
+      const newMapping: ShopifyFieldMapping = {
+        source_field: 'card_type',
+        target_field: 'option2',
+        transform_template: null,
+        is_active: true,
+        description: 'Card type/edition',
+        mapping_type: 'variant',
+        sort_order: mappings.filter(m => m.mapping_type === 'variant').length + 1
+      };
+      
+      setMappings([...mappings, newMapping]);
+    }
+  }, [isLoading]); // Only run once when loading state changes
 
   const groupedMappings = getGroupedMappings();
 
