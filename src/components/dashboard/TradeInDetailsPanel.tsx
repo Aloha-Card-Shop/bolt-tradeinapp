@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { TradeIn, TradeInItem } from '../../types/tradeIn';
 import TradeInEmptyState from '../TradeInEmptyState';
 import StatusBadge from './StatusBadge';
@@ -16,8 +17,13 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
   // We're keeping setTradeIns in the props but removing it from the destructuring
   // since it's not being used directly in this component
 }) => {
-  // Since we're not using setLocalItems, we can simplify this to just read the items
-  const [items] = useState<TradeInItem[] | undefined>(tradeIn.items);
+  // Use tradeIn.items directly to ensure we always have the latest data
+  const [items, setItems] = useState<TradeInItem[] | undefined>(tradeIn.items);
+  
+  // Update local items state whenever tradeIn.items changes
+  useEffect(() => {
+    setItems(tradeIn.items);
+  }, [tradeIn.items]);
   
   const getStatusMessage = (status: string) => {
     switch (status) {
@@ -30,8 +36,8 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
 
   const statusMessage = getStatusMessage(tradeIn.status);
   
-  // Use items from local state if available, otherwise fallback to tradeIn.items
-  const displayItems = items || tradeIn.items;
+  // Always use the items from the latest tradeIn prop
+  const displayItems = tradeIn.items;
 
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden">

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { TradeInItem } from '../types/tradeIn';
@@ -65,6 +66,8 @@ export const useTradeInItemUpdate = () => {
       
       console.log('Update successful, returned data:', data);
       toast.success('Item updated successfully');
+      
+      // Return the updated data to update the UI immediately
       return data && data.length > 0 ? data[0] : true;
     } catch (error) {
       console.error('Error updating trade-in item:', error);

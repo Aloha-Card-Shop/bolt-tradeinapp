@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { TradeIn, TradeInItem } from '../../types/tradeIn';
@@ -69,6 +70,11 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
             });
             
             setItems(formattedItems);
+            
+            // If the parent tradeIn object was passed with items, update it there as well
+            if (tradeIn.setItems) {
+              tradeIn.setItems(formattedItems);
+            }
           }
         } catch (err) {
           console.error('Error fetching items:', err);
@@ -102,16 +108,40 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
           )
         );
         
+        // Also update the parent tradeIn object to ensure all views are updated
+        if (tradeIn.items) {
+          // Create a deep copy to ensure change detection
+          const updatedItems = tradeIn.items.map(prevItem => 
+            prevItem.id === item.id ? { ...prevItem, ...updatedData } : prevItem
+          );
+          
+          // Update the parent tradeIn object's items
+          tradeIn.items = updatedItems;
+        }
+        
         return updatedData as TradeInItem;
       } else if (updatedData) {
         // If we just got a boolean success response, update with the updates we sent
+        const updatedItem = { ...item, ...updates };
+        
         setItems(prevItems => 
           prevItems.map(prevItem => 
-            prevItem.id === item.id ? { ...prevItem, ...updates } : prevItem
+            prevItem.id === item.id ? updatedItem : prevItem
           )
         );
         
-        return { ...item, ...updates };
+        // Also update the parent tradeIn object
+        if (tradeIn.items) {
+          // Create a deep copy to ensure change detection
+          const updatedItems = tradeIn.items.map(prevItem => 
+            prevItem.id === item.id ? updatedItem : prevItem
+          );
+          
+          // Update the parent tradeIn object's items
+          tradeIn.items = updatedItems;
+        }
+        
+        return updatedItem;
       }
       
       return false;
@@ -130,6 +160,9 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
       
       if (success) {
         toast.success('Notes updated successfully');
+        
+        // Also update the parent tradeIn object
+        tradeIn.staff_notes = staffNotes;
       }
       setIsUpdating(false);
     } catch (error) {

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import TradeInRowActions from './TradeInRowActions';
@@ -31,11 +31,19 @@ const TradeInRow: React.FC<TradeInRowProps> = ({
   onDelete,
   setTradeIns
 }) => {
+  // Create a local state copy to force re-renders when tradeIn updates
+  const [localTradeIn, setLocalTradeIn] = useState<TradeIn>(tradeIn);
+  
+  // Update local state whenever the tradeIn prop changes
+  useEffect(() => {
+    setLocalTradeIn(tradeIn);
+  }, [tradeIn]);
+
   return (
     <React.Fragment>
       <tr 
         className={`hover:bg-gray-50 cursor-pointer ${isExpanded ? 'bg-blue-50' : 'bg-white'}`}
-        onClick={() => onToggleDetails(tradeIn.id)}
+        onClick={() => onToggleDetails(localTradeIn.id)}
       >
         <td className="px-5 py-5 border-b border-gray-200 text-sm">
           <div className="flex items-center">
@@ -44,46 +52,48 @@ const TradeInRow: React.FC<TradeInRowProps> = ({
             ) : (
               <ChevronDown className="h-4 w-4 text-gray-500 mr-2" />
             )}
-            <p className="text-gray-900 whitespace-no-wrap">{tradeIn.customer_name}</p>
+            <p className="text-gray-900 whitespace-no-wrap">{localTradeIn.customer_name}</p>
           </div>
         </td>
         <td className="px-5 py-5 border-b border-gray-200 text-sm">
           <p className="text-gray-900 whitespace-no-wrap">
-            {new Date(tradeIn.trade_in_date).toLocaleDateString()}
+            {new Date(localTradeIn.trade_in_date).toLocaleDateString()}
           </p>
         </td>
         <td className="px-5 py-5 border-b border-gray-200 text-sm">
-          <p className="text-gray-900 whitespace-no-wrap">${formatCurrency(tradeIn.cash_value)}</p>
+          <p className="text-gray-900 whitespace-no-wrap">${formatCurrency(localTradeIn.cash_value)}</p>
         </td>
         <td className="px-5 py-5 border-b border-gray-200 text-sm">
-          <p className="text-gray-900 whitespace-no-wrap">${formatCurrency(tradeIn.trade_value)}</p>
+          <p className="text-gray-900 whitespace-no-wrap">${formatCurrency(localTradeIn.trade_value)}</p>
         </td>
         <td className="px-5 py-5 border-b border-gray-200 text-sm">
-          <PaymentTypeBadge paymentType={tradeIn.payment_type || 'cash'} />
+          <PaymentTypeBadge paymentType={localTradeIn.payment_type || 'cash'} />
         </td>
         <td className="px-5 py-5 border-b border-gray-200 text-sm">
-          <StatusBadge status={tradeIn.status} />
+          <StatusBadge status={localTradeIn.status} />
         </td>
         <td className="px-5 py-5 border-b border-gray-200 text-sm">
           <TradeInRowActions 
-            tradeInId={tradeIn.id}
-            status={tradeIn.status}
+            tradeInId={localTradeIn.id}
+            status={localTradeIn.status}
             actionLoading={actionLoading}
             onApprove={onApprove}
             onDeny={onDeny}
             onDelete={onDelete}
-            tradeIn={tradeIn} // Pass the full trade-in object
+            tradeIn={localTradeIn} // Pass the full trade-in object
           />
         </td>
       </tr>
       
       {isExpanded && (
         <tr>
-          <TradeInDetailsPanel 
-            tradeIn={tradeIn} 
-            loadingItems={loadingItems} 
-            setTradeIns={setTradeIns} 
-          />
+          <td colSpan={7}>
+            <TradeInDetailsPanel 
+              tradeIn={localTradeIn} 
+              loadingItems={loadingItems} 
+              setTradeIns={setTradeIns} 
+            />
+          </td>
         </tr>
       )}
     </React.Fragment>
