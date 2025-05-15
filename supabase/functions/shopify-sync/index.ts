@@ -23,6 +23,7 @@ interface ShopifyVariant {
   option1: string | null;
   option2: string | null;
   option3: string | null;
+  cost: string | null;
 }
 
 interface TradeInItem {
@@ -271,6 +272,7 @@ serve(async (req) => {
           card_number: item.cards.card_number || "",
           condition: formatCondition(item.condition),
           price: item.price,
+          cost: item.price, // Add cost as alias for price
           quantity: item.quantity,
           image_url: item.cards.image_url || "",
           game_type: item.cards.game || "unknown",

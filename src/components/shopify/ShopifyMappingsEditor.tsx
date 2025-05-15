@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { PlusCircle, Trash2, Save, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -52,27 +53,50 @@ const ShopifyMappingsEditor: React.FC = () => {
     fetchMappings();
   }, [fetchMappings]);
   
-  // Add default card_type mapping if needed (separate effect to avoid render loops)
+  // Add default mappings if needed (separate effect to avoid render loops)
   useEffect(() => {
     // Only run after initial data load and when not loading
     if (!initialLoadComplete || isLoading) return;
     
+    const defaultMappings = [];
+    
+    // Check for card_type mapping
     const hasCardTypeMapping = mappings.some(m => 
       m.mapping_type === 'variant' && m.source_field === 'card_type'
     );
     
     if (!hasCardTypeMapping) {
-      const newMapping: ShopifyFieldMapping = {
+      defaultMappings.push({
         source_field: 'card_type',
         target_field: 'option2',
         transform_template: null,
         is_active: true,
         description: 'Card type/edition',
-        mapping_type: 'variant',
+        mapping_type: 'variant' as const,
         sort_order: mappings.filter(m => m.mapping_type === 'variant').length + 1
-      };
-      
-      setMappings(prev => [...prev, newMapping]);
+      });
+    }
+    
+    // Check for cost mapping
+    const hasCostMapping = mappings.some(m => 
+      m.mapping_type === 'variant' && m.source_field === 'cost'
+    );
+    
+    if (!hasCostMapping) {
+      defaultMappings.push({
+        source_field: 'cost',
+        target_field: 'cost',
+        transform_template: '{price}',
+        is_active: true,
+        description: 'Product cost',
+        mapping_type: 'variant' as const,
+        sort_order: mappings.filter(m => m.mapping_type === 'variant').length + 1 + (!hasCardTypeMapping ? 1 : 0)
+      });
+    }
+    
+    // Add all default mappings at once if any
+    if (defaultMappings.length > 0) {
+      setMappings(prev => [...prev, ...defaultMappings]);
     }
   }, [initialLoadComplete, isLoading, mappings]);
 
@@ -380,6 +404,7 @@ const ShopifyMappingsEditor: React.FC = () => {
               <li><code>{'{card_number}'}</code> - Card number</li>
               <li><code>{'{condition}'}</code> - Card condition</li>
               <li><code>{'{price}'}</code> - Card price</li>
+              <li><code>{'{cost}'}</code> - Card cost (same as price)</li>
               <li><code>{'{quantity}'}</code> - Quantity</li>
               <li><code>{'{game_type}'}</code> - Card game type</li>
               <li><code>{'{is_first_edition}'}</code> - Is first edition (true/false)</li>
