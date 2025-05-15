@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { PlusCircle, Trash2, Save, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -124,6 +125,100 @@ const ShopifyMappingsEditor: React.FC = () => {
         description: 'Product tags for filtering and organization',
         mapping_type: 'product' as const,
         sort_order: mappings.filter(m => m.mapping_type === 'product').length + 1 + (!hasProductTypeMapping ? 1 : 0)
+      });
+    }
+
+    // Check for custom.set metafield mapping
+    const hasSetMetafieldMapping = mappings.some(m => 
+      m.mapping_type === 'metadata' && m.target_field === 'metafields[0].key' && m.transform_template === 'set'
+    );
+    
+    if (!hasSetMetafieldMapping) {
+      defaultMappings.push({
+        source_field: 'set_name',
+        target_field: 'metafields[0].key',
+        transform_template: 'set',
+        is_active: true,
+        description: 'Metafield key for set name',
+        mapping_type: 'metadata' as const,
+        sort_order: mappings.filter(m => m.mapping_type === 'metadata').length + 1
+      });
+      
+      defaultMappings.push({
+        source_field: 'set_name',
+        target_field: 'metafields[0].namespace',
+        transform_template: 'custom',
+        is_active: true,
+        description: 'Metafield namespace for set name',
+        mapping_type: 'metadata' as const,
+        sort_order: mappings.filter(m => m.mapping_type === 'metadata').length + 2
+      });
+      
+      defaultMappings.push({
+        source_field: 'set_name',
+        target_field: 'metafields[0].value_type',
+        transform_template: 'string',
+        is_active: true,
+        description: 'Metafield value type for set name',
+        mapping_type: 'metadata' as const,
+        sort_order: mappings.filter(m => m.mapping_type === 'metadata').length + 3
+      });
+      
+      defaultMappings.push({
+        source_field: 'set_name',
+        target_field: 'metafields[0].value',
+        transform_template: '{set_name}',
+        is_active: true,
+        description: 'Metafield value for set name',
+        mapping_type: 'metadata' as const,
+        sort_order: mappings.filter(m => m.mapping_type === 'metadata').length + 4
+      });
+    }
+    
+    // Check for custom.rarity metafield mapping
+    const hasRarityMetafieldMapping = mappings.some(m => 
+      m.mapping_type === 'metadata' && m.target_field === 'metafields[1].key' && m.transform_template === 'rarity'
+    );
+    
+    if (!hasRarityMetafieldMapping) {
+      defaultMappings.push({
+        source_field: 'rarity',
+        target_field: 'metafields[1].key',
+        transform_template: 'rarity',
+        is_active: true,
+        description: 'Metafield key for rarity',
+        mapping_type: 'metadata' as const,
+        sort_order: mappings.filter(m => m.mapping_type === 'metadata').length + 5 + (hasSetMetafieldMapping ? 0 : 4)
+      });
+      
+      defaultMappings.push({
+        source_field: 'rarity',
+        target_field: 'metafields[1].namespace',
+        transform_template: 'custom',
+        is_active: true,
+        description: 'Metafield namespace for rarity',
+        mapping_type: 'metadata' as const,
+        sort_order: mappings.filter(m => m.mapping_type === 'metadata').length + 6 + (hasSetMetafieldMapping ? 0 : 4)
+      });
+      
+      defaultMappings.push({
+        source_field: 'rarity',
+        target_field: 'metafields[1].value_type',
+        transform_template: 'string',
+        is_active: true,
+        description: 'Metafield value type for rarity',
+        mapping_type: 'metadata' as const,
+        sort_order: mappings.filter(m => m.mapping_type === 'metadata').length + 7 + (hasSetMetafieldMapping ? 0 : 4)
+      });
+      
+      defaultMappings.push({
+        source_field: 'rarity',
+        target_field: 'metafields[1].value',
+        transform_template: '{rarity}',
+        is_active: true,
+        description: 'Metafield value for rarity',
+        mapping_type: 'metadata' as const,
+        sort_order: mappings.filter(m => m.mapping_type === 'metadata').length + 8 + (hasSetMetafieldMapping ? 0 : 4)
       });
     }
     

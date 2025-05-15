@@ -10,6 +10,7 @@ interface ShopifyProduct {
   product_type: string;
   handle: string;
   variants: ShopifyVariant[];
+  metafields?: ShopifyMetafield[];
 }
 
 interface ShopifyVariant {
@@ -24,6 +25,13 @@ interface ShopifyVariant {
   option2: string | null;
   option3: string | null;
   cost: string | null;
+}
+
+interface ShopifyMetafield {
+  namespace: string;
+  key: string;
+  value: string;
+  value_type: string;
 }
 
 interface TradeInItem {
@@ -300,6 +308,7 @@ serve(async (req) => {
         // Apply mappings to create product data
         const productMappings = mappings.filter(m => m.mapping_type === 'product');
         const variantMappings = mappings.filter(m => m.mapping_type === 'variant');
+        const metadataMappings = mappings.filter(m => m.mapping_type === 'metadata');
         
         // Default product data (fallback if no mappings)
         let productData: Record<string, any> = {
@@ -350,6 +359,14 @@ serve(async (req) => {
           if (!variantData.inventory_management) variantData.inventory_management = "shopify";
           if (!variantData.inventory_quantity) variantData.inventory_quantity = item.quantity;
           if (!variantData.option1) variantData.option1 = templateData.condition;
+        }
+
+        // Process metadata mappings
+        if (metadataMappings.length > 0) {
+          const metafields = processMetafields(metadataMappings, templateData);
+          if (metafields.length > 0) {
+            productData.metafields = metafields;
+          }
         }
 
         // Include variant data in product
@@ -477,6 +494,50 @@ serve(async (req) => {
     );
   }
 });
+
+// Helper function to process metafields based on mappings
+function processMetafields(
+  metadataMappings: ShopifyMapping[], 
+  data: Record<string, any>
+): ShopifyMetafield[] {
+  const metafieldGroups: Record<string, Record<string, any>> = {};
+  
+  // Group metafield entries by their index
+  for (const mapping of metadataMappings) {
+    if (!mapping.is_active) continue;
+    
+    const match = mapping.target_field.match(/metafields\[(\d+)\]\.(.+)/);
+    if (!match) continue;
+    
+    const [, index, property] = match;
+    if (!metafieldGroups[index]) metafieldGroups[index] = {};
+    
+    let value;
+    if (mapping.transform_template) {
+      value = applyTemplate(mapping.transform_template, data);
+    } else {
+      value = data[mapping.source_field];
+    }
+    
+    metafieldGroups[index][property] = value;
+  }
+  
+  // Create metafield objects from groups
+  const metafields: ShopifyMetafield[] = [];
+  for (const groupKey in metafieldGroups) {
+    const group = metafieldGroups[groupKey];
+    if (group.key && group.namespace && group.value) {
+      metafields.push({
+        key: group.key,
+        namespace: group.namespace,
+        value: group.value,
+        value_type: group.value_type || 'string'
+      });
+    }
+  }
+  
+  return metafields;
+}
 
 // Helper function to format condition string
 function formatCondition(condition: string): string {
