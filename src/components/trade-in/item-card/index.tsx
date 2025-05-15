@@ -14,6 +14,7 @@ interface TradeInItemProps {
   onUpdate: (index: number, item: TradeInItemType) => void;
   onConditionChange: (condition: string) => void;
   onValueChange: (values: { tradeValue: number; cashValue: number }) => void;
+  onValueAdjustment?: (value: number) => void; // Add the missing prop type
 }
 
 const TradeInItem: React.FC<TradeInItemProps> = ({ 

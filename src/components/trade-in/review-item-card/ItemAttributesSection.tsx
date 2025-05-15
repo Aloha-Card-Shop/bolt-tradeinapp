@@ -40,16 +40,16 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
     onUpdate: handleUpdate
   });
 
-  // Use our shared price hook
+  // Use our shared price hook - we'll just use what we need from it
   const { 
-    displayValue,
     cashValue,
-    tradeValue,
-    handlePriceChange
+    tradeValue
   } = useItemPrice({
     item,
     onUpdate: handleUpdate
   });
+  
+  // We're removing the unused variables 'displayValue' and 'handlePriceChange'
 
   // Handle custom price change format from review screen
   const handleCustomPriceChange = (price: number) => {
