@@ -1,9 +1,7 @@
-
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, Settings, ClipboardList, UserCircle, DollarSign, LogOut, Barcode, Printer, ShoppingCart, Map } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
-import { supabase } from '../lib/supabase';
 
 interface AdminNavProps {
   userRole: 'admin' | 'manager' | 'user' | 'shopify_manager';
@@ -12,22 +10,13 @@ interface AdminNavProps {
 const AdminNav: React.FC<AdminNavProps> = ({ userRole }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const {  } = useSession();
+  const { signOut } = useSession();
 
   if (userRole !== 'admin' && userRole !== 'manager' && userRole !== 'shopify_manager') {
     return null;
   }
 
   const isActive = (path: string) => location.pathname === path;
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      navigate('/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
 
   return (
     <div className="bg-white shadow-sm border-b border-gray-200">
@@ -158,7 +147,7 @@ const AdminNav: React.FC<AdminNavProps> = ({ userRole }) => {
           
           <div>
             <button 
-              onClick={handleSignOut}
+              onClick={signOut}
               className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50"
             >
               <LogOut className="h-4 w-4 mr-2" />

@@ -17,6 +17,7 @@ const Login = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (!loading && user) {
+      console.log("User already logged in, redirecting to dashboard");
       navigate('/dashboard');
     }
   }, [user, loading, navigate]);
@@ -27,13 +28,17 @@ const Login = () => {
     setError(null);
 
     try {
+      console.log("Login process initiated");
+      
       // Clean up existing auth state to prevent conflicts
       cleanupAuthState();
       
       // Attempt global sign out first (in case there's any existing session)
       try {
+        console.log("Attempting global sign out before login");
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
+        console.warn("Pre-login signout failed (this is usually fine):", err);
         // Continue even if this fails
       }
 
@@ -43,12 +48,14 @@ const Login = () => {
       
       if (isEmail) {
         // Login with email and password
+        console.log("Attempting login with email");
         result = await supabase.auth.signInWithPassword({
           email: identifier,
           password
         });
       } else {
         // Login with username
+        console.log("Attempting login with username:", identifier);
         // First get email associated with this username from profiles table
         const { data: userData, error: fetchError } = await supabase
           .from('profiles')
@@ -81,6 +88,7 @@ const Login = () => {
       }
 
       if (result.data?.session) {
+        console.log("Login successful, redirecting to dashboard");
         toast.success('Logged in successfully');
         // Force page reload to ensure clean state
         window.location.href = '/dashboard';

@@ -14,10 +14,9 @@ import {
   Map
 } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
-import { supabase } from '../lib/supabase';
 
 const Dashboard: React.FC = () => {
-  const { user } = useSession();
+  const { user, signOut } = useSession();
   const navigate = useNavigate();
   const userRole = user?.user_metadata?.role || 'user';
   const isAdmin = userRole === 'admin';
@@ -25,15 +24,6 @@ const Dashboard: React.FC = () => {
   const isShopifyManager = userRole === 'shopify_manager';
   const isStaff = isAdmin || isManager;
   const canManageShopify = isAdmin || isShopifyManager;
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      navigate('/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -67,7 +57,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           <button 
-            onClick={handleSignOut}
+            onClick={signOut}
             className="flex items-center text-gray-600 hover:text-gray-900"
           >
             <LogOut className="h-5 w-5 mr-1" />
