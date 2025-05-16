@@ -599,11 +599,60 @@ function applyMappings(
   return result;
 }
 
-// Helper function to apply template
+// Helper function to apply template with enhanced functionality for string methods
 function applyTemplate(template: string, data: Record<string, any>): string {
-  return template.replace(/{([^}]+)}/g, (match, key) => {
-    const [fieldName, defaultValue] = key.split('|');
+  return template.replace(/{([^}]+)}/g, (match, expr) => {
+    // Handle expressions with methods like {condition.charAt(0)}
+    if (expr.includes('.')) {
+      const parts = expr.split('.');
+      const fieldName = parts[0].trim();
+      const methodPart = parts.slice(1).join('.').trim();
+      
+      // Get the base value
+      let value = data[fieldName];
+      if (value === undefined || value === null) {
+        // Check if there's a default value provided
+        const defaultMatch = expr.match(/\|(.+)$/);
+        return defaultMatch ? defaultMatch[1].trim() : '';
+      }
+      
+      // Handle string methods
+      try {
+        // Convert value to string if it's not already
+        if (typeof value !== 'string') {
+          value = String(value);
+        }
+        
+        // Support for common string methods
+        if (methodPart.startsWith('charAt(') && methodPart.endsWith(')')) {
+          const index = parseInt(methodPart.substring(7, methodPart.length - 1), 10);
+          return value.charAt(index);
+        }
+        
+        if (methodPart.startsWith('substring(') && methodPart.endsWith(')')) {
+          const args = methodPart.substring(10, methodPart.length - 1).split(',').map(arg => parseInt(arg.trim(), 10));
+          return value.substring(args[0], args[1]);
+        }
+        
+        if (methodPart === 'toUpperCase()') {
+          return value.toUpperCase();
+        }
+        
+        if (methodPart === 'toLowerCase()') {
+          return value.toLowerCase();
+        }
+        
+        // If the method is not recognized, return the original value
+        return String(value);
+      } catch (e) {
+        console.error(`Error applying string method ${methodPart} to ${fieldName}:`, e);
+        return String(value);
+      }
+    }
+    
+    // Original functionality for simple field references
+    const [fieldName, defaultValue] = expr.split('|');
     const value = data[fieldName.trim()];
-    return (value !== undefined && value !== null) ? String(value) : (defaultValue || '');
+    return (value !== undefined && value !== null) ? String(value) : (defaultValue?.trim() || '');
   });
 }

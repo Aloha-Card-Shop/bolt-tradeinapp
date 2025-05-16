@@ -542,6 +542,10 @@ const ShopifyMappingsEditor: React.FC = () => {
               <li><code>{'{card_type}'}</code> - Card type description (1st Edition, Holo, etc.)</li>
               <li><code>{'{paymentType}'}</code> - Payment type for this card (cash/trade)</li>
               <li><code>{'{rarity}'}</code> - Card rarity</li>
+              <li><code>{'{condition.charAt(0)}'}</code> - First character of condition (e.g., "N" for "Near Mint")</li>
+              <li><code>{'{card_name.substring(0,10)}'}</code> - First 10 characters of card name</li>
+              <li><code>{'{set_name.toUpperCase()}'}</code> - Set name in all caps</li>
+              <li><code>{'{game_type.toLowerCase()}'}</code> - Game type in lowercase</li>
             </ul>
           </div>
           <div>
@@ -560,8 +564,20 @@ const ShopifyMappingsEditor: React.FC = () => {
               <li>HTML is allowed in <code>body_html</code> fields</li>
               <li>Use <code>{'{field_name|default}'}</code> for fallbacks</li>
               <li>Combine multiple fields in one template</li>
+              <li>Use string methods like <code>{'{condition.charAt(0)}'}</code> to get first character</li>
+              <li>Supported methods: <code>charAt()</code>, <code>substring()</code>, <code>toUpperCase()</code>, <code>toLowerCase()</code></li>
             </ul>
           </div>
+        </div>
+        
+        <div className="mt-4 bg-blue-100 p-3 rounded">
+          <h4 className="font-medium text-blue-800 mb-1">String Methods Examples:</h4>
+          <ul className="text-sm text-blue-700 space-y-1">
+            <li><code>{'{condition.charAt(0)}'}</code> - First character of condition (e.g., "N" for "Near Mint")</li>
+            <li><code>{'{card_name.substring(0,10)}'}</code> - First 10 characters of card name</li>
+            <li><code>{'{set_name.toUpperCase()}'}</code> - Set name in all caps</li>
+            <li><code>{'{game_type.toLowerCase()}'}</code> - Game type in lowercase</li>
+          </ul>
         </div>
       </div>
     </div>
