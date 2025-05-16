@@ -93,6 +93,24 @@ const ShopifyMappingsEditor: React.FC = () => {
       });
     }
     
+    // Check for SKU mapping
+    const hasSkuMapping = mappings.some(m => 
+      m.mapping_type === 'variant' && m.target_field === 'sku'
+    );
+    
+    if (!hasSkuMapping) {
+      defaultMappings.push({
+        source_field: 'card_name',
+        target_field: 'sku',
+        transform_template: '{card_name.substring(0,4)}-{condition.charAt(0)}-{trade_in_id.substring(0,6)}',
+        is_active: true,
+        description: 'Custom SKU format using card name, condition and trade-in ID',
+        mapping_type: 'variant' as const,
+        sort_order: mappings.filter(m => m.mapping_type === 'variant').length + 1 + 
+          (!hasCardTypeMapping ? 1 : 0) + (!hasCostMapping ? 1 : 0)
+      });
+    }
+    
     // Check for product_type mapping
     const hasProductTypeMapping = mappings.some(m => 
       m.mapping_type === 'product' && m.target_field === 'product_type'
