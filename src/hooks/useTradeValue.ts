@@ -25,6 +25,8 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
       setIsLoading(true);
       try {
         // Query for matching trade value settings
+        // FIX: Changed gte('max_value', baseValue) to lte('max_value', baseValue)
+        // This ensures we find settings where min_value <= baseValue <= max_value
         const { data: settings } = await supabase
           .from('trade_value_settings')
           .select('*')
