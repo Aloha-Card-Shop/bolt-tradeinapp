@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -81,13 +82,19 @@ serve(async (req) => {
     // Get Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") as string;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
+    
+    // Create two clients - one with anon key for initial auth check
     const supabase = createClient(supabaseUrl, supabaseKey);
+    // And one with service role key for operations that might need to bypass RLS
+    const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
 
     // Parse request body
     let requestBody;
     try {
       requestBody = await req.json();
     } catch (e) {
+      console.error("Invalid request body:", e);
       return new Response(
         JSON.stringify({ success: false, error: "Invalid request body format" }),
         { 
@@ -100,6 +107,7 @@ serve(async (req) => {
     const { tradeInId, userId } = requestBody;
     
     if (!tradeInId) {
+      console.error("Missing trade-in ID in request");
       return new Response(
         JSON.stringify({ success: false, error: "Trade-in ID is required" }),
         { 
@@ -131,6 +139,7 @@ serve(async (req) => {
     }
 
     if (!tradeInCheck) {
+      console.error(`Trade-in with ID ${tradeInId} not found`);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -145,6 +154,7 @@ serve(async (req) => {
 
     // Check if already synced
     if (tradeInCheck.shopify_synced) {
+      console.error("Trade-in already synced to Shopify");
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -246,6 +256,7 @@ serve(async (req) => {
     // Process each item
     const items = tradeIn.trade_in_items;
     if (!items || items.length === 0) {
+      console.error("No items found in this trade-in");
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -414,8 +425,8 @@ serve(async (req) => {
         
         const variant = product.variants[0];
 
-        // Update the trade-in item with Shopify IDs
-        await supabase
+        // Update the trade-in item with Shopify IDs - use adminSupabase to bypass RLS
+        await adminSupabase
           .from("trade_in_items")
           .update({
             shopify_product_id: product.id,
@@ -426,8 +437,8 @@ serve(async (req) => {
           })
           .eq("id", item.id);
 
-        // Log the sync
-        await supabase
+        // Log the sync - use adminSupabase to bypass RLS
+        await adminSupabase
           .from("shopify_sync_logs")
           .insert({
             trade_in_id: tradeIn.id,
@@ -445,16 +456,20 @@ serve(async (req) => {
       } catch (itemError) {
         console.error(`Error processing item ${item.id}:`, itemError);
         
-        // Log the error
-        await supabase
-          .from("shopify_sync_logs")
-          .insert({
-            trade_in_id: tradeIn.id,
-            item_id: item.id,
-            status: "error",
-            message: (itemError as Error).message,
-            created_by: userId
-          });
+        // Log the error - use adminSupabase to bypass RLS
+        try {
+          await adminSupabase
+            .from("shopify_sync_logs")
+            .insert({
+              trade_in_id: tradeIn.id,
+              item_id: item.id,
+              status: "error",
+              message: (itemError as Error).message,
+              created_by: userId
+            });
+        } catch (logError) {
+          console.error("Could not log error to database:", logError);
+        }
 
         results.push({
           item_id: item.id,
@@ -468,7 +483,8 @@ serve(async (req) => {
     const hasSuccess = results.some(r => r.status === "success");
     
     if (hasSuccess) {
-      await supabase
+      // Use adminSupabase to bypass RLS
+      await adminSupabase
         .from("trade_ins")
         .update({
           shopify_synced: true,
