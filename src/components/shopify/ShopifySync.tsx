@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useShopify } from '../../hooks/useShopify';
 import { TradeIn } from '../../types/tradeIn';
 import ErrorDisplay from '../dashboard/ErrorDisplay';
+import { supabase } from '../../lib/supabase';
 
 interface ShopifySyncProps {
   tradeIn: TradeIn;
@@ -15,6 +16,39 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
   const { sendToShopify, isLoading, error } = useShopify();
   const [showConfirm, setShowConfirm] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<{ exists: boolean; message?: string } | null>(null);
+
+  // Verify the trade-in exists in the database when component mounts
+  useEffect(() => {
+    const verifyTradeIn = async () => {
+      if (!tradeIn.id) return;
+      
+      setVerifying(true);
+      try {
+        // Check if the trade-in exists in the database
+        const { data, error } = await supabase
+          .from("trade_ins")
+          .select("id")
+          .eq("id", tradeIn.id)
+          .maybeSingle();
+          
+        if (error) {
+          setVerifyResult({ exists: false, message: `Error verifying trade-in: ${error.message}` });
+        } else if (!data) {
+          setVerifyResult({ exists: false, message: `Trade-in with ID ${tradeIn.id} not found in local database` });
+        } else {
+          setVerifyResult({ exists: true });
+        }
+      } catch (err) {
+        setVerifyResult({ exists: false, message: `Error checking trade-in: ${(err as Error).message}` });
+      } finally {
+        setVerifying(false);
+      }
+    };
+
+    verifyTradeIn();
+  }, [tradeIn.id]);
 
   const handleSync = async () => {
     if (!tradeIn.id) {
@@ -24,6 +58,12 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
 
     if (tradeIn.shopify_synced) {
       toast.error('This trade-in has already been synced to Shopify');
+      return;
+    }
+    
+    // Double-check verification result
+    if (verifyResult && !verifyResult.exists) {
+      setSyncError(`Cannot sync: ${verifyResult.message}`);
       return;
     }
 
@@ -52,6 +92,18 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
     }
   };
 
+  // If there's a verification error, show it immediately
+  if (verifyResult && !verifyResult.exists) {
+    return (
+      <div className="mt-4">
+        <ErrorDisplay message={verifyResult.message || 'Cannot sync: Trade-in not found in database'} />
+        <div className="mt-2 text-sm text-gray-600">
+          This trade-in might have been deleted or its ID might be invalid. Please refresh the page or contact support.
+        </div>
+      </div>
+    );
+  }
+
   if (tradeIn.shopify_synced) {
     return (
       <div className="flex items-center mt-4 text-green-600">
@@ -63,7 +115,9 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
 
   return (
     <div className="mt-4">
-      {!showConfirm ? (
+      {verifying ? (
+        <div className="text-gray-500">Verifying trade-in...</div>
+      ) : !showConfirm ? (
         <button
           onClick={() => setShowConfirm(true)}
           disabled={isLoading}

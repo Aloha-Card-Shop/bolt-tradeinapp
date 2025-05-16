@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -83,6 +84,15 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") as string;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
     
+    console.log("Function environment:", {
+      hasUrl: !!supabaseUrl,
+      urlLength: supabaseUrl?.length || 0,
+      hasAnonKey: !!supabaseKey,
+      anonKeyLength: supabaseKey?.length || 0,
+      hasServiceKey: !!serviceRoleKey,
+      serviceKeyLength: serviceRoleKey?.length || 0
+    });
+    
     // Create two clients - one with anon key for initial auth check
     const supabase = createClient(supabaseUrl, supabaseKey);
     // And one with service role key for operations that might need to bypass RLS
@@ -118,53 +128,84 @@ serve(async (req) => {
 
     console.log(`Processing trade-in sync request for ID: ${tradeInId}`);
 
-    // First check if trade-in exists (without joining other tables)
-    // Use adminSupabase to bypass RLS restrictions which might be causing the 404
-    const { data: tradeInCheck, error: checkError } = await adminSupabase
-      .from("trade_ins")
-      .select("id, shopify_synced")
-      .eq("id", tradeInId)
-      .maybeSingle();
+    try {
+      // Detailed debugging for trade-in check
+      console.log(`Checking if trade-in ${tradeInId} exists using admin client...`);
+      const checkQuery = adminSupabase
+        .from("trade_ins")
+        .select("id, shopify_synced")
+        .eq("id", tradeInId)
+        .maybeSingle();
+      
+      console.log("Query parameters:", { table: "trade_ins", filter: { id: tradeInId } });
+      
+      const { data: tradeInCheck, error: checkError } = await checkQuery;
 
-    if (checkError) {
-      console.error("Error checking trade-in:", checkError);
+      if (checkError) {
+        console.error("Error checking trade-in:", checkError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `Error checking trade-in: ${checkError.message}` 
+          }),
+          { 
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 500
+          }
+        );
+      }
+
+      console.log("Trade-in check result:", tradeInCheck);
+
+      if (!tradeInCheck) {
+        console.error(`Trade-in with ID ${tradeInId} not found`);
+        
+        // Try to get a list of trade-ins to see what's available
+        const { data: sampleTradeIns, error: sampleError } = await adminSupabase
+          .from("trade_ins")
+          .select("id")
+          .limit(5);
+          
+        console.log("Sample trade-ins in the database:", 
+          sampleError ? `Error fetching samples: ${sampleError.message}` : 
+          sampleTradeIns?.map(t => t.id) || "No trade-ins found");
+        
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `Trade-in with ID ${tradeInId} not found` 
+          }),
+          { 
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 404
+          }
+        );
+      }
+
+      // Check if already synced
+      if (tradeInCheck.shopify_synced) {
+        console.error("Trade-in already synced to Shopify");
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: "This trade-in has already been synced to Shopify" 
+          }),
+          { 
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 400
+          }
+        );
+      }
+    } catch (checkExceptionError) {
+      console.error("Exception during trade-in check:", checkExceptionError);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `Error checking trade-in: ${checkError.message}` 
+          error: `Exception checking trade-in: ${(checkExceptionError as Error).message}` 
         }),
         { 
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 500
-        }
-      );
-    }
-
-    if (!tradeInCheck) {
-      console.error(`Trade-in with ID ${tradeInId} not found`);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `Trade-in with ID ${tradeInId} not found` 
-        }),
-        { 
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 404
-        }
-      );
-    }
-
-    // Check if already synced
-    if (tradeInCheck.shopify_synced) {
-      console.error("Trade-in already synced to Shopify");
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "This trade-in has already been synced to Shopify" 
-        }),
-        { 
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400
         }
       );
     }
