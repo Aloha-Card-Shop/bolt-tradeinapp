@@ -17,6 +17,19 @@ serve(async (req) => {
     // Create a Supabase client with the Admin key to bypass RLS
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    
+    // Log connection details (sanitized)
+    console.log("Debug log function environment:", {
+      hasUrl: !!supabaseUrl,
+      urlLength: supabaseUrl?.length || 0,
+      hasServiceKey: !!supabaseServiceKey,
+      serviceKeyLength: supabaseServiceKey?.length || 0
+    });
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Missing Supabase URL or service role key");
+    }
+    
     const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
     
     // Get request JSON body
@@ -43,36 +56,51 @@ serve(async (req) => {
       );
     }
     
-    // Log detailed information to a new debug_logs table
-    const { data, error } = await adminSupabase
-      .from("shopify_debug_logs")
-      .insert({
-        trade_in_id,
-        item_id,
-        level,
-        component,
-        message,
-        details,
-        created_at: new Date().toISOString()
-      });
-      
-    if (error) {
-      console.error("Error saving debug log:", error);
-      return new Response(
-        JSON.stringify({ success: false, error: `Failed to save debug log: ${error.message}` }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
-        }
-      );
-    }
-    
-    // Also log to standard Deno console for edge function logs
+    // Log to standard console first
     const logPrefix = `[${level.toUpperCase()}][${component}]`;
     if (level === 'error') {
       console.error(`${logPrefix} ${message}`, details);
     } else {
       console.log(`${logPrefix} ${message}`, details);
+    }
+    
+    // Check if the table exists before inserting
+    try {
+      const { data: tableCheck, error: tableError } = await adminSupabase
+        .from("shopify_debug_logs")
+        .select("id")
+        .limit(1);
+      
+      if (tableError) {
+        console.error("Error checking shopify_debug_logs table:", tableError);
+        throw new Error(`Table check error: ${tableError.message}`);
+      }
+    } catch (tableCheckError) {
+      console.error("Exception checking table:", tableCheckError);
+      throw new Error(`Table existence check failed: ${tableCheckError.message}`);
+    }
+    
+    // Log detailed information to the debug_logs table
+    try {
+      const { data, error } = await adminSupabase
+        .from("shopify_debug_logs")
+        .insert({
+          trade_in_id,
+          item_id,
+          level,
+          component,
+          message,
+          details,
+          created_at: new Date().toISOString()
+        });
+      
+      if (error) {
+        console.error("Database error saving debug log:", error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+    } catch (insertError) {
+      console.error("Exception during log insert:", insertError);
+      throw new Error(`Insert exception: ${insertError.message}`);
     }
     
     return new Response(
@@ -82,11 +110,13 @@ serve(async (req) => {
       }
     );
   } catch (err) {
-    console.error("Error in debug log function:", err);
+    const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred";
+    console.error("Error in debug log function:", errorMessage, err);
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: err instanceof Error ? err.message : "An unexpected error occurred" 
+        error: errorMessage
       }),
       { 
         status: 500, 
