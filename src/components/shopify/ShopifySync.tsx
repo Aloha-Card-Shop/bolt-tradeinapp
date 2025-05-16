@@ -30,15 +30,22 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
     setSyncError(null);
     
     try {
+      toast.loading('Syncing to Shopify...', { id: 'shopify-sync' });
       const result = await sendToShopify(tradeIn.id);
       
-      if (result && onSuccess) {
-        onSuccess();
+      if (result) {
+        toast.success('Successfully synced to Shopify', { id: 'shopify-sync' });
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else {
+        toast.error('Failed to sync with Shopify', { id: 'shopify-sync' });
       }
     } catch (err) {
       console.error('Error syncing to Shopify:', err);
-      setSyncError((err as Error).message || 'An unexpected error occurred during sync');
-      toast.error((err as Error).message || 'An unexpected error occurred during Shopify sync');
+      const errorMessage = (err as Error).message || 'An unexpected error occurred during sync';
+      setSyncError(errorMessage);
+      toast.error(errorMessage, { id: 'shopify-sync' });
     }
   };
 

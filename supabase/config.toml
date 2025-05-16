@@ -11,6 +11,7 @@ node_version = "18"
 
 [functions.shopify-sync]
 verify_jwt = true
+path = "supabase/functions/shopify-sync"
 
 [functions.shopify_sync_log]
 verify_jwt = true

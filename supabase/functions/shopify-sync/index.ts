@@ -117,6 +117,8 @@ serve(async (req) => {
       );
     }
 
+    console.log(`Processing trade-in sync request for ID: ${tradeInId}`);
+
     // First check if trade-in exists (without joining other tables)
     const { data: tradeInCheck, error: checkError } = await supabase
       .from("trade_ins")

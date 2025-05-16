@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { supabase } from '../integrations/supabase/client';
+import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { useSession } from './useSession';
 
@@ -9,7 +9,7 @@ interface ShopifyHookResult {
   updateProduct: (tradeInItemId: string, updates: any) => Promise<boolean>;
   syncTradeIn: (tradeInId: string) => Promise<boolean>;
   logAction: (data: { tradeInId: string; itemId?: string; status: string; message: string }) => Promise<boolean>;
-  sendToShopify: (tradeInId: string) => Promise<boolean>; // Added this missing method
+  sendToShopify: (tradeInId: string) => Promise<boolean>; 
   isLoading: boolean;
   error: string | null;
 }
@@ -134,6 +134,8 @@ export const useShopify = (): ShopifyHookResult => {
       const accessToken = sessionData?.session?.access_token;
       if (!accessToken) throw new Error('No access token available');
 
+      console.log(`Syncing trade-in: ${tradeInId}`);
+      
       // For backwards compatibility, still using the existing shopify-sync function
       // This will be refactored later to use the new modular functions
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/shopify-sync`, {
@@ -145,12 +147,18 @@ export const useShopify = (): ShopifyHookResult => {
         body: JSON.stringify({ tradeInId, userId: user.id })
       });
       
+      console.log(`Sync response status: ${response.status}`);
+      
       if (!response.ok) {
         const text = await response.text();
+        console.error('Error response from shopify-sync:', text);
         let errorData: ShopifySyncResult;
         
         try {
           errorData = JSON.parse(text);
+          if (response.status === 404) {
+            throw new Error(errorData.error || `Trade-in not found. Please check the trade-in ID.`);
+          }
           throw new Error(errorData.error || `API error: ${response.status}`);
         } catch (parseError) {
           throw new Error(`Error ${response.status}: ${text}`);
@@ -237,7 +245,7 @@ export const useShopify = (): ShopifyHookResult => {
     updateProduct,
     syncTradeIn,
     logAction,
-    sendToShopify, // Added this missing method
+    sendToShopify,
     isLoading,
     error
   };
