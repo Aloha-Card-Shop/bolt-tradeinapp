@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import PriceInput from '../shared/PriceInput';
 import ValueDisplay from '../shared/ValueDisplay';
 
@@ -54,6 +54,20 @@ const ItemValues: React.FC<ItemValuesProps> = ({
           <div className="absolute bottom-[-24px] left-0 text-xs text-blue-600 flex items-center">
             <Loader2 className="h-3 w-3 animate-spin mr-1" /> 
             Calculating value...
+          </div>
+        )}
+        
+        {!isLoading && !isLoadingPrice && error && (
+          <div className="absolute bottom-[-24px] left-0 text-xs text-red-600 flex items-center">
+            <AlertCircle className="h-3 w-3 mr-1" /> 
+            {error}
+          </div>
+        )}
+        
+        {!isLoading && !isLoadingPrice && price > 0 && !displayValue && !error && (
+          <div className="absolute bottom-[-24px] left-0 text-xs text-orange-600 flex items-center">
+            <AlertCircle className="h-3 w-3 mr-1" /> 
+            No value calculated - check game type
           </div>
         )}
       </div>

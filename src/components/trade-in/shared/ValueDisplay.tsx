@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Loader2, Edit, Check, X } from 'lucide-react';
+import { Loader2, Edit, Check, X, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatters';
 
 interface ValueDisplayProps {
@@ -110,6 +110,13 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
             </button>
           )}
         </div>
+        
+        {error && !isLoading && (
+          <div className="flex items-center mt-1 text-xs text-red-500">
+            <AlertCircle size={12} className="mr-1 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
       </div>
     </div>
   );

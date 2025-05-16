@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { fetchCardPrices } from '../../utils/scraper';
 import { toast } from 'react-hot-toast';
@@ -11,10 +10,33 @@ interface UseItemPriceProps {
 }
 
 export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
-  // Get standard calculated values from the trade value hook
-  console.log(`useItemPrice: Initializing for card ${item.card.name}, game=${item.card.game}, price=${item.price}`);
+  // Add detailed logging for debugging
+  console.log(`useItemPrice: Initializing for card ${item.card.name}`, {
+    game: item.card.game,
+    price: item.price,
+    cardData: item.card
+  });
   
-  const { cashValue: calculatedCashValue, tradeValue: calculatedTradeValue, isLoading } = useTradeValue(item.card.game, item.price);
+  // Validate game type and price before calculating
+  const validGame = item.card.game ? true : false;
+  const validPrice = item.price > 0;
+  
+  if (!validGame || !validPrice) {
+    console.warn(`useItemPrice: Invalid input data for ${item.card.name}`, {
+      validGame,
+      validPrice,
+      game: item.card.game,
+      price: item.price
+    });
+  }
+  
+  // Get standard calculated values from the trade value hook
+  const { 
+    cashValue: calculatedCashValue, 
+    tradeValue: calculatedTradeValue, 
+    isLoading,
+    error: calculationError
+  } = useTradeValue(item.card.game, item.price);
   
   // Track the values with refs to detect changes
   const prevCalculatedCashValue = useRef<number>(0);
@@ -27,9 +49,17 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
       calculatedCashValue,
       calculatedTradeValue,
       isLoading,
-      currentPrice: item.price
+      hasError: !!calculationError,
+      errorMessage: calculationError,
+      currentPrice: item.price,
+      gameType: item.card.game
     });
-  }, [calculatedCashValue, calculatedTradeValue, isLoading, item.card.name, item.price]);
+    
+    // Show error toast if calculation failed
+    if (calculationError && !isLoading) {
+      toast.error(`Trade value calculation issue: ${calculationError}`);
+    }
+  }, [calculatedCashValue, calculatedTradeValue, isLoading, calculationError, item.card.name, item.price, item.card.game]);
   
   // Use the manually set values if they exist, otherwise use the calculated values
   const cashValue = item.cashValue !== undefined ? item.cashValue : calculatedCashValue;
@@ -180,6 +210,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     refreshPrice,
     handlePriceChange,
     cashValue,
-    tradeValue
+    tradeValue,
+    error: calculationError
   };
 };

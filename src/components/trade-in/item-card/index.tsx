@@ -43,7 +43,15 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   }, [onConditionChange, item.card.name]);
 
   // Handle price and value calculations
-  const { displayValue, isCalculating, refreshPrice, handlePriceChange, cashValue, tradeValue } = useItemPrice({
+  const { 
+    displayValue, 
+    isCalculating, 
+    refreshPrice, 
+    handlePriceChange, 
+    cashValue, 
+    tradeValue,
+    error
+  } = useItemPrice({
     item,
     onUpdate: handleUpdate
   });
@@ -130,22 +138,23 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
         displayValue={displayValue}
         isLoading={isCalculating}
         isLoadingPrice={item.isLoadingPrice}
-        error={item.error}
+        error={error || item.error}
         onPriceChange={handlePriceChange}
         onRefreshPrice={refreshPrice}
         isPriceUnavailable={item.isPriceUnavailable}
         onValueAdjustment={handleValueAdjustment}
       />
       
-      {/* Debugging information */}
-      {isCalculating && (
-        <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700">
-          Calculating trade values...
+      {/* Debug information about game type */}
+      {item.card && !item.card.game && (
+        <div className="mt-2 p-2 bg-red-50 rounded text-xs text-red-700">
+          Missing game type for {item.card.name}. This is required for value calculation.
         </div>
       )}
-      {item.error && (
-        <div className="mt-2 p-2 bg-red-50 rounded text-xs text-red-700">
-          Error: {item.error}
+      
+      {item.price <= 0 && (
+        <div className="mt-2 p-2 bg-yellow-50 rounded text-xs text-yellow-700">
+          Card price must be greater than 0 to calculate values.
         </div>
       )}
     </div>
