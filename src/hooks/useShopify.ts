@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -10,6 +9,7 @@ interface ShopifyHookResult {
   syncTradeIn: (tradeInId: string) => Promise<boolean>;
   logAction: (data: { tradeInId: string; itemId?: string; status: string; message: string }) => Promise<boolean>;
   sendToShopify: (tradeInId: string) => Promise<boolean>; 
+  testConnection: () => Promise<{success: boolean; message?: string; shop?: string; error?: string}>;
   isLoading: boolean;
   error: string | null;
 }
@@ -264,6 +264,58 @@ export const useShopify = (): ShopifyHookResult => {
     }
   };
 
+  const testConnection = async () => {
+    if (!user) {
+      setError('You must be logged in to perform this action');
+      toast.error('Authentication required');
+      return { success: false, error: 'Authentication required' };
+    }
+
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw new Error(sessionError.message);
+      
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error('No access token available');
+
+      // Call edge function to test Shopify connection
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/shopify_test_connection`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ test: true })
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to test connection to Shopify');
+      }
+      
+      if (result.success) {
+        return {
+          success: true,
+          message: 'Successfully connected to Shopify',
+          shop: result.shop
+        };
+      } else {
+        throw new Error(result.error || 'Unknown error testing Shopify connection');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to test Shopify connection';
+      console.error('Shopify connection test error:', err);
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Add alias for backward compatibility
   const sendToShopify = (tradeInId: string): Promise<boolean> => {
     return syncTradeIn(tradeInId);
@@ -275,6 +327,7 @@ export const useShopify = (): ShopifyHookResult => {
     syncTradeIn,
     logAction,
     sendToShopify,
+    testConnection,
     isLoading,
     error
   };

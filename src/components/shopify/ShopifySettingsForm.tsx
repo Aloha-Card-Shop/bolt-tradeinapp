@@ -3,13 +3,22 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { useSession } from '../../hooks/useSession';
-import { Shield, AlertCircle } from 'lucide-react';
+import { Shield, AlertCircle, TestTube } from 'lucide-react';
 
 interface ShopifySettings {
   shop_domain: string;
   access_token: string;
   api_key: string;
   api_secret: string;
+}
+
+interface TestResult {
+  success: boolean;
+  message?: string;
+  shop?: string;
+  domain?: string;
+  plan?: string;
+  error?: string;
 }
 
 const ShopifySettingsForm: React.FC = () => {
@@ -22,8 +31,10 @@ const ShopifySettingsForm: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   const [hasExistingSettings, setHasExistingSettings] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [permission, setPermission] = useState<{canView: boolean, canEdit: boolean}>({
     canView: false,
     canEdit: false
@@ -159,6 +170,56 @@ const ShopifySettingsForm: React.FC = () => {
     }
   };
 
+  const handleTestConnection = async () => {
+    if (!user) {
+      toast.error('You must be logged in to test the connection');
+      return;
+    }
+    
+    setIsTesting(true);
+    setError(null);
+    setTestResult(null);
+    
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw new Error(sessionError.message);
+      
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error('No access token available');
+
+      // Call the test edge function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/shopify_test_connection`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ test: true }) // Just sending something simple
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Test failed');
+      }
+      
+      setTestResult(result);
+      
+      if (result.success) {
+        toast.success('Shopify connection test successful!');
+      } else {
+        toast.error(`Connection test failed: ${result.error}`);
+      }
+    } catch (err) {
+      console.error('Test connection error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to test connection';
+      setTestResult({ success: false, error: errorMessage });
+      toast.error(errorMessage);
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-6 text-center">
@@ -258,18 +319,64 @@ const ShopifySettingsForm: React.FC = () => {
           />
         </div>
         
-        {permission.canEdit && (
-          <div className="pt-2">
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          {permission.canEdit && (
             <button
               type="submit"
               disabled={isSaving}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
             >
               {isSaving ? 'Saving...' : (hasExistingSettings ? 'Update Settings' : 'Save Settings')}
             </button>
-          </div>
-        )}
+          )}
+          
+          {hasExistingSettings && (
+            <button
+              type="button"
+              onClick={handleTestConnection}
+              disabled={isTesting}
+              className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
+            >
+              <TestTube className="h-5 w-5 mr-2" />
+              {isTesting ? 'Testing...' : 'Test Connection'}
+            </button>
+          )}
+        </div>
       </form>
+      
+      {testResult && (
+        <div className={`mt-6 p-4 rounded-lg border ${
+          testResult.success 
+            ? 'bg-green-50 border-green-200 text-green-800' 
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          <h3 className="font-medium text-lg">
+            {testResult.success ? 'Connection Successful!' : 'Connection Failed'}
+          </h3>
+          
+          {testResult.success ? (
+            <div className="mt-2">
+              <p><strong>Shop Name:</strong> {testResult.shop}</p>
+              <p><strong>Domain:</strong> {testResult.domain}</p>
+              <p><strong>Plan:</strong> {testResult.plan}</p>
+              <p className="text-green-700 mt-2">Your Shopify API credentials are working correctly.</p>
+            </div>
+          ) : (
+            <div className="mt-2">
+              <p className="text-red-700">{testResult.error}</p>
+              <div className="mt-3 text-sm">
+                <p className="font-medium">Troubleshooting tips:</p>
+                <ul className="list-disc list-inside ml-2 mt-1">
+                  <li>Verify your shop domain is correct (e.g., your-store.myshopify.com)</li>
+                  <li>Check that your access token is valid and has not expired</li>
+                  <li>Ensure your access token has the necessary permissions</li>
+                  <li>Try regenerating a new access token in your Shopify admin</li>
+                </ul>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       
       <div className="mt-4 text-sm text-gray-600">
         <p>To get your Shopify API credentials:</p>

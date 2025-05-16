@@ -137,3 +137,7 @@ default = true
 [functions.shopify-sync]
 verify_jwt = true
 no_hooks = false
+
+[functions.shopify_test_connection]
+verify_jwt = true
+no_hooks = false
