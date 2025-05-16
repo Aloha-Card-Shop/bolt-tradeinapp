@@ -18,6 +18,7 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
   const [syncError, setSyncError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [verifyResult, setVerifyResult] = useState<{ exists: boolean; message?: string } | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   // Verify the trade-in exists in the database when component mounts
   useEffect(() => {
@@ -31,7 +32,7 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
         // Check if the trade-in exists in the database
         const { data, error } = await supabase
           .from("trade_ins")
-          .select("id, shopify_synced")
+          .select("id, shopify_synced, status")
           .eq("id", tradeIn.id)
           .maybeSingle();
           
@@ -42,8 +43,17 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
           console.error(`Trade-in with ID ${tradeIn.id} not found in database`);
           setVerifyResult({ exists: false, message: `Trade-in with ID ${tradeIn.id} not found in database` });
         } else {
-          console.log(`Trade-in verified: ${tradeIn.id}, shopify_synced: ${data.shopify_synced}`);
-          setVerifyResult({ exists: true });
+          console.log(`Trade-in verified: ${tradeIn.id}, shopify_synced: ${data.shopify_synced}, status: ${data.status}`);
+          
+          // Check if status is acceptable for syncing
+          if (data.status !== 'accepted' && data.status !== 'pending') {
+            setVerifyResult({ 
+              exists: true, 
+              message: `Trade-in status is "${data.status}". Only "accepted" or "pending" trade-ins can be synced.` 
+            });
+          } else {
+            setVerifyResult({ exists: true });
+          }
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -76,12 +86,23 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
 
     setShowConfirm(false);
     setSyncError(null);
+    setServerError(null);
     
     try {
       toast.loading('Syncing to Shopify...', { id: 'shopify-sync' });
       
       console.log(`Attempting to sync trade-in: ${tradeIn.id}`);
-      const result = await sendToShopify(tradeIn.id);
+      
+      // Create a timeout promise to detect if the request is taking too long
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timed out after 30 seconds')), 30000);
+      });
+      
+      // Race between the actual request and the timeout
+      const result = await Promise.race([
+        sendToShopify(tradeIn.id),
+        timeoutPromise
+      ]) as boolean;
       
       if (result) {
         toast.success('Successfully synced to Shopify', { id: 'shopify-sync' });
@@ -93,8 +114,18 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
       }
     } catch (err) {
       console.error('Error syncing to Shopify:', err);
-      const errorMessage = (err as Error).message || 'An unexpected error occurred during sync';
-      setSyncError(errorMessage);
+      
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred during sync';
+      
+      // Handle specific error types more gracefully
+      if (errorMessage.includes('timed out')) {
+        setServerError('The request timed out. The server might be busy or Shopify API might be slow to respond. Please try again later.');
+      } else if (errorMessage.includes('500') || errorMessage.includes('Failed to get response')) {
+        setServerError('Server error (500). Possible causes: Shopify settings might be incorrect, database issues, or server overload. Please check logs for details and contact support if the issue persists.');
+      } else {
+        setSyncError(errorMessage);
+      }
+      
       toast.error(errorMessage, { id: 'shopify-sync' });
     }
   };
@@ -156,6 +187,21 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
           )}
           {syncError && (
             <ErrorDisplay message={syncError} />
+          )}
+          {serverError && (
+            <div className="mt-3 p-3 bg-orange-100 border border-orange-300 text-orange-700 rounded-md">
+              <h4 className="font-semibold">Server Error</h4>
+              <p className="text-sm">{serverError}</p>
+              <div className="mt-2 text-xs">
+                <p>Troubleshooting steps:</p>
+                <ol className="list-decimal list-inside ml-2">
+                  <li>Check that Shopify settings are correctly configured in admin panel</li>
+                  <li>Verify that your Shopify API credentials are valid</li>
+                  <li>Ensure the edge function is properly deployed</li>
+                  <li>Check the server logs for more details</li>
+                </ol>
+              </div>
+            </div>
           )}
         </div>
       )}
