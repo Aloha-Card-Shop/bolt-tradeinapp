@@ -13,6 +13,7 @@ interface ShopifySyncProps {
 const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
   const { sendToShopify, isLoading, error } = useShopify();
   const [showConfirm, setShowConfirm] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   const handleSync = async () => {
     if (!tradeIn.id) {
@@ -26,6 +27,7 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
     }
 
     setShowConfirm(false);
+    setSyncError(null);
     
     try {
       const result = await sendToShopify(tradeIn.id);
@@ -35,6 +37,8 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
       }
     } catch (err) {
       console.error('Error syncing to Shopify:', err);
+      setSyncError((err as Error).message || 'An unexpected error occurred during sync');
+      toast.error((err as Error).message || 'An unexpected error occurred during Shopify sync');
     }
   };
 
@@ -78,6 +82,9 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
           </div>
           {error && (
             <p className="mt-2 text-red-600 text-sm">{error}</p>
+          )}
+          {syncError && (
+            <p className="mt-2 text-red-600 text-sm">{syncError}</p>
           )}
         </div>
       )}

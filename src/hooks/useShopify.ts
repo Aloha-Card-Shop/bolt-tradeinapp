@@ -13,13 +13,17 @@ export const useShopify = () => {
 
   const sendToShopify = async (tradeInId: string) => {
     if (!user) {
-      toast.error('You must be logged in to use this feature');
-      return;
+      const errorMsg = 'You must be logged in to use this feature';
+      toast.error(errorMsg);
+      setError(errorMsg);
+      throw new Error(errorMsg);
     }
 
     if (mappingsLoading) {
-      toast.error('Loading mapping configuration...');
-      return;
+      const errorMsg = 'Loading mapping configuration...';
+      toast.error(errorMsg);
+      setError(errorMsg);
+      throw new Error(errorMsg);
     }
 
     setIsLoading(true);
@@ -39,6 +43,7 @@ export const useShopify = () => {
         .maybeSingle();
 
       if (checkError) {
+        console.error('Error checking trade-in:', checkError);
         throw new Error(`Error checking trade-in: ${checkError.message}`);
       }
 
@@ -57,16 +62,12 @@ export const useShopify = () => {
 
       if (functionError) {
         console.error('Edge function error:', functionError);
-        setError(functionError.message);
-        toast.error(`Shopify sync failed: ${functionError.message}`);
-        return;
+        throw new Error(`Shopify sync failed: ${functionError.message}`);
       }
 
       if (data?.error) {
         console.error('Shopify sync error:', data.error);
-        setError(data.error);
-        toast.error(`Shopify sync failed: ${data.error}`);
-        return;
+        throw new Error(`Shopify sync failed: ${data.error}`);
       }
 
       if (data?.success) {
@@ -84,16 +85,19 @@ export const useShopify = () => {
           console.error('Error updating trade-in sync status:', updateError);
           setError(`Sync completed but failed to update status: ${updateError.message}`);
           toast.error('Sync completed but failed to update status');
-          return;
+          throw new Error(`Sync completed but failed to update status: ${updateError.message}`);
         }
 
         toast.success('Successfully synced trade-in to Shopify');
         return data;
+      } else {
+        throw new Error('Shopify sync did not return a success status');
       }
     } catch (err) {
       console.error('Unexpected error during Shopify sync:', err);
-      setError(`An unexpected error occurred: ${(err as Error).message}`);
-      toast.error('An unexpected error occurred during Shopify sync');
+      const errorMessage = (err as Error).message || 'An unexpected error occurred';
+      setError(errorMessage);
+      throw err; // Re-throw the error to be handled by the component
     } finally {
       setIsLoading(false);
     }
