@@ -72,6 +72,43 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper function to log debug information
+async function logDebug(adminSupabase: any, data: {
+  tradeInId: string;
+  itemId?: string;
+  level?: 'info' | 'warn' | 'error';
+  component?: string;
+  message: string;
+  details?: any;
+}): Promise<void> {
+  try {
+    // Log to console first (will appear in edge function logs)
+    const logPrefix = `[${data.level?.toUpperCase() || 'INFO'}][${data.component || 'shopify-sync'}]`;
+    if (data.level === 'error') {
+      console.error(`${logPrefix} ${data.message}`, data.details || {});
+    } else if (data.level === 'warn') {
+      console.warn(`${logPrefix} ${data.message}`, data.details || {});
+    } else {
+      console.log(`${logPrefix} ${data.message}`, data.details || {});
+    }
+    
+    // Then log to database
+    await adminSupabase
+      .from("shopify_debug_logs")
+      .insert({
+        trade_in_id: data.tradeInId,
+        item_id: data.itemId,
+        level: data.level || 'info',
+        component: data.component || 'shopify-sync',
+        message: data.message,
+        details: data.details || {}
+      });
+  } catch (err) {
+    // If logging fails, just log to console
+    console.error("Error in logDebug:", err);
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -126,23 +163,34 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Processing trade-in sync request for ID: ${tradeInId}`);
+    await logDebug(adminSupabase, {
+      tradeInId,
+      message: `Processing trade-in sync request for ID: ${tradeInId}`,
+      details: { userId }
+    });
 
     try {
-      // Detailed debugging for trade-in check
-      console.log(`Checking if trade-in ${tradeInId} exists using admin client...`);
-      const checkQuery = adminSupabase
+      // Check if trade-in exists using admin client
+      await logDebug(adminSupabase, {
+        tradeInId,
+        message: `Checking if trade-in ${tradeInId} exists using admin client...`,
+        details: { table: "trade_ins", filter: { id: tradeInId } }
+      });
+      
+      const { data: tradeInCheck, error: checkError } = await adminSupabase
         .from("trade_ins")
         .select("id, shopify_synced")
         .eq("id", tradeInId)
         .maybeSingle();
-      
-      console.log("Query parameters:", { table: "trade_ins", filter: { id: tradeInId } });
-      
-      const { data: tradeInCheck, error: checkError } = await checkQuery;
 
       if (checkError) {
-        console.error("Error checking trade-in:", checkError);
+        await logDebug(adminSupabase, {
+          tradeInId,
+          level: 'error',
+          message: `Error checking trade-in: ${checkError.message}`,
+          details: { error: checkError }
+        });
+        
         return new Response(
           JSON.stringify({ 
             success: false, 
@@ -155,10 +203,19 @@ serve(async (req) => {
         );
       }
 
-      console.log("Trade-in check result:", tradeInCheck);
+      await logDebug(adminSupabase, {
+        tradeInId,
+        message: `Trade-in check result: ${JSON.stringify(tradeInCheck)}`,
+        details: { tradeInCheck }
+      });
 
       if (!tradeInCheck) {
-        console.error(`Trade-in with ID ${tradeInId} not found`);
+        await logDebug(adminSupabase, {
+          tradeInId,
+          level: 'error',
+          message: `Trade-in with ID ${tradeInId} not found`,
+          details: { tradeInId }
+        });
         
         // Try to get a list of trade-ins to see what's available
         const { data: sampleTradeIns, error: sampleError } = await adminSupabase
@@ -166,9 +223,15 @@ serve(async (req) => {
           .select("id")
           .limit(5);
           
-        console.log("Sample trade-ins in the database:", 
-          sampleError ? `Error fetching samples: ${sampleError.message}` : 
-          sampleTradeIns?.map(t => t.id) || "No trade-ins found");
+        await logDebug(adminSupabase, {
+          tradeInId,
+          level: 'info',
+          message: "Sample trade-ins in the database:",
+          details: { 
+            error: sampleError ? sampleError.message : null,
+            samples: sampleTradeIns?.map(t => t.id) || []
+          }
+        });
         
         return new Response(
           JSON.stringify({ 
@@ -184,7 +247,13 @@ serve(async (req) => {
 
       // Check if already synced
       if (tradeInCheck.shopify_synced) {
-        console.error("Trade-in already synced to Shopify");
+        await logDebug(adminSupabase, {
+          tradeInId,
+          level: 'warn',
+          message: "Trade-in already synced to Shopify",
+          details: { alreadySynced: true }
+        });
+        
         return new Response(
           JSON.stringify({ 
             success: false, 
@@ -197,7 +266,13 @@ serve(async (req) => {
         );
       }
     } catch (checkExceptionError) {
-      console.error("Exception during trade-in check:", checkExceptionError);
+      await logDebug(adminSupabase, {
+        tradeInId,
+        level: 'error',
+        message: `Exception during trade-in check: ${(checkExceptionError as Error).message}`,
+        details: { error: checkExceptionError }
+      });
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -237,7 +312,13 @@ serve(async (req) => {
       .maybeSingle();
 
     if (tradeInError || !tradeIn) {
-      console.error("Error fetching trade-in details:", tradeInError?.message || "Not found");
+      await logDebug(adminSupabase, {
+        tradeInId,
+        level: 'error',
+        message: `Error fetching trade-in details: ${tradeInError?.message || "Not found"}`,
+        details: { error: tradeInError }
+      });
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -250,19 +331,41 @@ serve(async (req) => {
       );
     }
 
+    await logDebug(adminSupabase, {
+      tradeInId,
+      message: `Successfully fetched trade-in details`,
+      details: { 
+        itemCount: tradeIn.trade_in_items?.length || 0,
+        hasCustomer: !!tradeIn.customers,
+        paymentType: tradeIn.payment_type
+      }
+    });
+
     // Get Shopify API credentials and mappings
-    const { data: shopifySettings, error: settingsError } = await supabase
+    // IMPORTANT: Use adminSupabase to bypass RLS instead of supabase client
+    await logDebug(adminSupabase, {
+      tradeInId,
+      message: `Fetching Shopify settings using admin client`,
+    });
+    
+    const { data: shopifySettings, error: settingsError } = await adminSupabase
       .from("shopify_settings")
       .select("*")
       .limit(1)
       .maybeSingle();
 
-    if (settingsError || !shopifySettings) {
-      console.error("Error fetching Shopify settings:", settingsError);
+    if (settingsError) {
+      await logDebug(adminSupabase, {
+        tradeInId,
+        level: 'error',
+        message: `Error fetching Shopify settings: ${settingsError.message}`,
+        details: { error: settingsError }
+      });
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `Error fetching Shopify settings: ${settingsError?.message || "Not found"}` 
+          error: `Error fetching Shopify settings: ${settingsError.message}` 
         }),
         { 
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -271,9 +374,44 @@ serve(async (req) => {
       );
     }
 
+    if (!shopifySettings) {
+      await logDebug(adminSupabase, {
+        tradeInId,
+        level: 'error',
+        message: `No Shopify settings found`,
+        details: { shopifySettings }
+      });
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `No Shopify settings found. Please configure your Shopify settings in the admin panel.` 
+        }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400
+        }
+      );
+    }
+
+    await logDebug(adminSupabase, {
+      tradeInId,
+      message: `Successfully fetched Shopify settings`,
+      details: { 
+        shopDomain: shopifySettings.shop_domain,
+        hasAccessToken: !!shopifySettings.access_token
+      }
+    });
+
     const { shop_domain, access_token } = shopifySettings;
 
-    const { data: mappingsData, error: mappingsError } = await supabase
+    // Get field mappings - use adminSupabase to bypass RLS
+    await logDebug(adminSupabase, {
+      tradeInId,
+      message: `Fetching field mappings using admin client`,
+    });
+    
+    const { data: mappingsData, error: mappingsError } = await adminSupabase
       .from("shopify_field_mappings")
       .select("*")
       .eq("is_active", true)
@@ -281,7 +419,13 @@ serve(async (req) => {
       .order("sort_order");
 
     if (mappingsError) {
-      console.error("Error fetching field mappings:", mappingsError);
+      await logDebug(adminSupabase, {
+        tradeInId,
+        level: 'error',
+        message: `Error fetching field mappings: ${mappingsError.message}`,
+        details: { error: mappingsError }
+      });
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -294,12 +438,24 @@ serve(async (req) => {
       );
     }
 
+    await logDebug(adminSupabase, {
+      tradeInId,
+      message: `Successfully fetched field mappings`,
+      details: { mappingCount: mappingsData?.length || 0 }
+    });
+
     const mappings: ShopifyMapping[] = mappingsData || [];
     
     // Process each item
     const items = tradeIn.trade_in_items;
     if (!items || items.length === 0) {
-      console.error("No items found in this trade-in");
+      await logDebug(adminSupabase, {
+        tradeInId,
+        level: 'error',
+        message: `No items found in this trade-in`,
+        details: { tradeInId }
+      });
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -318,12 +474,36 @@ serve(async (req) => {
       customerName = `${tradeIn.customers.first_name} ${tradeIn.customers.last_name}`.trim();
     }
 
+    await logDebug(adminSupabase, {
+      tradeInId,
+      message: `Beginning processing of ${items.length} items`,
+      details: { itemCount: items.length, customerName }
+    });
+
     const results = [];
 
     for (const item of items) {
       try {
+        await logDebug(adminSupabase, {
+          tradeInId,
+          itemId: item.id,
+          message: `Processing item ${item.id}`,
+          details: { 
+            cardId: item.card_id,
+            condition: item.condition,
+            quantity: item.quantity
+          }
+        });
+        
         // Enhanced error checking for card data
         if (!item.cards) {
+          await logDebug(adminSupabase, {
+            tradeInId,
+            itemId: item.id,
+            level: 'error',
+            message: `Card data not found for item ${item.id}`,
+            details: { item }
+          });
           throw new Error(`Card data not found for item ${item.id}`);
         }
 
@@ -360,6 +540,13 @@ serve(async (req) => {
           product_id: item.cards.attributes?.productId || item.cards.attributes?.tcgplayer_id || ""
         };
 
+        await logDebug(adminSupabase, {
+          tradeInId,
+          itemId: item.id,
+          message: `Template data prepared for item`,
+          details: { templateData }
+        });
+
         // Apply mappings to create product data
         const productMappings = mappings.filter(m => m.mapping_type === 'product');
         const variantMappings = mappings.filter(m => m.mapping_type === 'variant');
@@ -384,13 +571,39 @@ serve(async (req) => {
 
         // If mappings exist, apply them
         if (productMappings.length > 0) {
-          productData = applyMappings(productMappings, templateData);
-          
-          // Ensure required fields have defaults if not mapped
-          if (!productData.title) productData.title = `${templateData.card_name} - ${templateData.condition}`;
-          if (!productData.body_html) productData.body_html = `<p>Trading card: ${templateData.card_name}</p>`;
-          if (!productData.vendor) productData.vendor = "Card Shop";
-          if (!productData.product_type) productData.product_type = "Trading Card";
+          try {
+            productData = applyMappings(productMappings, templateData);
+            
+            await logDebug(adminSupabase, {
+              tradeInId,
+              itemId: item.id,
+              message: `Applied product mappings`,
+              details: { 
+                mappingCount: productMappings.length,
+                result: productData
+              }
+            });
+            
+            // Ensure required fields have defaults if not mapped
+            if (!productData.title) productData.title = `${templateData.card_name} - ${templateData.condition}`;
+            if (!productData.body_html) productData.body_html = `<p>Trading card: ${templateData.card_name}</p>`;
+            if (!productData.vendor) productData.vendor = "Card Shop";
+            if (!productData.product_type) productData.product_type = "Trading Card";
+          } catch (mappingError) {
+            await logDebug(adminSupabase, {
+              tradeInId,
+              itemId: item.id,
+              level: 'error',
+              message: `Error applying product mappings: ${(mappingError as Error).message}`,
+              details: { 
+                error: mappingError,
+                mappings: productMappings
+              }
+            });
+            
+            // Continue with default product data
+            console.error("Error applying product mappings:", mappingError);
+          }
         }
 
         // Process image if provided
@@ -410,41 +623,132 @@ serve(async (req) => {
         };
 
         if (variantMappings.length > 0) {
-          variantData = applyMappings(variantMappings, templateData);
-          
-          // Ensure required fields have defaults if not mapped
-          if (!variantData.price) variantData.price = item.price.toString();
-          if (!variantData.sku) variantData.sku = `TRADE-${tradeIn.id.substring(0, 8)}-${item.id.substring(0, 8)}`;
-          if (!variantData.inventory_quantity) variantData.inventory_quantity = item.quantity;
-          if (!variantData.option1) variantData.option1 = templateData.condition;
-          
-          // Always add these values, whether they're mapped or not
-          variantData.inventory_management = "shopify";
-          variantData.weight = 1;
-          variantData.weight_unit = "oz";
+          try {
+            variantData = applyMappings(variantMappings, templateData);
+            
+            await logDebug(adminSupabase, {
+              tradeInId,
+              itemId: item.id,
+              message: `Applied variant mappings`,
+              details: { 
+                mappingCount: variantMappings.length,
+                result: variantData
+              }
+            });
+            
+            // Ensure required fields have defaults if not mapped
+            if (!variantData.price) variantData.price = item.price.toString();
+            if (!variantData.sku) variantData.sku = `TRADE-${tradeIn.id.substring(0, 8)}-${item.id.substring(0, 8)}`;
+            if (!variantData.inventory_quantity) variantData.inventory_quantity = item.quantity;
+            if (!variantData.option1) variantData.option1 = templateData.condition;
+            
+            // Always add these values, whether they're mapped or not
+            variantData.inventory_management = "shopify";
+            variantData.weight = 1;
+            variantData.weight_unit = "oz";
+          } catch (mappingError) {
+            await logDebug(adminSupabase, {
+              tradeInId,
+              itemId: item.id,
+              level: 'error',
+              message: `Error applying variant mappings: ${(mappingError as Error).message}`,
+              details: { 
+                error: mappingError,
+                mappings: variantMappings
+              }
+            });
+            
+            // Continue with default variant data
+            console.error("Error applying variant mappings:", mappingError);
+          }
         }
 
         // Process metadata mappings
         if (metadataMappings.length > 0) {
-          const metafields = processMetafields(metadataMappings, templateData);
-          if (metafields.length > 0) {
-            productData.metafields = metafields;
+          try {
+            const metafields = processMetafields(metadataMappings, templateData);
+            
+            await logDebug(adminSupabase, {
+              tradeInId,
+              itemId: item.id,
+              message: `Processed metafields`,
+              details: { 
+                mappingCount: metadataMappings.length,
+                metafields
+              }
+            });
+            
+            if (metafields.length > 0) {
+              productData.metafields = metafields;
+            }
+          } catch (mappingError) {
+            await logDebug(adminSupabase, {
+              tradeInId,
+              itemId: item.id,
+              level: 'error',
+              message: `Error processing metafields: ${(mappingError as Error).message}`,
+              details: { 
+                error: mappingError,
+                mappings: metadataMappings
+              }
+            });
+            
+            // Continue without metafields
+            console.error("Error processing metafields:", mappingError);
           }
         }
 
         // Include variant data in product
         productData.variants = [variantData];
 
-        console.log("Creating product in Shopify:", productData);
+        await logDebug(adminSupabase, {
+          tradeInId,
+          itemId: item.id,
+          message: `Creating product in Shopify`,
+          details: { 
+            productData: {
+              title: productData.title,
+              variants: productData.variants.map((v: any) => ({
+                price: v.price,
+                sku: v.sku,
+                inventory_quantity: v.inventory_quantity
+              }))
+            }
+          }
+        });
         
         // Create product in Shopify
-        const productResponse = await fetch(`https://${shop_domain}/admin/api/2023-07/products.json`, {
-          method: "POST",
-          headers: {
-            "X-Shopify-Access-Token": access_token,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ product: productData }),
+        let productResponse;
+        try {
+          productResponse = await fetch(`https://${shop_domain}/admin/api/2023-07/products.json`, {
+            method: "POST",
+            headers: {
+              "X-Shopify-Access-Token": access_token,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ product: productData }),
+          });
+        } catch (fetchError) {
+          await logDebug(adminSupabase, {
+            tradeInId,
+            itemId: item.id,
+            level: 'error',
+            message: `Fetch error calling Shopify API: ${(fetchError as Error).message}`,
+            details: { error: fetchError }
+          });
+          throw new Error(`Shopify API network error: ${(fetchError as Error).message}`);
+        }
+
+        await logDebug(adminSupabase, {
+          tradeInId,
+          itemId: item.id,
+          level: productResponse.ok ? 'info' : 'error',
+          message: `Shopify API response: ${productResponse.status} ${productResponse.statusText}`,
+          details: { 
+            status: productResponse.status,
+            statusText: productResponse.statusText,
+            ok: productResponse.ok
+          }
         });
 
         if (!productResponse.ok) {
@@ -452,8 +756,24 @@ serve(async (req) => {
           try {
             const errorData = await productResponse.json();
             errorDetails = JSON.stringify(errorData);
+            
+            await logDebug(adminSupabase, {
+              tradeInId,
+              itemId: item.id,
+              level: 'error',
+              message: `Shopify API error response JSON`,
+              details: { errorData }
+            });
           } catch (e) {
             errorDetails = await productResponse.text();
+            
+            await logDebug(adminSupabase, {
+              tradeInId,
+              itemId: item.id,
+              level: 'error',
+              message: `Shopify API error response text`,
+              details: { errorText: errorDetails }
+            });
           }
           
           throw new Error(`Shopify API error (${productResponse.status}): ${errorDetails}`);
@@ -463,10 +783,28 @@ serve(async (req) => {
         const product = productResponseData.product as ShopifyProduct;
         
         if (!product || !product.variants || product.variants.length === 0) {
+          await logDebug(adminSupabase, {
+            tradeInId,
+            itemId: item.id,
+            level: 'error',
+            message: `Invalid product data returned from Shopify`,
+            details: { productResponseData }
+          });
           throw new Error("Invalid product data returned from Shopify");
         }
         
         const variant = product.variants[0];
+
+        await logDebug(adminSupabase, {
+          tradeInId,
+          itemId: item.id,
+          message: `Product created successfully in Shopify`,
+          details: { 
+            productId: product.id,
+            variantId: variant.id,
+            title: product.title
+          }
+        });
 
         // Update the trade-in item with Shopify IDs - use adminSupabase to bypass RLS
         await adminSupabase
@@ -497,7 +835,13 @@ serve(async (req) => {
           status: "success"
         });
       } catch (itemError) {
-        console.error(`Error processing item ${item.id}:`, itemError);
+        await logDebug(adminSupabase, {
+          tradeInId,
+          itemId: item.id,
+          level: 'error',
+          message: `Error processing item ${item.id}: ${(itemError as Error).message}`,
+          details: { error: itemError }
+        });
         
         // Log the error - use adminSupabase to bypass RLS
         try {
@@ -526,6 +870,15 @@ serve(async (req) => {
     const hasSuccess = results.some(r => r.status === "success");
     
     if (hasSuccess) {
+      await logDebug(adminSupabase, {
+        tradeInId,
+        message: `Marking trade-in as synced`,
+        details: { 
+          successCount: results.filter(r => r.status === "success").length,
+          errorCount: results.filter(r => r.status === "error").length
+        }
+      });
+      
       // Use adminSupabase to bypass RLS
       await adminSupabase
         .from("trade_ins")
@@ -535,7 +888,25 @@ serve(async (req) => {
           shopify_synced_by: userId
         })
         .eq("id", tradeIn.id);
+    } else {
+      await logDebug(adminSupabase, {
+        tradeInId,
+        level: 'error',
+        message: `No items were successfully synced`,
+        details: { results }
+      });
     }
+
+    await logDebug(adminSupabase, {
+      tradeInId,
+      message: `Sync operation completed`,
+      details: { 
+        success: true,
+        allSuccessful: results.every(r => r.status === "success"),
+        successCount: results.filter(r => r.status === "success").length,
+        failureCount: results.filter(r => r.status === "error").length
+      }
+    });
 
     return new Response(
       JSON.stringify({ 
@@ -549,6 +920,24 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Error in shopify-sync function:", error);
+    
+    // Create admin client for logging
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
+      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
+      if (supabaseUrl && serviceRoleKey) {
+        const adminClient = createClient(supabaseUrl, serviceRoleKey);
+        
+        await logDebug(adminClient, {
+          tradeInId: "unknown",
+          level: 'error',
+          message: `Fatal error in shopify-sync function: ${(error as Error).message}`,
+          details: { error }
+        });
+      }
+    } catch (logError) {
+      console.error("Failed to log fatal error:", logError);
+    }
     
     return new Response(
       JSON.stringify({ 

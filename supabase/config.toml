@@ -141,3 +141,7 @@ no_hooks = false
 [functions.shopify_test_connection]
 verify_jwt = true
 no_hooks = false
+
+[functions.shopify_debug_log]
+verify_jwt = true
+no_hooks = false
