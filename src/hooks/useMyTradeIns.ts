@@ -36,9 +36,10 @@ export const useMyTradeIns = () => {
           notes,
           payment_type,
           staff_notes,
-          customers (first_name, last_name),
+          customers (first_name, last_name, id),
           handled_by,
-          handled_at
+          handled_at,
+          created_at
         `)
         .eq('customer_id', user.id) // Show only trade-ins created by the current user
         .order('trade_in_date', { ascending: false });
@@ -55,10 +56,11 @@ export const useMyTradeIns = () => {
           total_value: item.total_value,
           cash_value: item.cash_value || 0,
           trade_value: item.trade_value || 0,
-          status: item.status as 'pending' | 'accepted' | 'rejected',
+          status: item.status,
           notes: item.notes,
           payment_type: item.payment_type as 'cash' | 'trade' | 'mixed',
           staff_notes: item.staff_notes,
+          created_at: item.created_at || new Date().toISOString(),
           customer_name: item.customers 
             ? (typeof item.customers === 'object' 
               ? Array.isArray(item.customers)
@@ -66,7 +68,13 @@ export const useMyTradeIns = () => {
                 : `${(item.customers as any).first_name || ''} ${(item.customers as any).last_name || ''}`
               : 'Unknown')
             : 'Unknown',
-          customers: item.customers as any,
+          customers: item.customers ? (
+            Array.isArray(item.customers) && item.customers.length > 0
+              ? { id: item.customers[0]?.id || '', first_name: item.customers[0]?.first_name || '', last_name: item.customers[0]?.last_name || '' }
+              : typeof item.customers === 'object'
+                ? { id: (item.customers as any).id || '', first_name: (item.customers as any).first_name || '', last_name: (item.customers as any).last_name || '' }
+                : undefined
+          ) : undefined,
           handled_by: item.handled_by,
           handled_at: item.handled_at
         }));
@@ -76,7 +84,7 @@ export const useMyTradeIns = () => {
           // Get all handled_by IDs that are not null
           const handledByIds = transformedData
             .filter(item => item.handled_by)
-            .map(item => item.handled_by);
+            .map(item => item.handled_by as string);
             
           if (handledByIds.length > 0) {
             // Fetch emails for these users

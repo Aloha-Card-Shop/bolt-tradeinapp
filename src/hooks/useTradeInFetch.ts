@@ -26,9 +26,10 @@ export const useTradeInFetch = (statusFilter: StatusFilter) => {
           notes,
           payment_type,
           staff_notes,
-          customers (first_name, last_name),
+          customers (first_name, last_name, id),
           handled_by,
-          handled_at
+          handled_at,
+          created_at
         `);
 
       // Apply status filter if not showing all
@@ -52,12 +53,13 @@ export const useTradeInFetch = (statusFilter: StatusFilter) => {
             total_value: item.total_value,
             cash_value: item.cash_value || 0,
             trade_value: item.trade_value || 0,
-            status: item.status as 'pending' | 'accepted' | 'rejected',
+            status: item.status,
             notes: item.notes,
             payment_type: item.payment_type as 'cash' | 'trade' | 'mixed',
             staff_notes: item.staff_notes,
             handled_by: item.handled_by,
-            handled_at: item.handled_at
+            handled_at: item.handled_at,
+            created_at: item.created_at
           };
           
           // Handle the customers object which may be returned as an object or an array with a single object
@@ -68,6 +70,7 @@ export const useTradeInFetch = (statusFilter: StatusFilter) => {
               if (item.customers.length > 0) {
                 const customer = item.customers[0] as any;
                 tradeIn.customers = {
+                  id: customer.id || '',
                   first_name: customer.first_name || '',
                   last_name: customer.last_name || ''
                 };
@@ -79,6 +82,7 @@ export const useTradeInFetch = (statusFilter: StatusFilter) => {
               // If it's an object, use it directly with type assertion
               const customerData = item.customers as any;
               tradeIn.customers = {
+                id: customerData.id || '',
                 first_name: customerData.first_name || '',
                 last_name: customerData.last_name || ''
               };

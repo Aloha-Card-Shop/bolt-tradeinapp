@@ -1,3 +1,4 @@
+
 export interface TradeInItem {
   id: string;
   card_id: string;
@@ -19,6 +20,9 @@ export interface Customer {
   address?: string;
 }
 
+// Add the missing StatusFilter type
+export type StatusFilter = 'all' | 'pending' | 'completed' | 'cancelled' | 'accepted' | 'rejected';
+
 export interface TradeIn {
   id: string;
   customer_id: string;
@@ -30,7 +34,8 @@ export interface TradeIn {
   notes?: string;
   staff_notes?: string;
   created_at: string;
-  status: 'pending' | 'completed' | 'cancelled';
+  // Update status to include 'accepted' and 'rejected'
+  status: 'pending' | 'completed' | 'cancelled' | 'accepted' | 'rejected';
   payment_type: 'cash' | 'trade' | 'mixed';
   handled_by?: string;
   handled_at?: string;
@@ -44,4 +49,6 @@ export interface TradeIn {
   printer_id?: string;
   items?: TradeInItem[];
   customers?: Customer;
+  // Add missing submitter_email field
+  submitter_email?: string | null;
 }

@@ -19,6 +19,7 @@ const createSampleTradeIn = (): TradeIn => {
     customer_id: 'sample-customer-id',
     customer_name: 'John Doe',
     customers: {
+      id: 'sample-customer-id',  // Add missing id field
       first_name: 'John',
       last_name: 'Doe'
     },
@@ -29,13 +30,16 @@ const createSampleTradeIn = (): TradeIn => {
     status: 'pending',
     payment_type: 'mixed',
     printed: false,
-    print_count: 0
+    print_count: 0,
+    created_at: now  // Add missing created_at field
   };
 };
 
 // Create a sample trade-in item for preview
 const createSampleItem = (): TradeInItem => {
   return {
+    id: 'sample-item-id',  // Add missing id field
+    card_id: 'sample-card-id',  // Add missing card_id field
     card_name: 'Charizard Holo',
     quantity: 1,
     price: 45.00,
