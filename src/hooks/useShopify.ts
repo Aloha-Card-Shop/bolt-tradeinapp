@@ -169,18 +169,28 @@ export const useShopify = (): ShopifyHookResult => {
       console.log(`Sync response status: ${response.status}`);
       
       if (!response.ok) {
-        const text = await response.text();
-        console.error('Error response from shopify-sync:', text);
-        let errorData: ShopifySyncResult;
-        
+        let errorText = '';
         try {
-          errorData = JSON.parse(text);
-          if (response.status === 404) {
-            throw new Error(errorData.error || `Trade-in not found in the sync service. Please check the trade-in ID.`);
+          errorText = await response.text();
+          console.error('Error response from shopify-sync:', errorText);
+          let errorData: ShopifySyncResult | null = null;
+          
+          try {
+            errorData = JSON.parse(errorText);
+          } catch (parseError) {
+            // If it's not valid JSON, use the text directly
+            errorData = null;
           }
-          throw new Error(errorData.error || `API error: ${response.status}`);
-        } catch (parseError) {
-          throw new Error(`Error ${response.status}: ${text}`);
+          
+          if (response.status === 404) {
+            const message = errorData?.error || `Trade-in not found (ID: ${tradeInId})`;
+            throw new Error(message);
+          }
+          
+          throw new Error(errorData?.error || `API error: ${response.status} - ${errorText.substring(0, 100)}`);
+        } catch (textError) {
+          // If we can't even get the text, throw a generic error
+          throw new Error(`Error ${response.status}: Failed to get response details`);
         }
       }
       

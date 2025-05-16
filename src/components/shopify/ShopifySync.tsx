@@ -26,22 +26,29 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
       
       setVerifying(true);
       try {
+        console.log(`Verifying trade-in existence: ${tradeIn.id}`);
+        
         // Check if the trade-in exists in the database
         const { data, error } = await supabase
           .from("trade_ins")
-          .select("id")
+          .select("id, shopify_synced")
           .eq("id", tradeIn.id)
           .maybeSingle();
           
         if (error) {
+          console.error("Error verifying trade-in:", error);
           setVerifyResult({ exists: false, message: `Error verifying trade-in: ${error.message}` });
         } else if (!data) {
-          setVerifyResult({ exists: false, message: `Trade-in with ID ${tradeIn.id} not found in local database` });
+          console.error(`Trade-in with ID ${tradeIn.id} not found in database`);
+          setVerifyResult({ exists: false, message: `Trade-in with ID ${tradeIn.id} not found in database` });
         } else {
+          console.log(`Trade-in verified: ${tradeIn.id}, shopify_synced: ${data.shopify_synced}`);
           setVerifyResult({ exists: true });
         }
       } catch (err) {
-        setVerifyResult({ exists: false, message: `Error checking trade-in: ${(err as Error).message}` });
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        console.error("Error checking trade-in:", errorMessage);
+        setVerifyResult({ exists: false, message: `Error checking trade-in: ${errorMessage}` });
       } finally {
         setVerifying(false);
       }
