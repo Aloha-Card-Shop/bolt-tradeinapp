@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { TradeIn } from '../../types/tradeIn';
 import TradeInEmptyState from '../TradeInEmptyState';
@@ -6,6 +5,7 @@ import StatusBadge from './StatusBadge';
 import TradeInItemRow from './TradeInItemRow';
 import ShopifySync from '../shopify/ShopifySync';
 import { Printer, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface TradeInDetailsPanelProps {
   tradeIn: TradeIn;
@@ -113,7 +113,14 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
 
         {/* Add Shopify sync button */}
         {(tradeIn.status === 'accepted' || tradeIn.status === 'pending') && (
-          <ShopifySync tradeIn={tradeIn} onSuccess={handleSyncSuccess} />
+          <div className="space-y-2">
+            <ShopifySync tradeIn={tradeIn} onSuccess={handleSyncSuccess} />
+            <div className="text-xs text-gray-500 mt-1">
+              <Link to="/admin/shopify-test" className="text-cyan-600 hover:text-cyan-700 hover:underline">
+                Go to Shopify integration test page
+              </Link>
+            </div>
+          </div>
         )}
       </div>
 
