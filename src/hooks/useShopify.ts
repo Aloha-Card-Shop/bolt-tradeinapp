@@ -70,14 +70,18 @@ export const useShopify = () => {
         console.error('Edge function error:', functionError);
         
         // Log specific error to database
-        await supabase
-          .from('shopify_sync_logs')
-          .insert({
-            trade_in_id: tradeInId,
-            status: 'error',
-            message: `Function error: ${functionError.message}`,
-            created_by: user.id
-          });
+        try {
+          await supabase
+            .from('shopify_sync_logs')
+            .insert({
+              trade_in_id: tradeInId,
+              status: 'error',
+              message: `Function error: ${functionError.message}`,
+              created_by: user.id
+            });
+        } catch (logError) {
+          console.error('Failed to log error:', logError);
+        }
         
         // Improve error message based on error type
         if (functionError.message.includes('404')) {
@@ -97,14 +101,18 @@ export const useShopify = () => {
         console.error('Shopify sync error:', data.error);
         
         // Log specific error to database
-        await supabase
-          .from('shopify_sync_logs')
-          .insert({
-            trade_in_id: tradeInId,
-            status: 'error',
-            message: `Sync error: ${data.error}`,
-            created_by: user.id
-          });
+        try {
+          await supabase
+            .from('shopify_sync_logs')
+            .insert({
+              trade_in_id: tradeInId,
+              status: 'error',
+              message: `Sync error: ${data.error}`,
+              created_by: user.id
+            });
+        } catch (logError) {
+          console.error('Failed to log error:', logError);
+        }
         
         setError(data.error);
         toast.error(`Shopify sync failed: ${data.error}`);
@@ -113,30 +121,34 @@ export const useShopify = () => {
 
       if (data?.success) {
         // Log success to database
-        await supabase
-          .from('shopify_sync_logs')
-          .insert({
-            trade_in_id: tradeInId,
-            status: 'success',
-            message: `Sync completed successfully with ${data.results?.length || 0} items`,
-            created_by: user.id
-          });
-        
-        // Update the trade-in to mark it as synced
-        const { error: updateError } = await supabase
-          .from('trade_ins')
-          .update({
-            shopify_synced: true,
-            shopify_synced_at: new Date().toISOString(),
-            shopify_synced_by: user.id
-          })
-          .eq('id', tradeInId);
+        try {
+          await supabase
+            .from('shopify_sync_logs')
+            .insert({
+              trade_in_id: tradeInId,
+              status: 'success',
+              message: `Sync completed successfully with ${data.results?.length || 0} items`,
+              created_by: user.id
+            });
+          
+          // Update the trade-in to mark it as synced
+          const { error: updateError } = await supabase
+            .from('trade_ins')
+            .update({
+              shopify_synced: true,
+              shopify_synced_at: new Date().toISOString(),
+              shopify_synced_by: user.id
+            })
+            .eq('id', tradeInId);
 
-        if (updateError) {
-          console.error('Error updating trade-in sync status:', updateError);
-          setError(`Sync completed but failed to update status: ${updateError.message}`);
-          toast.error('Sync completed but failed to update status');
-          return;
+          if (updateError) {
+            console.error('Error updating trade-in sync status:', updateError);
+            setError(`Sync completed but failed to update status: ${updateError.message}`);
+            toast.error('Sync completed but failed to update status');
+            return;
+          }
+        } catch (logError) {
+          console.error('Failed to log success:', logError);
         }
 
         toast.success('Successfully synced trade-in to Shopify');
@@ -146,14 +158,18 @@ export const useShopify = () => {
       console.error('Unexpected error during Shopify sync:', err);
       
       // Log error to database
-      await supabase
-        .from('shopify_sync_logs')
-        .insert({
-          trade_in_id: tradeInId,
-          status: 'error',
-          message: `Unexpected error: ${(err as Error).message}`,
-          created_by: user.id
-        });
+      try {
+        await supabase
+          .from('shopify_sync_logs')
+          .insert({
+            trade_in_id: tradeInId,
+            status: 'error',
+            message: `Unexpected error: ${(err as Error).message}`,
+            created_by: user.id
+          });
+      } catch (logError) {
+        console.error('Failed to log error:', logError);
+      }
       
       setError(`An unexpected error occurred: ${(err as Error).message}`);
       toast.error('An unexpected error occurred during Shopify sync');
