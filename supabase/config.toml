@@ -11,4 +11,3 @@ node_version = "18"
 
 [functions.shopify-sync]
 verify_jwt = true
-
