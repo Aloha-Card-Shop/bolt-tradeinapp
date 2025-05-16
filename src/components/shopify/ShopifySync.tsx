@@ -4,6 +4,7 @@ import { ShoppingCart } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useShopify } from '../../hooks/useShopify';
 import { TradeIn } from '../../types/tradeIn';
+import ErrorDisplay from '../dashboard/ErrorDisplay';
 
 interface ShopifySyncProps {
   tradeIn: TradeIn;
@@ -31,6 +32,8 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
     
     try {
       toast.loading('Syncing to Shopify...', { id: 'shopify-sync' });
+      
+      console.log(`Attempting to sync trade-in: ${tradeIn.id}`);
       const result = await sendToShopify(tradeIn.id);
       
       if (result) {
@@ -88,10 +91,10 @@ const ShopifySync: React.FC<ShopifySyncProps> = ({ tradeIn, onSuccess }) => {
             </button>
           </div>
           {error && (
-            <p className="mt-2 text-red-600 text-sm">{error}</p>
+            <ErrorDisplay message={error} />
           )}
           {syncError && (
-            <p className="mt-2 text-red-600 text-sm">{syncError}</p>
+            <ErrorDisplay message={syncError} />
           )}
         </div>
       )}

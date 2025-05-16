@@ -128,6 +128,25 @@ export const useShopify = (): ShopifyHookResult => {
     setError(null);
     
     try {
+      // First check if the trade-in exists in the database
+      const { data: tradeInCheck, error: tradeInError } = await supabase
+        .from("trade_ins")
+        .select("id, shopify_synced")
+        .eq("id", tradeInId)
+        .maybeSingle();
+        
+      if (tradeInError) {
+        throw new Error(`Error checking trade-in: ${tradeInError.message}`);
+      }
+      
+      if (!tradeInCheck) {
+        throw new Error(`Trade-in with ID ${tradeInId} not found in database`);
+      }
+      
+      if (tradeInCheck.shopify_synced) {
+        throw new Error("This trade-in has already been synced to Shopify");
+      }
+
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) throw new Error(sessionError.message);
       
@@ -139,10 +158,10 @@ export const useShopify = (): ShopifyHookResult => {
       // For backwards compatibility, still using the existing shopify-sync function
       // This will be refactored later to use the new modular functions
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/shopify-sync`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`
         },
         body: JSON.stringify({ tradeInId, userId: user.id })
       });
@@ -157,7 +176,7 @@ export const useShopify = (): ShopifyHookResult => {
         try {
           errorData = JSON.parse(text);
           if (response.status === 404) {
-            throw new Error(errorData.error || `Trade-in not found. Please check the trade-in ID.`);
+            throw new Error(errorData.error || `Trade-in not found in the sync service. Please check the trade-in ID.`);
           }
           throw new Error(errorData.error || `API error: ${response.status}`);
         } catch (parseError) {

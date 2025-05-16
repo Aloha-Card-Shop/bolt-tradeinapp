@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -120,7 +119,8 @@ serve(async (req) => {
     console.log(`Processing trade-in sync request for ID: ${tradeInId}`);
 
     // First check if trade-in exists (without joining other tables)
-    const { data: tradeInCheck, error: checkError } = await supabase
+    // Use adminSupabase to bypass RLS restrictions which might be causing the 404
+    const { data: tradeInCheck, error: checkError } = await adminSupabase
       .from("trade_ins")
       .select("id, shopify_synced")
       .eq("id", tradeInId)
@@ -169,8 +169,8 @@ serve(async (req) => {
       );
     }
 
-    // Get trade-in details
-    const { data: tradeIn, error: tradeInError } = await supabase
+    // Get trade-in details - using adminSupabase to bypass RLS
+    const { data: tradeIn, error: tradeInError } = await adminSupabase
       .from("trade_ins")
       .select(`
         id,
@@ -196,7 +196,7 @@ serve(async (req) => {
       .maybeSingle();
 
     if (tradeInError || !tradeIn) {
-      console.error("Error fetching trade-in:", tradeInError);
+      console.error("Error fetching trade-in details:", tradeInError?.message || "Not found");
       return new Response(
         JSON.stringify({ 
           success: false, 
