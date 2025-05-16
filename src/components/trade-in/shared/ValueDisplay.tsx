@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Loader2, RefreshCcw, Edit, Check, X } from 'lucide-react';
+import { Loader2, Edit, Check, X } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatters';
 
 interface ValueDisplayProps {
