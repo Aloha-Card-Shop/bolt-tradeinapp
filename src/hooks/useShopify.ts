@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 import { useSession } from './useSession';
 
@@ -9,6 +9,7 @@ interface ShopifyHookResult {
   updateProduct: (tradeInItemId: string, updates: any) => Promise<boolean>;
   syncTradeIn: (tradeInId: string) => Promise<boolean>;
   logAction: (data: { tradeInId: string; itemId?: string; status: string; message: string }) => Promise<boolean>;
+  sendToShopify: (tradeInId: string) => Promise<boolean>; // Added this missing method
   isLoading: boolean;
   error: string | null;
 }
@@ -226,11 +227,17 @@ export const useShopify = (): ShopifyHookResult => {
     }
   };
 
+  // Add alias for backward compatibility
+  const sendToShopify = (tradeInId: string): Promise<boolean> => {
+    return syncTradeIn(tradeInId);
+  };
+
   return {
     addProduct,
     updateProduct,
     syncTradeIn,
     logAction,
+    sendToShopify, // Added this missing method
     isLoading,
     error
   };
