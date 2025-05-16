@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -303,7 +302,8 @@ serve(async (req) => {
             item.attributes?.isHolo || false, 
             item.attributes?.isReverseHolo || false
           ),
-          rarity: item.cards.rarity || ""
+          rarity: item.cards.rarity || "",
+          product_id: item.cards.attributes?.productId || item.cards.attributes?.tcgplayer_id || ""
         };
 
         // Apply mappings to create product data

@@ -560,6 +560,7 @@ const ShopifyMappingsEditor: React.FC = () => {
               <li><code>{'{card_type}'}</code> - Card type description (1st Edition, Holo, etc.)</li>
               <li><code>{'{paymentType}'}</code> - Payment type for this card (cash/trade)</li>
               <li><code>{'{rarity}'}</code> - Card rarity</li>
+              <li><code>{'{product_id}'}</code> - Card's TCGPlayer ID</li>
               <li><code>{'{condition.charAt(0)}'}</code> - First character of condition (e.g., "N" for "Near Mint")</li>
               <li><code>{'{card_name.substring(0,10)}'}</code> - First 10 characters of card name</li>
               <li><code>{'{set_name.toUpperCase()}'}</code> - Set name in all caps</li>
