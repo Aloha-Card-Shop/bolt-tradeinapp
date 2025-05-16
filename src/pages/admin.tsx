@@ -64,6 +64,12 @@ const AdminPage: React.FC = () => {
               >
                 Shopify Settings
               </Link>
+              <Link 
+                to="/admin/shopify-mappings" 
+                className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200"
+              >
+                Shopify Mappings
+              </Link>
               {/* Add more admin links here as needed */}
             </div>
           </div>
