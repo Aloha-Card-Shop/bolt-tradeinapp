@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -83,9 +82,7 @@ serve(async (req) => {
     
     // Get Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
-    
-    // Use service role key to bypass RLS policies
+    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") as string;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Parse request body
@@ -141,21 +138,6 @@ serve(async (req) => {
 
     if (!tradeInCheck) {
       console.error(`Trade-in not found: ${tradeInId}`);
-      
-      // Create a log entry for the error
-      try {
-        await supabase
-          .from("shopify_sync_logs")
-          .insert({
-            trade_in_id: tradeInId,
-            status: "error",
-            message: `Trade-in with ID ${tradeInId} not found`,
-            created_by: userId
-          });
-      } catch (logError) {
-        console.error("Failed to create error log:", logError);
-      }
-      
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -557,25 +539,27 @@ serve(async (req) => {
     let tradeInId = "unknown";
     let userId = "unknown";
     try {
-      const requestBody = await req.clone().json();
+      const requestBody = await req.json();
       tradeInId = requestBody.tradeInId || "unknown";
       userId = requestBody.userId || "unknown";
       
-      // Log error to database using service role key
-      const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      await supabase
-        .from("shopify_sync_logs")
-        .insert({
-          trade_in_id: tradeInId,
-          status: "error",
-          message: `Function error: ${(error as Error).message}`,
-          created_by: userId
-        });
+      // Log error to database if we have trade-in ID
+      if (tradeInId !== "unknown") {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
+        const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") as string;
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        await supabase
+          .from("shopify_sync_logs")
+          .insert({
+            trade_in_id: tradeInId,
+            status: "error",
+            message: `Function error: ${(error as Error).message}`,
+            created_by: userId
+          });
+      }
     } catch (e) {
-      console.error("Error extracting request data or logging error:", e);
+      console.error("Error extracting request data for error logging:", e);
     }
     
     return new Response(
