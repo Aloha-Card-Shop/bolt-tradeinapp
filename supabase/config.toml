@@ -11,3 +11,12 @@ node_version = "18"
 
 [functions.shopify-sync]
 verify_jwt = true
+
+[functions.shopify_sync_log]
+verify_jwt = true
+
+[functions.shopify_add_product]
+verify_jwt = true
+
+[functions.shopify_update_product]
+verify_jwt = true
