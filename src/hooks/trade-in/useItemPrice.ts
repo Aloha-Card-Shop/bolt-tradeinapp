@@ -12,6 +12,8 @@ interface UseItemPriceProps {
 
 export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   // Get standard calculated values from the trade value hook
+  console.log(`useItemPrice: Initializing for card ${item.card.name}, game=${item.card.game}, price=${item.price}`);
+  
   const { cashValue: calculatedCashValue, tradeValue: calculatedTradeValue, isLoading } = useTradeValue(item.card.game, item.price);
   
   // Track the values with refs to detect changes
@@ -27,11 +29,24 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   
   // Calculate the display value based on payment type
   useEffect(() => {
+    console.log(`useItemPrice: Effect triggered with cashValue=${cashValue}, tradeValue=${tradeValue}, isLoading=${isLoading}`);
+    
     const value = item.paymentType === 'cash' ? cashValue : tradeValue;
     setDisplayValue(value * item.quantity);
     
     // Only update the calculated values if they've changed and no manual override exists
     if (!isLoading && item.price > 0) {
+      console.log(`useItemPrice: Checking if values changed:`, {
+        card: item.card.name,
+        calculatedCash: calculatedCashValue,
+        prevCalcCash: prevCalculatedCashValue.current,
+        calculatedTrade: calculatedTradeValue,
+        prevCalcTrade: prevCalculatedTradeValue.current,
+        isInitial: initialCalculation.current,
+        hasManualCashValue: item.cashValue !== undefined,
+        hasManualTradeValue: item.tradeValue !== undefined
+      });
+      
       // Values have actually changed and are different from what we had before
       const hasCashValueChanged = calculatedCashValue !== prevCalculatedCashValue.current;
       const hasTradeValueChanged = calculatedTradeValue !== prevCalculatedTradeValue.current;
@@ -90,6 +105,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     onUpdate({ isLoadingPrice: true, error: undefined, isPriceUnavailable: false });
     
     try {
+      console.log(`refreshPrice: Fetching price for ${card.name}, game=${card.game}, condition=${condition}`);
       const data = await fetchCardPrices(
         card.productId,
         condition,
