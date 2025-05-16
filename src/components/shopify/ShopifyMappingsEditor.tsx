@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { PlusCircle, Trash2, Save, CheckCircle, XCircle } from 'lucide-react';
+import { PlusCircle, Trash2, Save } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../hooks/useSession';
