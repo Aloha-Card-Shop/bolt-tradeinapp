@@ -564,6 +564,7 @@ const ShopifyMappingsEditor: React.FC = () => {
               <li><code>{'{card_name.substring(0,10)}'}</code> - First 10 characters of card name</li>
               <li><code>{'{set_name.toUpperCase()}'}</code> - Set name in all caps</li>
               <li><code>{'{game_type.toLowerCase()}'}</code> - Game type in lowercase</li>
+              <li><code>{'{card_name.replace(" ", "-")}'}</code> - Replace spaces with hyphens (e.g., "Dark Magician" → "Dark-Magician")</li>
             </ul>
           </div>
           <div>
@@ -583,7 +584,7 @@ const ShopifyMappingsEditor: React.FC = () => {
               <li>Use <code>{'{field_name|default}'}</code> for fallbacks</li>
               <li>Combine multiple fields in one template</li>
               <li>Use string methods like <code>{'{condition.charAt(0)}'}</code> to get first character</li>
-              <li>Supported methods: <code>charAt()</code>, <code>substring()</code>, <code>toUpperCase()</code>, <code>toLowerCase()</code></li>
+              <li>Supported methods: <code>charAt()</code>, <code>substring()</code>, <code>toUpperCase()</code>, <code>toLowerCase()</code>, <code>replace()</code></li>
             </ul>
           </div>
         </div>
@@ -595,6 +596,7 @@ const ShopifyMappingsEditor: React.FC = () => {
             <li><code>{'{card_name.substring(0,10)}'}</code> - First 10 characters of card name</li>
             <li><code>{'{set_name.toUpperCase()}'}</code> - Set name in all caps</li>
             <li><code>{'{game_type.toLowerCase()}'}</code> - Game type in lowercase</li>
+            <li><code>{'{card_name.replace(" ", "-")}'}</code> - Replace spaces with hyphens (e.g., "Dark Magician" → "Dark-Magician")</li>
           </ul>
         </div>
       </div>

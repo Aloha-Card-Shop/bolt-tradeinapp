@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -640,6 +641,18 @@ function applyTemplate(template: string, data: Record<string, any>): string {
         
         if (methodPart === 'toLowerCase()') {
           return value.toLowerCase();
+        }
+        
+        // New: Support for replace() method with string patterns
+        if (methodPart.startsWith('replace(') && methodPart.endsWith(')')) {
+          const argsStr = methodPart.substring(8, methodPart.length - 1);
+          // Split by comma but not inside quotes
+          const args = argsStr.match(/('[^']*'|"[^"]*"|[^,]+)/g);
+          if (args && args.length === 2) {
+            const search = args[0].trim().replace(/^['"]|['"]$/g, '');  // Remove quotes
+            const replacement = args[1].trim().replace(/^['"]|['"]$/g, '');  // Remove quotes
+            return value.replace(new RegExp(search, 'g'), replacement);
+          }
         }
         
         // If the method is not recognized, return the original value
