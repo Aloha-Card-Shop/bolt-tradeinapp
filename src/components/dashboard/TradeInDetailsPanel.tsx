@@ -111,10 +111,13 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
           </div>
         </div>
 
-        {/* Add Shopify sync button */}
+        {/* Add Shopify sync button with error handling */}
         {(tradeIn.status === 'accepted' || tradeIn.status === 'pending') && (
           <div className="mt-2">
-            <ShopifySync tradeIn={tradeIn} onSuccess={handleSyncSuccess} />
+            <ShopifySync 
+              tradeIn={tradeIn} 
+              onSuccess={handleSyncSuccess} 
+            />
           </div>
         )}
       </div>
