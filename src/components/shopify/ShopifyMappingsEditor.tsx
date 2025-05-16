@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { PlusCircle, Trash2, Save, CheckCircle, XCircle } from 'lucide-react';
+import { PlusCircle, Trash2, Save } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../hooks/useSession';
@@ -446,9 +447,9 @@ const ShopifyMappingsEditor: React.FC = () => {
                       className="focus:outline-none"
                     >
                       {mapping.is_active ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <div className="h-5 w-5 text-green-500">✓</div>
                       ) : (
-                        <XCircle className="h-5 w-5 text-red-500" />
+                        <div className="h-5 w-5 text-red-500">✗</div>
                       )}
                     </button>
                   </td>
