@@ -45,7 +45,7 @@ export const useShopifyMappings = () => {
   const applyTemplate = (template: string | null, data: Record<string, any>): string => {
     if (!template) return '';
     
-    return template.replace(/{([^}]+)}/g, (match, expr) => {
+    return template.replace(/{([^}]+)}/g, (_match, expr) => {
       // Handle expressions with methods like {condition.charAt(0)}
       if (expr.includes('.')) {
         const parts = expr.split('.');
@@ -72,7 +72,7 @@ export const useShopifyMappings = () => {
         }
         
         if (methodPart.startsWith('substring(') && methodPart.endsWith(')')) {
-          const args = methodPart.substring(10, methodPart.length - 1).split(',').map(arg => parseInt(arg.trim(), 10));
+          const args = methodPart.substring(10, methodPart.length - 1).split(',').map((arg: string) => parseInt(arg.trim(), 10));
           return value.substring(args[0], args[1]);
         }
         
