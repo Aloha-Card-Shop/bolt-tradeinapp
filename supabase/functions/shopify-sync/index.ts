@@ -78,6 +78,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Shopify sync function invoked");
+    
     // Get Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") as string;
@@ -88,6 +90,7 @@ serve(async (req) => {
     try {
       requestBody = await req.json();
     } catch (e) {
+      console.error("Error parsing request body:", e);
       return new Response(
         JSON.stringify({ success: false, error: "Invalid request body format" }),
         { 
@@ -100,6 +103,7 @@ serve(async (req) => {
     const { tradeInId, userId } = requestBody;
     
     if (!tradeInId) {
+      console.error("Missing trade-in ID");
       return new Response(
         JSON.stringify({ success: false, error: "Trade-in ID is required" }),
         { 
@@ -108,6 +112,8 @@ serve(async (req) => {
         }
       );
     }
+
+    console.log(`Processing trade-in: ${tradeInId}, user: ${userId}`);
 
     // First check if trade-in exists (without joining other tables)
     const { data: tradeInCheck, error: checkError } = await supabase
@@ -131,6 +137,7 @@ serve(async (req) => {
     }
 
     if (!tradeInCheck) {
+      console.error(`Trade-in not found: ${tradeInId}`);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -145,6 +152,7 @@ serve(async (req) => {
 
     // Check if already synced
     if (tradeInCheck.shopify_synced) {
+      console.error(`Trade-in already synced: ${tradeInId}`);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -206,6 +214,15 @@ serve(async (req) => {
 
     if (settingsError || !shopifySettings) {
       console.error("Error fetching Shopify settings:", settingsError);
+      await supabase
+        .from("shopify_sync_logs")
+        .insert({
+          trade_in_id: tradeInId,
+          status: "error",
+          message: `Failed to fetch Shopify settings: ${settingsError?.message || "Not found"}`,
+          created_by: userId
+        });
+        
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -219,7 +236,32 @@ serve(async (req) => {
     }
 
     const { shop_domain, access_token } = shopifySettings;
+    console.log(`Using Shopify domain: ${shop_domain}`);
 
+    if (!shop_domain || !access_token) {
+      console.error("Missing Shopify credentials");
+      await supabase
+        .from("shopify_sync_logs")
+        .insert({
+          trade_in_id: tradeInId,
+          status: "error",
+          message: "Missing Shopify API credentials in settings",
+          created_by: userId
+        });
+        
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Shopify API credentials are not properly configured" 
+        }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500
+        }
+      );
+    }
+
+    // Get field mappings
     const { data: mappingsData, error: mappingsError } = await supabase
       .from("shopify_field_mappings")
       .select("*")
@@ -476,6 +518,8 @@ serve(async (req) => {
           shopify_synced_by: userId
         })
         .eq("id", tradeIn.id);
+        
+      console.log(`Trade-in ${tradeIn.id} marked as synced successfully`);
     }
 
     return new Response(
@@ -490,6 +534,33 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Error in shopify-sync function:", error);
+    
+    // Try to extract tradeInId and userId from the request to log the error
+    let tradeInId = "unknown";
+    let userId = "unknown";
+    try {
+      const requestBody = await req.json();
+      tradeInId = requestBody.tradeInId || "unknown";
+      userId = requestBody.userId || "unknown";
+      
+      // Log error to database if we have trade-in ID
+      if (tradeInId !== "unknown") {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
+        const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") as string;
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        await supabase
+          .from("shopify_sync_logs")
+          .insert({
+            trade_in_id: tradeInId,
+            status: "error",
+            message: `Function error: ${(error as Error).message}`,
+            created_by: userId
+          });
+      }
+    } catch (e) {
+      console.error("Error extracting request data for error logging:", e);
+    }
     
     return new Response(
       JSON.stringify({ 
