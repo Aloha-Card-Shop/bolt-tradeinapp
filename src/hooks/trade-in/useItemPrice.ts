@@ -21,6 +21,16 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   const prevCalculatedTradeValue = useRef<number>(0);
   const initialCalculation = useRef<boolean>(true);
   
+  // Add additional logging for the useTradeValue hook results
+  useEffect(() => {
+    console.log(`useItemPrice: Trade value hook returned values for ${item.card.name}:`, {
+      calculatedCashValue,
+      calculatedTradeValue,
+      isLoading,
+      currentPrice: item.price
+    });
+  }, [calculatedCashValue, calculatedTradeValue, isLoading, item.card.name, item.price]);
+  
   // Use the manually set values if they exist, otherwise use the calculated values
   const cashValue = item.cashValue !== undefined ? item.cashValue : calculatedCashValue;
   const tradeValue = item.tradeValue !== undefined ? item.tradeValue : calculatedTradeValue;
@@ -99,6 +109,10 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     const { card, condition, isFirstEdition, isHolo, isReverseHolo } = item;
     
     if (!card.productId || !condition) {
+      console.log(`Can't refresh price for ${card.name}: missing productId or condition`, {
+        productId: card.productId,
+        condition
+      });
       return; // Can't refresh without product ID and condition
     }
     
@@ -115,6 +129,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         isReverseHolo
       );
       
+      console.log(`Price fetch result for ${card.name}:`, data);
+      
       if (data.unavailable) {
         onUpdate({ 
           price: 0, 
@@ -125,8 +141,11 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         });
         toast.error("No price available for this card configuration");
       } else {
+        const newPrice = parseFloat(data.price);
+        console.log(`Setting new price for ${card.name}: $${newPrice}`);
+        
         onUpdate({ 
-          price: parseFloat(data.price), 
+          price: newPrice, 
           isLoadingPrice: false,
           isPriceUnavailable: false,
           cashValue: undefined, // Reset any manual values when price changes
@@ -134,6 +153,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         });
       }
     } catch (e) {
+      console.error(`Error fetching price for ${card.name}:`, e);
       onUpdate({ 
         isLoadingPrice: false, 
         error: (e as Error).message,
@@ -144,13 +164,15 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
 
   const handlePriceChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newPrice = parseFloat(e.target.value) || 0;
+    console.log(`Manual price change for ${item.card.name}: $${newPrice}`);
+    
     onUpdate({ 
       price: newPrice,
       // Reset manual values when market price changes
       cashValue: undefined,
       tradeValue: undefined 
     });
-  }, [onUpdate]);
+  }, [onUpdate, item.card.name]);
 
   return {
     displayValue,

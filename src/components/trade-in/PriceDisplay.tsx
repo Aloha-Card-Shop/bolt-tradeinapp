@@ -18,11 +18,19 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({ label, isLoading, error, va
       numericValue = value;
     } else if (typeof value === 'string') {
       if (value.startsWith('Error:') || value.includes('error')) {
+        console.error('Price display received error value:', value);
         numericValue = 0;
       } else {
-        numericValue = parseFloat(value) || 0;
+        const parsed = parseFloat(value);
+        if (isNaN(parsed)) {
+          console.error('Failed to parse price value:', value);
+          numericValue = 0;
+        } else {
+          numericValue = parsed;
+        }
       }
     } else {
+      console.error('Price display received invalid value type:', typeof value);
       numericValue = 0;
     }
   } catch (e) {

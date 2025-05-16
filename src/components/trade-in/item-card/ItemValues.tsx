@@ -14,6 +14,7 @@ interface ItemValuesProps {
   onPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRefreshPrice?: () => void;
   isPriceUnavailable?: boolean;
+  onValueAdjustment?: (value: number) => void;
 }
 
 const ItemValues: React.FC<ItemValuesProps> = ({
@@ -26,6 +27,7 @@ const ItemValues: React.FC<ItemValuesProps> = ({
   onPriceChange,
   onRefreshPrice,
   isPriceUnavailable,
+  onValueAdjustment,
 }) => {
   return (
     <div className="mt-4 grid grid-cols-2 gap-4">
@@ -44,6 +46,8 @@ const ItemValues: React.FC<ItemValuesProps> = ({
           value={displayValue} 
           isLoading={isLoading || isLoadingPrice || false}
           error={error}
+          onValueChange={onValueAdjustment}
+          editable={!!onValueAdjustment}
         />
         
         {(isLoadingPrice || isLoading) && (

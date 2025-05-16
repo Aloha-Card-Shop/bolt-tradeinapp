@@ -23,7 +23,8 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   onRemove, 
   onUpdate,
   onConditionChange,
-  onValueChange
+  onValueChange,
+  onValueAdjustment
 }) => {
   // Add refs to track previous values and prevent unnecessary updates
   const initialRender = useRef(true);
@@ -31,13 +32,15 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
 
   // Handle updates to the item
   const handleUpdate = useCallback((updates: Partial<TradeInItemType>) => {
+    console.log(`TradeInItem: Updating item ${item.card.name}:`, updates);
     onUpdate(index, { ...item, ...updates });
   }, [index, item, onUpdate]);
 
   // Handle condition changes
   const handleConditionChangeWrapper = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    console.log(`TradeInItem: Condition changed for ${item.card.name} to ${e.target.value}`);
     onConditionChange(e.target.value);
-  }, [onConditionChange]);
+  }, [onConditionChange, item.card.name]);
 
   // Handle price and value calculations
   const { displayValue, isCalculating, refreshPrice, handlePriceChange, cashValue, tradeValue } = useItemPrice({
@@ -89,6 +92,14 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     onUpdate: handleUpdate
   });
 
+  // Handle manual value adjustments if needed
+  const handleValueAdjustment = useCallback((value: number) => {
+    console.log(`Manual value adjustment for ${item.card.name}: ${value}`);
+    if (onValueAdjustment) {
+      onValueAdjustment(value);
+    }
+  }, [item.card.name, onValueAdjustment]);
+
   return (
     <div className="border border-gray-200 rounded-xl p-5 hover:border-blue-100 transition-colors duration-200 bg-white shadow-sm">
       <CardHeader 
@@ -123,7 +134,20 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
         onPriceChange={handlePriceChange}
         onRefreshPrice={refreshPrice}
         isPriceUnavailable={item.isPriceUnavailable}
+        onValueAdjustment={handleValueAdjustment}
       />
+      
+      {/* Debugging information */}
+      {isCalculating && (
+        <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700">
+          Calculating trade values...
+        </div>
+      )}
+      {item.error && (
+        <div className="mt-2 p-2 bg-red-50 rounded text-xs text-red-700">
+          Error: {item.error}
+        </div>
+      )}
     </div>
   );
 };
