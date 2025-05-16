@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -322,7 +321,9 @@ serve(async (req) => {
             sku: `TRADE-${tradeIn.id.substring(0, 8)}-${item.id.substring(0, 8)}`,
             inventory_management: "shopify",
             inventory_quantity: item.quantity,
-            option1: templateData.condition
+            option1: templateData.condition,
+            weight: 1,
+            weight_unit: "oz"
           }]
         };
 
@@ -348,7 +349,9 @@ serve(async (req) => {
           sku: `TRADE-${tradeIn.id.substring(0, 8)}-${item.id.substring(0, 8)}`,
           inventory_management: "shopify",
           inventory_quantity: item.quantity,
-          option1: templateData.condition
+          option1: templateData.condition,
+          weight: 1,
+          weight_unit: "oz"
         };
 
         if (variantMappings.length > 0) {
@@ -357,9 +360,13 @@ serve(async (req) => {
           // Ensure required fields have defaults if not mapped
           if (!variantData.price) variantData.price = item.price.toString();
           if (!variantData.sku) variantData.sku = `TRADE-${tradeIn.id.substring(0, 8)}-${item.id.substring(0, 8)}`;
-          if (!variantData.inventory_management) variantData.inventory_management = "shopify";
           if (!variantData.inventory_quantity) variantData.inventory_quantity = item.quantity;
           if (!variantData.option1) variantData.option1 = templateData.condition;
+          
+          // Always add these values, whether they're mapped or not
+          variantData.inventory_management = "shopify";
+          variantData.weight = 1;
+          variantData.weight_unit = "oz";
         }
 
         // Process metadata mappings
