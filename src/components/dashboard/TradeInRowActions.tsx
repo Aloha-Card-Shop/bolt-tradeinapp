@@ -31,7 +31,7 @@ const TradeInRowActions: React.FC<TradeInRowActionsProps> = ({
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { printers, isLoading: printersLoading } = usePrinters();
-  const { sendToShopify, isLoading: shopifyLoading } = useShopify();
+  const { syncTradeInToShopify, isLoading: shopifyLoading } = useShopify();
 
   const handlePrintBarcode = async (selectedTradeIn: TradeIn, printerId: string) => {
     await printService.printTradeInBarcode(selectedTradeIn, printerId);
@@ -41,7 +41,7 @@ const TradeInRowActions: React.FC<TradeInRowActionsProps> = ({
     if (!tradeIn) return;
     
     try {
-      await sendToShopify(tradeIn.id);
+      await syncTradeInToShopify(tradeIn);
       toast.success('Trade-in items sent to Shopify successfully');
     } catch (error) {
       console.error('Error sending to Shopify:', error);
