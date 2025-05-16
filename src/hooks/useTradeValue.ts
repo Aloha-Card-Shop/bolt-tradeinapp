@@ -36,6 +36,8 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
           .order('min_value', { ascending: false })
           .limit(1);
 
+        console.log(`Trade value lookup: game=${game}, baseValue=${baseValue}`, settings);
+
         if (settings?.[0]) {
           const setting = settings[0];
           // Check if fixed values are provided
@@ -49,11 +51,25 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
             const calculatedTradeValue = baseValue * (setting.trade_percentage / 100);
             setCashValue(calculatedCashValue);
             setTradeValue(calculatedTradeValue);
+            
+            console.log(`Calculated values based on percentages:`, {
+              cashPercentage: setting.cash_percentage,
+              tradePercentage: setting.trade_percentage,
+              cashValue: calculatedCashValue,
+              tradeValue: calculatedTradeValue
+            });
           }
         } else {
           // Default values if no setting found
-          setCashValue(baseValue * 0.5);
-          setTradeValue(baseValue * 0.65);
+          const defaultCashValue = baseValue * 0.5;
+          const defaultTradeValue = baseValue * 0.65;
+          setCashValue(defaultCashValue);
+          setTradeValue(defaultTradeValue);
+          
+          console.log(`No matching settings found. Using default values:`, {
+            cashValue: defaultCashValue,
+            tradeValue: defaultTradeValue
+          });
         }
       } catch (error) {
         console.error('Error calculating trade values:', error);

@@ -14,16 +14,17 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   // Get standard calculated values from the trade value hook
   const { cashValue: calculatedCashValue, tradeValue: calculatedTradeValue, isLoading } = useTradeValue(item.card.game, item.price);
   
+  // Track the values with refs to detect changes
+  const prevCalculatedCashValue = useRef<number>(0);
+  const prevCalculatedTradeValue = useRef<number>(0);
+  const initialCalculation = useRef<boolean>(true);
+  
   // Use the manually set values if they exist, otherwise use the calculated values
   const cashValue = item.cashValue !== undefined ? item.cashValue : calculatedCashValue;
   const tradeValue = item.tradeValue !== undefined ? item.tradeValue : calculatedTradeValue;
   
   const [displayValue, setDisplayValue] = useState(0);
   
-  // Add refs to track previous calculated values for comparison
-  const prevCashValue = useRef<number | undefined>(undefined);
-  const prevTradeValue = useRef<number | undefined>(undefined);
-
   // Calculate the display value based on payment type
   useEffect(() => {
     const value = item.paymentType === 'cash' ? cashValue : tradeValue;
@@ -31,19 +32,18 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     
     // Only update the calculated values if they've changed and no manual override exists
     if (!isLoading && item.price > 0) {
-      const hasCashValueChanged = item.cashValue === undefined && 
-                                calculatedCashValue !== prevCashValue.current;
+      // Values have actually changed and are different from what we had before
+      const hasCashValueChanged = calculatedCashValue !== prevCalculatedCashValue.current;
+      const hasTradeValueChanged = calculatedTradeValue !== prevCalculatedTradeValue.current;
       
-      const hasTradeValueChanged = item.tradeValue === undefined &&
-                                 calculatedTradeValue !== prevTradeValue.current;
-      
-      // Update only if either calculated value has meaningfully changed and there's no manual override
-      if (hasCashValueChanged || hasTradeValueChanged) {
+      // If it's the first calculation or values have changed, update
+      if (initialCalculation.current || hasCashValueChanged || hasTradeValueChanged) {
         // Store new calculated values in refs
-        prevCashValue.current = calculatedCashValue;
-        prevTradeValue.current = calculatedTradeValue;
+        prevCalculatedCashValue.current = calculatedCashValue;
+        prevCalculatedTradeValue.current = calculatedTradeValue;
+        initialCalculation.current = false;
         
-        // Update with new calculated values, preserving any manual overrides
+        // Update with new calculated values, but only if they're not manually overridden
         const updates: Partial<TradeInItem> = {};
         
         if (item.cashValue === undefined) {
@@ -56,6 +56,11 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         
         // Only update if we have changes to make
         if (Object.keys(updates).length > 0) {
+          console.log(`Updating ${item.card.name} with calculated values:`, {
+            calculatedCash: calculatedCashValue,
+            calculatedTrade: calculatedTradeValue,
+            updates
+          });
           onUpdate(updates);
         }
       }
@@ -71,7 +76,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     item.paymentType, 
     onUpdate,
     cashValue,
-    tradeValue
+    tradeValue,
+    item.card.name
   ]);
 
   const refreshPrice = useCallback(async () => {

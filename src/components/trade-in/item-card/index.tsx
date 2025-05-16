@@ -14,7 +14,7 @@ interface TradeInItemProps {
   onUpdate: (index: number, item: TradeInItemType) => void;
   onConditionChange: (condition: string) => void;
   onValueChange: (values: { tradeValue: number; cashValue: number }) => void;
-  onValueAdjustment?: (value: number) => void; // Add the missing prop type
+  onValueAdjustment?: (value: number) => void;
 }
 
 const TradeInItem: React.FC<TradeInItemProps> = ({ 
@@ -26,9 +26,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   onValueChange
 }) => {
   // Add refs to track previous values and prevent unnecessary updates
-  const initialMount = useRef(true);
-  const prevCashValue = useRef<number | undefined>(undefined);
-  const prevTradeValue = useRef<number | undefined>(undefined);
+  const initialRender = useRef(true);
   const valueChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Handle updates to the item
@@ -47,56 +45,37 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     onUpdate: handleUpdate
   });
 
-  // Debounced value change handler to prevent rapid successive updates
-  const debouncedValueChange = useCallback((newCashValue: number | undefined, newTradeValue: number | undefined) => {
+  // Notify parent of value changes with debouncing
+  useEffect(() => {
+    // Skip first render to avoid unnecessary updates
+    if (initialRender.current) {
+      initialRender.current = false;
+      return;
+    }
+
     // Clear any existing timeout
     if (valueChangeTimeoutRef.current) {
       clearTimeout(valueChangeTimeoutRef.current);
     }
-    
-    // Set a new timeout to execute after 300ms of stability
-    valueChangeTimeoutRef.current = setTimeout(() => {
-      if (typeof newCashValue !== 'undefined' && typeof newTradeValue !== 'undefined') {
-        onValueChange({ cashValue: newCashValue, tradeValue: newTradeValue });
-      }
-    }, 300);
-  }, [onValueChange]);
-  
-  // Cleanup timeout on unmount
-  useEffect(() => {
+
+    // Only notify if we have valid values and aren't still calculating
+    if (!isCalculating && cashValue !== undefined && tradeValue !== undefined) {
+      valueChangeTimeoutRef.current = setTimeout(() => {
+        console.log(`Notifying parent of value change for ${item.card.name}:`, {
+          cashValue,
+          tradeValue
+        });
+        onValueChange({ cashValue, tradeValue });
+      }, 100);
+    }
+
+    // Cleanup on unmount
     return () => {
       if (valueChangeTimeoutRef.current) {
         clearTimeout(valueChangeTimeoutRef.current);
       }
     };
-  }, []);
-
-  // Optimized effect with proper value comparison
-  useEffect(() => {
-    // Skip effect on initial mount to prevent initial loop
-    if (initialMount.current) {
-      initialMount.current = false;
-      // Store initial values
-      prevCashValue.current = cashValue;
-      prevTradeValue.current = tradeValue;
-      return;
-    }
-
-    // Only call onValueChange when values have actually changed and are defined
-    if (!isCalculating && 
-        cashValue !== undefined && 
-        tradeValue !== undefined &&
-        (cashValue !== prevCashValue.current || tradeValue !== prevTradeValue.current)) {
-      
-      // Update refs with new values
-      prevCashValue.current = cashValue;
-      prevTradeValue.current = tradeValue;
-      
-      // Call debounced handler instead of direct onValueChange
-      debouncedValueChange(cashValue, tradeValue);
-    }
-    // Include all dependencies that are used in the effect
-  }, [cashValue, tradeValue, isCalculating, debouncedValueChange]);
+  }, [cashValue, tradeValue, isCalculating, onValueChange, item.card.name]);
 
   // Handle card attribute changes
   const {
