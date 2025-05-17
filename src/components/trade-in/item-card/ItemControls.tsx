@@ -11,7 +11,7 @@ interface ItemControlsProps {
   isFirstEdition: boolean;
   isHolo: boolean;
   isReverseHolo: boolean;
-  paymentType: 'cash' | 'trade';
+  paymentType: 'cash' | 'trade' | null;
   isLoadingPrice?: boolean;
   onConditionChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onQuantityChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -66,7 +66,7 @@ const ItemControls: React.FC<ItemControlsProps> = ({
         <PaymentTypeSelector
           paymentType={paymentType}
           onSelect={onPaymentTypeChange}
-          disabled={isLoadingPrice}
+          disabled={isLoadingPrice || condition === ''}
         />
       </div>
     </div>

@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { DollarSign, Tag } from 'lucide-react';
+import { DollarSign, Tag, ChevronsDown } from 'lucide-react';
 
 interface PaymentTypeSelectorProps {
-  paymentType: 'cash' | 'trade';
+  paymentType: 'cash' | 'trade' | null;
   onSelect: (type: 'cash' | 'trade') => void;
   disabled?: boolean;
 }
@@ -47,6 +47,13 @@ const PaymentTypeSelector: React.FC<PaymentTypeSelectorProps> = ({
           Trade
         </button>
       </div>
+      
+      {paymentType === null && !disabled && (
+        <div className="flex justify-center items-center mt-1 text-xs text-blue-600">
+          <ChevronsDown className="h-3 w-3 mr-1 animate-bounce" />
+          <span>Select payment type to calculate value</span>
+        </div>
+      )}
     </div>
   );
 };

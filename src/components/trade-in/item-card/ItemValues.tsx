@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { Loader2, AlertCircle, Info } from 'lucide-react';
+import { Loader2, AlertCircle, Info, ChevronsDown } from 'lucide-react';
 import PriceInput from '../shared/PriceInput';
 import ValueDisplay from '../shared/ValueDisplay';
 
 interface ItemValuesProps {
   price: number;
-  paymentType: 'cash' | 'trade';
+  paymentType: 'cash' | 'trade' | null;
   displayValue: number;
   isLoading: boolean;
   isLoadingPrice: boolean | undefined;
@@ -41,14 +41,24 @@ const ItemValues: React.FC<ItemValuesProps> = ({
       />
       
       <div className="relative">
-        <ValueDisplay 
-          label={paymentType === 'cash' ? 'Cash Value' : 'Trade Value'} 
-          value={displayValue} 
-          isLoading={isLoading || isLoadingPrice || false}
-          error={error}
-          onValueChange={onValueAdjustment}
-          editable={!!onValueAdjustment}
-        />
+        {paymentType ? (
+          <ValueDisplay 
+            label={paymentType === 'cash' ? 'Cash Value' : 'Trade Value'} 
+            value={displayValue} 
+            isLoading={isLoading || isLoadingPrice || false}
+            error={error}
+            onValueChange={onValueAdjustment}
+            editable={!!onValueAdjustment}
+          />
+        ) : (
+          <div className="rounded-md border border-gray-300 p-2 h-full flex flex-col justify-center items-center">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Value</label>
+            <div className="text-gray-500 text-center p-2">
+              <ChevronsDown className="h-5 w-5 mx-auto mb-1 animate-bounce text-blue-500" />
+              Select payment type to see value
+            </div>
+          </div>
+        )}
         
         {(isLoadingPrice || isLoading) && (
           <div className="absolute bottom-[-24px] left-0 text-xs text-blue-600 flex items-center">
@@ -64,14 +74,14 @@ const ItemValues: React.FC<ItemValuesProps> = ({
           </div>
         )}
         
-        {!isLoading && !isLoadingPrice && price > 0 && !displayValue && !error && (
+        {!isLoading && !isLoadingPrice && price > 0 && !displayValue && !error && paymentType && (
           <div className="absolute bottom-[-24px] left-0 text-xs text-orange-600 flex items-center">
             <AlertCircle className="h-3 w-3 mr-1" /> 
             No value calculated - check market price or trade value settings
           </div>
         )}
         
-        {!isLoading && !isLoadingPrice && price > 0 && !error && displayValue > 0 && (
+        {!isLoading && !isLoadingPrice && price > 0 && !error && displayValue > 0 && paymentType && (
           <div className="absolute bottom-[-24px] left-0 text-xs text-green-600 flex items-center">
             <Info className="h-3 w-3 mr-1" /> 
             Value calculated for {paymentType} payment

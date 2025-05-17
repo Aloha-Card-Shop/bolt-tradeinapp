@@ -15,6 +15,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   console.log(`useItemPrice: Initializing for card ${item.card.name}`, {
     game: item.card.game,
     price: item.price,
+    paymentType: item.paymentType,
     cardData: item.card
   });
   
@@ -72,10 +73,16 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   useEffect(() => {
     console.log(`useItemPrice: Effect triggered with cashValue=${cashValue}, tradeValue=${tradeValue}, isLoading=${isLoading}, paymentType=${item.paymentType}`);
     
-    const value = item.paymentType === 'cash' ? cashValue : tradeValue;
-    setDisplayValue(value * item.quantity);
-    
-    console.log(`useItemPrice: Display value set to ${value * item.quantity} for ${item.card.name}`);
+    // Only set display value if a payment type is selected
+    if (item.paymentType) {
+      const value = item.paymentType === 'cash' ? cashValue : tradeValue;
+      setDisplayValue(value * item.quantity);
+      console.log(`useItemPrice: Display value set to ${value * item.quantity} for ${item.card.name}`);
+    } else {
+      // Reset display value when no payment type is selected
+      setDisplayValue(0);
+      console.log(`useItemPrice: No payment type selected for ${item.card.name}, display value reset to 0`);
+    }
     
     // Only update the calculated values if they've changed and no manual override exists
     if (!isLoading && item.price > 0) {

@@ -12,7 +12,7 @@ export interface TradeInItem {
   isHolo: boolean;
   isReverseHolo?: boolean;
   price: number;
-  paymentType: 'cash' | 'trade';
+  paymentType: 'cash' | 'trade' | null;
   isLoadingPrice?: boolean;
   error?: string;
   cashValue?: number;
@@ -39,7 +39,7 @@ export const useTradeInList = () => {
       isHolo: true,
       isReverseHolo: false,
       price: price || 0,
-      paymentType: 'cash',
+      paymentType: null, // Changed from 'cash' to null
       isLoadingPrice: false,
       error: undefined,
       isPriceUnavailable: false
