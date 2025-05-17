@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { fetchCardPrices } from '../../utils/scraper';
 import { toast } from 'react-hot-toast';
@@ -55,8 +56,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
       gameType: item.card.game
     });
     
-    // Show error toast if calculation failed
-    if (calculationError && !isLoading) {
+    // Only show error toast for critical errors, not for price range mismatches
+    if (calculationError && !isLoading && !calculationError.includes('price range found')) {
       toast.error(`Trade value calculation issue: ${calculationError}`);
     }
   }, [calculatedCashValue, calculatedTradeValue, isLoading, calculationError, item.card.name, item.price, item.card.game]);
@@ -69,10 +70,12 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   
   // Calculate the display value based on payment type
   useEffect(() => {
-    console.log(`useItemPrice: Effect triggered with cashValue=${cashValue}, tradeValue=${tradeValue}, isLoading=${isLoading}`);
+    console.log(`useItemPrice: Effect triggered with cashValue=${cashValue}, tradeValue=${tradeValue}, isLoading=${isLoading}, paymentType=${item.paymentType}`);
     
     const value = item.paymentType === 'cash' ? cashValue : tradeValue;
     setDisplayValue(value * item.quantity);
+    
+    console.log(`useItemPrice: Display value set to ${value * item.quantity} for ${item.card.name}`);
     
     // Only update the calculated values if they've changed and no manual override exists
     if (!isLoading && item.price > 0) {
@@ -109,6 +112,11 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
           updates.tradeValue = calculatedTradeValue;
         }
         
+        // Pass along any error information
+        if (calculationError) {
+          updates.error = calculationError;
+        }
+        
         // Only update if we have changes to make
         if (Object.keys(updates).length > 0) {
           console.log(`Updating ${item.card.name} with calculated values:`, {
@@ -132,7 +140,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     onUpdate,
     cashValue,
     tradeValue,
-    item.card.name
+    item.card.name,
+    calculationError
   ]);
 
   const refreshPrice = useCallback(async () => {
@@ -200,7 +209,9 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
       price: newPrice,
       // Reset manual values when market price changes
       cashValue: undefined,
-      tradeValue: undefined 
+      tradeValue: undefined,
+      // Also reset any error state when manually changing the price
+      error: undefined
     });
   }, [onUpdate, item.card.name]);
 

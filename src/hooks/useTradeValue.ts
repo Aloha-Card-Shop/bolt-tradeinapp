@@ -13,13 +13,19 @@ interface TradeValueHookReturn {
 
 // Helper function to normalize game type strings
 const normalizeGameType = (gameType?: string): GameType | undefined => {
-  if (!gameType) return undefined;
+  if (!gameType) {
+    console.warn('useTradeValue: Received undefined or empty game type');
+    return undefined;
+  }
   
   // Convert to lowercase for consistent comparison
   const normalizedGame = gameType.toLowerCase().trim();
   
   // Check if it matches one of our valid game types
   const validGameTypes: GameType[] = ['pokemon', 'japanese-pokemon', 'magic'];
+  
+  // Debug log to help identify any issues with game type
+  console.log(`useTradeValue: Normalizing game type "${gameType}" to "${normalizedGame}"`);
   
   if (validGameTypes.includes(normalizedGame as GameType)) {
     return normalizedGame as GameType;
@@ -42,6 +48,13 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
     // Validate and normalize game type
     const normalizedGameType = normalizeGameType(game);
     
+    // Debug logs for input validation
+    console.log('useTradeValue: Input parameters', { 
+      originalGameType: game,
+      normalizedGameType,
+      baseValue: baseValue
+    });
+    
     // Validate input parameters
     if (!normalizedGameType) {
       console.error(`useTradeValue: Invalid game type: "${game}"`);
@@ -63,13 +76,17 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
       try {
         console.log(`useTradeValue: Calculating values with parameters - game=${normalizedGameType}, baseValue=${baseValue}`);
         
+        // Convert baseValue to a number if it's not already to ensure proper comparison
+        const numericBaseValue = Number(baseValue);
+        
         // Query for settings where min_value ≤ baseValue ≤ max_value
+        // Using explicit type casting and numeric operators for PostgreSQL
         const { data: settings, error: queryError } = await supabase
           .from('trade_value_settings')
           .select('*')
           .eq('game', normalizedGameType)
-          .filter('min_value', 'lte', baseValue)
-          .filter('max_value', 'gte', baseValue)
+          .lte('min_value', numericBaseValue)
+          .gte('max_value', numericBaseValue)
           .order('min_value', { ascending: false })
           .limit(1);
           
@@ -81,19 +98,19 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
         console.log('Trade value settings query result:', {
           query: {
             game: normalizedGameType,
-            min_value_lte: baseValue,
-            max_value_gte: baseValue
+            min_value_lte: numericBaseValue,
+            max_value_gte: numericBaseValue
           },
           results: settings,
           count: settings?.length || 0
         });
         
         if (!settings || settings.length === 0) {
-          console.warn(`No trade value settings found for game=${normalizedGameType} and value=${baseValue}`);
+          console.warn(`No trade value settings found for game=${normalizedGameType} and value=${numericBaseValue}`);
           
           // Fallback to default percentages
-          const defaultCashValue = baseValue * 0.5;
-          const defaultTradeValue = baseValue * 0.65;
+          const defaultCashValue = numericBaseValue * 0.5;
+          const defaultTradeValue = numericBaseValue * 0.65;
           
           console.log(`Using default percentages: cash=50%, trade=65%, resulting in:`, {
             cashValue: defaultCashValue,
@@ -102,7 +119,7 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
           
           setCashValue(defaultCashValue);
           setTradeValue(defaultTradeValue);
-          setError(`No trade value settings found. Using default percentages.`);
+          setError(`No price range found for ${normalizedGameType} cards valued at $${numericBaseValue.toFixed(2)}. Using default percentages.`);
         } else {
           const setting = settings[0];
           console.log('Found matching setting:', setting);
@@ -119,13 +136,13 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
             setTradeValue(setting.fixed_trade_value);
           } else {
             // Calculate based on percentages
-            const calculatedCashValue = baseValue * (setting.cash_percentage / 100);
-            const calculatedTradeValue = baseValue * (setting.trade_percentage / 100);
+            const calculatedCashValue = numericBaseValue * (setting.cash_percentage / 100);
+            const calculatedTradeValue = numericBaseValue * (setting.trade_percentage / 100);
             
             console.log(`Calculated values based on percentages:`, {
               cashPercentage: setting.cash_percentage,
               tradePercentage: setting.trade_percentage,
-              baseValue: baseValue,
+              baseValue: numericBaseValue,
               cashValue: calculatedCashValue,
               tradeValue: calculatedTradeValue
             });
@@ -138,8 +155,8 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
         console.error('Error calculating trade values:', error);
         
         // Fallback to default values with error notification
-        const defaultCashValue = baseValue * 0.5;
-        const defaultTradeValue = baseValue * 0.65;
+        const defaultCashValue = Number(baseValue) * 0.5;
+        const defaultTradeValue = Number(baseValue) * 0.65;
         setCashValue(defaultCashValue);
         setTradeValue(defaultTradeValue);
         

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2, Edit, Check, X, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatters';
 
@@ -23,6 +23,13 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
   
+  // Update edit value when prop value changes
+  useEffect(() => {
+    if (!isEditing) {
+      setEditValue(value);
+    }
+  }, [value, isEditing]);
+  
   const handleEditClick = () => {
     setEditValue(value);
     setIsEditing(true);
@@ -37,6 +44,7 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
   
   const handleCancelClick = () => {
     setIsEditing(false);
+    setEditValue(value); // Reset to original value
   };
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,7 +102,7 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
                 <span className="text-gray-500">Calculating...</span>
               </div>
             ) : (
-              <span className={error ? 'text-red-500' : 'text-gray-900'}>
+              <span className={error ? 'text-red-500' : value > 0 ? 'text-gray-900' : 'text-yellow-600'}>
                 ${formatCurrency(value)}
               </span>
             )}
@@ -115,6 +123,13 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
           <div className="flex items-center mt-1 text-xs text-red-500">
             <AlertCircle size={12} className="mr-1 flex-shrink-0" />
             <span>{error}</span>
+          </div>
+        )}
+        
+        {!error && !isLoading && value === 0 && (
+          <div className="flex items-center mt-1 text-xs text-yellow-600">
+            <AlertCircle size={12} className="mr-1 flex-shrink-0" />
+            <span>No value available</span>
           </div>
         )}
       </div>
