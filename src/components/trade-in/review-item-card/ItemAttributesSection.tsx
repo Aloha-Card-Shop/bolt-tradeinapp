@@ -60,7 +60,7 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
   const handleValueChange = (value: number) => {
     if (item.paymentType === 'cash') {
       handleUpdate({ cashValue: value });
-    } else {
+    } else if (item.paymentType === 'trade') {
       handleUpdate({ tradeValue: value });
     }
   };
@@ -72,6 +72,11 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
 
   const handleQuantityChange = (quantity: number) => {
     updateQuantity({ target: { value: quantity.toString() } } as React.ChangeEvent<HTMLInputElement>);
+  };
+
+  // Handle payment type change for nullable types
+  const handlePaymentTypeChange = (type: 'cash' | 'trade') => {
+    updatePaymentType(type);
   };
 
   return (
@@ -98,7 +103,7 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
 
       <PaymentTypeSelect
         paymentType={item.paymentType}
-        onChange={updatePaymentType}
+        onChange={handlePaymentTypeChange}
       />
 
       <PriceInput
@@ -111,7 +116,8 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
       <ValueDisplay
         value={item.paymentType === 'cash' ? 
           (item.cashValue !== undefined ? item.cashValue : cashValue) : 
-          (item.tradeValue !== undefined ? item.tradeValue : tradeValue)}
+          (item.paymentType === 'trade' ? 
+            (item.tradeValue !== undefined ? item.tradeValue : tradeValue) : 0)}
         quantity={item.quantity}
         onValueChange={handleValueChange}
       />
