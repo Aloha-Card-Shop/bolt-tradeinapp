@@ -43,13 +43,21 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
   // Use our shared price hook - we'll just use what we need from it
   const { 
     cashValue,
-    tradeValue
+    tradeValue,
+    error
   } = useItemPrice({
     item,
     onUpdate: handleUpdate
   });
   
-  // We're removing the unused variables 'displayValue' and 'handlePriceChange'
+  console.log('ItemAttributesSection rendering for', item.card.name, {
+    cashValue,
+    tradeValue,
+    paymentType: item.paymentType,
+    price: item.price,
+    itemCashValue: item.cashValue,
+    itemTradeValue: item.tradeValue
+  });
 
   // Handle custom price change format from review screen
   const handleCustomPriceChange = (price: number) => {
@@ -76,8 +84,30 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
 
   // Handle payment type change for nullable types
   const handlePaymentTypeChange = (type: 'cash' | 'trade') => {
+    console.log('Changing payment type to', type, 'for item', item.card.name);
     updatePaymentType(type);
   };
+
+  // Calculate the value to display based on payment type
+  const displayValue = React.useMemo(() => {
+    if (!item.paymentType) return 0;
+    
+    const baseValue = item.paymentType === 'cash' 
+      ? (item.cashValue !== undefined ? item.cashValue : cashValue)
+      : (item.tradeValue !== undefined ? item.tradeValue : tradeValue);
+      
+    console.log('Calculated display value:', baseValue * item.quantity, 'based on', {
+      paymentType: item.paymentType,
+      baseValue,
+      quantity: item.quantity,
+      cashValue,
+      tradeValue,
+      itemCashValue: item.cashValue,
+      itemTradeValue: item.tradeValue
+    });
+      
+    return baseValue * item.quantity;
+  }, [item.paymentType, item.cashValue, item.tradeValue, item.quantity, cashValue, tradeValue]);
 
   return (
     <div className="grid grid-cols-2 gap-4 mt-4">
@@ -114,13 +144,16 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
       />
 
       <ValueDisplay
-        value={item.paymentType === 'cash' ? 
-          (item.cashValue !== undefined ? item.cashValue : cashValue) : 
-          (item.paymentType === 'trade' ? 
-            (item.tradeValue !== undefined ? item.tradeValue : tradeValue) : 0)}
-        quantity={item.quantity}
+        value={displayValue}
+        quantity={1} // We're already multiplying by quantity in displayValue
         onValueChange={handleValueChange}
       />
+      
+      {error && (
+        <div className="col-span-2 text-xs text-red-600">
+          {error}
+        </div>
+      )}
     </div>
   );
 };

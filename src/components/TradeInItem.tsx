@@ -21,8 +21,19 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
   onConditionChange, 
   onValueChange 
 }) => {
+  // Log when rendering to track value changes
+  console.log('TradeInItemWrapper rendering for', item.card.name, {
+    paymentType: item.paymentType,
+    cashValue: item.cashValue,
+    tradeValue: item.tradeValue,
+    price: item.price,
+    condition: item.condition
+  });
+  
   // Handle manual value adjustment
   const handleValueAdjustment = (value: number) => {
+    console.log('Manual value adjustment for', item.card.name, ':', value, 'with payment type:', item.paymentType);
+    
     const updates = item.paymentType === 'cash' 
       ? { cashValue: value } 
       : { tradeValue: value };

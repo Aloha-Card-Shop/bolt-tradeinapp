@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { GameType } from '../types/card';
@@ -79,47 +78,89 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
         // Convert baseValue to a number if it's not already to ensure proper comparison
         const numericBaseValue = Number(baseValue);
         
-        // Query for settings where min_value ≤ baseValue ≤ max_value
-        // Using explicit type casting and numeric operators for PostgreSQL
+        // First try to find matching settings using fixed value options
+        const { data: fixedSettings, error: fixedQueryError } = await supabase
+          .from('trade_value_settings')
+          .select('*')
+          .eq('game', normalizedGameType)
+          .not('fixed_cash_value', 'is', null)
+          .not('fixed_trade_value', 'is', null);
+            
+        if (fixedQueryError) {
+          console.error('Error querying fixed trade value settings:', fixedQueryError);
+          throw fixedQueryError;
+        }
+        
+        console.log('Fixed trade value settings query result:', fixedSettings);
+        
+        // If we have fixed values, use those
+        if (fixedSettings && fixedSettings.length > 0) {
+          console.log('Using fixed trade values:', fixedSettings[0]);
+          setCashValue(fixedSettings[0].fixed_cash_value);
+          setTradeValue(fixedSettings[0].fixed_trade_value);
+          return;
+        }
+        
+        // Otherwise, query for settings where min_value ≤ baseValue ≤ max_value
         const { data: settings, error: queryError } = await supabase
           .from('trade_value_settings')
           .select('*')
           .eq('game', normalizedGameType)
           .lte('min_value', numericBaseValue)
-          .gte('max_value', numericBaseValue)
-          .order('min_value', { ascending: false })
-          .limit(1);
+          .gte('max_value', numericBaseValue);
           
         if (queryError) {
           console.error('Error querying trade value settings:', queryError);
           throw queryError;
         }
         
-        console.log('Trade value settings query result:', {
-          query: {
-            game: normalizedGameType,
-            min_value_lte: numericBaseValue,
-            max_value_gte: numericBaseValue
-          },
-          results: settings,
-          count: settings?.length || 0
-        });
+        console.log('Trade value settings query result:', settings);
         
         if (!settings || settings.length === 0) {
           console.warn(`No trade value settings found for game=${normalizedGameType} and value=${numericBaseValue}`);
           
-          // Fallback to default percentages
-          const defaultCashValue = numericBaseValue * 0.5;
-          const defaultTradeValue = numericBaseValue * 0.65;
+          // Try a more lenient query
+          const { data: lenientSettings, error: lenientQueryError } = await supabase
+            .from('trade_value_settings')
+            .select('*')
+            .eq('game', normalizedGameType)
+            .order('min_value', { ascending: false });
+            
+          if (lenientQueryError) {
+            console.error('Error querying lenient trade value settings:', lenientQueryError);
+            throw lenientQueryError;
+          }
           
-          console.log(`Using default percentages: cash=50%, trade=65%, resulting in:`, {
-            cashValue: defaultCashValue,
-            tradeValue: defaultTradeValue
-          });
+          console.log('Lenient trade value settings query result:', lenientSettings);
           
-          setCashValue(defaultCashValue);
-          setTradeValue(defaultTradeValue);
-          setError(`No price range found for ${normalizedGameType} cards valued at $${numericBaseValue.toFixed(2)}. Using default percentages.`);
+          if (lenientSettings && lenientSettings.length > 0) {
+            // Find the closest range
+            const applicableSetting = lenientSettings.find(s => numericBaseValue >= s.min_value) || 
+                                     lenientSettings[lenientSettings.length - 1]; // Fallback to lowest range
+                                     
+            console.log('Found applicable setting with lenient query:', applicableSetting);
+            
+            // Calculate based on percentages
+            const calculatedCashValue = numericBaseValue * (applicableSetting.cash_percentage / 100);
+            const calculatedTradeValue = numericBaseValue * (applicableSetting.trade_percentage / 100);
+            
+            setCashValue(calculatedCashValue);
+            setTradeValue(calculatedTradeValue);
+            setError(`Using approximate percentage from range ${applicableSetting.min_value}-${applicableSetting.max_value}.`);
+          } else {
+            // Fallback to default percentages
+            const defaultCashValue = numericBaseValue * 0.5;
+            const defaultTradeValue = numericBaseValue * 0.65;
+            
+            console.log(`Using default percentages: cash=50%, trade=65%, resulting in:`, {
+              cashValue: defaultCashValue,
+              tradeValue: defaultTradeValue
+            });
+            
+            setCashValue(defaultCashValue);
+            setTradeValue(defaultTradeValue);
+            setError(`No price range found for ${normalizedGameType} cards valued at $${numericBaseValue.toFixed(2)}. Using default percentages.`);
+          }
         } else {
           const setting = settings[0];
           console.log('Found matching setting:', setting);

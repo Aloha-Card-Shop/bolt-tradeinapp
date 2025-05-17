@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { DollarSign, Edit, Check } from 'lucide-react';
+import { DollarSign, Edit, Check, X } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatters';
 
 interface ValueDisplayProps {
@@ -17,8 +17,15 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
   
+  // Update internal state when prop changes and not editing
+  React.useEffect(() => {
+    if (!isEditing) {
+      setEditValue(value || 0);
+    }
+  }, [value, isEditing]);
+  
   const handleEditClick = () => {
-    setEditValue(value);
+    setEditValue(value || 0);
     setIsEditing(true);
   };
   
@@ -33,6 +40,11 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
     const newValue = parseFloat(e.target.value) || 0;
     setEditValue(newValue);
   };
+
+  // Format the final display value
+  const displayValue = (value || 0) * quantity;
+  
+  console.log('ValueDisplay rendering with:', { value, quantity, displayValue });
 
   return (
     <div>
@@ -72,15 +84,19 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
         ) : (
           <input
             type="text"
-            value={formatCurrency((value || 0) * quantity)}
+            value={displayValue > 0 ? formatCurrency(displayValue) : '0.00'}
             readOnly
-            className="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700"
+            className={`w-full pl-8 pr-3 py-2 ${
+              displayValue > 0 ? 'bg-gray-50' : 'bg-yellow-50'
+            } border border-gray-300 rounded-lg text-gray-700`}
           />
         )}
       </div>
       {onValueChange && !isEditing && (
         <div className="text-xs text-gray-500 mt-1">
-          Click edit icon to adjust this value
+          {displayValue > 0 
+            ? 'Click edit icon to adjust this value' 
+            : 'No value calculated or payment type not selected'}
         </div>
       )}
     </div>
