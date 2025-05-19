@@ -27,12 +27,18 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
     cashValue: item.cashValue,
     tradeValue: item.tradeValue,
     price: item.price,
-    condition: item.condition
+    condition: item.condition,
+    game: item.card.game // Add game logging
   });
   
   // Handle manual value adjustment
   const handleValueAdjustment = (value: number) => {
     console.log('Manual value adjustment for', item.card.name, ':', value, 'with payment type:', item.paymentType);
+    
+    if (!item.paymentType) {
+      console.warn('Payment type not selected, cannot adjust value');
+      return;
+    }
     
     const updates = item.paymentType === 'cash' 
       ? { cashValue: value } 

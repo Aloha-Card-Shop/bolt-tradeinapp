@@ -9,6 +9,7 @@ import ValueDisplay from './ValueDisplay';
 import CardAttributes from '../shared/CardAttributes';
 import { useCardAttributes } from '../../../hooks/trade-in/useCardAttributes';
 import { useItemPrice } from '../../../hooks/trade-in/useItemPrice';
+import { toast } from 'react-hot-toast';
 
 interface ItemAttributesSectionProps {
   item: TradeInItem;
@@ -24,6 +25,7 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
 }) => {
   // Handle updates to the item
   const handleUpdate = React.useCallback((updates: Partial<TradeInItem>) => {
+    console.log('ItemAttributesSection: handleUpdate called with updates:', updates);
     onUpdateItem(index, { ...item, ...updates });
   }, [index, item, onUpdateItem]);
 
@@ -56,20 +58,35 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
     paymentType: item.paymentType,
     price: item.price,
     itemCashValue: item.cashValue,
-    itemTradeValue: item.tradeValue
+    itemTradeValue: item.tradeValue,
+    game: item.card.game
   });
 
   // Handle custom price change format from review screen
   const handleCustomPriceChange = (price: number) => {
-    handleUpdate({ price, isPriceUnavailable: false });
+    console.log('Setting custom price:', price);
+    handleUpdate({ 
+      price, 
+      isPriceUnavailable: false,
+      // Reset manual values when price changes
+      cashValue: undefined,
+      tradeValue: undefined
+    });
+    toast.success(`Updated market price to $${price.toFixed(2)}`);
   };
 
   // Handle manual value adjustment
   const handleValueChange = (value: number) => {
+    console.log('Manual value adjustment:', value, 'Payment type:', item.paymentType);
+    
     if (item.paymentType === 'cash') {
       handleUpdate({ cashValue: value });
+      toast.success(`Updated cash value to $${value.toFixed(2)}`);
     } else if (item.paymentType === 'trade') {
       handleUpdate({ tradeValue: value });
+      toast.success(`Updated trade value to $${value.toFixed(2)}`);
+    } else {
+      toast.error('Please select a payment type first');
     }
   };
 
@@ -86,6 +103,7 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
   const handlePaymentTypeChange = (type: 'cash' | 'trade') => {
     console.log('Changing payment type to', type, 'for item', item.card.name);
     updatePaymentType(type);
+    toast.success(`Payment type set to ${type}`);
   };
 
   // Calculate the value to display based on payment type
@@ -144,14 +162,20 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
       />
 
       <ValueDisplay
-        value={displayValue}
-        quantity={1} // We're already multiplying by quantity in displayValue
+        value={item.paymentType === 'cash' ? cashValue : tradeValue}
+        quantity={item.quantity}
         onValueChange={handleValueChange}
       />
       
       {error && (
         <div className="col-span-2 text-xs text-red-600">
           {error}
+        </div>
+      )}
+      
+      {(!item.card.game || item.card.game === '') && (
+        <div className="col-span-2 text-xs text-red-600">
+          Missing game type information for this card. Value calculations may not work.
         </div>
       )}
     </div>

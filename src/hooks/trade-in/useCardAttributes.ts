@@ -1,8 +1,7 @@
 
 import { useCallback } from 'react';
-import { fetchCardPrices } from '../../utils/scraper';
-import { toast } from 'react-hot-toast';
 import { TradeInItem } from '../useTradeInList';
+import { toast } from 'react-hot-toast';
 
 interface UseCardAttributesProps {
   item: TradeInItem;
@@ -10,107 +9,47 @@ interface UseCardAttributesProps {
 }
 
 export const useCardAttributes = ({ item, onUpdate }: UseCardAttributesProps) => {
-  const fetchNewPrice = useCallback(async (updates: Partial<TradeInItem> = {}) => {
-    // Merge the current item with updates to get the new state
-    const updatedItem = { ...item, ...updates };
-    const { card, condition, isFirstEdition, isHolo, isReverseHolo } = updatedItem;
-    
-    if (!card.productId || !condition) {
-      // Just update the item without fetching a price
-      onUpdate(updates);
-      return;
-    }
-    
-    // Start loading and clear any errors
-    onUpdate({ 
-      ...updates, 
-      isLoadingPrice: true, 
-      error: undefined, 
-      isPriceUnavailable: false 
-    });
-    
-    try {
-      const data = await fetchCardPrices(
-        card.productId,
-        condition,
-        isFirstEdition,
-        isHolo,
-        card.game,
-        isReverseHolo
-      );
-      
-      if (data.unavailable) {
-        onUpdate({
-          ...updates,
-          price: 0,
-          isLoadingPrice: false,
-          isPriceUnavailable: true
-        });
-        toast.error("No price available for this card configuration");
-      } else {
-        onUpdate({
-          ...updates,
-          price: parseFloat(data.price),
-          isLoadingPrice: false,
-          isPriceUnavailable: false
-        });
-      }
-    } catch (e) {
-      onUpdate({
-        ...updates,
-        isLoadingPrice: false,
-        error: (e as Error).message,
-        isPriceUnavailable: false
-      });
-    }
-  }, [item, onUpdate]);
-
   const toggleFirstEdition = useCallback(() => {
-    const newIsFirstEdition = !item.isFirstEdition;
-    fetchNewPrice({ isFirstEdition: newIsFirstEdition });
-  }, [item.isFirstEdition, fetchNewPrice]);
+    onUpdate({ isFirstEdition: !item.isFirstEdition, isLoadingPrice: true });
+  }, [item.isFirstEdition, onUpdate]);
 
   const toggleHolo = useCallback(() => {
-    const newIsHolo = !item.isHolo;
-    // When turning on holo, make sure reverse holo is off
-    fetchNewPrice({ 
-      isHolo: newIsHolo, 
-      isReverseHolo: newIsHolo ? false : item.isReverseHolo 
-    });
-  }, [item.isHolo, item.isReverseHolo, fetchNewPrice]);
+    onUpdate({ isHolo: !item.isHolo, isLoadingPrice: true });
+  }, [item.isHolo, onUpdate]);
 
   const toggleReverseHolo = useCallback(() => {
-    const newIsReverseHolo = !item.isReverseHolo;
-    // When turning on reverse holo, make sure regular holo is off
-    fetchNewPrice({ 
-      isReverseHolo: newIsReverseHolo, 
-      isHolo: newIsReverseHolo ? false : item.isHolo 
-    });
-  }, [item.isHolo, item.isReverseHolo, fetchNewPrice]);
+    onUpdate({ isReverseHolo: !item.isReverseHolo, isLoadingPrice: true });
+  }, [item.isReverseHolo, onUpdate]);
 
   const updateCondition = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newCondition = e.target.value;
-    fetchNewPrice({ condition: newCondition as any });
-  }, [fetchNewPrice]);
+    onUpdate({ condition: e.target.value as any, isLoadingPrice: true });
+  }, [onUpdate]);
 
   const updateQuantity = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const quantity = Math.max(1, parseInt(e.target.value) || 1);
-    onUpdate({ quantity });
-  }, [onUpdate]);
-
-  const incrementQuantity = useCallback(() => {
-    onUpdate({ quantity: item.quantity + 1 });
-  }, [item.quantity, onUpdate]);
-
-  const decrementQuantity = useCallback(() => {
-    if (item.quantity > 1) {
-      onUpdate({ quantity: item.quantity - 1 });
+    const qty = parseInt(e.target.value);
+    if (!isNaN(qty) && qty > 0) {
+      onUpdate({ quantity: qty });
     }
-  }, [item.quantity, onUpdate]);
-
-  const updatePaymentType = useCallback((type: 'cash' | 'trade') => {
-    onUpdate({ paymentType: type });
   }, [onUpdate]);
+
+  const updatePaymentType = useCallback((type: 'cash' | 'trade' | null) => {
+    console.log('useCardAttributes: updatePaymentType called with type:', type);
+    
+    // Only update if payment type is actually changing
+    if (item.paymentType !== type) {
+      console.log('Updating payment type from', item.paymentType, 'to', type);
+      
+      // Reset cashValue and tradeValue when changing payment type
+      onUpdate({ 
+        paymentType: type,
+        // Only reset the values if they were manually set before
+        ...(item.cashValue !== undefined && type === 'trade' ? { cashValue: undefined } : {}),
+        ...(item.tradeValue !== undefined && type === 'cash' ? { tradeValue: undefined } : {})
+      });
+    } else {
+      console.log('Payment type unchanged:', type);
+    }
+  }, [item.paymentType, item.cashValue, item.tradeValue, onUpdate]);
 
   return {
     toggleFirstEdition,
@@ -118,9 +57,6 @@ export const useCardAttributes = ({ item, onUpdate }: UseCardAttributesProps) =>
     toggleReverseHolo,
     updateCondition,
     updateQuantity,
-    incrementQuantity,
-    decrementQuantity,
-    updatePaymentType,
-    fetchNewPrice
+    updatePaymentType
   };
 };

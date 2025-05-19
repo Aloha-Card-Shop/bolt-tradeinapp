@@ -8,6 +8,8 @@ interface PaymentTypeSelectProps {
 }
 
 const PaymentTypeSelect: React.FC<PaymentTypeSelectProps> = ({ paymentType, onChange }) => {
+  console.log('PaymentTypeSelect rendering with payment type:', paymentType);
+  
   return (
     <div className="relative">
       <label className="block text-xs font-medium text-gray-700 mb-1">Payment Type</label>

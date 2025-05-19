@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { GameType } from '../types/card';
@@ -47,7 +48,7 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
     // Validate and normalize game type
     const normalizedGameType = normalizeGameType(game);
     
-    // Debug logs for input validation
+    // Debug logs for input parameters
     console.log('useTradeValue: Input parameters', { 
       originalGameType: game,
       normalizedGameType,
@@ -77,6 +78,8 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
         
         // Convert baseValue to a number if it's not already to ensure proper comparison
         const numericBaseValue = Number(baseValue);
+        
+        console.log(`Querying trade value settings for game=${normalizedGameType}, value=${numericBaseValue}`);
         
         // First try to find matching settings using fixed value options
         const { data: fixedSettings, error: fixedQueryError } = await supabase
@@ -143,6 +146,14 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
             // Calculate based on percentages
             const calculatedCashValue = numericBaseValue * (applicableSetting.cash_percentage / 100);
             const calculatedTradeValue = numericBaseValue * (applicableSetting.trade_percentage / 100);
+            
+            console.log('Calculated values:', {
+              cashValue: calculatedCashValue,
+              cashPercent: applicableSetting.cash_percentage,
+              tradeValue: calculatedTradeValue,
+              tradePercent: applicableSetting.trade_percentage,
+              baseValue: numericBaseValue
+            });
             
             setCashValue(calculatedCashValue);
             setTradeValue(calculatedTradeValue);
