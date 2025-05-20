@@ -1,23 +1,34 @@
-
 import { useState, useCallback } from 'react';
 import { CardDetails } from '../types/card';
 import { fetchCardPrices } from '../utils/scraper';
 import { toast } from 'react-hot-toast';
 
 export interface TradeInItem {
-  card: CardDetails;
+  card: {
+    id?: string;
+    name: string;
+    set?: string;
+    number?: string;
+    imageUrl?: string;
+    productId?: string;
+    game?: string;
+    [key: string]: any;
+  };
   quantity: number;
-  condition: 'near_mint' | 'lightly_played' | 'moderately_played' | 'heavily_played' | 'damaged' | '';
+  condition: string;
   isFirstEdition: boolean;
   isHolo: boolean;
   isReverseHolo?: boolean;
   price: number;
-  paymentType: 'cash' | 'trade' | null;
-  isLoadingPrice?: boolean;
-  error?: string;
   cashValue?: number;
   tradeValue?: number;
+  paymentType: 'cash' | 'trade' | null;
+  key?: string;
+  isLoadingPrice?: boolean; 
+  error?: string;
   isPriceUnavailable?: boolean;
+  usedFallback?: boolean;
+  fallbackReason?: string;
 }
 
 export const useTradeInList = () => {

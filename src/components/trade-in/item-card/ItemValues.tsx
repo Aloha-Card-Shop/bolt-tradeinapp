@@ -74,7 +74,7 @@ const ItemValues: React.FC<ItemValuesProps> = ({
           </div>
         )}
         
-        {!isLoading && !isLoadingPrice && error && (
+        {!isLoading && !isLoadingPrice && error && error !== 'API_ENDPOINT_NOT_FOUND' && (
           <div className="absolute bottom-[-24px] left-0 text-xs text-red-600 flex items-center">
             <AlertCircle className="h-3 w-3 mr-1" /> 
             {error}
@@ -94,13 +94,20 @@ const ItemValues: React.FC<ItemValuesProps> = ({
             Value calculated for {paymentType} payment
           </div>
         )}
+        
+        {error === 'API_ENDPOINT_NOT_FOUND' && !isLoading && price > 0 && displayValue > 0 && (
+          <div className="absolute bottom-[-24px] left-0 text-xs text-amber-600 flex items-center">
+            <Info className="h-3 w-3 mr-1" /> 
+            Using estimated values (API not available)
+          </div>
+        )}
       </div>
       
-      {usedFallback && !isLoading && paymentType && (
+      {(usedFallback || error === 'API_ENDPOINT_NOT_FOUND') && !isLoading && paymentType && (
         <div className="col-span-2 mt-2">
           <FallbackWarning 
             showWarning={true}
-            fallbackReason={fallbackReason}
+            fallbackReason={fallbackReason || 'API_UNAVAILABLE'}
           />
         </div>
       )}

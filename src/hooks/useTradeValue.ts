@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { ERROR_MESSAGES } from '../constants/fallbackValues';
@@ -45,12 +46,45 @@ export function useTradeValue(
       ? JSON.parse(localStorage.getItem('supabase.auth.token') || '{}')?.currentSession?.user?.id
       : undefined;
 
+    // Client-side calculation function as fallback
+    const calculateClientSide = () => {
+      console.log(`useTradeValue: Using client-side calculation for game=${game}, baseValue=${baseValue}`);
+      
+      // Default percentages from constants
+      const DEFAULT_CASH_PERCENTAGE = 35;
+      const DEFAULT_TRADE_PERCENTAGE = 50;
+      
+      // Simple calculation based on percentages of the base value
+      const cashValue = baseValue * (DEFAULT_CASH_PERCENTAGE / 100);
+      const tradeValue = baseValue * (DEFAULT_TRADE_PERCENTAGE / 100);
+      
+      setCashValue(cashValue);
+      setTradeValue(tradeValue);
+      setUsedFallback(true);
+      setFallbackReason('API_UNAVAILABLE');
+      
+      if (showToast) {
+        toast.error(ERROR_MESSAGES.CALCULATION_FAILED, {
+          id: `fallback-${game}-${baseValue}`,
+          duration: 4000
+        });
+      }
+      
+      setIsLoading(false);
+    };
+
     fetch('/api/calculate-value', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ game, baseValue, userId }),
     })
       .then(async (res) => {
+        // Handle 404 specifically - API doesn't exist in development
+        if (res.status === 404) {
+          console.warn('API endpoint not found. Using client-side calculation.');
+          throw new Error('API_ENDPOINT_NOT_FOUND');
+        }
+        
         if (!res.ok) {
           const payload = await res.json().catch(() => ({}));
           console.error('useTradeValue: API request failed', { status: res.status, payload });
@@ -96,6 +130,13 @@ export function useTradeValue(
       .catch((err: Error) => {
         console.error('useTradeValue error:', err);
         setError(err.message);
+        
+        // If the API endpoint doesn't exist, use client-side calculation
+        if (err.message === 'API_ENDPOINT_NOT_FOUND') {
+          calculateClientSide();
+          return;
+        }
+        
         setUsedFallback(true);
         setFallbackReason('API_ERROR');
         

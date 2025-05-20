@@ -41,7 +41,9 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     cashValue: calculatedCashValue, 
     tradeValue: calculatedTradeValue, 
     isLoading,
-    error: calculationError
+    error: calculationError,
+    usedFallback,
+    fallbackReason
   } = useTradeValue(
     validGame ? item.card.game : 'pokemon', // Default to pokemon if no game type
     validPrice ? item.price : 0 // Only pass valid prices
@@ -61,15 +63,20 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
       isLoading,
       hasError: !!calculationError,
       errorMessage: calculationError,
+      usedFallback,
+      fallbackReason,
       currentPrice: item.price,
       gameType: item.card.game
     });
     
-    // Only show error toast for critical errors, not for price range mismatches
-    if (calculationError && !isLoading && !calculationError.includes('price range found')) {
+    // Only show error toast for critical errors, not for price range mismatches or API not found
+    if (calculationError && 
+        !isLoading && 
+        !calculationError.includes('price range found') &&
+        calculationError !== 'API_ENDPOINT_NOT_FOUND') {
       toast.error(`Trade value calculation issue: ${calculationError}`);
     }
-  }, [calculatedCashValue, calculatedTradeValue, isLoading, calculationError, item.card.name, item.price, item.card.game, instanceId]);
+  }, [calculatedCashValue, calculatedTradeValue, isLoading, calculationError, usedFallback, fallbackReason, item.card.name, item.price, item.card.game, instanceId]);
   
   // Use the manually set values if they exist, otherwise use the calculated values
   const cashValue = item.cashValue !== undefined ? item.cashValue : calculatedCashValue;
@@ -103,7 +110,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         isInitial: initialCalculation.current,
         hasManualCashValue: item.cashValue !== undefined,
         hasManualTradeValue: item.tradeValue !== undefined,
-        price: item.price
+        price: item.price,
+        usedFallback
       });
       
       // Values have actually changed and are different from what we had before
@@ -136,9 +144,15 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
           console.log(`useItemPrice [${instanceId}]: Auto-setting payment type to cash for ${item.card.name}`);
         }
         
-        // Pass along any error information
+        // Pass along any error information and fallback status
         if (calculationError) {
           updates.error = calculationError;
+        }
+        
+        // Add fallback information
+        if (usedFallback) {
+          updates.usedFallback = true;
+          updates.fallbackReason = fallbackReason;
         }
         
         // Only update if we have changes to make
@@ -146,6 +160,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
           console.log(`useItemPrice [${instanceId}]: Updating ${item.card.name} with calculated values:`, {
             calculatedCash: calculatedCashValue,
             calculatedTrade: calculatedTradeValue,
+            usedFallback,
+            fallbackReason,
             updates
           });
           onUpdate(updates);
@@ -166,6 +182,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     tradeValue,
     item.card.name,
     calculationError,
+    usedFallback,
+    fallbackReason,
     instanceId
   ]);
 
@@ -272,7 +290,9 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     handlePriceChange,
     cashValue,
     tradeValue,
-    error: calculationError
+    error: calculationError,
+    usedFallback,
+    fallbackReason
   };
 
   console.log(`useItemPrice [${instanceId}]: Returning values for ${item.card.name}:`, returnValues);
