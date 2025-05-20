@@ -1,5 +1,5 @@
+
 import { useState, useEffect } from 'react';
-import { toast } from 'react-hot-toast';
 
 interface TradeValueHookReturn {
   cashValue: number;
@@ -15,58 +15,43 @@ export function useTradeValue(
   const [cashValue, setCashValue] = useState(0);
   const [tradeValue, setTradeValue] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | undefined>(undefined);
+  const [error, setError] = useState<string>();
 
   useEffect(() => {
-    // Clear previous errors
-    setError(undefined);
-
-    // If no baseValue or it's not positive, return zeros immediately
     if (!baseValue || baseValue <= 0) {
       setCashValue(0);
       setTradeValue(0);
       return;
     }
 
-    // Otherwise, make the API call
-    const fetchTradeValues = async () => {
-      setIsLoading(true);
-      
-      try {
-        const response = await fetch('/api/calculate-value', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ game, baseValue }),
-        });
+    setIsLoading(true);
+    setError(undefined);
 
-        // Check if response is OK
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `API error: ${response.status}`);
+    fetch('/api/calculate-value', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ game, baseValue }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          throw new Error(payload.error || 'Calculation failed');
         }
-
-        // Parse response data
-        const data = await response.json();
-        
-        // Update values
-        setCashValue(data.cashValue);
-        setTradeValue(data.tradeValue);
-      } catch (err: any) {
-        console.error('Error calculating trade values:', err);
-        setError(err.message || 'Failed to calculate trade values');
-        toast.error(`Calculation error: ${err.message || 'Unknown error'}`);
-        
-        // Set default values on error
+        return res.json();
+      })
+      .then(({ cashValue, tradeValue }: { cashValue: number; tradeValue: number }) => {
+        setCashValue(cashValue);
+        setTradeValue(tradeValue);
+      })
+      .catch((err: Error) => {
+        console.error('useTradeValue error:', err);
+        setError(err.message);
         setCashValue(0);
         setTradeValue(0);
-      } finally {
+      })
+      .finally(() => {
         setIsLoading(false);
-      }
-    };
-
-    fetchTradeValues();
+      });
   }, [game, baseValue]);
 
   return { cashValue, tradeValue, isLoading, error };
