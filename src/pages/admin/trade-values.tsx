@@ -19,6 +19,18 @@ interface TradeValueSetting {
   fixed_trade_value: number | null;
 }
 
+interface ValidationErrors {
+  [key: string]: {
+    min_value?: string;
+    max_value?: string;
+    cash_percentage?: string;
+    trade_percentage?: string;
+    fixed_cash_value?: string;
+    fixed_trade_value?: string;
+    range?: string;
+  };
+}
+
 const TradeValuesPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useSession();
@@ -27,6 +39,7 @@ const TradeValuesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
   useEffect(() => {
     if (!loading && (!user || user.user_metadata.role !== 'admin')) {
@@ -49,12 +62,84 @@ const TradeValuesPage: React.FC = () => {
       setSettings(data);
       setError(null);
       setHasUnsavedChanges(false);
+      // Validate settings after fetching
+      validateAllSettings(data);
     } catch (err) {
       console.error('Error fetching settings:', err);
       setError(err instanceof Error ? err.message : 'Failed to load settings');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const validateSetting = (setting: TradeValueSetting, allSettings: TradeValueSetting[]): {
+    isValid: boolean;
+    errors: { [key: string]: string };
+  } => {
+    const errors: { [key: string]: string } = {};
+    
+    // Check min_value < max_value
+    if (setting.min_value >= setting.max_value) {
+      errors.min_value = 'Min value must be less than max value';
+      errors.max_value = 'Max value must be greater than min value';
+    }
+
+    // Check percentage ranges for non-fixed mode
+    const isFixedMode = setting.fixed_cash_value !== null || setting.fixed_trade_value !== null;
+    
+    if (!isFixedMode) {
+      // Validate cash_percentage
+      if (setting.cash_percentage === null) {
+        errors.cash_percentage = 'Cash percentage is required';
+      } else if (setting.cash_percentage < 0 || setting.cash_percentage > 100) {
+        errors.cash_percentage = 'Must be between 0 and 100';
+      }
+      
+      // Validate trade_percentage
+      if (setting.trade_percentage === null) {
+        errors.trade_percentage = 'Trade percentage is required';
+      } else if (setting.trade_percentage < 0 || setting.trade_percentage > 100) {
+        errors.trade_percentage = 'Must be between 0 and 100';
+      }
+    } else {
+      // In fixed mode, ensure at least one value is set
+      if (setting.fixed_cash_value === null && setting.fixed_trade_value === null) {
+        errors.fixed_cash_value = 'At least one value must be set';
+        errors.fixed_trade_value = 'At least one value must be set';
+      }
+    }
+
+    // Check for overlapping ranges with same game
+    const overlaps = allSettings.filter(s => 
+      s.id !== setting.id && 
+      s.game === setting.game && 
+      ((setting.min_value >= s.min_value && setting.min_value <= s.max_value) ||
+       (setting.max_value >= s.min_value && setting.max_value <= s.max_value) ||
+       (setting.min_value <= s.min_value && setting.max_value >= s.max_value))
+    );
+
+    if (overlaps.length > 0) {
+      errors.range = 'Range overlaps with another range for the same game';
+    }
+
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors
+    };
+  };
+
+  const validateAllSettings = (settingsToValidate: TradeValueSetting[] = settings) => {
+    const newValidationErrors: ValidationErrors = {};
+
+    settingsToValidate.forEach(setting => {
+      const { isValid, errors } = validateSetting(setting, settingsToValidate);
+      if (!isValid) {
+        newValidationErrors[setting.id] = errors;
+      }
+    });
+
+    setValidationErrors(newValidationErrors);
+    return Object.keys(newValidationErrors).length === 0;
   };
 
   const toggleValueType = (setting: TradeValueSetting) => {
@@ -70,58 +155,42 @@ const TradeValuesPage: React.FC = () => {
       cash_percentage: wasFixed ? 50 : setting.cash_percentage,
       trade_percentage: wasFixed ? 65 : setting.trade_percentage,
     };
-
-    console.log('Toggling value type:', { from: wasFixed ? 'fixed' : 'percentage', to: wasFixed ? 'percentage' : 'fixed', updated });
     
     setSettings(prev =>
       prev.map(s => (s.id === setting.id ? updated : s))
     );
+    
+    // Validate the updated setting
+    const updatedSettings = settings.map(s => s.id === setting.id ? updated : s);
+    validateAllSettings(updatedSettings);
+    
     setHasUnsavedChanges(true);
   };
 
   const handleSave = async (setting: TradeValueSetting) => {
+    // Validate before saving
+    const { isValid, errors } = validateSetting(setting, settings);
+    
+    if (!isValid) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [setting.id]: errors
+      }));
+      toast.error('Please fix validation errors before saving');
+      return;
+    }
+
     try {
       const isFixedMode = setting.fixed_cash_value !== null;
-      console.log('Attempting to save setting:', { setting, isFixedMode });
-
-      // More lenient validation to fix the saving issue
-      if (isFixedMode) {
-        // For fixed mode, we need at least one value to be set
-        if (setting.fixed_cash_value === null && setting.fixed_trade_value === null) {
-          throw new Error('At least one of cash or trade values must be set in fixed mode');
-        }
-        
-        // Cash value cannot be negative
-        if (setting.fixed_cash_value !== null && setting.fixed_cash_value < 0) {
-          throw new Error('Cash value cannot be negative');
-        }
-        
-        // Trade value should ideally be greater than cash, but we won't block saving if not
-        if (setting.fixed_cash_value !== null && 
-            setting.fixed_trade_value !== null && 
-            setting.fixed_trade_value < setting.fixed_cash_value) {
-          console.warn('Trade value is less than cash value, but proceeding with save');
-        }
-      } else {
-        // For percentage mode, ensure percentages are set
-        if ((setting.cash_percentage === null || setting.cash_percentage < 0) && 
-            (setting.trade_percentage === null || setting.trade_percentage < 0)) {
-          throw new Error('Both percentages must be set and non-negative in percentage mode');
-        }
-      }
-
+      
       // Prepare the object for saving
       const settingToSave = {
         ...setting,
-        // In fixed mode, keep both fixed values and zero percentages
         fixed_cash_value: isFixedMode ? setting.fixed_cash_value : null,
         fixed_trade_value: isFixedMode ? setting.fixed_trade_value : null,
-        // Make sure we have default percentages for non-fixed mode
         cash_percentage: isFixedMode ? 0 : (setting.cash_percentage ?? 50),
         trade_percentage: isFixedMode ? 0 : (setting.trade_percentage ?? 65),
       };
-
-      console.log('Saving setting to database:', settingToSave);
       
       const { error } = await supabase
         .from('trade_value_settings')
@@ -134,6 +203,13 @@ const TradeValuesPage: React.FC = () => {
       setEditingId(null);
       setError(null);
       setHasUnsavedChanges(false);
+      
+      // Clear validation errors for this setting
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[setting.id];
+        return newErrors;
+      });
     } catch (err) {
       console.error('Error saving setting:', err);
       setError(err instanceof Error ? err.message : 'Failed to save setting');
@@ -142,6 +218,14 @@ const TradeValuesPage: React.FC = () => {
   };
 
   const saveAllSettings = async () => {
+    // Validate all settings before saving
+    const isValid = validateAllSettings();
+    
+    if (!isValid) {
+      toast.error('Please fix all validation errors before saving');
+      return;
+    }
+
     setIsLoading(true);
     let hasError = false;
 
@@ -157,8 +241,6 @@ const TradeValuesPage: React.FC = () => {
           cash_percentage: isFixedMode ? 0 : (setting.cash_percentage ?? 50),
           trade_percentage: isFixedMode ? 0 : (setting.trade_percentage ?? 65),
         };
-        
-        console.log('Saving setting in bulk update:', settingToSave);
         
         const { error } = await supabase
           .from('trade_value_settings')
@@ -181,6 +263,7 @@ const TradeValuesPage: React.FC = () => {
     } else {
       toast.success('All trade value settings saved successfully');
       setHasUnsavedChanges(false);
+      setValidationErrors({});
     }
     
     // Refresh settings to get the latest state
@@ -215,17 +298,36 @@ const TradeValuesPage: React.FC = () => {
       fixed_cash_value: null,
       fixed_trade_value: null,
     };
-    setSettings(prev => [...prev, newSetting]);
+    
+    const updatedSettings = [...settings, newSetting];
+    setSettings(updatedSettings);
+    
+    // Validate the new setting
+    validateAllSettings(updatedSettings);
+    
     setEditingId(newSetting.id);
     setHasUnsavedChanges(true);
   };
 
   const handleSettingChange = (updatedSetting: TradeValueSetting) => {
-    setSettings(prev => 
-      prev.map(s => (s.id === updatedSetting.id ? updatedSetting : s))
+    const newSettings = settings.map(s => 
+      s.id === updatedSetting.id ? updatedSetting : s
     );
+    
+    setSettings(newSettings);
+    
+    // Validate the changed setting
+    const { isValid, errors } = validateSetting(updatedSetting, newSettings);
+    
+    setValidationErrors(prev => ({
+      ...prev,
+      [updatedSetting.id]: isValid ? undefined : errors
+    }));
+    
     setHasUnsavedChanges(true);
   };
+
+  const hasValidationErrors = Object.keys(validationErrors).length > 0;
 
   if (loading) {
     return (
@@ -269,8 +371,12 @@ const TradeValuesPage: React.FC = () => {
               {hasUnsavedChanges && (
                 <button
                   onClick={saveAllSettings}
-                  disabled={isLoading}
-                  className="flex items-center px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-green-300"
+                  disabled={isLoading || hasValidationErrors}
+                  className={`flex items-center px-4 py-2 text-white rounded-lg ${
+                    hasValidationErrors 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-green-600 hover:bg-green-700 disabled:bg-green-300'
+                  }`}
                 >
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -294,6 +400,15 @@ const TradeValuesPage: React.FC = () => {
             <div className="mb-6 p-4 bg-red-50 rounded-lg flex items-start space-x-3">
               <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
               <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
+          {hasValidationErrors && (
+            <div className="mb-6 p-4 bg-amber-50 rounded-lg flex items-start space-x-3">
+              <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-amber-700">
+                There are validation errors that must be fixed before saving. Please check the highlighted fields.
+              </p>
             </div>
           )}
 
@@ -323,180 +438,237 @@ const TradeValuesPage: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                          {gameSettings.map(s => (
-                            <tr key={s.id}>
-                              <td className="py-3 px-4">
-                                {editingId === s.id ? (
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="number"
-                                      value={s.min_value}
-                                      onChange={e => {
-                                        const newValue = parseFloat(e.target.value);
-                                        handleSettingChange({
-                                          ...s,
-                                          min_value: isNaN(newValue) ? 0 : newValue
-                                        });
-                                      }}
-                                      className="w-24 px-2 py-1 border border-gray-300 rounded"
-                                    />
-                                    <span>to</span>
-                                    <input
-                                      type="number"
-                                      value={s.max_value}
-                                      onChange={e => {
-                                        const newValue = parseFloat(e.target.value);
-                                        handleSettingChange({
-                                          ...s,
-                                          max_value: isNaN(newValue) ? 0 : newValue
-                                        });
-                                      }}
-                                      className="w-24 px-2 py-1 border border-gray-300 rounded"
-                                    />
-                                  </div>
-                                ) : (
-                                  <span>
-                                    ${s.min_value.toFixed(2)} –{' '}
-                                    {s.max_value === 999999
-                                      ? '∞'
-                                      : `$${s.max_value.toFixed(2)}`}
-                                  </span>
-                                )}
-                              </td>
-                              <td className="py-3 px-4">
-                                {editingId === s.id ? (
-                                  <select
-                                    value={s.fixed_cash_value !== null ? 'fixed' : 'percentage'}
-                                    onChange={() => toggleValueType(s)}
-                                    className="px-2 py-1 border border-gray-300 rounded"
-                                  >
-                                    <option value="percentage">Percentage</option>
-                                    <option value="fixed">Fixed Value</option>
-                                  </select>
-                                ) : (
-                                  <span className="text-gray-600">
-                                    {s.fixed_cash_value !== null ? 'Fixed Value' : 'Percentage'}
-                                  </span>
-                                )}
-                              </td>
-                              <td className="py-3 px-4">
-                                {editingId === s.id ? (
-                                  s.fixed_cash_value !== null ? (
-                                    <div className="flex items-center">
-                                      <span className="mr-2">$</span>
-                                      <input
-                                        type="text"
-                                        value={formatCurrency(s.fixed_cash_value || 0)}
-                                        onChange={e => {
-                                          const value = parseCurrency(e.target.value);
-                                          handleSettingChange({
-                                            ...s,
-                                            fixed_cash_value: value
-                                          });
-                                        }}
-                                        className="w-24 px-2 py-1 border border-gray-300 rounded text-right"
-                                        step="0.01"
-                                      />
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center">
-                                      <input
-                                        type="number"
-                                        value={s.cash_percentage ?? 0}
-                                        onChange={e => {
-                                          const newValue = parseFloat(e.target.value);
-                                          handleSettingChange({
-                                            ...s,
-                                            cash_percentage: isNaN(newValue) ? 0 : newValue
-                                          });
-                                        }}
-                                        className="w-20 px-2 py-1 border border-gray-300 rounded"
-                                      />
-                                      <span className="ml-2">%</span>
-                                    </div>
-                                  )
-                                ) : (
-                                  <span>
-                                    {s.fixed_cash_value !== null
-                                      ? `$${formatCurrency(s.fixed_cash_value)}`
-                                      : `${s.cash_percentage}%`}
-                                  </span>
-                                )}
-                              </td>
-                              <td className="py-3 px-4">
-                                {editingId === s.id ? (
-                                  s.fixed_trade_value !== null ? (
-                                    <div className="flex items-center">
-                                      <span className="mr-2">$</span>
-                                      <input
-                                        type="text"
-                                        value={formatCurrency(s.fixed_trade_value || 0)}
-                                        onChange={e => {
-                                          const value = parseCurrency(e.target.value);
-                                          handleSettingChange({
-                                            ...s,
-                                            fixed_trade_value: value
-                                          });
-                                        }}
-                                        className="w-24 px-2 py-1 border border-gray-300 rounded text-right"
-                                        step="0.01"
-                                      />
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center">
-                                      <input
-                                        type="number"
-                                        value={s.trade_percentage ?? 0}
-                                        onChange={e => {
-                                          const newValue = parseFloat(e.target.value);
-                                          handleSettingChange({
-                                            ...s,
-                                            trade_percentage: isNaN(newValue) ? 0 : newValue
-                                          });
-                                        }}
-                                        className="w-20 px-2 py-1 border border-gray-300 rounded"
-                                      />
-                                      <span className="ml-2">%</span>
-                                    </div>
-                                  )
-                                ) : (
-                                  <span>
-                                    {s.fixed_trade_value !== null
-                                      ? `$${formatCurrency(s.fixed_trade_value)}`
-                                      : `${s.trade_percentage}%`}
-                                  </span>
-                                )}
-                              </td>
-                              <td className="py-3 px-4">
-                                <div className="flex items-center justify-end space-x-2">
+                          {gameSettings.map(s => {
+                            const errors = validationErrors[s.id] || {};
+                            const hasRangeError = !!errors.range;
+                            
+                            return (
+                              <tr key={s.id} className={hasRangeError ? 'bg-red-50' : ''}>
+                                <td className="py-3 px-4">
                                   {editingId === s.id ? (
-                                    <button
-                                      onClick={() => handleSave(s)}
-                                      className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded"
-                                      title="Save"
-                                    >
-                                      <Save className="h-4 w-4" />
-                                    </button>
+                                    <div className="space-y-1">
+                                      <div className="flex items-center space-x-2">
+                                        <div className="flex flex-col">
+                                          <input
+                                            type="number"
+                                            value={s.min_value}
+                                            onChange={e => {
+                                              const newValue = parseFloat(e.target.value);
+                                              handleSettingChange({
+                                                ...s,
+                                                min_value: isNaN(newValue) ? 0 : newValue
+                                              });
+                                            }}
+                                            className={`w-24 px-2 py-1 border rounded ${
+                                              errors.min_value ? 'border-red-500' : 'border-gray-300'
+                                            }`}
+                                          />
+                                          {errors.min_value && (
+                                            <span className="text-xs text-red-500 mt-1">{errors.min_value}</span>
+                                          )}
+                                        </div>
+                                        <span>to</span>
+                                        <div className="flex flex-col">
+                                          <input
+                                            type="number"
+                                            value={s.max_value}
+                                            onChange={e => {
+                                              const newValue = parseFloat(e.target.value);
+                                              handleSettingChange({
+                                                ...s,
+                                                max_value: isNaN(newValue) ? 0 : newValue
+                                              });
+                                            }}
+                                            className={`w-24 px-2 py-1 border rounded ${
+                                              errors.max_value ? 'border-red-500' : 'border-gray-300'
+                                            }`}
+                                          />
+                                          {errors.max_value && (
+                                            <span className="text-xs text-red-500 mt-1">{errors.max_value}</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      {hasRangeError && (
+                                        <span className="text-xs text-red-500 block">{errors.range}</span>
+                                      )}
+                                    </div>
                                   ) : (
-                                    <button
-                                      onClick={() => setEditingId(s.id)}
-                                      className="p-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
-                                      title="Edit"
-                                    >
-                                      <Settings className="h-4 w-4" />
-                                    </button>
+                                    <span>
+                                      ${s.min_value.toFixed(2)} –{' '}
+                                      {s.max_value === 999999
+                                        ? '∞'
+                                        : `$${s.max_value.toFixed(2)}`}
+                                    </span>
                                   )}
-                                  <button
-                                    onClick={() => handleDelete(s.id)}
-                                    className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
-                                    title="Delete"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
+                                </td>
+                                <td className="py-3 px-4">
+                                  {editingId === s.id ? (
+                                    <select
+                                      value={s.fixed_cash_value !== null ? 'fixed' : 'percentage'}
+                                      onChange={() => toggleValueType(s)}
+                                      className="px-2 py-1 border border-gray-300 rounded"
+                                    >
+                                      <option value="percentage">Percentage</option>
+                                      <option value="fixed">Fixed Value</option>
+                                    </select>
+                                  ) : (
+                                    <span className="text-gray-600">
+                                      {s.fixed_cash_value !== null ? 'Fixed Value' : 'Percentage'}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  {editingId === s.id ? (
+                                    s.fixed_cash_value !== null ? (
+                                      <div className="flex flex-col">
+                                        <div className="flex items-center">
+                                          <span className="mr-2">$</span>
+                                          <input
+                                            type="text"
+                                            value={formatCurrency(s.fixed_cash_value || 0)}
+                                            onChange={e => {
+                                              const value = parseCurrency(e.target.value);
+                                              handleSettingChange({
+                                                ...s,
+                                                fixed_cash_value: value
+                                              });
+                                            }}
+                                            className={`w-24 px-2 py-1 border rounded text-right ${
+                                              errors.fixed_cash_value ? 'border-red-500' : 'border-gray-300'
+                                            }`}
+                                            step="0.01"
+                                          />
+                                        </div>
+                                        {errors.fixed_cash_value && (
+                                          <span className="text-xs text-red-500 mt-1">{errors.fixed_cash_value}</span>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div className="flex flex-col">
+                                        <div className="flex items-center">
+                                          <input
+                                            type="number"
+                                            value={s.cash_percentage ?? 0}
+                                            onChange={e => {
+                                              const newValue = parseFloat(e.target.value);
+                                              handleSettingChange({
+                                                ...s,
+                                                cash_percentage: isNaN(newValue) ? 0 : newValue
+                                              });
+                                            }}
+                                            className={`w-20 px-2 py-1 border rounded ${
+                                              errors.cash_percentage ? 'border-red-500' : 'border-gray-300'
+                                            }`}
+                                          />
+                                          <span className="ml-2">%</span>
+                                        </div>
+                                        {errors.cash_percentage && (
+                                          <span className="text-xs text-red-500 mt-1">{errors.cash_percentage}</span>
+                                        )}
+                                      </div>
+                                    )
+                                  ) : (
+                                    <span>
+                                      {s.fixed_cash_value !== null
+                                        ? `$${formatCurrency(s.fixed_cash_value)}`
+                                        : `${s.cash_percentage}%`}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  {editingId === s.id ? (
+                                    s.fixed_trade_value !== null ? (
+                                      <div className="flex flex-col">
+                                        <div className="flex items-center">
+                                          <span className="mr-2">$</span>
+                                          <input
+                                            type="text"
+                                            value={formatCurrency(s.fixed_trade_value || 0)}
+                                            onChange={e => {
+                                              const value = parseCurrency(e.target.value);
+                                              handleSettingChange({
+                                                ...s,
+                                                fixed_trade_value: value
+                                              });
+                                            }}
+                                            className={`w-24 px-2 py-1 border rounded text-right ${
+                                              errors.fixed_trade_value ? 'border-red-500' : 'border-gray-300'
+                                            }`}
+                                            step="0.01"
+                                          />
+                                        </div>
+                                        {errors.fixed_trade_value && (
+                                          <span className="text-xs text-red-500 mt-1">{errors.fixed_trade_value}</span>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div className="flex flex-col">
+                                        <div className="flex items-center">
+                                          <input
+                                            type="number"
+                                            value={s.trade_percentage ?? 0}
+                                            onChange={e => {
+                                              const newValue = parseFloat(e.target.value);
+                                              handleSettingChange({
+                                                ...s,
+                                                trade_percentage: isNaN(newValue) ? 0 : newValue
+                                              });
+                                            }}
+                                            className={`w-20 px-2 py-1 border rounded ${
+                                              errors.trade_percentage ? 'border-red-500' : 'border-gray-300'
+                                            }`}
+                                          />
+                                          <span className="ml-2">%</span>
+                                        </div>
+                                        {errors.trade_percentage && (
+                                          <span className="text-xs text-red-500 mt-1">{errors.trade_percentage}</span>
+                                        )}
+                                      </div>
+                                    )
+                                  ) : (
+                                    <span>
+                                      {s.fixed_trade_value !== null
+                                        ? `$${formatCurrency(s.fixed_trade_value)}`
+                                        : `${s.trade_percentage}%`}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center justify-end space-x-2">
+                                    {editingId === s.id ? (
+                                      <button
+                                        onClick={() => handleSave(s)}
+                                        disabled={!!validationErrors[s.id]}
+                                        className={`p-1 rounded ${
+                                          validationErrors[s.id]
+                                            ? 'text-gray-400 cursor-not-allowed'
+                                            : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                        }`}
+                                        title={validationErrors[s.id] ? "Fix validation errors first" : "Save"}
+                                      >
+                                        <Save className="h-4 w-4" />
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => setEditingId(s.id)}
+                                        className="p-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
+                                        title="Edit"
+                                      >
+                                        <Settings className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => handleDelete(s.id)}
+                                      className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
+                                      title="Delete"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
