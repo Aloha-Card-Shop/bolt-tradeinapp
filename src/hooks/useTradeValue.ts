@@ -1,6 +1,4 @@
-// src/hooks/useTradeValue.ts
 import { useState, useEffect } from 'react';
-import { GameType } from '../types/card';
 import { toast } from 'react-hot-toast';
 
 interface TradeValueHookReturn {
@@ -10,27 +8,8 @@ interface TradeValueHookReturn {
   error?: string;
 }
 
-// Helper function to normalize game type strings
-const normalizeGameType = (gameType?: string): GameType | undefined => {
-  if (!gameType) return undefined;
-  const normalized = gameType.toLowerCase().trim();
-  if (['pokémon', 'pokemon'].includes(normalized)) return 'pokemon';
-  if (
-    ['japanese-pokemon', 'japanese pokemon', 'pokemon (japanese)', 'pokemon japanese']
-      .includes(normalized)
-  ) return 'japanese-pokemon';
-  if (
-    ['magic', 'magic: the gathering', 'mtg', 'magic the gathering']
-      .includes(normalized)
-  ) return 'magic';
-  // fallback
-  return ['pokemon', 'japanese-pokemon', 'magic'].includes(normalized as GameType)
-    ? (normalized as GameType)
-    : 'pokemon';
-};
-
 export function useTradeValue(
-  game?: GameType | string,
+  game?: string,
   baseValue?: number
 ): TradeValueHookReturn {
   const [cashValue, setCashValue] = useState(0);
