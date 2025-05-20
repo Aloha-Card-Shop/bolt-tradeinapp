@@ -10,6 +10,12 @@ import ShopifySettingsPage from './pages/admin/shopify-settings';
 import ShopifyMappingsPage from './pages/admin/shopify-mappings';
 import AppHeader from './components/layout/AppHeader';
 import AuthGuard from './components/AuthGuard';
+import AdminPage from './pages/admin';
+import TradeValuesPage from './pages/admin/trade-values';
+import ManagerDashboard from './pages/dashboard/manager';
+import UsersPage from './pages/admin/users';
+import BarcodesPage from './pages/admin/barcodes';
+import PrintersPage from './pages/admin/printers';
 
 function App() {
   return (
@@ -22,7 +28,13 @@ function App() {
           <Route path="/trade-in/review" element={<TradeInReviewPage />} />
           <Route path="/customer-select" element={<CustomerSelectPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/manager" element={<ManagerDashboard />} />
           <Route path="/my-trade-ins" element={<MyTradeIns />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/admin/users" element={<UsersPage />} />
+          <Route path="/admin/trade-values" element={<TradeValuesPage />} />
+          <Route path="/admin/barcodes" element={<BarcodesPage />} />
+          <Route path="/admin/printers" element={<PrintersPage />} />
           <Route path="/admin/shopify/settings" element={<ShopifySettingsPage />} />
           <Route path="/admin/shopify/mappings" element={<ShopifyMappingsPage />} />
         </Routes>

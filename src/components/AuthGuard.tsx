@@ -9,7 +9,7 @@ interface AuthGuardProps {
   allowedRoles?: string[];
 }
 
-const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
+const AuthGuard: React.FC<AuthGuardProps> = ({ children, allowedRoles }) => {
   const { loading, user } = useSession();
   const location = useLocation();
   
@@ -25,6 +25,14 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   // If not at login page and user is not authenticated, redirect to login
   if (location.pathname !== '/' && !user) {
     return <Navigate to="/" replace />;
+  }
+  
+  // If roles are specified, check if user has the required role
+  if (allowedRoles && allowedRoles.length > 0 && user) {
+    const userRole = user.user_metadata?.role;
+    if (!userRole || !allowedRoles.includes(userRole)) {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
   
   return <>{children}</>;

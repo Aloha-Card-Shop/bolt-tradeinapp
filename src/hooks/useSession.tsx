@@ -3,15 +3,17 @@ import React, { createContext, useContext, ReactNode, useState, useEffect } from
 import { Session } from '../types/auth';
 
 interface SessionContextType {
-  session: Session | null;
+  user: any | null;  // Using 'any' for now for compatibility with existing code
   loading: boolean;
   error: Error | null;
+  signOut: () => void;
 }
 
 const SessionContext = createContext<SessionContextType>({
-  session: null,
+  user: null,
   loading: true,
-  error: null
+  error: null,
+  signOut: () => {}
 });
 
 export const useSession = () => useContext(SessionContext);
@@ -43,9 +45,23 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     }, 500);
   }, []);
 
+  const signOut = () => {
+    setSession(null);
+    // In a real app, you would call the auth service to sign out
+    // For now, we'll just redirect to login
+    window.location.href = '/';
+  };
+
   return (
-    <SessionContext.Provider value={{ session, loading, error }}>
+    <SessionContext.Provider value={{ 
+      user: session?.user || null, 
+      loading, 
+      error,
+      signOut
+    }}>
       {children}
     </SessionContext.Provider>
   );
 };
+
+export default SessionProvider;
