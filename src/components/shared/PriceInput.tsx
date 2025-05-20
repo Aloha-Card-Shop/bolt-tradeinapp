@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { DollarSign, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { formatCurrency } from '../../utils/formatters';
 
 interface PriceInputProps {
   price: number;
@@ -53,7 +54,7 @@ const PriceInput: React.FC<PriceInputProps> = ({
         </span>
         <input
           type="number"
-          value={price || ''}
+          value={price ? formatCurrency(price) : ''}
           onChange={onChange}
           min="0"
           step="0.01"
