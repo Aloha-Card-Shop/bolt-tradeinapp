@@ -6,6 +6,7 @@ import ItemControls from './ItemControls';
 import ItemValues from './ItemValues';
 import { useItemPrice } from '../../../hooks/trade-in/useItemPrice';
 import { useCardAttributes } from '../../../hooks/trade-in/useCardAttributes';
+import { GameType } from '../../../types/card';
 
 interface TradeInItemProps {
   item: TradeInItemType;
@@ -161,6 +162,9 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     }
   }, [item.price, item.card.productId, item.isLoadingPrice, refreshPrice, item.card.name, instanceId]);
 
+  // Get game type with default or assert it's valid
+  const gameType = item.card.game || 'pokemon' as GameType;
+
   return (
     <div className="border border-gray-200 rounded-xl p-5 hover:border-blue-100 transition-colors duration-200 bg-white shadow-sm">
       <CardHeader 
@@ -196,6 +200,8 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
         onRefreshPrice={refreshPrice}
         isPriceUnavailable={item.isPriceUnavailable}
         onValueAdjustment={handleValueAdjustment}
+        usedFallback={item.usedFallback}
+        fallbackReason={item.fallbackReason}
       />
       
       {/* Debug information about game type */}

@@ -1,19 +1,10 @@
 import { useState, useCallback } from 'react';
-import { CardDetails } from '../types/card';
+import { CardDetails, GameType } from '../types/card';
 import { fetchCardPrices } from '../utils/scraper';
 import { toast } from 'react-hot-toast';
 
 export interface TradeInItem {
-  card: {
-    id?: string;
-    name: string;
-    set?: string;
-    number?: string;
-    imageUrl?: string;
-    productId?: string;
-    game?: string;
-    [key: string]: any;
-  };
+  card: CardDetails;
   quantity: number;
   condition: string;
   isFirstEdition: boolean;
