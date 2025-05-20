@@ -1,6 +1,5 @@
 
 import { describe, it, expect, beforeAll, vi } from 'vitest';
-import type { NextApiRequest, NextApiResponse } from 'next';
 import handler from '../../../api/calculate-value';
 
 // Mock data for supabase response
@@ -86,26 +85,23 @@ beforeAll(() => {
 });
 
 describe('calculate-value API E2E Tests', () => {
-  // Helper function to create mock request and response
-  const createMocks = (body: any) => {
-    const req = { 
+  // Helper function to create a request object
+  const createRequest = (body: any) => {
+    return new Request('http://localhost/api/calculate-value', {
       method: 'POST',
-      body
-    } as NextApiRequest;
-    
-    const json = vi.fn();
-    const status = vi.fn().mockReturnValue({ json });
-    const res = { status, json } as unknown as NextApiResponse;
-    
-    return { req, res, json, status };
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
   };
   
   it('should calculate Pokemon values using correct bracket', async () => {
-    const { req, res, json } = createMocks({ game: 'pokemon', baseValue: 5 });
+    const req = createRequest({ game: 'pokemon', baseValue: 5 });
     
-    await handler(req, res);
+    const response = await handler(req);
+    const result = await response.json();
     
-    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+    expect(response.status).toBe(200);
+    expect(result).toEqual(expect.objectContaining({
       cashValue: 1.5, // 30% of 5
       tradeValue: 2.25, // 45% of 5
       usedFallback: false
@@ -113,11 +109,12 @@ describe('calculate-value API E2E Tests', () => {
   });
   
   it('should handle higher Pokemon bracket correctly', async () => {
-    const { req, res, json } = createMocks({ game: 'pokemon', baseValue: 20 });
+    const req = createRequest({ game: 'pokemon', baseValue: 20 });
     
-    await handler(req, res);
+    const response = await handler(req);
+    const result = await response.json();
     
-    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+    expect(result).toEqual(expect.objectContaining({
       cashValue: 7, // 35% of 20
       tradeValue: 10, // 50% of 20
       usedFallback: false
@@ -125,11 +122,12 @@ describe('calculate-value API E2E Tests', () => {
   });
   
   it('should handle Magic game type correctly', async () => {
-    const { req, res, json } = createMocks({ game: 'magic', baseValue: 100 });
+    const req = createRequest({ game: 'magic', baseValue: 100 });
     
-    await handler(req, res);
+    const response = await handler(req);
+    const result = await response.json();
     
-    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+    expect(result).toEqual(expect.objectContaining({
       cashValue: 40, // 40% of 100
       tradeValue: 60, // 60% of 100
       usedFallback: false
@@ -137,11 +135,12 @@ describe('calculate-value API E2E Tests', () => {
   });
   
   it('should use fixed values for Japanese Pokemon', async () => {
-    const { req, res, json } = createMocks({ game: 'japanese-pokemon', baseValue: 50 });
+    const req = createRequest({ game: 'japanese-pokemon', baseValue: 50 });
     
-    await handler(req, res);
+    const response = await handler(req);
+    const result = await response.json();
     
-    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+    expect(result).toEqual(expect.objectContaining({
       cashValue: 10, // Fixed value
       tradeValue: 15, // Fixed value
       usedFallback: false
@@ -149,11 +148,12 @@ describe('calculate-value API E2E Tests', () => {
   });
   
   it('should normalize game types (case insensitive, trimming)', async () => {
-    const { req, res, json } = createMocks({ game: ' Pokemon ', baseValue: 5 });
+    const req = createRequest({ game: ' Pokemon ', baseValue: 5 });
     
-    await handler(req, res);
+    const response = await handler(req);
+    const result = await response.json();
     
-    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+    expect(result).toEqual(expect.objectContaining({
       cashValue: 1.5, // 30% of 5
       tradeValue: 2.25, // 45% of 5
       usedFallback: false
@@ -161,11 +161,12 @@ describe('calculate-value API E2E Tests', () => {
   });
   
   it('should fallback for unknown game type with appropriate message', async () => {
-    const { req, res, json } = createMocks({ game: 'yugioh', baseValue: 10 });
+    const req = createRequest({ game: 'yugioh', baseValue: 10 });
     
-    await handler(req, res);
+    const response = await handler(req);
+    const result = await response.json();
     
-    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+    expect(result).toEqual(expect.objectContaining({
       usedFallback: true,
       fallbackReason: 'NO_SETTINGS_FOUND'
     }));
@@ -198,11 +199,12 @@ describe('calculate-value API E2E Tests', () => {
       return originalFromImpl(table);
     });
     
-    const { req, res, json } = createMocks({ game: 'pokemon', baseValue: 1000 });
+    const req = createRequest({ game: 'pokemon', baseValue: 1000 });
     
-    await handler(req, res);
+    const response = await handler(req);
+    const result = await response.json();
     
-    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+    expect(result).toEqual(expect.objectContaining({
       usedFallback: true,
       fallbackReason: 'NO_PRICE_RANGE_MATCH'
     }));
@@ -212,13 +214,14 @@ describe('calculate-value API E2E Tests', () => {
   });
   
   it('should round values to exactly 2 decimal places', async () => {
-    const { req, res, json } = createMocks({ game: 'pokemon', baseValue: 1.39 });
+    const req = createRequest({ game: 'pokemon', baseValue: 1.39 });
     
-    await handler(req, res);
+    const response = await handler(req);
+    const result = await response.json();
     
     // 30% of 1.39 = 0.417, should round to 0.42
     // 45% of 1.39 = 0.6255, should round to 0.63
-    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+    expect(result).toEqual(expect.objectContaining({
       cashValue: 0.42,
       tradeValue: 0.63
     }));
@@ -227,19 +230,21 @@ describe('calculate-value API E2E Tests', () => {
   // Test the caching mechanism
   it('should use cache for subsequent requests with the same game', async () => {
     // First request to populate the cache
-    const { req: req1, res: res1 } = createMocks({ game: 'pokemon', baseValue: 5 });
-    await handler(req1, res1);
+    const req1 = createRequest({ game: 'pokemon', baseValue: 5 });
+    await handler(req1);
     
     // Modify the mock to verify the cache is used (this should NOT be called)
     const supabaseClient = require('@supabase/supabase-js').createClient();
     const spy = vi.spyOn(supabaseClient, 'from');
     
     // Second request should use cache
-    const { req: req2, res: res2, json: json2 } = createMocks({ game: 'pokemon', baseValue: 8 });
-    await handler(req2, res2);
+    const req2 = createRequest({ game: 'pokemon', baseValue: 8 });
+    const response = await handler(req2);
+    const result = await response.json();
     
+    // The response should be valid
+    expect(result).toBeDefined();
     // The settings should have been retrieved from cache, not from the database
-    expect(json2).toHaveBeenCalled();
     expect(spy).not.toHaveBeenCalledWith('trade_value_settings');
   });
 });
