@@ -106,26 +106,20 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
     toast.success(`Payment type set to ${type}`);
   };
 
-  // Calculate the value to display based on payment type
-  const displayValue = React.useMemo(() => {
-    if (!item.paymentType) return 0;
+  // Calculate the current display value based on payment type for the component
+  const currentValue = item.paymentType === 'cash' 
+    ? (item.cashValue !== undefined ? item.cashValue : cashValue)
+    : (item.tradeValue !== undefined ? item.tradeValue : tradeValue);
     
-    const baseValue = item.paymentType === 'cash' 
-      ? (item.cashValue !== undefined ? item.cashValue : cashValue)
-      : (item.tradeValue !== undefined ? item.tradeValue : tradeValue);
-      
-    console.log('Calculated display value:', baseValue * item.quantity, 'based on', {
-      paymentType: item.paymentType,
-      baseValue,
-      quantity: item.quantity,
-      cashValue,
-      tradeValue,
-      itemCashValue: item.cashValue,
-      itemTradeValue: item.tradeValue
-    });
-      
-    return baseValue * item.quantity;
-  }, [item.paymentType, item.cashValue, item.tradeValue, item.quantity, cashValue, tradeValue]);
+  console.log('Calculated current value:', currentValue * item.quantity, 'based on', {
+    paymentType: item.paymentType,
+    baseValue: currentValue,
+    quantity: item.quantity,
+    cashValue,
+    tradeValue,
+    itemCashValue: item.cashValue,
+    itemTradeValue: item.tradeValue
+  });
 
   return (
     <div className="grid grid-cols-2 gap-4 mt-4">
@@ -173,7 +167,7 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
         </div>
       )}
       
-      {(!item.card.game || item.card.game === '') && (
+      {(!item.card.game) && (
         <div className="col-span-2 text-xs text-red-600">
           Missing game type information for this card. Value calculations may not work.
         </div>

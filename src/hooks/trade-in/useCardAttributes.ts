@@ -1,7 +1,6 @@
 
 import { useCallback } from 'react';
 import { TradeInItem } from '../useTradeInList';
-import { toast } from 'react-hot-toast';
 
 interface UseCardAttributesProps {
   item: TradeInItem;
