@@ -26,21 +26,44 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   onValueChange,
   onValueAdjustment
 }) => {
+  // Component instance ID for debugging
+  const instanceId = useRef(Math.random().toString(36).substring(2, 9)).current;
+  
+  // Log component rendering with key details
+  console.log(`TradeInItem [${instanceId}]: Rendering for ${item.card.name}`, {
+    index,
+    price: item.price,
+    cashValue: item.cashValue,
+    tradeValue: item.tradeValue,
+    paymentType: item.paymentType,
+    game: item.card.game,
+    productId: item.card.productId
+  });
+  
   // Add refs to track previous values and prevent unnecessary updates
   const initialRender = useRef(true);
   const valueChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const prevPriceRef = useRef<number>(item.price);
 
   // Handle updates to the item
   const handleUpdate = useCallback((updates: Partial<TradeInItemType>) => {
-    console.log(`TradeInItem: Updating item ${item.card.name}:`, updates);
+    console.log(`TradeInItem [${instanceId}]: Updating item ${item.card.name}:`, {
+      currentValues: {
+        price: item.price,
+        cashValue: item.cashValue,
+        tradeValue: item.tradeValue,
+        paymentType: item.paymentType
+      },
+      updates
+    });
     onUpdate(index, { ...item, ...updates });
-  }, [index, item, onUpdate]);
+  }, [index, item, onUpdate, instanceId]);
 
   // Handle condition changes
   const handleConditionChangeWrapper = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    console.log(`TradeInItem: Condition changed for ${item.card.name} to ${e.target.value}`);
+    console.log(`TradeInItem [${instanceId}]: Condition changed for ${item.card.name} to ${e.target.value}`);
     onConditionChange(e.target.value);
-  }, [onConditionChange, item.card.name]);
+  }, [onConditionChange, item.card.name, instanceId]);
 
   // Handle price and value calculations
   const { 
@@ -55,6 +78,23 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     item,
     onUpdate: handleUpdate
   });
+
+  // Check for price changes to force trade value recalculation
+  useEffect(() => {
+    if (prevPriceRef.current !== item.price) {
+      console.log(`TradeInItem [${instanceId}]: Price changed from ${prevPriceRef.current} to ${item.price} for ${item.card.name}`);
+      prevPriceRef.current = item.price;
+      
+      // Log what we currently have
+      console.log(`TradeInItem [${instanceId}]: Current values for ${item.card.name}:`, {
+        price: item.price,
+        cashValue: item.cashValue,
+        tradeValue: item.tradeValue,
+        calculatedCashValue: cashValue,
+        calculatedTradeValue: tradeValue
+      });
+    }
+  }, [item.price, item.card.name, cashValue, tradeValue, instanceId]);
 
   // Notify parent of value changes with debouncing
   useEffect(() => {
@@ -72,7 +112,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     // Only notify if we have valid values and aren't still calculating
     if (!isCalculating && cashValue !== undefined && tradeValue !== undefined) {
       valueChangeTimeoutRef.current = setTimeout(() => {
-        console.log(`Notifying parent of value change for ${item.card.name}:`, {
+        console.log(`TradeInItem [${instanceId}]: Notifying parent of value change for ${item.card.name}:`, {
           cashValue,
           tradeValue
         });
@@ -86,7 +126,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
         clearTimeout(valueChangeTimeoutRef.current);
       }
     };
-  }, [cashValue, tradeValue, isCalculating, onValueChange, item.card.name]);
+  }, [cashValue, tradeValue, isCalculating, onValueChange, item.card.name, instanceId]);
 
   // Handle card attribute changes
   const {
@@ -100,13 +140,26 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     onUpdate: handleUpdate
   });
 
+  // Log when payment type changes for debugging
+  useEffect(() => {
+    console.log(`TradeInItem [${instanceId}]: Payment type for ${item.card.name} is ${item.paymentType || 'not set'}, displaying value: ${displayValue}`);
+  }, [item.paymentType, displayValue, item.card.name, instanceId]);
+
   // Handle manual value adjustments if needed
   const handleValueAdjustment = useCallback((value: number) => {
-    console.log(`Manual value adjustment for ${item.card.name}: ${value}`);
+    console.log(`TradeInItem [${instanceId}]: Manual value adjustment for ${item.card.name}: ${value}`);
     if (onValueAdjustment) {
       onValueAdjustment(value);
     }
-  }, [item.card.name, onValueAdjustment]);
+  }, [item.card.name, onValueAdjustment, instanceId]);
+
+  // Force price refresh if we have a card without a price but with a productId
+  useEffect(() => {
+    if (item.price <= 0 && item.card.productId && !item.isLoadingPrice && initialRender.current) {
+      console.log(`TradeInItem [${instanceId}]: Card ${item.card.name} has productId but no price, triggering refresh`);
+      refreshPrice();
+    }
+  }, [item.price, item.card.productId, item.isLoadingPrice, refreshPrice, item.card.name, instanceId]);
 
   return (
     <div className="border border-gray-200 rounded-xl p-5 hover:border-blue-100 transition-colors duration-200 bg-white shadow-sm">
@@ -155,6 +208,23 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
       {item.price <= 0 && (
         <div className="mt-2 p-2 bg-yellow-50 rounded text-xs text-yellow-700">
           Card price must be greater than 0 to calculate values.
+        </div>
+      )}
+      
+      {/* Debug information panel - uncomment if needed */}
+      {process.env.NODE_ENV !== 'production' && (
+        <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-500 border border-gray-200">
+          <details>
+            <summary className="cursor-pointer font-medium">Debug Info</summary>
+            <div className="mt-1 space-y-1">
+              <div><span className="font-medium">Price:</span> ${item.price?.toFixed(2)}</div>
+              <div><span className="font-medium">Cash Value:</span> ${cashValue?.toFixed(2)}</div>
+              <div><span className="font-medium">Trade Value:</span> ${tradeValue?.toFixed(2)}</div>
+              <div><span className="font-medium">Game:</span> {item.card.game || 'Unknown'}</div>
+              <div><span className="font-medium">Payment Type:</span> {item.paymentType || 'Not selected'}</div>
+              {error && <div className="text-red-500"><span className="font-medium">Error:</span> {error}</div>}
+            </div>
+          </details>
         </div>
       )}
     </div>

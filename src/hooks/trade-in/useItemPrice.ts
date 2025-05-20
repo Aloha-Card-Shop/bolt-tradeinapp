@@ -11,12 +11,16 @@ interface UseItemPriceProps {
 }
 
 export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
+  // Generate a unique ID for this hook instance to track in logs
+  const instanceId = useRef(Math.random().toString(36).substring(2, 9)).current;
+  
   // Add detailed logging for debugging
-  console.log(`useItemPrice: Initializing for card ${item.card.name}`, {
+  console.log(`useItemPrice [${instanceId}]: Initializing for card ${item.card.name}`, {
     game: item.card.game,
     price: item.price,
     paymentType: item.paymentType,
-    cardData: item.card
+    cardData: item.card,
+    instanceId
   });
   
   // Validate game type and price before calculating
@@ -24,7 +28,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   const validPrice = item.price > 0;
   
   if (!validGame || !validPrice) {
-    console.warn(`useItemPrice: Invalid input data for ${item.card.name}`, {
+    console.warn(`useItemPrice [${instanceId}]: Invalid input data for ${item.card.name}`, {
       validGame,
       validPrice,
       game: item.card.game,
@@ -32,13 +36,16 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     });
   }
   
-  // Get standard calculated values from the trade value hook
+  // Get standard calculated values from the trade value hook with explicit type
   const { 
     cashValue: calculatedCashValue, 
     tradeValue: calculatedTradeValue, 
     isLoading,
     error: calculationError
-  } = useTradeValue(item.card.game, item.price);
+  } = useTradeValue(
+    validGame ? item.card.game : 'pokemon', // Default to pokemon if no game type
+    validPrice ? item.price : 0 // Only pass valid prices
+  );
   
   // Track the values with refs to detect changes
   const prevCalculatedCashValue = useRef<number>(0);
@@ -48,7 +55,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   
   // Add additional logging for the useTradeValue hook results
   useEffect(() => {
-    console.log(`useItemPrice: Trade value hook returned values for ${item.card.name}:`, {
+    console.log(`useItemPrice [${instanceId}]: Trade value hook returned values for ${item.card.name}:`, {
       calculatedCashValue,
       calculatedTradeValue,
       isLoading,
@@ -62,7 +69,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     if (calculationError && !isLoading && !calculationError.includes('price range found')) {
       toast.error(`Trade value calculation issue: ${calculationError}`);
     }
-  }, [calculatedCashValue, calculatedTradeValue, isLoading, calculationError, item.card.name, item.price, item.card.game]);
+  }, [calculatedCashValue, calculatedTradeValue, isLoading, calculationError, item.card.name, item.price, item.card.game, instanceId]);
   
   // Use the manually set values if they exist, otherwise use the calculated values
   const cashValue = item.cashValue !== undefined ? item.cashValue : calculatedCashValue;
@@ -72,22 +79,22 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   
   // Calculate the display value based on payment type
   useEffect(() => {
-    console.log(`useItemPrice: Effect triggered with cashValue=${cashValue}, tradeValue=${tradeValue}, isLoading=${isLoading}, paymentType=${item.paymentType}`);
+    console.log(`useItemPrice [${instanceId}]: Effect triggered with cashValue=${cashValue}, tradeValue=${tradeValue}, isLoading=${isLoading}, paymentType=${item.paymentType}`);
     
     // Only set display value if a payment type is selected
     if (item.paymentType) {
       const value = item.paymentType === 'cash' ? cashValue : tradeValue;
       setDisplayValue(value * item.quantity);
-      console.log(`useItemPrice: Display value set to ${value * item.quantity} for ${item.card.name}`);
+      console.log(`useItemPrice [${instanceId}]: Display value set to ${value * item.quantity} for ${item.card.name}`);
     } else {
       // Reset display value when no payment type is selected
       setDisplayValue(0);
-      console.log(`useItemPrice: No payment type selected for ${item.card.name}, display value reset to 0`);
+      console.log(`useItemPrice [${instanceId}]: No payment type selected for ${item.card.name}, display value reset to 0`);
     }
     
     // Only update the calculated values if they've changed and no manual override exists
     if (!isLoading && item.price > 0) {
-      console.log(`useItemPrice: Checking if values changed:`, {
+      console.log(`useItemPrice [${instanceId}]: Checking if values changed:`, {
         card: item.card.name,
         calculatedCash: calculatedCashValue,
         prevCalcCash: prevCalculatedCashValue.current,
@@ -95,7 +102,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         prevCalcTrade: prevCalculatedTradeValue.current,
         isInitial: initialCalculation.current,
         hasManualCashValue: item.cashValue !== undefined,
-        hasManualTradeValue: item.tradeValue !== undefined
+        hasManualTradeValue: item.tradeValue !== undefined,
+        price: item.price
       });
       
       // Values have actually changed and are different from what we had before
@@ -125,7 +133,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         if (item.price > 0 && !item.paymentType && !marketPriceSet.current) {
           updates.paymentType = 'cash';
           marketPriceSet.current = true;
-          console.log(`useItemPrice: Auto-setting payment type to cash for ${item.card.name}`);
+          console.log(`useItemPrice [${instanceId}]: Auto-setting payment type to cash for ${item.card.name}`);
         }
         
         // Pass along any error information
@@ -135,7 +143,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         
         // Only update if we have changes to make
         if (Object.keys(updates).length > 0) {
-          console.log(`Updating ${item.card.name} with calculated values:`, {
+          console.log(`useItemPrice [${instanceId}]: Updating ${item.card.name} with calculated values:`, {
             calculatedCash: calculatedCashValue,
             calculatedTrade: calculatedTradeValue,
             updates
@@ -157,14 +165,15 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     cashValue,
     tradeValue,
     item.card.name,
-    calculationError
+    calculationError,
+    instanceId
   ]);
 
   const refreshPrice = useCallback(async () => {
     const { card, condition, isFirstEdition, isHolo, isReverseHolo } = item;
     
     if (!card.productId || !condition) {
-      console.log(`Can't refresh price for ${card.name}: missing productId or condition`, {
+      console.log(`useItemPrice [${instanceId}]: Can't refresh price for ${card.name}: missing productId or condition`, {
         productId: card.productId,
         condition
       });
@@ -174,7 +183,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     onUpdate({ isLoadingPrice: true, error: undefined, isPriceUnavailable: false });
     
     try {
-      console.log(`refreshPrice: Fetching price for ${card.name}, game=${card.game}, condition=${condition}`);
+      console.log(`useItemPrice [${instanceId}]: refreshPrice: Fetching price for ${card.name}, game=${card.game}, condition=${condition}`);
       const data = await fetchCardPrices(
         card.productId,
         condition,
@@ -184,7 +193,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         isReverseHolo
       );
       
-      console.log(`Price fetch result for ${card.name}:`, data);
+      console.log(`useItemPrice [${instanceId}]: Price fetch result for ${card.name}:`, data);
       
       if (data.unavailable) {
         onUpdate({ 
@@ -195,8 +204,9 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         toast.error("No price available for this card configuration");
       } else {
         const newPrice = parseFloat(data.price);
-        console.log(`Setting new price for ${card.name}: $${newPrice}`);
+        console.log(`useItemPrice [${instanceId}]: Setting new price for ${card.name}: $${newPrice}`);
         
+        // Force value recalculation by clearing any manual values
         const updates: Partial<TradeInItem> = {
           price: newPrice, 
           isLoadingPrice: false,
@@ -209,25 +219,29 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         if (!item.paymentType) {
           updates.paymentType = 'cash';
           marketPriceSet.current = true;
-          console.log(`Auto-setting payment type to cash for ${card.name} after price fetch`);
+          console.log(`useItemPrice [${instanceId}]: Auto-setting payment type to cash for ${card.name} after price fetch`);
         }
         
         onUpdate(updates);
+        
+        // Force a reset of the initial calculation flag to ensure we recalculate values
+        initialCalculation.current = true;
       }
     } catch (e) {
-      console.error(`Error fetching price for ${card.name}:`, e);
+      console.error(`useItemPrice [${instanceId}]: Error fetching price for ${card.name}:`, e);
       onUpdate({ 
         isLoadingPrice: false, 
         error: (e as Error).message,
         isPriceUnavailable: false
       });
     }
-  }, [item, onUpdate]);
+  }, [item, onUpdate, instanceId]);
 
   const handlePriceChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newPrice = parseFloat(e.target.value) || 0;
-    console.log(`Manual price change for ${item.card.name}: $${newPrice}`);
+    console.log(`useItemPrice [${instanceId}]: Manual price change for ${item.card.name}: $${newPrice}`);
     
+    // Force value recalculation by clearing manual values
     const updates: Partial<TradeInItem> = {
       price: newPrice,
       // Reset manual values when market price changes
@@ -241,13 +255,17 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     if (!item.paymentType) {
       updates.paymentType = 'cash';
       marketPriceSet.current = true;
-      console.log(`Auto-setting payment type to cash for ${item.card.name} after manual price change`);
+      console.log(`useItemPrice [${instanceId}]: Auto-setting payment type to cash for ${item.card.name} after manual price change`);
     }
     
     onUpdate(updates);
-  }, [onUpdate, item.card.name, item.paymentType]);
+    
+    // Force a reset of the initial calculation flag to ensure we recalculate values
+    initialCalculation.current = true;
+  }, [onUpdate, item.card.name, item.paymentType, instanceId]);
 
-  return {
+  // Explicitly log the return values for debugging
+  const returnValues = {
     displayValue,
     isCalculating: isLoading,
     refreshPrice,
@@ -256,4 +274,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     tradeValue,
     error: calculationError
   };
+
+  console.log(`useItemPrice [${instanceId}]: Returning values for ${item.card.name}:`, returnValues);
+
+  return returnValues;
 };

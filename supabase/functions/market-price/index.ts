@@ -17,16 +17,27 @@ Deno.serve(async (req) => {
     // Extract price from the request if available
     const providedPrice = requestData.price;
     
-    // Log information about the incoming request
-    console.log('Market price function called with data:', requestData);
+    // Enhanced logging to track all request parameters
+    console.log('Market price function called with complete data:', JSON.stringify({
+      requestData,
+      providedPrice,
+      productId: requestData.productId,
+      game: requestData.game
+    }));
 
     // If a price is provided in the request, use it
     if (providedPrice && !isNaN(Number(providedPrice))) {
-      console.log(`Using provided price: ${providedPrice}`);
+      const normalizedPrice = Number(providedPrice);
+      console.log(`Using provided price: ${normalizedPrice} (raw value: ${providedPrice})`);
+      
+      // Return the processed price with detailed information
       return new Response(
         JSON.stringify({
-          price: Number(providedPrice),
-          source: 'request'
+          price: normalizedPrice,
+          raw_price: providedPrice,
+          normalized: true,
+          source: 'request',
+          timestamp: new Date().toISOString()
         }),
         {
           headers: {
@@ -37,15 +48,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // If no price is provided, use the product ID to fetch from TCG Player or other source
-    // This could be implemented in the future to directly fetch prices
-    
-    // For now, we'll just throw an error as we need either a price or a product ID
+    // If no price is provided, check for product ID
     if (!requestData.productId) {
+      console.error('No price or product ID provided in request');
       return new Response(
         JSON.stringify({
           error: 'No price or product ID provided',
-          price: 0
+          price: 0,
+          request_data: requestData
         }),
         {
           status: 400,
@@ -57,17 +67,19 @@ Deno.serve(async (req) => {
       );
     }
     
-    // In future, implement actual price fetching logic here
-    // For now, we'll no longer return a hardcoded value
-    // Instead, we'll return a message indicating real implementation is needed
+    // Log product ID for debugging
+    console.log(`Processing request for product ID: ${requestData.productId}, game: ${requestData.game || 'unknown'}`);
     
-    console.log(`No price calculation logic implemented yet for product ID: ${requestData.productId}`);
+    // In future, implement actual price fetching logic here
+    // For now, return detailed debug information
     return new Response(
       JSON.stringify({
         price: 0,
         error: 'Price calculation not implemented',
         needsImplementation: true,
-        productId: requestData.productId
+        productId: requestData.productId,
+        game: requestData.game || 'unknown',
+        timestamp: new Date().toISOString()
       }),
       {
         status: 501, // Not Implemented
@@ -83,7 +95,9 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: error.message || 'Internal server error',
-        price: 0
+        error_type: error.constructor.name,
+        price: 0,
+        timestamp: new Date().toISOString()
       }),
       {
         status: 500,

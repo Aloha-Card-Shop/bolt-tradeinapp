@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import TradeInItem from './trade-in/item-card';
 import { TradeInItem as TradeInItemType } from '../hooks/useTradeInList';
 
@@ -21,22 +21,29 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
   onConditionChange, 
   onValueChange 
 }) => {
+  // Generate unique instance ID for this wrapper
+  const instanceId = `wrapper-${index}-${item.card.id || 'no-id'}`;
+  
   // Log when rendering to track value changes
-  console.log('TradeInItemWrapper rendering for', item.card.name, {
+  console.log(`TradeInItemWrapper [${instanceId}]: Rendering for ${item.card.name}`, {
     paymentType: item.paymentType,
     cashValue: item.cashValue,
     tradeValue: item.tradeValue,
     price: item.price,
     condition: item.condition,
-    game: item.card.game // Add game logging
+    game: item.card.game,
+    productId: item.card.productId
   });
   
   // Handle manual value adjustment
-  const handleValueAdjustment = (value: number) => {
-    console.log('Manual value adjustment for', item.card.name, ':', value, 'with payment type:', item.paymentType);
+  const handleValueAdjustment = useCallback((value: number) => {
+    console.log(`TradeInItemWrapper [${instanceId}]: Manual value adjustment for ${item.card.name}:`, {
+      value, 
+      paymentType: item.paymentType
+    });
     
     if (!item.paymentType) {
-      console.warn('Payment type not selected, cannot adjust value');
+      console.warn(`TradeInItemWrapper [${instanceId}]: Payment type not selected, cannot adjust value`);
       return;
     }
     
@@ -49,10 +56,10 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
     
     // Notify parent about the value change
     onValueChange({
-      cashValue: updates.cashValue || item.cashValue || 0,
-      tradeValue: updates.tradeValue || item.tradeValue || 0
+      cashValue: updates.cashValue !== undefined ? updates.cashValue : item.cashValue || 0,
+      tradeValue: updates.tradeValue !== undefined ? updates.tradeValue : item.tradeValue || 0
     });
-  };
+  }, [item, index, onUpdate, onValueChange, instanceId]);
 
   return (
     <TradeInItem 
