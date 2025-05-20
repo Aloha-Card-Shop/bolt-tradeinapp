@@ -93,12 +93,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // Round to two decimal places (cents)
-    cashValue = Math.round(cashValue * 100) / 100;
-    tradeValue = Math.round(tradeValue * 100) / 100;
+    // Round to exactly two decimal places using toFixed and then convert back to number
+    const roundedCashValue = parseFloat(cashValue.toFixed(2));
+    const roundedTradeValue = parseFloat(tradeValue.toFixed(2));
 
-    // Return the calculated values
-    return res.status(200).json({ cashValue, tradeValue });
+    // Return the calculated values with exactly two decimal places
+    return res.status(200).json({ 
+      cashValue: roundedCashValue, 
+      tradeValue: roundedTradeValue 
+    });
     
   } catch (err: any) {
     console.error('Error in calculate-value API:', err);

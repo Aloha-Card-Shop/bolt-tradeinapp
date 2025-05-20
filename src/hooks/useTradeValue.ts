@@ -40,6 +40,7 @@ export function useTradeValue(
         return res.json();
       })
       .then(({ cashValue, tradeValue }: { cashValue: number; tradeValue: number }) => {
+        // Use the values directly from the API which are already rounded to 2 decimal places
         setCashValue(cashValue);
         setTradeValue(tradeValue);
       })

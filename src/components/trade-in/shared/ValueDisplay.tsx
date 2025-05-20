@@ -103,7 +103,7 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
               </div>
             ) : (
               <span className={error ? 'text-red-500' : value > 0 ? 'text-gray-900' : 'text-yellow-600'}>
-                ${formatCurrency(value)}
+                ${value.toFixed(2)}
               </span>
             )}
           </span>

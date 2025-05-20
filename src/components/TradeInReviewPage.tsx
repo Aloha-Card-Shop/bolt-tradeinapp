@@ -4,24 +4,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { TradeInItem } from '../hooks/useTradeInList';
 import { formatCurrency } from '../utils/formatters';
-import { CardNumberObject } from '../types/card';
 
 const TradeInReviewPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const items = location.state?.items || [];
   const [error, setError] = useState<string | null>(null);
-
-  // Helper function to safely get string from card number
-  const getCardNumberString = (cardNumber: string | CardNumberObject | undefined): string => {
-    if (!cardNumber) return '';
-    
-    if (typeof cardNumber === 'object') {
-      return cardNumber.displayName || cardNumber.value || '';
-    }
-    
-    return cardNumber;
-  };
 
   const handleBack = () => {
     navigate('/app', { state: { items } });
@@ -65,15 +53,9 @@ const TradeInReviewPage = () => {
               >
                 <h3 className="font-medium text-gray-900">{item.card.name}</h3>
                 <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                  {item.card.number && (
-                    <p>Number: #{getCardNumberString(item.card.number)}</p>
-                  )}
-                  {item.card.set && (
-                    <p>Set: {item.card.set}</p>
-                  )}
                   <p>Quantity: {item.quantity}</p>
                   <p>Condition: {item.condition || 'Not specified'}</p>
-                  <p>Price: ${formatCurrency(item.price)}</p>
+                  <p>Price: ${item.price.toFixed(2)}</p>
                   <p>Type: {item.paymentType}</p>
                 </div>
               </div>

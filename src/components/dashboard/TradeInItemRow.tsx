@@ -43,10 +43,10 @@ const TradeInItemRow: React.FC<TradeInItemRowProps> = ({ item }) => {
         <p className="text-sm text-gray-700">{item.quantity}</p>
       </td>
       <td className="px-4 py-2 border-b">
-        <p className="text-sm text-gray-700">${formatCurrency(item.price)}</p>
+        <p className="text-sm text-gray-700">${item.price.toFixed(2)}</p>
       </td>
       <td className="px-4 py-2 border-b">
-        <p className="text-sm text-gray-700">${formatCurrency(value)}</p>
+        <p className="text-sm text-gray-700">${value.toFixed(2)}</p>
       </td>
       <td className="px-4 py-2 border-b">
         <span className={`px-2 py-1 text-xs rounded-full ${
@@ -56,7 +56,7 @@ const TradeInItemRow: React.FC<TradeInItemRowProps> = ({ item }) => {
         </span>
       </td>
       <td className="px-4 py-2 border-b">
-        <p className="text-sm text-gray-700">${formatCurrency(totalValue)}</p>
+        <p className="text-sm text-gray-700">${totalValue.toFixed(2)}</p>
       </td>
       <td className="px-4 py-2 border-b">
         {isShopifySynced ? (
