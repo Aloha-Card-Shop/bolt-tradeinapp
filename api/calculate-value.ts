@@ -312,7 +312,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Return fallback values with detailed error information
     return res.status(200).json(
-      createErrorResponse(baseValue, err.message || 'Unknown calculation error', 'CALCULATION_ERROR')
+      createErrorResponse(baseValue, err.message || 'Unknown calculation error', 'UNKNOWN_ERROR')
     );
   }
 }
