@@ -1,44 +1,36 @@
 
-// Fix test/setup.ts implementation
-import '@testing-library/jest-dom/vitest';
-import { vi } from 'vitest';
+import { beforeAll, afterAll, afterEach, vi } from 'vitest';
 
-// Mock BroadcastChannel
-class MockBroadcastChannel {
-  name: string;
-  onmessage: ((this: BroadcastChannel, ev: MessageEvent) => any) | null = null;
-  onmessageerror: ((this: BroadcastChannel, ev: MessageEvent) => any) | null = null;
-
-  constructor(name: string) {
-    this.name = name;
-  }
-  
-  postMessage(): void {}
-  addEventListener(): void {}
-  removeEventListener(): void {}
-  close(): void {}
-  dispatchEvent(): boolean { return true; }
-}
-
-// Assign the mock class to global
-(global as any).BroadcastChannel = MockBroadcastChannel;
-
-// Mock Supabase auth
-vi.mock('@supabase/supabase-js', () => ({
-  createClient: () => ({
-    auth: {
-      getSession: () => ({
-        data: {
-          session: {
-            user: {
-              id: 'test-user-id',
-              email: 'test@example.com',
-              user_metadata: { role: 'admin' }
-            }
-          }
-        },
-        error: null
-      })
+// Mock console.error to avoid cluttering test output with expected errors
+const originalConsoleError = console.error;
+beforeAll(() => {
+  console.error = (...args) => {
+    // Only log console errors if they're not part of expected test failures
+    if (
+      args[0]?.includes('Warning:') || 
+      args[0]?.includes('Error:') ||
+      args[0]?.includes('Supabase query error:')
+    ) {
+      return;
     }
-  })
-}));
+    originalConsoleError(...args);
+  };
+});
+
+afterAll(() => {
+  console.error = originalConsoleError;
+});
+
+// Reset all mocks after each test
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+// Mock fetch for API tests
+vi.stubGlobal('fetch', vi.fn());
+
+// Mock environment variables that might be needed for tests
+process.env.SUPABASE_URL = 'https://qgsabaicokoynabxgdco.supabase.co';
+if (!process.env.SUPABASE_ANON_KEY) {
+  process.env.SUPABASE_ANON_KEY = 'test-anon-key';
+}
