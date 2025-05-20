@@ -1,6 +1,7 @@
 
 import { useCallback } from 'react';
 import { TradeInItem } from '../useTradeInList';
+import { toast } from 'react-hot-toast';
 
 interface UseCardAttributesProps {
   item: TradeInItem;
@@ -38,17 +39,17 @@ export const useCardAttributes = ({ item, onUpdate }: UseCardAttributesProps) =>
     if (item.paymentType !== type) {
       console.log('Updating payment type from', item.paymentType, 'to', type);
       
-      // Reset cashValue and tradeValue when changing payment type
-      onUpdate({ 
-        paymentType: type,
-        // Only reset the values if they were manually set before
-        ...(item.cashValue !== undefined && type === 'trade' ? { cashValue: undefined } : {}),
-        ...(item.tradeValue !== undefined && type === 'cash' ? { tradeValue: undefined } : {})
-      });
+      // Don't reset values when changing payment type - just update the type
+      onUpdate({ paymentType: type });
+      
+      // Log to help with debugging
+      if (type) {
+        toast.success(`Payment type set to ${type}`);
+      }
     } else {
       console.log('Payment type unchanged:', type);
     }
-  }, [item.paymentType, item.cashValue, item.tradeValue, onUpdate]);
+  }, [item.paymentType, onUpdate]);
 
   return {
     toggleFirstEdition,

@@ -24,6 +24,24 @@ const normalizeGameType = (gameType?: string): GameType | undefined => {
   // Check if it matches one of our valid game types
   const validGameTypes: GameType[] = ['pokemon', 'japanese-pokemon', 'magic'];
   
+  // Handle specific common cases
+  if (normalizedGame === 'pokémon' || normalizedGame === 'pokemon') {
+    console.log('useTradeValue: Normalized "pokémon"/"pokemon" to "pokemon"');
+    return 'pokemon';
+  } 
+  
+  if (normalizedGame === 'japanese-pokemon' || normalizedGame === 'japanese pokemon' || 
+      normalizedGame === 'pokemon (japanese)' || normalizedGame === 'pokemon japanese') {
+    console.log('useTradeValue: Normalized to "japanese-pokemon"');
+    return 'japanese-pokemon';
+  }
+  
+  if (normalizedGame === 'magic' || normalizedGame === 'magic: the gathering' || 
+      normalizedGame === 'mtg' || normalizedGame === 'magic the gathering') {
+    console.log('useTradeValue: Normalized to "magic"');
+    return 'magic';
+  }
+  
   // Debug log to help identify any issues with game type
   console.log(`useTradeValue: Normalizing game type "${gameType}" to "${normalizedGame}"`);
   
@@ -32,7 +50,7 @@ const normalizeGameType = (gameType?: string): GameType | undefined => {
   }
   
   console.warn(`Invalid game type: "${gameType}". Valid types are: ${validGameTypes.join(', ')}`);
-  return undefined;
+  return 'pokemon'; // Default to pokemon as fallback to ensure we have a value
 };
 
 export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHookReturn {
@@ -57,11 +75,9 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
     
     // Validate input parameters
     if (!normalizedGameType) {
-      console.error(`useTradeValue: Invalid game type: "${game}"`);
-      setError(`Invalid game type: "${game}"`);
-      setCashValue(0);
-      setTradeValue(0);
-      return;
+      console.error(`useTradeValue: Invalid game type: "${game}", using default "pokemon"`);
+      setError(`Invalid game type: "${game}", using default "pokemon"`);
+      // Continue with default pokemon
     }
     
     if (!baseValue || baseValue <= 0) {
@@ -78,14 +94,15 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
         
         // Convert baseValue to a number if it's not already to ensure proper comparison
         const numericBaseValue = Number(baseValue);
+        const gameTypeForQuery = normalizedGameType || 'pokemon'; // Default to pokemon if undefined
         
-        console.log(`Querying trade value settings for game=${normalizedGameType}, value=${numericBaseValue}`);
+        console.log(`Querying trade value settings for game=${gameTypeForQuery}, value=${numericBaseValue}`);
         
         // First try to find matching settings using fixed value options
         const { data: fixedSettings, error: fixedQueryError } = await supabase
           .from('trade_value_settings')
           .select('*')
-          .eq('game', normalizedGameType)
+          .eq('game', gameTypeForQuery)
           .not('fixed_cash_value', 'is', null)
           .not('fixed_trade_value', 'is', null);
             
@@ -99,8 +116,13 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
         // If we have fixed values, use those
         if (fixedSettings && fixedSettings.length > 0) {
           console.log('Using fixed trade values:', fixedSettings[0]);
-          setCashValue(fixedSettings[0].fixed_cash_value);
-          setTradeValue(fixedSettings[0].fixed_trade_value);
+          
+          // Use null-coalescing to handle null values safely
+          const fixedCashValue = fixedSettings[0].fixed_cash_value ?? (numericBaseValue * 0.5);
+          const fixedTradeValue = fixedSettings[0].fixed_trade_value ?? (numericBaseValue * 0.65);
+          
+          setCashValue(fixedCashValue);
+          setTradeValue(fixedTradeValue);
           return;
         }
         
@@ -108,7 +130,7 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
         const { data: settings, error: queryError } = await supabase
           .from('trade_value_settings')
           .select('*')
-          .eq('game', normalizedGameType)
+          .eq('game', gameTypeForQuery)
           .lte('min_value', numericBaseValue)
           .gte('max_value', numericBaseValue);
           
@@ -120,13 +142,13 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
         console.log('Trade value settings query result:', settings);
         
         if (!settings || settings.length === 0) {
-          console.warn(`No trade value settings found for game=${normalizedGameType} and value=${numericBaseValue}`);
+          console.warn(`No trade value settings found for game=${gameTypeForQuery} and value=${numericBaseValue}`);
           
           // Try a more lenient query
           const { data: lenientSettings, error: lenientQueryError } = await supabase
             .from('trade_value_settings')
             .select('*')
-            .eq('game', normalizedGameType)
+            .eq('game', gameTypeForQuery)
             .order('min_value', { ascending: false });
             
           if (lenientQueryError) {
@@ -170,7 +192,7 @@ export function useTradeValue(game?: GameType, baseValue?: number): TradeValueHo
             
             setCashValue(defaultCashValue);
             setTradeValue(defaultTradeValue);
-            setError(`No price range found for ${normalizedGameType} cards valued at $${numericBaseValue.toFixed(2)}. Using default percentages.`);
+            setError(`No price range found for ${gameTypeForQuery} cards valued at $${numericBaseValue.toFixed(2)}. Using default percentages.`);
           }
         } else {
           const setting = settings[0];

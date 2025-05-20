@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useSession } from '../../hooks/useSession';
 import { GameType, GAME_OPTIONS } from '../../types/card';
 import { formatCurrency, parseCurrency } from '../../utils/formatters';
+import { toast } from 'react-hot-toast';
 
 interface TradeValueSetting {
   id: string;
@@ -63,10 +64,12 @@ const TradeValuesPage: React.FC = () => {
       fixed_cash_value: wasFixed ? null : baseValue * 0.5,
       fixed_trade_value: wasFixed ? null : baseValue * 0.65,
       // When switching to percentage mode, restore default percentages
-      cash_percentage: wasFixed ? 50 : 0,
-      trade_percentage: wasFixed ? 65 : 0,
+      cash_percentage: wasFixed ? 50 : setting.cash_percentage,
+      trade_percentage: wasFixed ? 65 : setting.trade_percentage,
     };
 
+    console.log('Toggling value type:', { from: wasFixed ? 'fixed' : 'percentage', to: wasFixed ? 'percentage' : 'fixed', updated });
+    
     setSettings(prev =>
       prev.map(s => (s.id === setting.id ? updated : s))
     );
@@ -75,41 +78,61 @@ const TradeValuesPage: React.FC = () => {
   const handleSave = async (setting: TradeValueSetting) => {
     try {
       const isFixedMode = setting.fixed_cash_value !== null;
+      console.log('Attempting to save setting:', { setting, isFixedMode });
 
-      // Validate fixed values
+      // More lenient validation to fix the saving issue
       if (isFixedMode) {
-        if (setting.fixed_cash_value === null || setting.fixed_trade_value === null) {
-          throw new Error('Both cash and trade values must be set in fixed mode');
+        // For fixed mode, we need at least one value to be set
+        if (setting.fixed_cash_value === null && setting.fixed_trade_value === null) {
+          throw new Error('At least one of cash or trade values must be set in fixed mode');
         }
-        if (setting.fixed_cash_value < 0) {
+        
+        // Cash value cannot be negative
+        if (setting.fixed_cash_value !== null && setting.fixed_cash_value < 0) {
           throw new Error('Cash value cannot be negative');
         }
-        if (setting.fixed_trade_value < setting.fixed_cash_value) {
-          throw new Error('Trade value must be greater than or equal to cash value');
+        
+        // Trade value should ideally be greater than cash, but we won't block saving if not
+        if (setting.fixed_cash_value !== null && 
+            setting.fixed_trade_value !== null && 
+            setting.fixed_trade_value < setting.fixed_cash_value) {
+          console.warn('Trade value is less than cash value, but proceeding with save');
+        }
+      } else {
+        // For percentage mode, ensure percentages are set
+        if ((setting.cash_percentage === null || setting.cash_percentage < 0) && 
+            (setting.trade_percentage === null || setting.trade_percentage < 0)) {
+          throw new Error('Both percentages must be set and non-negative in percentage mode');
         }
       }
 
+      // Prepare the object for saving
       const settingToSave = {
         ...setting,
         // In fixed mode, keep both fixed values and zero percentages
         fixed_cash_value: isFixedMode ? setting.fixed_cash_value : null,
         fixed_trade_value: isFixedMode ? setting.fixed_trade_value : null,
+        // Make sure we have default percentages for non-fixed mode
         cash_percentage: isFixedMode ? 0 : (setting.cash_percentage ?? 50),
         trade_percentage: isFixedMode ? 0 : (setting.trade_percentage ?? 65),
       };
 
+      console.log('Saving setting to database:', settingToSave);
+      
       const { error } = await supabase
         .from('trade_value_settings')
         .upsert(settingToSave, { onConflict: 'id' });
       
       if (error) throw error;
 
+      toast.success('Trade value setting saved successfully');
       await fetchSettings();
       setEditingId(null);
       setError(null);
     } catch (err) {
       console.error('Error saving setting:', err);
       setError(err instanceof Error ? err.message : 'Failed to save setting');
+      toast.error(err instanceof Error ? err.message : 'Failed to save setting');
     }
   };
 

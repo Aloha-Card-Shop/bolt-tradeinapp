@@ -44,6 +44,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   const prevCalculatedCashValue = useRef<number>(0);
   const prevCalculatedTradeValue = useRef<number>(0);
   const initialCalculation = useRef<boolean>(true);
+  const marketPriceSet = useRef<boolean>(false);
   
   // Add additional logging for the useTradeValue hook results
   useEffect(() => {
@@ -118,6 +119,14 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         if (item.tradeValue === undefined) {
           updates.tradeValue = calculatedTradeValue;
         }
+
+        // If price is valid and we just got market price, set payment type to cash
+        // Only do this once when we first get price and values, and if user hasn't selected payment type
+        if (item.price > 0 && !item.paymentType && !marketPriceSet.current) {
+          updates.paymentType = 'cash';
+          marketPriceSet.current = true;
+          console.log(`useItemPrice: Auto-setting payment type to cash for ${item.card.name}`);
+        }
         
         // Pass along any error information
         if (calculationError) {
@@ -182,21 +191,28 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
           price: 0, 
           isLoadingPrice: false,
           isPriceUnavailable: true,
-          cashValue: undefined, // Reset any manual values when price changes
-          tradeValue: undefined
         });
         toast.error("No price available for this card configuration");
       } else {
         const newPrice = parseFloat(data.price);
         console.log(`Setting new price for ${card.name}: $${newPrice}`);
         
-        onUpdate({ 
+        const updates: Partial<TradeInItem> = {
           price: newPrice, 
           isLoadingPrice: false,
           isPriceUnavailable: false,
           cashValue: undefined, // Reset any manual values when price changes
           tradeValue: undefined
-        });
+        };
+        
+        // Set default payment type to cash when market price is found and user hasn't selected one
+        if (!item.paymentType) {
+          updates.paymentType = 'cash';
+          marketPriceSet.current = true;
+          console.log(`Auto-setting payment type to cash for ${card.name} after price fetch`);
+        }
+        
+        onUpdate(updates);
       }
     } catch (e) {
       console.error(`Error fetching price for ${card.name}:`, e);
@@ -212,15 +228,24 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     const newPrice = parseFloat(e.target.value) || 0;
     console.log(`Manual price change for ${item.card.name}: $${newPrice}`);
     
-    onUpdate({ 
+    const updates: Partial<TradeInItem> = {
       price: newPrice,
       // Reset manual values when market price changes
       cashValue: undefined,
       tradeValue: undefined,
       // Also reset any error state when manually changing the price
       error: undefined
-    });
-  }, [onUpdate, item.card.name]);
+    };
+    
+    // Set default payment type to cash when market price is set manually and user hasn't selected one
+    if (!item.paymentType) {
+      updates.paymentType = 'cash';
+      marketPriceSet.current = true;
+      console.log(`Auto-setting payment type to cash for ${item.card.name} after manual price change`);
+    }
+    
+    onUpdate(updates);
+  }, [onUpdate, item.card.name, item.paymentType]);
 
   return {
     displayValue,
