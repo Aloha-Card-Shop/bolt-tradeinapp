@@ -128,9 +128,12 @@ async function handleScrapeRequest(requestData: ScrapeRequest): Promise<Response
         throw new Error('Invalid price format');
       }
 
+      // Format price to always have 2 decimal places
+      const formattedPrice = parseFloat(price).toFixed(2);
+
       // Update cache
       priceCache.set(cacheKey, {
-        price,
+        price: formattedPrice,
         timestamp: Date.now()
       });
 
@@ -143,7 +146,7 @@ async function handleScrapeRequest(requestData: ScrapeRequest): Promise<Response
 
       return new Response(
         JSON.stringify({
-          price,
+          price: formattedPrice,
           url,
           timestamp: new Date().toISOString()
         }),

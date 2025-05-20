@@ -161,13 +161,16 @@ export const fetchCardPrices = async (
       return { price: "0.00", unavailable: true };
     }
 
-    // Cache the cleaned price
+    // Ensure price is formatted to 2 decimal places for consistency
+    const formattedPrice = parseFloat(priceValue.toFixed(2));
+
+    // Cache the formatted price
     priceCache.set(url, {
-      price: priceValue,
+      price: formattedPrice,
       timestamp: Date.now()
     });
 
-    return { price: priceValue.toFixed(2) };
+    return { price: formattedPrice.toFixed(2) };
   } catch (error) {
     console.error('Error fetching price:', error);
     return { price: "0.00", unavailable: true };

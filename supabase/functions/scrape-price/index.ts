@@ -255,14 +255,18 @@ async function processScrapeRequest(url: string, productId: string): Promise<Res
       throw new Error(`Invalid price format: ${price}`);
     }
 
+    // Format price to always have 2 decimal places
+    const formattedPrice = parseFloat(cleanPrice).toFixed(2);
+
     console.log('[Scraper] Successfully scraped price:', {
       raw: price,
-      cleaned: cleanPrice
+      cleaned: cleanPrice,
+      formatted: formattedPrice
     });
 
-    // Store in cache
+    // Store formatted price in cache
     priceCache.set(url, {
-      price: `$${cleanPrice}`,
+      price: `$${formattedPrice}`,
       timestamp: Date.now()
     });
 
@@ -275,7 +279,7 @@ async function processScrapeRequest(url: string, productId: string): Promise<Res
     }
 
     return new Response(JSON.stringify({ 
-      price: `$${cleanPrice}`,
+      price: `$${formattedPrice}`,
       productId 
     }), {
       status: 200,
