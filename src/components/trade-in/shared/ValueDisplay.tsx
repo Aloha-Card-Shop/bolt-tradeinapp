@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Loader2, Edit, Check, X, AlertCircle } from 'lucide-react';
+import { formatCurrency } from '../../../utils/formatters';
 
 interface ValueDisplayProps {
   label: string;
@@ -102,7 +103,7 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
               </div>
             ) : (
               <span className={error ? 'text-red-500' : value > 0 ? 'text-gray-900' : 'text-yellow-600'}>
-                ${value.toFixed(2)}
+                ${formatCurrency(value)}
               </span>
             )}
           </span>

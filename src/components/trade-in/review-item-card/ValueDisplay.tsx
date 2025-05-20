@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { DollarSign, Edit, Check } from 'lucide-react';
+import { formatCurrency } from '../../../utils/formatters';
 
 interface ValueDisplayProps {
   value?: number;
@@ -83,7 +84,7 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
         ) : (
           <input
             type="text"
-            value={displayValue > 0 ? displayValue.toFixed(2) : '0.00'}
+            value={displayValue > 0 ? formatCurrency(displayValue) : '0.00'}
             readOnly
             className={`w-full pl-8 pr-3 py-2 ${
               displayValue > 0 ? 'bg-gray-50' : 'bg-yellow-50'

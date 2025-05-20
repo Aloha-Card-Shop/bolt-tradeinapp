@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { TradeInItem } from '../../types/tradeIn';
 import { Tag, DollarSign, ExternalLink, Save, Edit, X } from 'lucide-react';
@@ -6,6 +5,7 @@ import ConditionSelect from '../trade-in/shared/ConditionSelect';
 import QuantityInput from '../trade-in/shared/QuantityInput';
 import PriceInput from '../trade-in/shared/PriceInput';
 import PaymentTypeSelector from '../trade-in/shared/PaymentTypeSelector';
+import { formatCurrency } from '../../utils/formatters';
 
 interface EditableTradeInItemRowProps {
   item: TradeInItem;
@@ -215,7 +215,7 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
         </td>
         <td className="px-4 py-2 text-sm font-medium">
           <div className="flex items-center justify-between">
-            <span className="text-gray-900">${getTotalValue().toFixed(2)}</span>
+            <span className="text-gray-900">${formatCurrency(getTotalValue())}</span>
             <div className="flex space-x-1">
               <button
                 onClick={handleSaveChanges}
@@ -290,13 +290,13 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
       <td className="px-4 py-2 text-sm text-gray-700">{item.quantity}</td>
       <td className="px-4 py-2 text-sm">
         <div className="flex flex-col">
-          <span className="text-gray-700">${item.price.toFixed(2)}</span>
+          <span className="text-gray-700">${formatCurrency(item.price)}</span>
           <span className="text-xs text-gray-500">Market</span>
         </div>
       </td>
       <td className="px-4 py-2 text-sm">
         <div className="flex flex-col">
-          <span className="text-gray-700">${(itemValue || 0).toFixed(2)}</span>
+          <span className="text-gray-700">${formatCurrency(itemValue || 0)}</span>
           <span className="text-xs text-gray-500">Value</span>
         </div>
       </td>
@@ -315,7 +315,7 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
       </td>
       <td className="px-4 py-2 text-sm">
         <div className="flex items-center justify-between">
-          <span className="font-medium text-gray-900">${((itemValue || 0) * item.quantity).toFixed(2)}</span>
+          <span className="font-medium text-gray-900">${formatCurrency((itemValue || 0) * item.quantity)}</span>
           <button
             onClick={() => setIsEditing(true)}
             className="p-1 rounded text-blue-600 hover:bg-blue-100"
