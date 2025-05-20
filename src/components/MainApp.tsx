@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { DatabaseIcon, Sparkles } from 'lucide-react';
-import { Toaster } from 'react-hot-toast'; // Import Toaster for notifications
+import { Toaster } from 'react-hot-toast';
 import CardSearch from './CardSearch';
 import CardResults from './CardResults';
 import SavedCards from './SavedCards';
@@ -45,9 +46,7 @@ function MainApp() {
   };
 
   const handleAddToList = (card: CardDetails | SavedCard, price: number) => {
-    console.log('Adding card to trade-in list with details:', card);
-    
-    // Enhanced productId validation with better logging
+    // Enhanced productId validation
     if (!card.productId) {
       console.error(`Cannot add ${card.name} - Card has no productId`, card);
       toast.error(`Cannot add ${card.name || 'card'} - Missing product ID`);
@@ -61,9 +60,6 @@ function MainApp() {
       toast.error(`Cannot add ${card.name || 'card'} - Invalid product ID`);
       return;
     }
-    
-    // Log valid product ID for debugging
-    console.log(`Valid product ID found: ${productId} for card: ${card.name}`, card);
     
     // Create a new card object with the validated productId
     const cardToAdd = {

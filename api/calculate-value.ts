@@ -142,7 +142,7 @@ function createErrorResponse(
   };
 }
 
-// For a Vite app without Next.js, we'll convert to a standard API handler
+// Standard API handler
 export default async function handler(req: Request): Promise<Response> {
   console.log(`[REQUEST] POST /api/calculate-value`);
   
@@ -268,7 +268,6 @@ export default async function handler(req: Request): Promise<Response> {
       const roundedCashValue = parseFloat(cashValue.toFixed(2));
       const roundedTradeValue = parseFloat(tradeValue.toFixed(2));
 
-      // Log the calculation result
       console.log(`[INFO] Calculation result for ${gameKey}, $${numericBase}: Cash=$${roundedCashValue}, Trade=$${roundedTradeValue}, Method=${calculationMethod}, Fallback=${usedFallback}`);
 
       // Return the calculated values along with fallback information

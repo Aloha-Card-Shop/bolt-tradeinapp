@@ -9,7 +9,7 @@ import { fetchCardPrices } from '../utils/scraper';
 import TradeInHeader from './TradeInHeader';
 import TradeInEmptyState from './TradeInEmptyState';
 import { useTradeInSubmission } from '../hooks/useTradeInSubmission';
-import { toast } from 'react-hot-toast'; // Import toast for notifications
+import { toast } from 'react-hot-toast';
 
 interface TradeInListProps {
   items: TradeInItemType[];

@@ -8,6 +8,7 @@ if (!global.process) {
     env: {
       SUPABASE_URL: 'https://qgsabaicokoynabxgdco.supabase.co',
       SUPABASE_ANON_KEY: 'test-anon-key',
+      SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key',
       NODE_ENV: 'test'
     }
   } as any;
