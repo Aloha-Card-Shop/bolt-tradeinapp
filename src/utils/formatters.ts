@@ -1,65 +1,49 @@
 
-// Format number as currency
-export const formatCurrency = (value: number | string): string => {
-  if (value === null || value === undefined) {
+/**
+ * Format a number as currency
+ * @param value The number to format
+ * @returns A formatted string with 2 decimal places
+ */
+export const formatCurrency = (value: number): string => {
+  // Safety check for non-number values
+  if (typeof value !== 'number' || isNaN(value)) {
     return '0.00';
   }
-  
-  // Handle empty strings
-  if (typeof value === 'string' && value.trim() === '') {
-    return '0.00';
-  }
-  
-  // Convert string to number if needed
-  let numValue: number;
-  if (typeof value === 'string') {
-    // Remove any currency symbols, commas, and other non-numeric characters except decimal points
-    const cleanedValue = value.trim().replace(/[^\d.-]/g, '');
-    
-    // Handle strings that only contain non-numeric characters
-    if (cleanedValue === '' || cleanedValue === '.') {
-      return '0.00';
-    }
-    
-    // Parse the cleaned value
-    numValue = parseFloat(cleanedValue);
-    
-    // Return 0.00 if parsing fails
-    if (isNaN(numValue)) {
-      console.warn('Could not parse currency value:', value);
-      return '0.00';
-    }
-  } else {
-    numValue = value;
-  }
-  
-  // Check for invalid numbers after conversion
-  if (isNaN(numValue) || !isFinite(numValue)) {
-    console.warn('Invalid currency value after conversion:', value);
-    return '0.00';
-  }
-  
-  // Format with 2 decimal places
-  return numValue.toFixed(2);
+
+  return value.toFixed(2);
 };
 
-// Parse currency string back to number
-export const parseCurrency = (value: string): number => {
-  if (!value || typeof value !== 'string') return 0;
+/**
+ * Format a date string to a readable format
+ * @param dateString ISO date string
+ * @returns Formatted date string
+ */
+export const formatDate = (dateString?: string | null): string => {
+  if (!dateString) return 'N/A';
   
   try {
-    // Remove all currency symbols, commas, and other non-numeric characters except decimal point
-    const cleaned = value.trim().replace(/[^\d.-]/g, '');
-    
-    // Handle empty string or just a decimal point
-    if (cleaned === '' || cleaned === '.') {
-      return 0;
-    }
-    
-    const result = parseFloat(cleaned);
-    return isNaN(result) || !isFinite(result) ? 0 : result;
-  } catch (error) {
-    console.warn('Error parsing currency:', error, value);
-    return 0;
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  } catch (e) {
+    console.error('Error formatting date:', e);
+    return 'Invalid date';
   }
+};
+
+/**
+ * Truncate a string to a maximum length
+ * @param str String to truncate
+ * @param maxLength Maximum length before truncating
+ * @returns Truncated string with ellipsis if needed
+ */
+export const truncateString = (str: string, maxLength: number): string => {
+  if (!str) return '';
+  if (str.length <= maxLength) return str;
+  return str.slice(0, maxLength) + '...';
 };

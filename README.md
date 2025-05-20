@@ -45,3 +45,23 @@ If the API cannot determine correct values (due to database issues, missing sett
 - Backend: Supabase + Edge Functions
 - Data storage: PostgreSQL (via Supabase)
 - API Layer: RESTful endpoints for value calculations
+
+## Project Structure
+
+```
+src/
+├── api/                   # API endpoints
+├── components/            # React components
+│   ├── admin/             # Admin interface components
+│   ├── shared/            # Shared reusable components
+│   └── trade-in/          # Trade-in feature components
+├── constants/             # Application constants
+├── hooks/                 # Custom React hooks
+├── pages/                 # Page components 
+│   ├── admin/             # Admin pages
+│   └── trade-in/          # Trade-in pages
+├── services/              # Service layer (API clients)
+├── types/                 # TypeScript type definitions
+└── utils/                 # Utility functions
+```
+

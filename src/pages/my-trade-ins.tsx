@@ -2,7 +2,7 @@
 import React from 'react';
 import { useSession } from '../hooks/useSession';
 import { useMyTradeIns } from '../hooks/useMyTradeIns';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import LoadingSpinner from '../components/shared/LoadingSpinner';
 import MyTradeInsContent from '../components/trade-in/MyTradeInsContent';
 
 const MyTradeIns: React.FC = () => {
