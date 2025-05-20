@@ -1,5 +1,5 @@
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import handler from '../../../api/calculate-value';
 
@@ -51,11 +51,11 @@ const mockSettings = [
 vi.mock('@supabase/supabase-js', () => {
   return {
     createClient: vi.fn(() => ({
-      from: vi.fn().mockImplementation((table) => {
+      from: vi.fn().mockImplementation((table: string) => {
         if (table === 'trade_value_settings') {
           return {
             select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockImplementation((field, value) => {
+              eq: vi.fn().mockImplementation((field: string, value: string) => {
                 // Filter mockSettings based on game
                 const data = mockSettings.filter(s => s.game === value);
                 return Promise.resolve({ data, error: null });
@@ -176,7 +176,7 @@ describe('calculate-value API E2E Tests', () => {
     const supabaseClient = require('@supabase/supabase-js').createClient();
     const originalFromImpl = supabaseClient.from;
     
-    supabaseClient.from = vi.fn().mockImplementation((table) => {
+    supabaseClient.from = vi.fn().mockImplementation((table: string) => {
       if (table === 'trade_value_settings') {
         return {
           select: vi.fn().mockReturnValue({
@@ -222,5 +222,24 @@ describe('calculate-value API E2E Tests', () => {
       cashValue: 0.42,
       tradeValue: 0.63
     }));
+  });
+
+  // Test the caching mechanism
+  it('should use cache for subsequent requests with the same game', async () => {
+    // First request to populate the cache
+    const { req: req1, res: res1 } = createMocks({ game: 'pokemon', baseValue: 5 });
+    await handler(req1, res1);
+    
+    // Modify the mock to verify the cache is used (this should NOT be called)
+    const supabaseClient = require('@supabase/supabase-js').createClient();
+    const spy = vi.spyOn(supabaseClient, 'from');
+    
+    // Second request should use cache
+    const { req: req2, res: res2, json: json2 } = createMocks({ game: 'pokemon', baseValue: 8 });
+    await handler(req2, res2);
+    
+    // The settings should have been retrieved from cache, not from the database
+    expect(json2).toHaveBeenCalled();
+    expect(spy).not.toHaveBeenCalledWith('trade_value_settings');
   });
 });

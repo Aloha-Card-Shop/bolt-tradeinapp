@@ -1,12 +1,16 @@
 
-// Central place to configure fallback percentages for trade value calculations
-export const DEFAULT_FALLBACK_CASH_PERCENTAGE = 35; // 35% of base value
-export const DEFAULT_FALLBACK_TRADE_PERCENTAGE = 50; // 50% of base value
+// Default percentages for fallback calculations
+export const DEFAULT_FALLBACK_CASH_PERCENTAGE = 35;
+export const DEFAULT_FALLBACK_TRADE_PERCENTAGE = 50;
 
-// Configure user-facing error messages
+// Standard error messages for different fallback scenarios
 export const ERROR_MESSAGES = {
-  CALCULATION_FAILED: "Trade value calculation failed. Using default values.",
-  NO_SETTINGS_FOUND: "No trade settings found for this game. Using default values.",
-  INVALID_PRICE_RANGE: "No price range found for this value. Using default values.",
-  DATABASE_ERROR: "Database error occurred. Using default values."
+  CALCULATION_FAILED: 'Unable to calculate accurate trade value.',
+  DATABASE_ERROR: 'Database error occurred. Using estimated values.',
+  NO_SETTINGS_FOUND: 'No trade value settings found for this game type.',
+  NO_PRICE_RANGE_MATCH: 'No price bracket found for this value.',
+  API_ERROR: 'Error connecting to the calculation service.',
+  METHOD_NOT_ALLOWED: 'Invalid request method.',
+  INVALID_INPUT: 'Invalid input values provided.',
+  UNKNOWN_ERROR: 'An unknown error occurred during calculation.'
 };

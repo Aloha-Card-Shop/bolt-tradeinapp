@@ -14,6 +14,70 @@ const supabaseUrl = 'https://qgsabaicokoynabxgdco.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey!);
 
+// In-memory cache for trade value settings
+interface SettingsCache {
+  [game: string]: {
+    settings: any[];
+    timestamp: number;
+  }
+}
+
+const settingsCache: SettingsCache = {};
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+// Helper function to get settings from cache or database
+async function getGameSettings(game: string): Promise<any[]> {
+  const normalizedGame = game.toLowerCase();
+  const now = Date.now();
+  
+  // Check if we have valid cached settings
+  if (
+    settingsCache[normalizedGame] && 
+    now - settingsCache[normalizedGame].timestamp < CACHE_TTL
+  ) {
+    console.log(`[CACHE] Using cached settings for ${normalizedGame}, age: ${(now - settingsCache[normalizedGame].timestamp) / 1000}s`);
+    return settingsCache[normalizedGame].settings;
+  }
+  
+  // If not in cache or expired, fetch from database
+  console.log(`[CACHE] Cache miss for ${normalizedGame}, fetching from database`);
+  const { data: settings, error } = await supabase
+    .from('trade_value_settings')
+    .select('*')
+    .eq('game', normalizedGame);
+    
+  if (error) {
+    console.error('[ERROR] Failed to fetch settings:', error);
+    throw error;
+  }
+  
+  // Update cache
+  settingsCache[normalizedGame] = {
+    settings: settings || [],
+    timestamp: now
+  };
+  
+  console.log(`[CACHE] Updated cache for ${normalizedGame} with ${settings?.length || 0} settings`);
+  return settings || [];
+}
+
+// Function to clear cache for a specific game
+export function clearSettingsCache(game?: string): void {
+  if (game) {
+    const normalizedGame = game.toLowerCase();
+    if (settingsCache[normalizedGame]) {
+      delete settingsCache[normalizedGame];
+      console.log(`[CACHE] Cleared cache for ${normalizedGame}`);
+    }
+  } else {
+    // Clear entire cache
+    Object.keys(settingsCache).forEach(key => {
+      delete settingsCache[key];
+    });
+    console.log('[CACHE] Cleared entire settings cache');
+  }
+}
+
 // Helper function to normalize game type strings
 const normalizeGameType = (gameType?: string): GameType => {
   if (!gameType) return 'pokemon';
@@ -128,101 +192,106 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let usedFallback = false;
     let fallbackReason = '';
 
-    // Fetch all settings for this game
-    console.log(`[INFO] Querying trade_value_settings for game: ${gameKey}`);
-    const { data: settings, error } = await supabase
-      .from('trade_value_settings')
-      .select('*')
-      .eq('game', gameKey);
+    try {
+      // Get settings from cache or database using the helper function
+      const settings = await getGameSettings(gameKey);
 
-    // Handle database query errors with fallbacks
-    if (error) {
-      console.error('[ERROR] Supabase query error:', error);
-      usedFallback = true;
-      fallbackReason = 'DATABASE_ERROR';
-      
-      // Log the fallback event
-      await logFallbackEvent(game, numericBase, `Database error: ${error.message}`, userId);
-      
-      // Return fallback values with error details
-      return res.status(200).json(
-        createErrorResponse(numericBase, `Database error: ${error.message}`, 'DATABASE_ERROR')
-      );
-    }
+      // Default fallback values
+      let cashValue = numericBase * (DEFAULT_FALLBACK_CASH_PERCENTAGE / 100);
+      let tradeValue = numericBase * (DEFAULT_FALLBACK_TRADE_PERCENTAGE / 100);
+      let calculationMethod = 'default';
 
-    // Default fallback values
-    let cashValue = numericBase * (DEFAULT_FALLBACK_CASH_PERCENTAGE / 100);
-    let tradeValue = numericBase * (DEFAULT_FALLBACK_TRADE_PERCENTAGE / 100);
-    let calculationMethod = 'default';
-
-    if (settings && settings.length > 0) {
-      console.log(`[INFO] Found ${settings.length} setting(s) for game: ${gameKey}`);
-      
-      // Check for fixed values first
-      const fixedSetting = settings.find(
-        s => s.fixed_cash_value !== null && s.fixed_trade_value !== null
-      );
-      
-      if (fixedSetting) {
-        console.log('[INFO] Using fixed values from settings');
-        cashValue = fixedSetting.fixed_cash_value!;
-        tradeValue = fixedSetting.fixed_trade_value!;
-        calculationMethod = 'fixed';
-      } else {
-        // Find percentage-based range match
-        const rangeSetting = settings.find(
-          s => numericBase >= s.min_value && numericBase <= s.max_value
+      if (settings && settings.length > 0) {
+        console.log(`[INFO] Found ${settings.length} setting(s) for game: ${gameKey}`);
+        
+        // Check for fixed values first
+        const fixedSetting = settings.find(
+          s => s.fixed_cash_value !== null && s.fixed_trade_value !== null
         );
         
-        if (rangeSetting) {
-          console.log(`[INFO] Found matching range for value ${numericBase}: ${rangeSetting.min_value} to ${rangeSetting.max_value}`);
-          cashValue = numericBase * (rangeSetting.cash_percentage / 100);
-          tradeValue = numericBase * (rangeSetting.trade_percentage / 100);
-          calculationMethod = 'percentage';
+        if (fixedSetting) {
+          console.log('[INFO] Using fixed values from settings');
+          cashValue = fixedSetting.fixed_cash_value!;
+          tradeValue = fixedSetting.fixed_trade_value!;
+          calculationMethod = 'fixed';
         } else {
-          // No range found, use fallbacks
-          usedFallback = true;
-          fallbackReason = 'NO_PRICE_RANGE_MATCH';
-          console.warn(`[WARN] No price range match found for game ${gameKey} and value ${numericBase}, using fallback values`);
-          
-          // Log the fallback event
-          await logFallbackEvent(
-            game, 
-            numericBase, 
-            `No price range match found for game ${gameKey} and value ${numericBase}`,
-            userId
+          // Find percentage-based range match
+          const rangeSetting = settings.find(
+            s => numericBase >= s.min_value && numericBase <= s.max_value
           );
+          
+          if (rangeSetting) {
+            console.log(`[INFO] Found matching range for value ${numericBase}: ${rangeSetting.min_value} to ${rangeSetting.max_value}`);
+            cashValue = numericBase * (rangeSetting.cash_percentage / 100);
+            tradeValue = numericBase * (rangeSetting.trade_percentage / 100);
+            calculationMethod = 'percentage';
+          } else {
+            // No range found, use fallbacks
+            usedFallback = true;
+            fallbackReason = 'NO_PRICE_RANGE_MATCH';
+            console.warn(`[WARN] No price range match found for game ${gameKey} and value ${numericBase}, using fallback values`);
+            
+            // Log the fallback event
+            await logFallbackEvent(
+              game, 
+              numericBase, 
+              `No price range match found for game ${gameKey} and value ${numericBase}`,
+              userId
+            );
+          }
         }
+      } else {
+        // No settings found for this game, using defaults
+        usedFallback = true;
+        fallbackReason = 'NO_SETTINGS_FOUND';
+        console.warn(`[WARN] No settings found for game ${gameKey}, using fallback values`);
+        
+        // Log the fallback event
+        await logFallbackEvent(
+          game, 
+          numericBase, 
+          `No settings found for game ${gameKey}`,
+          userId
+        );
       }
-    } else {
-      // No settings found for this game, using defaults
+
+      // Round to exactly two decimal places
+      const roundedCashValue = parseFloat(cashValue.toFixed(2));
+      const roundedTradeValue = parseFloat(tradeValue.toFixed(2));
+
+      // Log the calculation result
+      console.log(`[INFO] Calculation result for ${gameKey}, $${numericBase}: Cash=$${roundedCashValue}, Trade=$${roundedTradeValue}, Method=${calculationMethod}, Fallback=${usedFallback}`);
+
+      // Return the calculated values along with fallback information
+      return res.status(200).json({ 
+        cashValue: roundedCashValue, 
+        tradeValue: roundedTradeValue,
+        usedFallback,
+        fallbackReason
+      });
+    } catch (dbError: any) {
+      console.error('[ERROR] Database error while fetching settings:', dbError);
+      
+      // Clear potentially corrupt cache for this game
+      clearSettingsCache(gameKey);
+      
+      // Use fallbacks if database query fails
       usedFallback = true;
-      fallbackReason = 'NO_SETTINGS_FOUND';
-      console.warn(`[WARN] No settings found for game ${gameKey}, using fallback values`);
+      fallbackReason = 'DATABASE_ERROR';
       
       // Log the fallback event
       await logFallbackEvent(
         game, 
         numericBase, 
-        `No settings found for game ${gameKey}`,
+        `Database error: ${dbError.message || 'Unknown error'}`,
         userId
       );
+      
+      // Return fallback values with error details
+      return res.status(200).json(
+        createErrorResponse(numericBase, `Database error: ${dbError.message || 'Unknown error'}`, 'DATABASE_ERROR')
+      );
     }
-
-    // Round to exactly two decimal places
-    const roundedCashValue = parseFloat(cashValue.toFixed(2));
-    const roundedTradeValue = parseFloat(tradeValue.toFixed(2));
-
-    // Log the calculation result
-    console.log(`[INFO] Calculation result for ${gameKey}, $${numericBase}: Cash=$${roundedCashValue}, Trade=$${roundedTradeValue}, Method=${calculationMethod}, Fallback=${usedFallback}`);
-
-    // Return the calculated values along with fallback information
-    return res.status(200).json({ 
-      cashValue: roundedCashValue, 
-      tradeValue: roundedTradeValue,
-      usedFallback,
-      fallbackReason
-    });
     
   } catch (err: any) {
     console.error('[ERROR] Unhandled exception in calculate-value API:', err);
