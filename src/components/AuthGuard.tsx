@@ -1,6 +1,5 @@
 
 import React, { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
 import { useSession } from '../hooks/useSession';
 import LoadingSpinner from './shared/LoadingSpinner';
 
@@ -9,8 +8,8 @@ interface AuthGuardProps {
   allowedRoles?: string[];
 }
 
-const AuthGuard: React.FC<AuthGuardProps> = ({ children, allowedRoles = [] }) => {
-  const { session, loading } = useSession();
+const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
+  const { loading } = useSession();
 
   if (loading) {
     return <LoadingSpinner message="Checking authentication..." />;

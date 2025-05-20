@@ -31,11 +31,11 @@ export const useMyTradeIns = () => {
             trade_in_date: new Date().toISOString(),
             total_value: 125.50,
             status: 'pending',
-            customer: {
-              id: '101',
+            cash_value: 100.40,
+            trade_value: 125.50,
+            customers: {
               first_name: 'John',
-              last_name: 'Doe',
-              email: 'john@example.com'
+              last_name: 'Doe'
             }
           },
           {
@@ -43,12 +43,12 @@ export const useMyTradeIns = () => {
             customer_id: '102',
             trade_in_date: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
             total_value: 78.25,
-            status: 'approved',
-            customer: {
-              id: '102',
+            status: 'accepted', // Changed from "approved" to "accepted"
+            cash_value: 60.20,
+            trade_value: 78.25,
+            customers: {
               first_name: 'Jane',
-              last_name: 'Smith',
-              email: 'jane@example.com'
+              last_name: 'Smith'
             }
           }
         ];

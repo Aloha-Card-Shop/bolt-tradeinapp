@@ -10,8 +10,6 @@ interface ValueDisplayProps {
   error?: string;
   onValueChange?: (value: number) => void;
   editable?: boolean;
-  usedFallback?: boolean;
-  fallbackReason?: string;
 }
 
 const ValueDisplay: React.FC<ValueDisplayProps> = ({
@@ -20,9 +18,7 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
   isLoading,
   error,
   onValueChange,
-  editable = false,
-  usedFallback = false,
-  fallbackReason
+  editable = false
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value.toString());
