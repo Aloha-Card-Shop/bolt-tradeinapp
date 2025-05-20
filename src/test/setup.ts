@@ -2,6 +2,17 @@
 import { beforeAll, afterAll, afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom'; // Add jest-dom matchers
 
+// Add missing process.env globals for tests
+if (!global.process) {
+  global.process = {
+    env: {
+      SUPABASE_URL: 'https://qgsabaicokoynabxgdco.supabase.co',
+      SUPABASE_ANON_KEY: 'test-anon-key',
+      NODE_ENV: 'test'
+    }
+  } as any;
+}
+
 // Mock console.error to avoid cluttering test output with expected errors
 const originalConsoleError = console.error;
 beforeAll(() => {
@@ -29,9 +40,3 @@ afterEach(() => {
 
 // Mock fetch for API tests
 vi.stubGlobal('fetch', vi.fn());
-
-// Mock environment variables that might be needed for tests
-process.env.SUPABASE_URL = 'https://qgsabaicokoynabxgdco.supabase.co';
-if (!process.env.SUPABASE_ANON_KEY) {
-  process.env.SUPABASE_ANON_KEY = 'test-anon-key';
-}

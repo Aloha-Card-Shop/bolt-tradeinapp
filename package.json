@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
-    "@types/next": "^9.0.0",
     "jsbarcode": "^3.11.6",
     "lovable-tagger": "^1.1.8",
     "lucide-react": "^0.344.0",

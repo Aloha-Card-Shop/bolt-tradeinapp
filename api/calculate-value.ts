@@ -1,5 +1,5 @@
+
 import { createClient } from '@supabase/supabase-js';
-import type { NextApiRequest, NextApiResponse } from 'next';
 import { GameType } from '../src/types/card';
 import { CalculationResult } from '../src/types/calculation';
 import { 
@@ -142,24 +142,29 @@ function createErrorResponse(
   };
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  console.log(`[REQUEST] ${req.method} /api/calculate-value with body:`, req.body);
+// For a Vite app without Next.js, we'll convert to a standard API handler
+export default async function handler(req: Request): Promise<Response> {
+  console.log(`[REQUEST] POST /api/calculate-value`);
   
   // Only allow POST requests
   if (req.method !== 'POST') {
     console.warn('[ERROR] Method not allowed:', req.method);
-    return res.status(405).json({ 
-      error: 'Method not allowed',
-      cashValue: 0,
-      tradeValue: 0,
-      usedFallback: true,
-      fallbackReason: 'METHOD_NOT_ALLOWED'
-    });
+    return new Response(
+      JSON.stringify({ 
+        error: 'Method not allowed',
+        cashValue: 0,
+        tradeValue: 0,
+        usedFallback: true,
+        fallbackReason: 'METHOD_NOT_ALLOWED'
+      }),
+      { status: 405, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 
   try {
     // Extract and validate request body
-    const { game, baseValue, userId } = req.body;
+    const reqBody = await req.json();
+    const { game, baseValue, userId } = reqBody;
     console.log(`[INFO] Processing calculation for game: ${game}, value: ${baseValue}, user: ${userId || 'anonymous'}`);
 
     // Validate baseValue
@@ -167,20 +172,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (isNaN(numericBase) || numericBase < 0) {
       console.warn(`[ERROR] Invalid baseValue: ${baseValue}, parsed as: ${numericBase}`);
       
-      return res.status(400).json({ 
-        error: 'Invalid baseValue',
-        details: { received: baseValue, parsed: numericBase },
-        cashValue: 0,
-        tradeValue: 0,
-        usedFallback: true,
-        fallbackReason: 'INVALID_INPUT'
-      });
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid baseValue',
+          details: { received: baseValue, parsed: numericBase },
+          cashValue: 0,
+          tradeValue: 0,
+          usedFallback: true,
+          fallbackReason: 'INVALID_INPUT'
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     // Skip calculation if baseValue is 0
     if (numericBase === 0) {
       console.log('[INFO] Base value is 0, skipping calculation');
-      return res.status(200).json({ cashValue: 0, tradeValue: 0 });
+      return new Response(
+        JSON.stringify({ cashValue: 0, tradeValue: 0 }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     // Normalize game type
@@ -261,12 +272,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log(`[INFO] Calculation result for ${gameKey}, $${numericBase}: Cash=$${roundedCashValue}, Trade=$${roundedTradeValue}, Method=${calculationMethod}, Fallback=${usedFallback}`);
 
       // Return the calculated values along with fallback information
-      return res.status(200).json({ 
-        cashValue: roundedCashValue, 
-        tradeValue: roundedTradeValue,
-        usedFallback,
-        fallbackReason
-      });
+      return new Response(
+        JSON.stringify({ 
+          cashValue: roundedCashValue, 
+          tradeValue: roundedTradeValue,
+          usedFallback,
+          fallbackReason
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
     } catch (dbError: any) {
       console.error('[ERROR] Database error while fetching settings:', dbError);
       
@@ -286,8 +300,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       );
       
       // Return fallback values with error details
-      return res.status(200).json(
-        createErrorResponse(numericBase, `Database error: ${dbError.message || 'Unknown error'}`, 'DATABASE_ERROR')
+      return new Response(
+        JSON.stringify(createErrorResponse(numericBase, `Database error: ${dbError.message || 'Unknown error'}`, 'DATABASE_ERROR')),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     }
     
@@ -295,8 +310,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('[ERROR] Unhandled exception in calculate-value API:', err);
     
     // Get base value from request body, defaulting to 0 if not present
-    const baseValue = Number(req.body?.baseValue) || 0;
-    const game = req.body?.game || 'unknown';
+    let baseValue = 0;
+    let game = 'unknown';
+    let userId;
+    
+    try {
+      const reqBody = await req.json();
+      baseValue = Number(reqBody?.baseValue) || 0;
+      game = reqBody?.game || 'unknown';
+      userId = reqBody?.userId;
+    } catch (parseError) {
+      console.error('[ERROR] Could not parse request body:', parseError);
+    }
     
     // Log catastrophic error
     try {
@@ -304,15 +329,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         game, 
         baseValue, 
         `Calculation error: ${err.message || 'Unknown error'}`,
-        req.body?.userId
+        userId
       );
     } catch (logError) {
       console.error('[ERROR] Failed to log calculation error:', logError);
     }
     
     // Return fallback values with detailed error information
-    return res.status(200).json(
-      createErrorResponse(baseValue, err.message || 'Unknown calculation error', 'UNKNOWN_ERROR')
+    return new Response(
+      JSON.stringify(createErrorResponse(baseValue, err.message || 'Unknown calculation error', 'UNKNOWN_ERROR')),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }

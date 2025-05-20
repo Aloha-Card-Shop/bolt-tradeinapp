@@ -13,6 +13,14 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  define: {
+    // Define process.env for compatibility with Next.js imports
+    'process.env': {
+      SUPABASE_URL: 'https://qgsabaicokoynabxgdco.supabase.co',
+      SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY,
+      NODE_ENV: mode
+    }
+  },
   server: {
     host: "::",
     port: 8080
