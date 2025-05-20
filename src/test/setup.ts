@@ -1,5 +1,6 @@
 
 import { beforeAll, afterAll, afterEach, vi } from 'vitest';
+import '@testing-library/jest-dom'; // Add jest-dom matchers
 
 // Mock console.error to avoid cluttering test output with expected errors
 const originalConsoleError = console.error;

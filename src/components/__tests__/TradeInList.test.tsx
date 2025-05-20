@@ -5,6 +5,7 @@ import { render, screen, act } from '@testing-library/react';
 import TradeInList from '../TradeInList';
 import { CardDetails } from '../../types/card';
 import { TradeInItem } from '../../hooks/useTradeInList';
+import '@testing-library/jest-dom'; // Import jest-dom matchers explicitly in this test file
 
 // Mock card data
 const mockCard: CardDetails = {
