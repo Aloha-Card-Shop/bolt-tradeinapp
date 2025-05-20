@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { TradeInItem } from '../hooks/useTradeInList';
-import { formatCurrency } from '../utils/formatters';
 
 const TradeInReviewPage = () => {
   const navigate = useNavigate();

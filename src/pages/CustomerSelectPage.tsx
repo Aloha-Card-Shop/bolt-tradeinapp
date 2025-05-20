@@ -5,7 +5,6 @@ import { ArrowLeft, User } from 'lucide-react';
 import { Customer, useCustomers } from '../hooks/useCustomers';
 import CustomerSelect from '../components/CustomerSelect';
 import { insertTradeInAndItems } from '../services/insertTradeInAndItems';
-import { formatCurrency } from '../utils/formatters';
 
 interface TradeInItem {
   card: {
@@ -100,7 +99,7 @@ const CustomerSelectPage = () => {
             <div>
               <h2 className="text-xl font-semibold text-gray-800">Select Customer</h2>
               <p className="text-sm text-gray-600 mt-1">
-                Total Value: ${formatCurrency(totalValue)}
+                Total Value: ${totalValue.toFixed(2)}
               </p>
             </div>
           </div>

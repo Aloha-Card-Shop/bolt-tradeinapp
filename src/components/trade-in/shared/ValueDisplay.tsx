@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Loader2, Edit, Check, X, AlertCircle } from 'lucide-react';
-import { formatCurrency } from '../../../utils/formatters';
 
 interface ValueDisplayProps {
   label: string;

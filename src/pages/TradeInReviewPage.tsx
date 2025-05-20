@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { TradeInItem } from '../hooks/useTradeInList';
-import { formatCurrency } from '../utils/formatters';
 
 const TradeInReviewPage = () => {
   const navigate = useNavigate();
@@ -55,7 +54,7 @@ const TradeInReviewPage = () => {
                 <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                   <p>Quantity: {item.quantity}</p>
                   <p>Condition: {item.condition || 'Not specified'}</p>
-                  <p>Price: ${formatCurrency(item.price)}</p>
+                  <p>Price: ${item.price.toFixed(2)}</p>
                   <p>Type: {item.paymentType}</p>
                 </div>
               </div>

@@ -1,6 +1,6 @@
+
 import React, { useState } from 'react';
 import { TradeInItem } from '../../types/tradeIn';
-import { formatCurrency } from '../../utils/formatters';
 import { Tag, DollarSign, ExternalLink, Save, Edit, X } from 'lucide-react';
 import ConditionSelect from '../trade-in/shared/ConditionSelect';
 import QuantityInput from '../trade-in/shared/QuantityInput';

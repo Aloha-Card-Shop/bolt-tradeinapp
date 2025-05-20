@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { DollarSign, Edit, Check } from 'lucide-react';
-import { formatCurrency } from '../../../utils/formatters';
 
 interface ValueDisplayProps {
   value?: number;

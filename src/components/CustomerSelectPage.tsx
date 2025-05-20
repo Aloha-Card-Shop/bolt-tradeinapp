@@ -5,7 +5,6 @@ import { ArrowLeft, User } from 'lucide-react';
 import { Customer, useCustomers } from '../hooks/useCustomers';
 import CustomerSelect from '../components/CustomerSelect';
 import { insertTradeInAndItems } from '../services/insertTradeInAndItems';
-import { formatCurrency } from '../utils/formatters';
 
 interface TradeInItem {
   card: {

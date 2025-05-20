@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { ShoppingCart } from 'lucide-react';
-import { formatCurrency } from '../../utils/formatters';
 
 interface TradeInItemRowProps {
   item: any; 
