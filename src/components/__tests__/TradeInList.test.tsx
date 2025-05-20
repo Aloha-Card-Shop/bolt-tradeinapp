@@ -83,7 +83,7 @@ describe('TradeInList Validation', () => {
     });
 
     const reviewButton = screen.getByRole('button', { name: /review trade-in/i });
-    expect(reviewButton).toHaveAttribute('disabled');
+    expect(reviewButton).toBeDisabled();
   });
 
   it('should enable review button when all items are valid', async () => {
@@ -104,7 +104,7 @@ describe('TradeInList Validation', () => {
     });
 
     const reviewButton = screen.getByRole('button', { name: /review trade-in/i });
-    expect(reviewButton).not.toHaveAttribute('disabled');
+    expect(reviewButton).not.toBeDisabled();
   });
 
   it('should validate price is greater than 0', async () => {
@@ -128,7 +128,7 @@ describe('TradeInList Validation', () => {
     });
 
     const reviewButton = screen.getByRole('button', { name: /review trade-in/i });
-    expect(reviewButton).toHaveAttribute('disabled');
+    expect(reviewButton).toBeDisabled();
   });
 
   it('should prevent submission with invalid items', async () => {
@@ -149,7 +149,7 @@ describe('TradeInList Validation', () => {
     });
 
     const reviewButton = screen.getByRole('button', { name: /review trade-in/i });
-    expect(reviewButton).not.toHaveAttribute('disabled');
+    expect(reviewButton).not.toBeDisabled();
 
     const totalValueText = screen.getByText(/cash:/i);
     expect(totalValueText).toBeInTheDocument();

@@ -55,7 +55,7 @@ vi.mock('@supabase/supabase-js', () => {
         if (table === 'trade_value_settings') {
           return {
             select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockImplementation((field: string, value: string) => {
+              eq: vi.fn().mockImplementation((_, value: string) => {
                 // Filter mockSettings based on game
                 const data = mockSettings.filter(s => s.game === value);
                 return Promise.resolve({ data, error: null });

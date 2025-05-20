@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { GameType } from '../src/types/card';
@@ -127,20 +126,19 @@ async function logFallbackEvent(
 function createErrorResponse(
   baseValue: number,
   errorMessage: string, 
-  fallbackReason: string,
-  statusCode: number = 200 // Use 200 to allow frontend to handle gracefully
+  fallbackReason: keyof typeof ERROR_MESSAGES
 ): CalculationResult {
   // Calculate fallback values
   const cashValue = parseFloat((baseValue * (DEFAULT_FALLBACK_CASH_PERCENTAGE / 100)).toFixed(2));
   const tradeValue = parseFloat((baseValue * (DEFAULT_FALLBACK_TRADE_PERCENTAGE / 100)).toFixed(2));
   
-  // Return structured response
+  // Return structured response with the appropriate error message from constants
   return {
     cashValue,
     tradeValue,
     usedFallback: true,
     fallbackReason,
-    error: errorMessage
+    error: ERROR_MESSAGES[fallbackReason] || errorMessage
   };
 }
 
