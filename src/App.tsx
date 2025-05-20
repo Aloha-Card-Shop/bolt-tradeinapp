@@ -1,6 +1,5 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useSession } from './hooks/useSession';
 import MainApp from './pages/MainApp';
 import TradeInReviewPage from './pages/trade-in/TradeInReviewPage';
 import CustomerSelectPage from './pages/trade-in/CustomerSelectPage';
