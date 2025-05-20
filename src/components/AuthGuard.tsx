@@ -1,6 +1,7 @@
 
 import React, { ReactNode } from 'react';
 import { useSession } from '../hooks/useSession';
+import { useLocation, Navigate } from 'react-router-dom';
 import LoadingSpinner from './shared/LoadingSpinner';
 
 interface AuthGuardProps {
@@ -9,13 +10,23 @@ interface AuthGuardProps {
 }
 
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
-  const { loading } = useSession();
-
+  const { loading, user } = useSession();
+  const location = useLocation();
+  
   if (loading) {
     return <LoadingSpinner message="Checking authentication..." />;
   }
-
-  // For now, we're not fully implementing auth, so just render the children
+  
+  // If at login page and user is authenticated, redirect to dashboard
+  if (location.pathname === '/' && user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  // If not at login page and user is not authenticated, redirect to login
+  if (location.pathname !== '/' && !user) {
+    return <Navigate to="/" replace />;
+  }
+  
   return <>{children}</>;
 };
 

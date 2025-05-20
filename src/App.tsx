@@ -8,20 +8,25 @@ import MyTradeIns from './pages/my-trade-ins';
 import LoginPage from './pages/LoginPage';
 import ShopifySettingsPage from './pages/admin/shopify-settings';
 import ShopifyMappingsPage from './pages/admin/shopify-mappings';
+import AppHeader from './components/layout/AppHeader';
+import AuthGuard from './components/AuthGuard';
 
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<LoginPage />} />
-        <Route path="/app" element={<MainApp />} />
-        <Route path="/trade-in/review" element={<TradeInReviewPage />} />
-        <Route path="/customer-select" element={<CustomerSelectPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/my-trade-ins" element={<MyTradeIns />} />
-        <Route path="/admin/shopify/settings" element={<ShopifySettingsPage />} />
-        <Route path="/admin/shopify/mappings" element={<ShopifyMappingsPage />} />
-      </Routes>
+      <AuthGuard>
+        <AppHeader />
+        <Routes>
+          <Route path="/" element={<LoginPage />} />
+          <Route path="/app" element={<MainApp />} />
+          <Route path="/trade-in/review" element={<TradeInReviewPage />} />
+          <Route path="/customer-select" element={<CustomerSelectPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/my-trade-ins" element={<MyTradeIns />} />
+          <Route path="/admin/shopify/settings" element={<ShopifySettingsPage />} />
+          <Route path="/admin/shopify/mappings" element={<ShopifyMappingsPage />} />
+        </Routes>
+      </AuthGuard>
     </Router>
   );
 }
