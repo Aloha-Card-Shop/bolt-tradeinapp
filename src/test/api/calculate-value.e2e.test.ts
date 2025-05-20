@@ -2,7 +2,11 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 import handler from '../../../api/calculate-value';
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { 
+  DEFAULT_FALLBACK_CASH_PERCENTAGE, 
+  DEFAULT_FALLBACK_TRADE_PERCENTAGE 
+} from '../../constants/fallbackValues';
 
 // Create a real Supabase client for E2E testing
 const supabaseUrl = 'https://qgsabaicokoynabxgdco.supabase.co';
@@ -74,6 +78,14 @@ describe('calculate-value API E2E tests', { skip: !process.env.SUPABASE_ANON_KEY
         fixed_trade_value: 10
       }
     ]);
+    
+    // Ensure the calculation_fallback_logs table exists
+    const { error } = await supabase.from('calculation_fallback_logs').select('id', { count: 'exact', head: true });
+    
+    // If table doesn't exist, we would get an error
+    if (error && error.code === '42P01') {
+      console.warn('calculation_fallback_logs table does not exist. Tests will still run but logging will fail.');
+    }
   });
   
   it('should calculate values based on percentage brackets', async () => {
@@ -82,7 +94,8 @@ describe('calculate-value API E2E tests', { skip: !process.env.SUPABASE_ANON_KEY
     expect(result.statusCode).toBe(200);
     expect(result.data).toEqual({
       cashValue: 2, // 40% of 5
-      tradeValue: 3 // 60% of 5
+      tradeValue: 3, // 60% of 5
+      usedFallback: false
     });
   });
   
@@ -92,7 +105,8 @@ describe('calculate-value API E2E tests', { skip: !process.env.SUPABASE_ANON_KEY
     expect(result.statusCode).toBe(200);
     expect(result.data).toEqual({
       cashValue: 4.5, // 45% of 10.01 rounded to 2 decimals
-      tradeValue: 6.51 // 65% of 10.01 rounded to 2 decimals
+      tradeValue: 6.51, // 65% of 10.01 rounded to 2 decimals
+      usedFallback: false
     });
   });
   
@@ -102,7 +116,8 @@ describe('calculate-value API E2E tests', { skip: !process.env.SUPABASE_ANON_KEY
     expect(result.statusCode).toBe(200);
     expect(result.data).toEqual({
       cashValue: 5,
-      tradeValue: 10
+      tradeValue: 10,
+      usedFallback: false
     });
   });
   
@@ -111,8 +126,10 @@ describe('calculate-value API E2E tests', { skip: !process.env.SUPABASE_ANON_KEY
     
     expect(result.statusCode).toBe(200);
     expect(result.data).toEqual({
-      cashValue: 35, // default 35% of 100
-      tradeValue: 50 // default 50% of 100
+      cashValue: DEFAULT_FALLBACK_CASH_PERCENTAGE, // default % of 100
+      tradeValue: DEFAULT_FALLBACK_TRADE_PERCENTAGE, // default % of 100
+      usedFallback: true,
+      fallbackReason: 'NO_PRICE_RANGE_MATCH'
     });
   });
   
@@ -122,7 +139,9 @@ describe('calculate-value API E2E tests', { skip: !process.env.SUPABASE_ANON_KEY
     expect(result.statusCode).toBe(200);
     expect(result.data).toEqual({
       cashValue: 35, // default 35% of 100
-      tradeValue: 50 // default 50% of 100
+      tradeValue: 50, // default 50% of 100
+      usedFallback: true,
+      fallbackReason: 'NO_SETTINGS_FOUND'
     });
   });
   

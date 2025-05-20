@@ -1,7 +1,11 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { GameType } from '../src/types/card';
+import { 
+  DEFAULT_FALLBACK_CASH_PERCENTAGE, 
+  DEFAULT_FALLBACK_TRADE_PERCENTAGE 
+} from '../src/constants/fallbackValues';
 
 // Initialize Supabase client
 const supabaseUrl = 'https://qgsabaicokoynabxgdco.supabase.co';
@@ -26,6 +30,29 @@ const normalizeGameType = (gameType?: string): GameType => {
     : 'pokemon';
 };
 
+// Log fallback events for future review
+async function logFallbackEvent(
+  game: string, 
+  baseValue: number, 
+  reason: string,
+  userId?: string
+) {
+  try {
+    await supabase
+      .from('calculation_fallback_logs')
+      .insert({
+        game,
+        base_value: baseValue,
+        reason,
+        user_id: userId || null,
+        created_at: new Date().toISOString()
+      });
+  } catch (err) {
+    // Silent fail on logging - shouldn't impact user experience
+    console.error('Failed to log fallback event:', err);
+  }
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Only allow POST requests
   if (req.method !== 'POST') {
@@ -34,7 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // Extract and validate request body
-    const { game, baseValue } = req.body;
+    const { game, baseValue, userId } = req.body;
 
     // Validate baseValue
     const numericBase = Number(baseValue);
@@ -52,6 +79,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Normalize game type
     const gameKey = normalizeGameType(game);
+    let usedFallback = false;
+    let fallbackReason = '';
 
     // Fetch all settings for this game
     const { data: settings, error } = await supabase
@@ -59,17 +88,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select('*')
       .eq('game', gameKey);
 
+    // Handle database query errors with fallbacks
     if (error) {
       console.error('Supabase query error:', error);
-      return res.status(500).json({ 
-        error: 'Database query failed',
-        details: error.message
+      usedFallback = true;
+      fallbackReason = 'DATABASE_ERROR';
+      
+      // Log the fallback event
+      await logFallbackEvent(game, numericBase, `Database error: ${error.message}`, userId);
+      
+      // Return fallback values
+      return res.status(200).json({
+        cashValue: parseFloat((numericBase * (DEFAULT_FALLBACK_CASH_PERCENTAGE / 100)).toFixed(2)),
+        tradeValue: parseFloat((numericBase * (DEFAULT_FALLBACK_TRADE_PERCENTAGE / 100)).toFixed(2)),
+        usedFallback: true,
+        fallbackReason: 'DATABASE_ERROR'
       });
     }
 
     // Default fallback values
-    let cashValue = numericBase * 0.35;
-    let tradeValue = numericBase * 0.50;
+    let cashValue = numericBase * (DEFAULT_FALLBACK_CASH_PERCENTAGE / 100);
+    let tradeValue = numericBase * (DEFAULT_FALLBACK_TRADE_PERCENTAGE / 100);
 
     if (settings && settings.length > 0) {
       // Check for fixed values first
@@ -89,25 +128,68 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (rangeSetting) {
           cashValue = numericBase * (rangeSetting.cash_percentage / 100);
           tradeValue = numericBase * (rangeSetting.trade_percentage / 100);
+        } else {
+          // No range found, use fallbacks
+          usedFallback = true;
+          fallbackReason = 'NO_PRICE_RANGE_MATCH';
+          
+          // Log the fallback event
+          await logFallbackEvent(
+            game, 
+            numericBase, 
+            `No price range match found for game ${gameKey} and value ${numericBase}`,
+            userId
+          );
         }
       }
+    } else {
+      // No settings found for this game, using defaults
+      usedFallback = true;
+      fallbackReason = 'NO_SETTINGS_FOUND';
+      
+      // Log the fallback event
+      await logFallbackEvent(
+        game, 
+        numericBase, 
+        `No settings found for game ${gameKey}`,
+        userId
+      );
     }
 
     // Round to exactly two decimal places
     const roundedCashValue = parseFloat(cashValue.toFixed(2));
     const roundedTradeValue = parseFloat(tradeValue.toFixed(2));
 
-    // Return the calculated values
+    // Return the calculated values along with fallback information
     return res.status(200).json({ 
       cashValue: roundedCashValue, 
-      tradeValue: roundedTradeValue 
+      tradeValue: roundedTradeValue,
+      usedFallback,
+      fallbackReason
     });
     
   } catch (err: any) {
     console.error('Error in calculate-value API:', err);
-    return res.status(500).json({ 
-      error: 'Internal server error',
-      details: err.message || 'Unknown error'
+    
+    // Log catastrophic error
+    try {
+      await logFallbackEvent(
+        req.body?.game || 'unknown', 
+        Number(req.body?.baseValue) || 0, 
+        `Calculation error: ${err.message || 'Unknown error'}`,
+        req.body?.userId
+      );
+    } catch (logError) {
+      console.error('Failed to log calculation error:', logError);
+    }
+    
+    // Return fallback values even in case of catastrophic errors
+    return res.status(200).json({ 
+      cashValue: parseFloat((Number(req.body?.baseValue || 0) * (DEFAULT_FALLBACK_CASH_PERCENTAGE / 100)).toFixed(2)), 
+      tradeValue: parseFloat((Number(req.body?.baseValue || 0) * (DEFAULT_FALLBACK_TRADE_PERCENTAGE / 100)).toFixed(2)),
+      usedFallback: true,
+      fallbackReason: 'CALCULATION_ERROR',
+      error: 'Error calculating values, using defaults'
     });
   }
 }

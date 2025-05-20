@@ -1,21 +1,33 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import handler from '../../../api/calculate-value';
+import { 
+  DEFAULT_FALLBACK_CASH_PERCENTAGE, 
+  DEFAULT_FALLBACK_TRADE_PERCENTAGE 
+} from '../../constants/fallbackValues';
 
 // Mock Supabase client
 vi.mock('@supabase/supabase-js', () => {
   const mockSupabaseFrom = vi.fn();
   const mockSupabaseSelect = vi.fn();
   const mockSupabaseEq = vi.fn();
+  const mockSupabaseInsert = vi.fn();
   
   return {
     createClient: vi.fn(() => ({
-      from: mockSupabaseFrom.mockImplementation(() => ({
-        select: mockSupabaseSelect.mockImplementation(() => ({
-          eq: mockSupabaseEq.mockReturnThis()
-        }))
-      }))
+      from: mockSupabaseFrom.mockImplementation((table) => {
+        if (table === 'calculation_fallback_logs') {
+          return {
+            insert: mockSupabaseInsert.mockResolvedValue({ data: null, error: null })
+          };
+        }
+        return {
+          select: mockSupabaseSelect.mockImplementation(() => ({
+            eq: mockSupabaseEq.mockReturnThis()
+          }))
+        };
+      })
     }))
   };
 });
@@ -91,5 +103,50 @@ describe('calculate-value API endpoint', () => {
     
     expect(statusMock).toHaveBeenCalledWith(200);
     expect(jsonMock).toHaveBeenCalledWith({ cashValue: 0, tradeValue: 0 });
+  });
+  
+  it('should use fallback values when database error occurs', async () => {
+    // Mock database error
+    const createClient = require('@supabase/supabase-js').createClient;
+    createClient.mockImplementation(() => ({
+      from: vi.fn().mockImplementation(() => ({
+        select: vi.fn().mockImplementation(() => ({
+          eq: vi.fn().mockResolvedValue({ data: null, error: { message: 'Database error' } })
+        })),
+        insert: vi.fn().mockResolvedValue({ data: null, error: null })
+      }))
+    }));
+    
+    mockReq.body = { game: 'pokemon', baseValue: 100 };
+    
+    await handler(mockReq as NextApiRequest, mockRes as NextApiResponse);
+    
+    expect(statusMock).toHaveBeenCalledWith(200);
+    expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
+      cashValue: (100 * DEFAULT_FALLBACK_CASH_PERCENTAGE / 100),
+      tradeValue: (100 * DEFAULT_FALLBACK_TRADE_PERCENTAGE / 100),
+      usedFallback: true,
+      fallbackReason: 'DATABASE_ERROR'
+    }));
+  });
+  
+  it('should handle catastrophic errors gracefully with fallback values', async () => {
+    // Mock a catastrophic error by making the handler throw
+    const createClient = require('@supabase/supabase-js').createClient;
+    createClient.mockImplementation(() => {
+      throw new Error('Critical error');
+    });
+    
+    mockReq.body = { game: 'pokemon', baseValue: 50 };
+    
+    await handler(mockReq as NextApiRequest, mockRes as NextApiResponse);
+    
+    expect(statusMock).toHaveBeenCalledWith(200);
+    expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
+      cashValue: expect.any(Number),
+      tradeValue: expect.any(Number),
+      usedFallback: true,
+      fallbackReason: 'CALCULATION_ERROR'
+    }));
   });
 });
