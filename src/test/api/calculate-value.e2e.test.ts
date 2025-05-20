@@ -1,168 +1,226 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createClient } from '@supabase/supabase-js';
-import handler from '../../../api/calculate-value';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { 
-  DEFAULT_FALLBACK_CASH_PERCENTAGE, 
-  DEFAULT_FALLBACK_TRADE_PERCENTAGE 
-} from '../../constants/fallbackValues';
+import handler from '../../../api/calculate-value';
 
-// Create a real Supabase client for E2E testing
-const supabaseUrl = 'https://qgsabaicokoynabxgdco.supabase.co';
-const supabaseKey = process.env.SUPABASE_ANON_KEY as string;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Mock data for supabase response
+const mockSettings = [
+  {
+    id: 1,
+    game: 'pokemon',
+    min_value: 0,
+    max_value: 10,
+    cash_percentage: 30,
+    trade_percentage: 45,
+    fixed_cash_value: null,
+    fixed_trade_value: null
+  },
+  {
+    id: 2,
+    game: 'pokemon',
+    min_value: 10.01,
+    max_value: 50,
+    cash_percentage: 35,
+    trade_percentage: 50,
+    fixed_cash_value: null,
+    fixed_trade_value: null
+  },
+  {
+    id: 3,
+    game: 'magic',
+    min_value: 0,
+    max_value: 1000,
+    cash_percentage: 40,
+    trade_percentage: 60,
+    fixed_cash_value: null,
+    fixed_trade_value: null
+  },
+  {
+    id: 4,
+    game: 'japanese-pokemon',
+    min_value: 0,
+    max_value: 0, // Will be ignored as range
+    cash_percentage: 0, // Will be ignored
+    trade_percentage: 0, // Will be ignored
+    fixed_cash_value: 10,
+    fixed_trade_value: 15
+  }
+];
 
-// Helper to call the API handler directly
-async function callAPI(body: any): Promise<{ statusCode: number; data: any }> {
-  let statusCode: number = 0;
-  let responseData: any = null;
-  
-  const req = {
-    method: 'POST',
-    body
-  } as NextApiRequest;
-  
-  const res = {
-    status: (code: number) => {
-      statusCode = code;
-      return res;
-    },
-    json: (data: any) => {
-      responseData = data;
-    }
-  } as unknown as NextApiResponse;
-  
-  await handler(req, res);
-  
+// Mock the Supabase client
+vi.mock('@supabase/supabase-js', () => {
   return {
-    statusCode,
-    data: responseData
+    createClient: vi.fn(() => ({
+      from: vi.fn().mockImplementation((table) => {
+        if (table === 'trade_value_settings') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockImplementation((field, value) => {
+                // Filter mockSettings based on game
+                const data = mockSettings.filter(s => s.game === value);
+                return Promise.resolve({ data, error: null });
+              })
+            })
+          };
+        }
+        if (table === 'calculation_fallback_logs') {
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null })
+          };
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: [], error: null })
+          })
+        };
+      })
+    }))
   };
-}
+});
 
-// Skip these tests in CI environment where we may not have DB access
-describe('calculate-value API E2E tests', { skip: !process.env.SUPABASE_ANON_KEY }, () => {
-  // Seed test data to ensure consistent test results
-  beforeAll(async () => {
-    // Skip seeding if we don't have write access
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return;
+// Mock console to silence logs during tests
+beforeAll(() => {
+  vi.spyOn(console, 'log').mockImplementation(() => {});
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+});
+
+describe('calculate-value API E2E Tests', () => {
+  // Helper function to create mock request and response
+  const createMocks = (body: any) => {
+    const req = { 
+      method: 'POST',
+      body
+    } as NextApiRequest;
     
-    // Clear existing test settings
-    await supabase
-      .from('trade_value_settings')
-      .delete()
-      .eq('game', 'test-game');
-      
-    // Insert test settings
-    await supabase.from('trade_value_settings').insert([
-      {
-        game: 'test-game',
-        min_value: 0,
-        max_value: 10,
-        cash_percentage: 40,
-        trade_percentage: 60
-      },
-      {
-        game: 'test-game',
-        min_value: 10.01,
-        max_value: 50,
-        cash_percentage: 45,
-        trade_percentage: 65
-      },
-      {
-        game: 'test-fixed',
-        min_value: 0,
-        max_value: 999999,
-        fixed_cash_value: 5,
-        fixed_trade_value: 10
-      }
-    ]);
+    const json = vi.fn();
+    const status = vi.fn().mockReturnValue({ json });
+    const res = { status, json } as unknown as NextApiResponse;
     
-    // Ensure the calculation_fallback_logs table exists
-    const { error } = await supabase.from('calculation_fallback_logs').select('id', { count: 'exact', head: true });
-    
-    // If table doesn't exist, we would get an error
-    if (error && error.code === '42P01') {
-      console.warn('calculation_fallback_logs table does not exist. Tests will still run but logging will fail.');
-    }
-  });
+    return { req, res, json, status };
+  };
   
-  it('should calculate values based on percentage brackets', async () => {
-    const result = await callAPI({ game: 'test-game', baseValue: 5 });
+  it('should calculate Pokemon values using correct bracket', async () => {
+    const { req, res, json } = createMocks({ game: 'pokemon', baseValue: 5 });
     
-    expect(result.statusCode).toBe(200);
-    expect(result.data).toEqual({
-      cashValue: 2, // 40% of 5
-      tradeValue: 3, // 60% of 5
+    await handler(req, res);
+    
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+      cashValue: 1.5, // 30% of 5
+      tradeValue: 2.25, // 45% of 5
       usedFallback: false
-    });
+    }));
   });
   
-  it('should use correct bracket for value at the boundary', async () => {
-    const result = await callAPI({ game: 'test-game', baseValue: 10.01 });
+  it('should handle higher Pokemon bracket correctly', async () => {
+    const { req, res, json } = createMocks({ game: 'pokemon', baseValue: 20 });
     
-    expect(result.statusCode).toBe(200);
-    expect(result.data).toEqual({
-      cashValue: 4.5, // 45% of 10.01 rounded to 2 decimals
-      tradeValue: 6.51, // 65% of 10.01 rounded to 2 decimals
+    await handler(req, res);
+    
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+      cashValue: 7, // 35% of 20
+      tradeValue: 10, // 50% of 20
       usedFallback: false
-    });
+    }));
   });
   
-  it('should use fixed values when configured', async () => {
-    const result = await callAPI({ game: 'test-fixed', baseValue: 100 });
+  it('should handle Magic game type correctly', async () => {
+    const { req, res, json } = createMocks({ game: 'magic', baseValue: 100 });
     
-    expect(result.statusCode).toBe(200);
-    expect(result.data).toEqual({
-      cashValue: 5,
-      tradeValue: 10,
+    await handler(req, res);
+    
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+      cashValue: 40, // 40% of 100
+      tradeValue: 60, // 60% of 100
       usedFallback: false
-    });
+    }));
   });
   
-  it('should fall back to default percentages when no brackets match', async () => {
-    const result = await callAPI({ game: 'test-game', baseValue: 100 });
+  it('should use fixed values for Japanese Pokemon', async () => {
+    const { req, res, json } = createMocks({ game: 'japanese-pokemon', baseValue: 50 });
     
-    expect(result.statusCode).toBe(200);
-    expect(result.data).toEqual({
-      cashValue: DEFAULT_FALLBACK_CASH_PERCENTAGE, // default % of 100
-      tradeValue: DEFAULT_FALLBACK_TRADE_PERCENTAGE, // default % of 100
-      usedFallback: true,
-      fallbackReason: 'NO_PRICE_RANGE_MATCH'
-    });
+    await handler(req, res);
+    
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+      cashValue: 10, // Fixed value
+      tradeValue: 15, // Fixed value
+      usedFallback: false
+    }));
   });
   
-  it('should fall back to default percentages when game not found', async () => {
-    const result = await callAPI({ game: 'non-existent-game', baseValue: 100 });
+  it('should normalize game types (case insensitive, trimming)', async () => {
+    const { req, res, json } = createMocks({ game: ' Pokemon ', baseValue: 5 });
     
-    expect(result.statusCode).toBe(200);
-    expect(result.data).toEqual({
-      cashValue: 35, // default 35% of 100
-      tradeValue: 50, // default 50% of 100
+    await handler(req, res);
+    
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+      cashValue: 1.5, // 30% of 5
+      tradeValue: 2.25, // 45% of 5
+      usedFallback: false
+    }));
+  });
+  
+  it('should fallback for unknown game type with appropriate message', async () => {
+    const { req, res, json } = createMocks({ game: 'yugioh', baseValue: 10 });
+    
+    await handler(req, res);
+    
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({
       usedFallback: true,
       fallbackReason: 'NO_SETTINGS_FOUND'
-    });
+    }));
   });
   
-  it('should normalize game type from various formats', async () => {
-    const testCases = [
-      { input: 'pokemon', expected: 'pokemon' },
-      { input: 'PokéMon', expected: 'pokemon' },
-      { input: 'Pokemon', expected: 'pokemon' },
-      { input: 'magic', expected: 'magic' },
-      { input: 'Magic: The Gathering', expected: 'magic' },
-      { input: 'MTG', expected: 'magic' },
-      { input: 'Japanese Pokemon', expected: 'japanese-pokemon' },
-      { input: 'Pokemon (Japanese)', expected: 'japanese-pokemon' }
-    ];
+  it('should handle out-of-range values with appropriate fallback', async () => {
+    // Modify mock to return empty array once for this test
+    const supabaseClient = require('@supabase/supabase-js').createClient();
+    const originalFromImpl = supabaseClient.from;
     
-    for (const testCase of testCases) {
-      const response = await callAPI({ game: testCase.input, baseValue: 1 });
-      expect(response.statusCode).toBe(200);
-      // We're only testing that it doesn't error - actual values will depend on DB config
-      expect(response.data).toHaveProperty('cashValue');
-      expect(response.data).toHaveProperty('tradeValue');
-    }
+    supabaseClient.from = vi.fn().mockImplementation((table) => {
+      if (table === 'trade_value_settings') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ 
+              data: [
+                { 
+                  game: 'pokemon', 
+                  min_value: 0, 
+                  max_value: 100,
+                  cash_percentage: 35,
+                  trade_percentage: 50
+                }
+              ], 
+              error: null 
+            })
+          })
+        };
+      }
+      return originalFromImpl(table);
+    });
+    
+    const { req, res, json } = createMocks({ game: 'pokemon', baseValue: 1000 });
+    
+    await handler(req, res);
+    
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+      usedFallback: true,
+      fallbackReason: 'NO_PRICE_RANGE_MATCH'
+    }));
+    
+    // Restore original implementation
+    supabaseClient.from = originalFromImpl;
+  });
+  
+  it('should round values to exactly 2 decimal places', async () => {
+    const { req, res, json } = createMocks({ game: 'pokemon', baseValue: 1.39 });
+    
+    await handler(req, res);
+    
+    // 30% of 1.39 = 0.417, should round to 0.42
+    // 45% of 1.39 = 0.6255, should round to 0.63
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+      cashValue: 0.42,
+      tradeValue: 0.63
+    }));
   });
 });

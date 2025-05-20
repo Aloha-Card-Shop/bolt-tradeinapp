@@ -3,6 +3,7 @@ import React from 'react';
 import { Loader2, AlertCircle, Info, ChevronsDown } from 'lucide-react';
 import PriceInput from '../shared/PriceInput';
 import ValueDisplay from '../shared/ValueDisplay';
+import FallbackWarning from '../FallbackWarning';
 
 interface ItemValuesProps {
   price: number;
@@ -15,6 +16,8 @@ interface ItemValuesProps {
   onRefreshPrice?: () => void;
   isPriceUnavailable?: boolean;
   onValueAdjustment?: (value: number) => void;
+  usedFallback?: boolean;
+  fallbackReason?: string;
 }
 
 const ItemValues: React.FC<ItemValuesProps> = ({
@@ -28,6 +31,8 @@ const ItemValues: React.FC<ItemValuesProps> = ({
   onRefreshPrice,
   isPriceUnavailable,
   onValueAdjustment,
+  usedFallback = false,
+  fallbackReason
 }) => {
   return (
     <div className="mt-4 grid grid-cols-2 gap-4">
@@ -49,6 +54,8 @@ const ItemValues: React.FC<ItemValuesProps> = ({
             error={error}
             onValueChange={onValueAdjustment}
             editable={!!onValueAdjustment}
+            usedFallback={usedFallback}
+            fallbackReason={fallbackReason}
           />
         ) : (
           <div className="rounded-md border border-gray-300 p-2 h-full flex flex-col justify-center items-center">
@@ -81,13 +88,22 @@ const ItemValues: React.FC<ItemValuesProps> = ({
           </div>
         )}
         
-        {!isLoading && !isLoadingPrice && price > 0 && !error && displayValue > 0 && paymentType && (
+        {!isLoading && !isLoadingPrice && price > 0 && !error && displayValue > 0 && paymentType && !usedFallback && (
           <div className="absolute bottom-[-24px] left-0 text-xs text-green-600 flex items-center">
             <Info className="h-3 w-3 mr-1" /> 
             Value calculated for {paymentType} payment
           </div>
         )}
       </div>
+      
+      {usedFallback && !isLoading && paymentType && (
+        <div className="col-span-2 mt-2">
+          <FallbackWarning 
+            showWarning={true}
+            fallbackReason={fallbackReason}
+          />
+        </div>
+      )}
     </div>
   );
 };
