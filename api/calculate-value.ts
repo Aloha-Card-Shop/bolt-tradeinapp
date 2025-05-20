@@ -93,11 +93,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // Round to exactly two decimal places using toFixed and then convert back to number
+    // Round to exactly two decimal places
     const roundedCashValue = parseFloat(cashValue.toFixed(2));
     const roundedTradeValue = parseFloat(tradeValue.toFixed(2));
 
-    // Return the calculated values with exactly two decimal places
+    // Return the calculated values
     return res.status(200).json({ 
       cashValue: roundedCashValue, 
       tradeValue: roundedTradeValue 
