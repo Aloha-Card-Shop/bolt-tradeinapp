@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Settings, Loader2, AlertCircle, Plus, Save, Trash2 } from 'lucide-react';
@@ -25,6 +26,7 @@ const TradeValuesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || user.user_metadata.role !== 'admin')) {
@@ -46,6 +48,7 @@ const TradeValuesPage: React.FC = () => {
       if (error) throw error;
       setSettings(data);
       setError(null);
+      setHasUnsavedChanges(false);
     } catch (err) {
       console.error('Error fetching settings:', err);
       setError(err instanceof Error ? err.message : 'Failed to load settings');
@@ -73,6 +76,7 @@ const TradeValuesPage: React.FC = () => {
     setSettings(prev =>
       prev.map(s => (s.id === setting.id ? updated : s))
     );
+    setHasUnsavedChanges(true);
   };
 
   const handleSave = async (setting: TradeValueSetting) => {
@@ -129,11 +133,58 @@ const TradeValuesPage: React.FC = () => {
       await fetchSettings();
       setEditingId(null);
       setError(null);
+      setHasUnsavedChanges(false);
     } catch (err) {
       console.error('Error saving setting:', err);
       setError(err instanceof Error ? err.message : 'Failed to save setting');
       toast.error(err instanceof Error ? err.message : 'Failed to save setting');
     }
+  };
+
+  const saveAllSettings = async () => {
+    setIsLoading(true);
+    let hasError = false;
+
+    for (const setting of settings) {
+      try {
+        const isFixedMode = setting.fixed_cash_value !== null;
+        
+        // Prepare the object for saving with proper defaults
+        const settingToSave = {
+          ...setting,
+          fixed_cash_value: isFixedMode ? setting.fixed_cash_value : null,
+          fixed_trade_value: isFixedMode ? setting.fixed_trade_value : null,
+          cash_percentage: isFixedMode ? 0 : (setting.cash_percentage ?? 50),
+          trade_percentage: isFixedMode ? 0 : (setting.trade_percentage ?? 65),
+        };
+        
+        console.log('Saving setting in bulk update:', settingToSave);
+        
+        const { error } = await supabase
+          .from('trade_value_settings')
+          .upsert(settingToSave, { onConflict: 'id' });
+        
+        if (error) {
+          console.error('Error during bulk save for setting:', setting.id, error);
+          hasError = true;
+        }
+      } catch (err) {
+        console.error('Error processing setting during bulk save:', setting.id, err);
+        hasError = true;
+      }
+    }
+    
+    setIsLoading(false);
+    
+    if (hasError) {
+      toast.error('Some settings could not be saved. Please check and try again.');
+    } else {
+      toast.success('All trade value settings saved successfully');
+      setHasUnsavedChanges(false);
+    }
+    
+    // Refresh settings to get the latest state
+    await fetchSettings();
   };
 
   const handleDelete = async (id: string) => {
@@ -166,6 +217,14 @@ const TradeValuesPage: React.FC = () => {
     };
     setSettings(prev => [...prev, newSetting]);
     setEditingId(newSetting.id);
+    setHasUnsavedChanges(true);
+  };
+
+  const handleSettingChange = (updatedSetting: TradeValueSetting) => {
+    setSettings(prev => 
+      prev.map(s => (s.id === updatedSetting.id ? updatedSetting : s))
+    );
+    setHasUnsavedChanges(true);
   };
 
   if (loading) {
@@ -184,11 +243,11 @@ const TradeValuesPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="flex items-center justify-between mb-8">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/admin')}
             className="flex items-center text-gray-600 hover:text-gray-800"
           >
             <ArrowLeft className="h-5 w-5 mr-2" />
-            Back to Dashboard
+            Back to Admin
           </button>
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-purple-100 rounded-lg">
@@ -206,13 +265,29 @@ const TradeValuesPage: React.FC = () => {
                 Configure trade-in values based on card value ranges
               </p>
             </div>
-            <button
-              onClick={addNewSetting}
-              className="flex items-center px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Add Range
-            </button>
+            <div className="flex space-x-3">
+              {hasUnsavedChanges && (
+                <button
+                  onClick={saveAllSettings}
+                  disabled={isLoading}
+                  className="flex items-center px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-green-300"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Save All Changes
+                </button>
+              )}
+              <button
+                onClick={addNewSetting}
+                className="flex items-center px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Add Range
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -256,30 +331,26 @@ const TradeValuesPage: React.FC = () => {
                                     <input
                                       type="number"
                                       value={s.min_value}
-                                      onChange={e =>
-                                        setSettings(prev =>
-                                          prev.map(x =>
-                                            x.id === s.id
-                                              ? { ...x, min_value: parseFloat(e.target.value) }
-                                              : x
-                                          )
-                                        )
-                                      }
+                                      onChange={e => {
+                                        const newValue = parseFloat(e.target.value);
+                                        handleSettingChange({
+                                          ...s,
+                                          min_value: isNaN(newValue) ? 0 : newValue
+                                        });
+                                      }}
                                       className="w-24 px-2 py-1 border border-gray-300 rounded"
                                     />
                                     <span>to</span>
                                     <input
                                       type="number"
                                       value={s.max_value}
-                                      onChange={e =>
-                                        setSettings(prev =>
-                                          prev.map(x =>
-                                            x.id === s.id
-                                              ? { ...x, max_value: parseFloat(e.target.value) }
-                                              : x
-                                          )
-                                        )
-                                      }
+                                      onChange={e => {
+                                        const newValue = parseFloat(e.target.value);
+                                        handleSettingChange({
+                                          ...s,
+                                          max_value: isNaN(newValue) ? 0 : newValue
+                                        });
+                                      }}
                                       className="w-24 px-2 py-1 border border-gray-300 rounded"
                                     />
                                   </div>
@@ -318,13 +389,10 @@ const TradeValuesPage: React.FC = () => {
                                         value={formatCurrency(s.fixed_cash_value || 0)}
                                         onChange={e => {
                                           const value = parseCurrency(e.target.value);
-                                          setSettings(prev =>
-                                            prev.map(x =>
-                                              x.id === s.id
-                                                ? { ...x, fixed_cash_value: value }
-                                                : x
-                                            )
-                                          );
+                                          handleSettingChange({
+                                            ...s,
+                                            fixed_cash_value: value
+                                          });
                                         }}
                                         className="w-24 px-2 py-1 border border-gray-300 rounded text-right"
                                         step="0.01"
@@ -335,15 +403,13 @@ const TradeValuesPage: React.FC = () => {
                                       <input
                                         type="number"
                                         value={s.cash_percentage ?? 0}
-                                        onChange={e =>
-                                          setSettings(prev =>
-                                            prev.map(x =>
-                                              x.id === s.id
-                                                ? { ...x, cash_percentage: parseFloat(e.target.value) }
-                                                : x
-                                            )
-                                          )
-                                        }
+                                        onChange={e => {
+                                          const newValue = parseFloat(e.target.value);
+                                          handleSettingChange({
+                                            ...s,
+                                            cash_percentage: isNaN(newValue) ? 0 : newValue
+                                          });
+                                        }}
                                         className="w-20 px-2 py-1 border border-gray-300 rounded"
                                       />
                                       <span className="ml-2">%</span>
@@ -367,13 +433,10 @@ const TradeValuesPage: React.FC = () => {
                                         value={formatCurrency(s.fixed_trade_value || 0)}
                                         onChange={e => {
                                           const value = parseCurrency(e.target.value);
-                                          setSettings(prev =>
-                                            prev.map(x =>
-                                              x.id === s.id
-                                                ? { ...x, fixed_trade_value: value }
-                                                : x
-                                            )
-                                          );
+                                          handleSettingChange({
+                                            ...s,
+                                            fixed_trade_value: value
+                                          });
                                         }}
                                         className="w-24 px-2 py-1 border border-gray-300 rounded text-right"
                                         step="0.01"
@@ -384,15 +447,13 @@ const TradeValuesPage: React.FC = () => {
                                       <input
                                         type="number"
                                         value={s.trade_percentage ?? 0}
-                                        onChange={e =>
-                                          setSettings(prev =>
-                                            prev.map(x =>
-                                              x.id === s.id
-                                                ? { ...x, trade_percentage: parseFloat(e.target.value) }
-                                                : x
-                                            )
-                                          )
-                                        }
+                                        onChange={e => {
+                                          const newValue = parseFloat(e.target.value);
+                                          handleSettingChange({
+                                            ...s,
+                                            trade_percentage: isNaN(newValue) ? 0 : newValue
+                                          });
+                                        }}
                                         className="w-20 px-2 py-1 border border-gray-300 rounded"
                                       />
                                       <span className="ml-2">%</span>
