@@ -106,7 +106,7 @@ export const usePriceManagement = ({
     if (!item.paymentType) {
       updates.paymentType = 'cash';
       setMarketPriceSet(true);
-      console.log(`usePriceManagement [${instanceId}]: Auto-setting payment type to cash for ${card.name} after manual price change`);
+      console.log(`usePriceManagement [${instanceId}]: Auto-setting payment type to cash for ${item.card.name} after manual price change`);
     }
     
     onUpdate(updates);
