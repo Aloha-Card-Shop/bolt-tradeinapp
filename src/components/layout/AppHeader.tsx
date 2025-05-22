@@ -1,10 +1,9 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Layout, Menu, X, ChevronRight } from 'lucide-react';
-import LogoutButton from '../common/LogoutButton';
+import { Home, Menu, X } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
-import AdminNav from '../AdminNav';
+import { AdminNav } from '../navigation';
 import DesktopNavigation from './DesktopNavigation';
 import UserInfo from './UserInfo';
 import MobileMenu from './MobileMenu';
