@@ -216,7 +216,7 @@ serve(async (req) => {
       );
     }
 
-    // Make the request to the CORRECT certification API URL
+    // Make the request to the CORRECT PSA API URL
     const apiUrl = `https://api.psacard.com/publicapi/cert/GetByCertNumber/${encodeURIComponent(certNumber)}`;
     console.log(`Making request to PSA API: ${apiUrl}`);
 
@@ -245,22 +245,25 @@ serve(async (req) => {
       );
     }
 
-    const certData = await certResponse.json();
-    console.log("Received certification data", certData);
+    // Get the response from PSA's API
+    const psaResponse = await certResponse.json();
+    console.log("Received PSA certification data:", JSON.stringify(psaResponse).substring(0, 200) + "...");
+    
+    // Extract relevant data from PSA API response format
+    const psaCert = psaResponse.PSACert || {};
     
     // Process the data to format it for our needs
     const processedData = {
-      certNumber: certData.certNumber || certNumber,
-      cardName: certData.cardName || certData.name || "Unknown Card",
-      grade: certData.grade || "Unknown",
-      year: certData.year || "",
-      set: certData.setName || "",
-      cardNumber: certData.cardNumber || "",
-      playerName: certData.playerName || "",
-      imageUrl: certData.imageUrl || null,
-      certificationDate: certData.certificationDate || null,
-      game: mapCardGame(certData.category || ""), 
-      // Add additional fields as needed
+      certNumber: psaCert.CertNumber || certNumber,
+      cardName: psaCert.Subject || psaCert.Brand || "Unknown Card",
+      grade: psaCert.CardGrade || "Unknown",
+      year: psaCert.Year || "",
+      set: psaCert.Brand || "",
+      cardNumber: psaCert.CardNumber || "",
+      playerName: psaCert.Subject || "",
+      imageUrl: null, // PSA API doesn't provide image URLs
+      certificationDate: null,
+      game: mapCardGame(psaCert.Category || ""), 
     };
 
     // Store in cache

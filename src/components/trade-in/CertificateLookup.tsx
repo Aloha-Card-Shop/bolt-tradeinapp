@@ -74,6 +74,9 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
         } else if (data.error === 'Unauthorized') {
           setError('You do not have permission to use the certificate lookup service');
           toast.error('Access denied to certificate service');
+        } else if (data.error === 'Not Found') {
+          setError('Certificate not found. Please check the number and try again.');
+          toast.error('Certificate not found');
         } else {
           setError(data.message || data.error || 'Certificate lookup failed');
           toast.error(data.message || 'Certificate lookup failed');
