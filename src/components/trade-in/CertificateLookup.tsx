@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, Loader, AlertCircle, CheckCircle, KeySquare, ArrowRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -55,32 +54,39 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
         return;
       }
 
-      if (!data) {
-        setError('Certificate not found');
-        toast.error('Certificate not found');
+      // Handle server error response
+      if (data && data.error) {
+        console.error('Cert lookup API error:', data.error);
+        
+        // Handle configuration errors
+        if (data.error === 'Configuration Error' || 
+            data.error === 'Server Error' && 
+            (data.message?.includes('API key not configured') || 
+             data.message?.includes('not found in database') || 
+             data.message?.includes('PSA API key'))) {
+          setConfigError(true);
+          setError(data.message || 'Certificate lookup API is not configured properly');
+          toast.error('Certificate service not configured');
+        } else {
+          setError(data.message || data.error || 'Certificate lookup failed');
+          toast.error(data.message || 'Certificate lookup failed');
+        }
         return;
       }
 
-      // Handle API configuration error
-      if (data.error === 'Server Error' && (
-          data.message === 'API key not configured' || 
-          data.message.includes('API key not configured') ||
-          data.message.includes('not found in database')
-      )) {
-        setConfigError(true);
-        setError('Certificate lookup API is not configured properly');
-        toast.error('Certificate service not configured');
-        return;
-      }
-
-      if (!data.data) {
-        setError('Certificate not found');
+      if (!data || !data.data) {
+        setError('Certificate not found or invalid response');
         toast.error('Certificate not found');
         return;
       }
 
       setResult(data.data);
-      toast.success('Certificate found!');
+      
+      if (data.isMockData) {
+        toast.success('Certificate found (using mock data)');
+      } else {
+        toast.success('Certificate found!');
+      }
     } catch (err) {
       console.error('Certificate lookup error:', err);
       setError('An unexpected error occurred');

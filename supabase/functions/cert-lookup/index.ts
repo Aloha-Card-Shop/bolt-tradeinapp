@@ -59,15 +59,19 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") as string;
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    // Fetch the API key from the database
+    // Fetch the API key from the database using maybeSingle instead of single
+    // This is the main fix for the error we were encountering
+    console.log("Fetching PSA_API_TOKEN from database");
     const { data: apiKeyData, error: apiKeyError } = await supabase
       .from("api_keys")
       .select("key_value")
       .eq("key_name", "PSA_API_TOKEN")
       .eq("is_active", true)
-      .single();
+      .maybeSingle();
 
-    if (apiKeyError || !apiKeyData) {
+    console.log("API key fetch result:", apiKeyData ? "Found key" : "No key found", apiKeyError ? `Error: ${apiKeyError.message}` : "No error");
+    
+    if (apiKeyError) {
       console.error("Error fetching API key:", apiKeyError);
       
       // If we're in development or testing mode, return mock data
@@ -96,6 +100,41 @@ serve(async (req) => {
         JSON.stringify({ 
           error: "Server Error", 
           message: apiKeyError ? apiKeyError.message : "API key not configured or not found in database" 
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Handle case where no API key was found, added from maybeSingle
+    if (!apiKeyData) {
+      console.error("PSA_API_TOKEN not found in database");
+      
+      // If we're in development or testing mode, return mock data
+      if (Deno.env.get("ENVIRONMENT") === "development" || Deno.env.get("ENVIRONMENT") === "test") {
+        console.log("Using mock data for development/testing");
+        const mockData = createMockCertData(certNumber);
+        
+        // Store in cache
+        certCache.set(cacheKey, {
+          data: mockData,
+          timestamp: Date.now()
+        });
+        
+        return new Response(
+          JSON.stringify({ 
+            data: mockData, 
+            isMockData: true,
+            message: "Using mock data as PSA_API_TOKEN not found in database"
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // In production, return an error
+      return new Response(
+        JSON.stringify({ 
+          error: "Configuration Error", 
+          message: "PSA API key not found in database. Please configure it in API Settings." 
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -136,6 +175,7 @@ serve(async (req) => {
 
     // Make the request to the certification API
     const apiUrl = `https://api.example.com/cert/GetByCertNumber/${encodeURIComponent(certNumber)}`;
+    console.log(`Making request to PSA API: ${apiUrl}`);
 
     const certResponse = await fetch(apiUrl, {
       method: "GET",
@@ -163,6 +203,7 @@ serve(async (req) => {
     }
 
     const certData = await certResponse.json();
+    console.log("Received certification data", certData);
     
     // Process the data to format it for our needs
     const processedData = {
@@ -188,6 +229,7 @@ serve(async (req) => {
     // Clean up old cache entries
     cleanupCache();
 
+    console.log("Returning processed certification data");
     return new Response(
       JSON.stringify({ data: processedData }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
