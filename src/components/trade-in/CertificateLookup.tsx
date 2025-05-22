@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Search, Loader, AlertCircle, CheckCircle, KeySquare, ArrowRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -154,13 +155,13 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
           <KeySquare className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="font-medium">API Key Missing</p>
-            <p className="text-sm mt-1">The certificate lookup service requires configuration.</p>
+            <p className="text-sm mt-1">The PSA certificate lookup service requires configuration.</p>
             {userRole === 'admin' && (
               <Link 
                 to="/admin/api-settings" 
                 className="mt-2 text-sm inline-flex items-center text-amber-800 font-medium hover:text-amber-900"
               >
-                Configure API key 
+                Configure PSA API key 
                 <ArrowRight className="h-3.5 w-3.5 ml-1" />
               </Link>
             )}
@@ -210,7 +211,7 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
       )}
       
       <p className="text-xs text-gray-500">
-        Enter a certification number to look up graded cards
+        Enter a PSA certification number to look up graded cards
       </p>
     </div>
   );

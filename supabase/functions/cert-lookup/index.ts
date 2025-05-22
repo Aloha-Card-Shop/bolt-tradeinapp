@@ -173,8 +173,8 @@ serve(async (req) => {
       );
     }
 
-    // Make the request to the certification API
-    const apiUrl = `https://api.example.com/cert/GetByCertNumber/${encodeURIComponent(certNumber)}`;
+    // Make the request to the CORRECT certification API URL
+    const apiUrl = `https://api.psacard.com/publicapi/cert/GetByCertNumber/${encodeURIComponent(certNumber)}`;
     console.log(`Making request to PSA API: ${apiUrl}`);
 
     const certResponse = await fetch(apiUrl, {
