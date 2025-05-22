@@ -75,16 +75,17 @@ const TradeInList: React.FC<TradeInListProps> = ({
         item.card.game,
         item.isReverseHolo
       );
-      // Set the payment type to 'cash' when market price is fetched successfully
-      // This will trigger the cash value calculation immediately
+      // Update with new values and force recalculation
       onUpdateItem(i, { 
         ...item, 
         condition: cond as any, 
         price: parseFloat(data.price), 
         isLoadingPrice: false,
-        paymentType: 'cash' // Automatically set payment type to cash
+        paymentType: 'cash',  // Always set payment type to cash
+        cashValue: undefined,  // Reset any manual values
+        tradeValue: undefined  // Reset any manual values
       });
-      console.log(`Updated item ${i} with price ${data.price} and set paymentType to cash`);
+      console.log(`Updated item ${i} with price ${data.price} and set paymentType to cash, forcing recalculation`);
     } catch (e) {
       onUpdateItem(i, { ...item, isLoadingPrice: false, error: (e as Error).message });
     }

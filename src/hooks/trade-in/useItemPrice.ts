@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { TradeInItem } from '../useTradeInList';
 import { useTradeValue } from '../useTradeValue';
@@ -88,13 +89,15 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   
   const [displayValue, setDisplayValue] = useState(0);
   
-  // Calculate the display value based on payment type
+  // Calculate the display value based on payment type and force updates when needed
   useEffect(() => {
-    console.log(`useItemPrice [${instanceId}]: Effect triggered with cashValue=${cashValue}, tradeValue=${tradeValue}, isLoading=${isLoading}, paymentType=${item.paymentType}`);
+    console.log(`useItemPrice [${instanceId}]: Effect triggered with cashValue=${cashValue}, tradeValue=${tradeValue}, isLoading=${isLoading}, paymentType=${item.paymentType}, initialCalculation=${initialCalculation}`);
     
     setDisplayValue(calculateDisplayValue(item.paymentType, cashValue, tradeValue, item.quantity));
     
-    // Only update the calculated values if they've changed and no manual override exists
+    // Only update the calculated values if:
+    // 1. Not loading and has price
+    // 2. AND it's either the initial calculation OR the calculated values have changed
     if (!isLoading && item.price > 0) {
       console.log(`useItemPrice [${instanceId}]: Checking if values changed:`, {
         card: item.card.name,
@@ -107,7 +110,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         hasManualTradeValue: item.tradeValue !== undefined
       });
       
-      // Check if values have changed
+      // Check if values have changed or if it's forced recalculation
       const valuesChanged = haveValuesChanged(
         calculatedCashValue, 
         prevCalculatedCashValue.current, 
@@ -115,8 +118,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         prevCalculatedTradeValue.current
       );
       
-      // If it's the first calculation or values have changed, update
-      if (initialCalculation || valuesChanged) {
+      // If it's the first calculation or values have changed or cashValue/tradeValue is undefined, update
+      if (initialCalculation || valuesChanged || item.cashValue === undefined || item.tradeValue === undefined) {
         // Store new calculated values in refs
         prevCalculatedCashValue.current = calculatedCashValue;
         prevCalculatedTradeValue.current = calculatedTradeValue;

@@ -75,7 +75,17 @@ const TradeInList: React.FC<TradeInListProps> = ({
         item.card.game,
         item.isReverseHolo
       );
-      onUpdateItem(i, { ...item, condition: cond as any, price: parseFloat(data.price), isLoadingPrice: false });
+      // Update with new values and force recalculation
+      onUpdateItem(i, { 
+        ...item, 
+        condition: cond as any, 
+        price: parseFloat(data.price), 
+        isLoadingPrice: false,
+        paymentType: 'cash',  // Set payment type to cash
+        cashValue: undefined,  // Reset any manual values
+        tradeValue: undefined  // Reset any manual values
+      });
+      console.log(`Updated item ${i} with price ${data.price} and set paymentType to cash, forcing recalculation`);
     } catch (e) {
       onUpdateItem(i, { ...item, isLoadingPrice: false, error: (e as Error).message });
     }
