@@ -1,9 +1,11 @@
 
 import React from 'react';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { TradeIn } from '../../types/tradeIn';
 import TradeInEmptyState from '../TradeInEmptyState';
 import StatusBadge from './StatusBadge';
 import TradeInItemRow from './TradeInItemRow';
+import TradeInItemCard from './TradeInItemCard';
 import ShopifySync from '../shopify/ShopifySync';
 import { Printer, Clock } from 'lucide-react';
 
@@ -18,6 +20,8 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
   loadingItems,
   setTradeIns
 }) => {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  
   // We'll read directly from tradeIn.items and not maintain a separate local state
   // This ensures we always use the latest data from the parent component
   
@@ -33,7 +37,7 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
   const statusMessage = getStatusMessage(tradeIn.status);
   
   // Always use the items from the latest tradeIn prop
-  const displayItems = tradeIn.items;
+  const displayItems = tradeIn.items || [];
 
   // Handle refresh after Shopify sync
   const handleSyncSuccess = () => {
@@ -49,9 +53,9 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden">
+    <div className="bg-white overflow-hidden">
       {/* Status header */}
-      <div className="bg-blue-50 px-6 py-4">
+      <div className="bg-blue-50 px-4 py-4">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold text-gray-800">Trade-In Details</h3>
           <StatusBadge status={tradeIn.status} />
@@ -59,7 +63,7 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
         <p className="text-sm text-gray-600 mt-1">{statusMessage}</p>
         
         {/* Customer information */}
-        <div className="mt-4 flex flex-wrap gap-4">
+        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-3">
           <div>
             <p className="text-xs text-gray-500">Customer</p>
             <p className="font-medium">{tradeIn.customer_name || 'Unknown'}</p>
@@ -113,7 +117,7 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
 
         {/* Add Shopify sync button with error handling */}
         {(tradeIn.status === 'accepted' || tradeIn.status === 'pending') && (
-          <div className="mt-2">
+          <div className="mt-4">
             <ShopifySync 
               tradeIn={tradeIn} 
               onSuccess={handleSyncSuccess} 
@@ -124,20 +128,29 @@ const TradeInDetailsPanel: React.FC<TradeInDetailsPanelProps> = ({
 
       {/* Staff notes if available */}
       {tradeIn.staff_notes && (
-        <div className="px-6 py-3 bg-yellow-50">
+        <div className="px-4 py-3 bg-yellow-50">
           <h4 className="text-sm font-medium text-gray-700">Staff Notes</h4>
           <p className="text-sm text-gray-800 mt-1">{tradeIn.staff_notes}</p>
         </div>
       )}
 
-      {/* Items table */}
-      <div className="px-6 py-4">
-        <h4 className="font-medium mb-2">Items</h4>
+      {/* Items - Table for desktop, Cards for mobile */}
+      <div className="px-4 py-4">
+        <h4 className="font-medium mb-3">Items</h4>
         
         {loadingItems === tradeIn.id ? (
           <p className="text-center py-4 text-gray-500">Loading items...</p>
         ) : !displayItems || displayItems.length === 0 ? (
           <TradeInEmptyState />
+        ) : isMobile ? (
+          <div className="space-y-3">
+            {displayItems.map((item) => (
+              <TradeInItemCard 
+                key={item.id} 
+                item={item}
+              />
+            ))}
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full border-separate border-spacing-0">
