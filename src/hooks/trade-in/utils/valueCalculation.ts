@@ -1,3 +1,4 @@
+
 import { TradeInItem } from '../../../hooks/useTradeInList';
 
 /**
@@ -51,7 +52,8 @@ export function createValueUpdates(
     currentCashValue: item.cashValue,
     currentTradeValue: item.tradeValue,
     paymentType: item.paymentType,
-    marketPriceSet
+    marketPriceSet,
+    initialCalculation: item.initialCalculation
   });
   
   // Update cash value if not manually set
@@ -78,6 +80,11 @@ export function createValueUpdates(
   if (usedFallback) {
     updates.usedFallback = true;
     updates.fallbackReason = fallbackReason;
+  }
+  
+  // If this was an initial calculation, mark it as completed
+  if (item.initialCalculation) {
+    updates.initialCalculation = false;
   }
   
   return updates;

@@ -20,7 +20,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     game: item.card.game,
     price: item.price,
     paymentType: item.paymentType,
-    cardData: item.card
+    cardData: item.card,
+    initialCalculation: item.initialCalculation
   });
   
   // Validate game type and price before calculating
@@ -52,13 +53,21 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   // Track the values with refs to detect changes
   const prevCalculatedCashValue = useRef<number>(0);
   const prevCalculatedTradeValue = useRef<number>(0);
-  const [initialCalculation, setInitialCalculationState] = useState<boolean>(true);
+  const [initialCalculationState, setInitialCalculationState] = useState<boolean>(!!item.initialCalculation);
   const [marketPriceSet, setMarketPriceSet] = useState<boolean>(false);
   
   const setInitialCalculation = useCallback((value: boolean) => {
     console.log(`useItemPrice [${instanceId}]: Setting initialCalculation to ${value} for ${item.card.name}`);
     setInitialCalculationState(value);
-  }, [item.card.name, instanceId]);
+    onUpdate({ initialCalculation: value });
+  }, [item.card.name, instanceId, onUpdate]);
+  
+  // Sync initialCalculation state with item prop
+  useEffect(() => {
+    if (initialCalculationState !== !!item.initialCalculation) {
+      setInitialCalculationState(!!item.initialCalculation);
+    }
+  }, [item.initialCalculation]);
   
   // Add additional logging for the useTradeValue hook results
   useEffect(() => {
@@ -72,7 +81,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
       fallbackReason,
       currentPrice: item.price,
       gameType: item.card.game,
-      initialCalculation,
+      initialCalculation: initialCalculationState,
+      itemInitialCalculation: item.initialCalculation,
       cashValueDefined: item.cashValue !== undefined,
       tradeValueDefined: item.tradeValue !== undefined
     });
@@ -86,7 +96,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     }
   }, [calculatedCashValue, calculatedTradeValue, isLoading, calculationError, 
       usedFallback, fallbackReason, item.card.name, item.price, item.card.game, instanceId, 
-      initialCalculation, item.cashValue, item.tradeValue]);
+      initialCalculationState, item.cashValue, item.tradeValue, item.initialCalculation]);
   
   // Use the manually set values if they exist, otherwise use the calculated values
   const cashValue = item.cashValue !== undefined ? item.cashValue : calculatedCashValue;
@@ -98,7 +108,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   useEffect(() => {
     const shouldCalculate = !isLoading && 
                           item.price > 0 && 
-                          (initialCalculation || 
+                          (initialCalculationState || 
+                           item.initialCalculation ||
                            item.cashValue === undefined || 
                            item.tradeValue === undefined ||
                            (item.paymentType === 'cash' && 
@@ -109,7 +120,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
                               prevCalculatedTradeValue.current
                             )));
     
-    console.log(`useItemPrice [${instanceId}]: Effect triggered with cashValue=${cashValue}, tradeValue=${tradeValue}, isLoading=${isLoading}, paymentType=${item.paymentType}, initialCalculation=${initialCalculation}, shouldCalculate=${shouldCalculate}`);
+    console.log(`useItemPrice [${instanceId}]: Effect triggered with cashValue=${cashValue}, tradeValue=${tradeValue}, isLoading=${isLoading}, paymentType=${item.paymentType}, initialCalculation=${initialCalculationState}, shouldCalculate=${shouldCalculate}`);
     
     setDisplayValue(calculateDisplayValue(item.paymentType, cashValue, tradeValue, item.quantity));
     
@@ -121,7 +132,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         prevCalcCash: prevCalculatedCashValue.current,
         calculatedTrade: calculatedTradeValue,
         prevCalcTrade: prevCalculatedTradeValue.current,
-        isInitial: initialCalculation,
+        isInitial: initialCalculationState,
+        itemInitial: item.initialCalculation,
         hasManualCashValue: item.cashValue !== undefined,
         hasManualTradeValue: item.tradeValue !== undefined,
         paymentType: item.paymentType
@@ -131,7 +143,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
       prevCalculatedCashValue.current = calculatedCashValue;
       prevCalculatedTradeValue.current = calculatedTradeValue;
       
-      if (initialCalculation) {
+      if (initialCalculationState) {
         setInitialCalculationState(false);
       }
       
@@ -161,7 +173,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     calculatedCashValue, calculatedTradeValue, isLoading, item.price, item.quantity,
     item.cashValue, item.tradeValue, item.paymentType, onUpdate, cashValue, tradeValue,
     item.card.name, calculationError, usedFallback, fallbackReason, instanceId,
-    initialCalculation, marketPriceSet
+    initialCalculationState, marketPriceSet, item.initialCalculation, setInitialCalculation, item
   ]);
 
   // Price management functionality
@@ -175,11 +187,11 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
 
   // Force price refresh if we have a card without a price but with a productId
   useEffect(() => {
-    if (item.price <= 0 && item.card.productId && !item.isLoadingPrice && initialCalculation) {
+    if (item.price <= 0 && item.card.productId && !item.isLoadingPrice && (initialCalculationState || item.initialCalculation)) {
       console.log(`useItemPrice [${instanceId}]: Card ${item.card.name} has productId but no price, triggering refresh`);
       refreshPrice();
     }
-  }, [item.price, item.card.productId, item.isLoadingPrice, refreshPrice, item.card.name, instanceId, initialCalculation]);
+  }, [item.price, item.card.productId, item.isLoadingPrice, refreshPrice, item.card.name, instanceId, initialCalculationState, item.initialCalculation]);
 
   // Explicitly log the return values for debugging
   const returnValues = {

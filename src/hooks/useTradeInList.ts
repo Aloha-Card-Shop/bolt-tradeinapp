@@ -21,6 +21,7 @@ export interface TradeInItem {
   isPriceUnavailable?: boolean;
   usedFallback?: boolean;
   fallbackReason?: string;
+  initialCalculation?: boolean; // Add the initialCalculation property
 }
 
 export const useTradeInList = () => {
@@ -42,10 +43,11 @@ export const useTradeInList = () => {
       isHolo: true,
       isReverseHolo: false,
       price: price || 0,
-      paymentType: null, // Changed from 'cash' to null
+      paymentType: null, 
       isLoadingPrice: false,
       error: undefined,
-      isPriceUnavailable: false
+      isPriceUnavailable: false,
+      initialCalculation: true // Set initialCalculation to true for new items
     }]);
   }, []);
 

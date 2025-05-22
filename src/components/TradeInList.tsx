@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { TradeInItem as TradeInItemType } from '../hooks/useTradeInList';
 import { useCustomers } from '../hooks/useCustomers';
@@ -85,7 +86,7 @@ const TradeInList: React.FC<TradeInListProps> = ({
       );
       
       // Update with new values and explicitly force recalculation
-      const newItem = { 
+      const newItem: TradeInItemType = { 
         ...item, 
         condition: cond as any, 
         price: parseFloat(data.price), 
