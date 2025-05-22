@@ -1,9 +1,9 @@
-
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { fetchCardPrices } from '../../utils/scraper';
-import { toast } from 'react-hot-toast';
 import { TradeInItem } from '../useTradeInList';
 import { useTradeValue } from '../useTradeValue';
+import { usePriceManagement } from './usePriceManagement';
+import { calculateDisplayValue, haveValuesChanged, createValueUpdates } from './utils/valueCalculation';
+import { toast } from 'react-hot-toast';
 
 interface UseItemPriceProps {
   item: TradeInItem;
@@ -19,8 +19,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
     game: item.card.game,
     price: item.price,
     paymentType: item.paymentType,
-    cardData: item.card,
-    instanceId
+    cardData: item.card
   });
   
   // Validate game type and price before calculating
@@ -52,8 +51,12 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   // Track the values with refs to detect changes
   const prevCalculatedCashValue = useRef<number>(0);
   const prevCalculatedTradeValue = useRef<number>(0);
-  const initialCalculation = useRef<boolean>(true);
-  const marketPriceSet = useRef<boolean>(false);
+  const [initialCalculation, setInitialCalculationState] = useState<boolean>(true);
+  const [marketPriceSet, setMarketPriceSet] = useState<boolean>(false);
+  
+  const setInitialCalculation = useCallback((value: boolean) => {
+    setInitialCalculationState(value);
+  }, []);
   
   // Add additional logging for the useTradeValue hook results
   useEffect(() => {
@@ -76,7 +79,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         calculationError !== 'API_ENDPOINT_NOT_FOUND') {
       toast.error(`Trade value calculation issue: ${calculationError}`);
     }
-  }, [calculatedCashValue, calculatedTradeValue, isLoading, calculationError, usedFallback, fallbackReason, item.card.name, item.price, item.card.game, instanceId]);
+  }, [calculatedCashValue, calculatedTradeValue, isLoading, calculationError, 
+      usedFallback, fallbackReason, item.card.name, item.price, item.card.game, instanceId]);
   
   // Use the manually set values if they exist, otherwise use the calculated values
   const cashValue = item.cashValue !== undefined ? item.cashValue : calculatedCashValue;
@@ -88,16 +92,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   useEffect(() => {
     console.log(`useItemPrice [${instanceId}]: Effect triggered with cashValue=${cashValue}, tradeValue=${tradeValue}, isLoading=${isLoading}, paymentType=${item.paymentType}`);
     
-    // Only set display value if a payment type is selected
-    if (item.paymentType) {
-      const value = item.paymentType === 'cash' ? cashValue : tradeValue;
-      setDisplayValue(value * item.quantity);
-      console.log(`useItemPrice [${instanceId}]: Display value set to ${value * item.quantity} for ${item.card.name}`);
-    } else {
-      // Reset display value when no payment type is selected
-      setDisplayValue(0);
-      console.log(`useItemPrice [${instanceId}]: No payment type selected for ${item.card.name}, display value reset to 0`);
-    }
+    setDisplayValue(calculateDisplayValue(item.paymentType, cashValue, tradeValue, item.quantity));
     
     // Only update the calculated values if they've changed and no manual override exists
     if (!isLoading && item.price > 0) {
@@ -107,180 +102,72 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         prevCalcCash: prevCalculatedCashValue.current,
         calculatedTrade: calculatedTradeValue,
         prevCalcTrade: prevCalculatedTradeValue.current,
-        isInitial: initialCalculation.current,
+        isInitial: initialCalculation,
         hasManualCashValue: item.cashValue !== undefined,
-        hasManualTradeValue: item.tradeValue !== undefined,
-        price: item.price,
-        usedFallback
+        hasManualTradeValue: item.tradeValue !== undefined
       });
       
-      // Values have actually changed and are different from what we had before
-      const hasCashValueChanged = calculatedCashValue !== prevCalculatedCashValue.current;
-      const hasTradeValueChanged = calculatedTradeValue !== prevCalculatedTradeValue.current;
+      // Check if values have changed
+      const valuesChanged = haveValuesChanged(
+        calculatedCashValue, 
+        prevCalculatedCashValue.current, 
+        calculatedTradeValue, 
+        prevCalculatedTradeValue.current
+      );
       
       // If it's the first calculation or values have changed, update
-      if (initialCalculation.current || hasCashValueChanged || hasTradeValueChanged) {
+      if (initialCalculation || valuesChanged) {
         // Store new calculated values in refs
         prevCalculatedCashValue.current = calculatedCashValue;
         prevCalculatedTradeValue.current = calculatedTradeValue;
-        initialCalculation.current = false;
+        setInitialCalculationState(false);
         
-        // Update with new calculated values, but only if they're not manually overridden
-        const updates: Partial<TradeInItem> = {};
-        
-        if (item.cashValue === undefined) {
-          updates.cashValue = calculatedCashValue;
-        }
-        
-        if (item.tradeValue === undefined) {
-          updates.tradeValue = calculatedTradeValue;
-        }
-
-        // If price is valid and we just got market price, set payment type to cash
-        // Only do this once when we first get price and values, and if user hasn't selected payment type
-        if (item.price > 0 && !item.paymentType && !marketPriceSet.current) {
-          updates.paymentType = 'cash';
-          marketPriceSet.current = true;
-          console.log(`useItemPrice [${instanceId}]: Auto-setting payment type to cash for ${item.card.name}`);
-        }
-        
-        // Pass along any error information and fallback status
-        if (calculationError) {
-          updates.error = calculationError;
-        }
-        
-        // Add fallback information
-        if (usedFallback) {
-          updates.usedFallback = true;
-          updates.fallbackReason = fallbackReason;
-        }
+        // Get updates based on calculation results
+        const updates = createValueUpdates(
+          item, 
+          calculatedCashValue, 
+          calculatedTradeValue, 
+          calculationError,
+          usedFallback,
+          fallbackReason,
+          marketPriceSet
+        );
         
         // Only update if we have changes to make
         if (Object.keys(updates).length > 0) {
-          console.log(`useItemPrice [${instanceId}]: Updating ${item.card.name} with calculated values:`, {
-            calculatedCash: calculatedCashValue,
-            calculatedTrade: calculatedTradeValue,
-            usedFallback,
-            fallbackReason,
-            updates
-          });
+          console.log(`useItemPrice [${instanceId}]: Updating ${item.card.name} with calculated values:`, updates);
           onUpdate(updates);
+          
+          // Update marketPriceSet if we're setting payment type
+          if (updates.paymentType === 'cash') {
+            setMarketPriceSet(true);
+          }
         }
       }
     }
   }, [
-    calculatedCashValue, 
-    calculatedTradeValue, 
-    isLoading, 
-    item.price, 
-    item.quantity, 
-    item.cashValue, 
-    item.tradeValue, 
-    item.paymentType, 
-    onUpdate,
-    cashValue,
-    tradeValue,
-    item.card.name,
-    calculationError,
-    usedFallback,
-    fallbackReason,
-    instanceId
+    calculatedCashValue, calculatedTradeValue, isLoading, item.price, item.quantity,
+    item.cashValue, item.tradeValue, item.paymentType, onUpdate, cashValue, tradeValue,
+    item.card.name, calculationError, usedFallback, fallbackReason, instanceId,
+    initialCalculation, marketPriceSet
   ]);
 
-  const refreshPrice = useCallback(async () => {
-    const { card, condition, isFirstEdition, isHolo, isReverseHolo } = item;
-    
-    if (!card.productId || !condition) {
-      console.log(`useItemPrice [${instanceId}]: Can't refresh price for ${card.name}: missing productId or condition`, {
-        productId: card.productId,
-        condition
-      });
-      return; // Can't refresh without product ID and condition
-    }
-    
-    onUpdate({ isLoadingPrice: true, error: undefined, isPriceUnavailable: false });
-    
-    try {
-      console.log(`useItemPrice [${instanceId}]: refreshPrice: Fetching price for ${card.name}, game=${card.game}, condition=${condition}`);
-      const data = await fetchCardPrices(
-        card.productId,
-        condition,
-        isFirstEdition,
-        isHolo,
-        card.game,
-        isReverseHolo
-      );
-      
-      console.log(`useItemPrice [${instanceId}]: Price fetch result for ${card.name}:`, data);
-      
-      if (data.unavailable) {
-        onUpdate({ 
-          price: 0, 
-          isLoadingPrice: false,
-          isPriceUnavailable: true,
-        });
-        toast.error("No price available for this card configuration");
-      } else {
-        const newPrice = parseFloat(data.price);
-        console.log(`useItemPrice [${instanceId}]: Setting new price for ${card.name}: $${newPrice}`);
-        
-        // Force value recalculation by clearing any manual values
-        const updates: Partial<TradeInItem> = {
-          price: newPrice, 
-          isLoadingPrice: false,
-          isPriceUnavailable: false,
-          cashValue: undefined, // Reset any manual values when price changes
-          tradeValue: undefined
-        };
-        
-        // Set default payment type to cash when market price is found and user hasn't selected one
-        if (!item.paymentType) {
-          updates.paymentType = 'cash';
-          marketPriceSet.current = true;
-          console.log(`useItemPrice [${instanceId}]: Auto-setting payment type to cash for ${card.name} after price fetch`);
-        }
-        
-        onUpdate(updates);
-        
-        // Force a reset of the initial calculation flag to ensure we recalculate values
-        initialCalculation.current = true;
-      }
-    } catch (e) {
-      console.error(`useItemPrice [${instanceId}]: Error fetching price for ${card.name}:`, e);
-      onUpdate({ 
-        isLoadingPrice: false, 
-        error: (e as Error).message,
-        isPriceUnavailable: false
-      });
-    }
-  }, [item, onUpdate, instanceId]);
+  // Price management functionality
+  const { refreshPrice, handlePriceChange } = usePriceManagement({
+    item,
+    onUpdate,
+    instanceId,
+    setMarketPriceSet,
+    setInitialCalculation
+  });
 
-  const handlePriceChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newPrice = parseFloat(e.target.value) || 0;
-    console.log(`useItemPrice [${instanceId}]: Manual price change for ${item.card.name}: $${newPrice}`);
-    
-    // Force value recalculation by clearing manual values
-    const updates: Partial<TradeInItem> = {
-      price: newPrice,
-      // Reset manual values when market price changes
-      cashValue: undefined,
-      tradeValue: undefined,
-      // Also reset any error state when manually changing the price
-      error: undefined
-    };
-    
-    // Set default payment type to cash when market price is set manually and user hasn't selected one
-    if (!item.paymentType) {
-      updates.paymentType = 'cash';
-      marketPriceSet.current = true;
-      console.log(`useItemPrice [${instanceId}]: Auto-setting payment type to cash for ${item.card.name} after manual price change`);
+  // Force price refresh if we have a card without a price but with a productId
+  useEffect(() => {
+    if (item.price <= 0 && item.card.productId && !item.isLoadingPrice && initialCalculation) {
+      console.log(`useItemPrice [${instanceId}]: Card ${item.card.name} has productId but no price, triggering refresh`);
+      refreshPrice();
     }
-    
-    onUpdate(updates);
-    
-    // Force a reset of the initial calculation flag to ensure we recalculate values
-    initialCalculation.current = true;
-  }, [onUpdate, item.card.name, item.paymentType, instanceId]);
+  }, [item.price, item.card.productId, item.isLoadingPrice, refreshPrice, item.card.name, instanceId, initialCalculation]);
 
   // Explicitly log the return values for debugging
   const returnValues = {
