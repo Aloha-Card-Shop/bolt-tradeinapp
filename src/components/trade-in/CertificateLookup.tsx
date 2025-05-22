@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, Loader, AlertCircle, CheckCircle } from 'lucide-react';
+import { Search, Loader, AlertCircle, CheckCircle, KeySquare } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 
@@ -25,6 +25,7 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
   const [certNumber, setCertNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [configError, setConfigError] = useState(false);
   const [result, setResult] = useState<CertificateData | null>(null);
 
   const handleCertLookup = async () => {
@@ -35,6 +36,7 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
 
     setIsLoading(true);
     setError(null);
+    setConfigError(false);
     setResult(null);
 
     try {
@@ -49,7 +51,21 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
         return;
       }
 
-      if (!data || !data.data) {
+      if (!data) {
+        setError('Certificate not found');
+        toast.error('Certificate not found');
+        return;
+      }
+
+      // Handle API configuration error
+      if (data.error === 'Server Error' && data.message === 'API key not configured') {
+        setConfigError(true);
+        setError('Certificate lookup API is not configured properly');
+        toast.error('Certificate service not configured');
+        return;
+      }
+
+      if (!data.data) {
         setError('Certificate not found');
         toast.error('Certificate not found');
         return;
@@ -75,18 +91,18 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
       name: result.cardName,
       productId: result.certNumber, // Using cert number as product ID for uniqueness
       game: result.game,
-      setName: result.set || 'Unknown Set',
+      set: result.set || 'Unknown Set',
       number: result.cardNumber || '',
       rarity: 'Certified',
       certification: {
         certNumber: result.certNumber,
         grade: result.grade,
         certificationDate: result.certificationDate
-      }
+      },
+      isCertified: true
     };
 
     // Use a default price since we don't have pricing info yet
-    // In a real implementation, you might want to fetch prices based on the certification
     const defaultPrice = 0;
     
     onCardFound(cardDetails, defaultPrice);
@@ -119,7 +135,17 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
         </button>
       </div>
       
-      {error && (
+      {configError && (
+        <div className="p-3 bg-yellow-50 text-amber-700 rounded-lg flex items-center mb-3">
+          <KeySquare className="h-5 w-5 mr-2 flex-shrink-0" />
+          <div>
+            <p className="font-medium">API Key Missing</p>
+            <p className="text-sm mt-1">The certificate lookup service requires configuration. Please contact your administrator.</p>
+          </div>
+        </div>
+      )}
+      
+      {error && !configError && (
         <div className="p-3 bg-red-50 text-red-700 rounded-lg flex items-center mb-3">
           <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
           <span>{error}</span>
