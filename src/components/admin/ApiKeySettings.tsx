@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { AlertCircle, CheckCircle, Eye, EyeOff, Clock } from 'lucide-react';
+import { AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../hooks/useSession';
 
@@ -11,7 +11,6 @@ interface ApiKey {
   key_value: string;
   description: string | null;
   last_updated: string;
-  expiration_date: string | null;
   is_active: boolean;
 }
 
@@ -24,7 +23,7 @@ const ApiKeySettings = () => {
   const { user } = useSession();
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'No expiration';
+    if (!dateString) return '';
     
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
@@ -32,17 +31,6 @@ const ApiKeySettings = () => {
       month: 'short',
       day: 'numeric',
     }).format(date);
-  };
-
-  const calculateDaysRemaining = (dateString: string | null) => {
-    if (!dateString) return null;
-    
-    const expirationDate = new Date(dateString);
-    const today = new Date();
-    const diffTime = expirationDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays;
   };
 
   useEffect(() => {
@@ -79,7 +67,7 @@ const ApiKeySettings = () => {
     }
   };
 
-  const updateApiKey = async (id: string, keyValue: string, expirationDate: string | null) => {
+  const updateApiKey = async (id: string, keyValue: string) => {
     setIsSaving(true);
     setError(null);
     
@@ -88,7 +76,6 @@ const ApiKeySettings = () => {
         .from('api_keys')
         .update({
           key_value: keyValue,
-          expiration_date: expirationDate,
           last_updated: new Date().toISOString(),
           updated_by: user?.id
         })
@@ -123,14 +110,6 @@ const ApiKeySettings = () => {
     );
   };
 
-  const handleExpirationChange = (id: string, date: string) => {
-    setApiKeys(prev =>
-      prev.map(key =>
-        key.id === id ? { ...key, expiration_date: date } : key
-      )
-    );
-  };
-
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
@@ -155,10 +134,6 @@ const ApiKeySettings = () => {
       ) : (
         <div className="space-y-8">
           {apiKeys.map(key => {
-            const daysRemaining = key.expiration_date ? calculateDaysRemaining(key.expiration_date) : null;
-            const isExpired = daysRemaining !== null && daysRemaining <= 0;
-            const isExpiringSoon = daysRemaining !== null && daysRemaining > 0 && daysRemaining <= 14;
-            
             return (
               <div 
                 key={key.id} 
@@ -171,76 +146,44 @@ const ApiKeySettings = () => {
                       <p className="text-gray-600 mt-1">{key.description}</p>
                     )}
                   </div>
-                  
-                  {key.expiration_date && (
-                    <div className={`mt-2 sm:mt-0 flex items-center px-3 py-1 rounded-full text-sm ${
-                      isExpired ? 'bg-red-100 text-red-800' : 
-                      isExpiringSoon ? 'bg-amber-100 text-amber-800' : 
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      <Clock className="h-3.5 w-3.5 mr-1" />
-                      {isExpired ? 'Expired' : 
-                       isExpiringSoon ? `Expires in ${daysRemaining} days` :
-                       `Expires in ${daysRemaining} days`}
-                    </div>
-                  )}
                 </div>
                 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      API Key
-                    </label>
-                    <div className="flex">
-                      <div className="relative flex-grow">
-                        <input
-                          type={showValues[key.id] ? 'text' : 'password'}
-                          value={key.key_value}
-                          onChange={(e) => handleKeyChange(key.id, e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Enter API key..."
-                        />
-                        <button
-                          type="button"
-                          onClick={() => toggleShowValue(key.id)}
-                          className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700"
-                        >
-                          {showValues[key.id] ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    API Key
+                  </label>
+                  <div className="flex">
+                    <div className="relative flex-grow">
+                      <input
+                        type={showValues[key.id] ? 'text' : 'password'}
+                        value={key.key_value}
+                        onChange={(e) => handleKeyChange(key.id, e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter API key..."
+                      />
                       <button
-                        onClick={() => updateApiKey(key.id, key.key_value, key.expiration_date)}
-                        disabled={isSaving}
-                        className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                        type="button"
+                        onClick={() => toggleShowValue(key.id)}
+                        className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700"
                       >
-                        {isSaving ? 'Saving...' : 'Save'}
+                        {showValues[key.id] ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">
-                      Last updated: {formatDate(key.last_updated)}
-                    </p>
+                    <button
+                      onClick={() => updateApiKey(key.id, key.key_value)}
+                      disabled={isSaving}
+                      className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {isSaving ? 'Saving...' : 'Save'}
+                    </button>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Expiration Date
-                    </label>
-                    <div className="flex">
-                      <input
-                        type="date"
-                        value={key.expiration_date ? key.expiration_date.substring(0, 10) : ''}
-                        onChange={(e) => handleExpirationChange(key.id, e.target.value ? new Date(e.target.value).toISOString() : '')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <p className="mt-1 text-xs text-gray-500">
-                      Set a reminder for when this API key needs to be renewed
-                    </p>
-                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Last updated: {formatDate(key.last_updated)}
+                  </p>
                 </div>
                 
                 {key.key_name === 'PSA_API_TOKEN' && (
