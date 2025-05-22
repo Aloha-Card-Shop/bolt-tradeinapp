@@ -228,7 +228,7 @@ const TradeInList: React.FC<TradeInListProps> = ({
           </div>
         </div>
       ) : (
-        <TradeInEmptyState onCertCardFound={handleCertCardFound} />
+        <TradeInEmptyState />
       )}
     </div>
   );
