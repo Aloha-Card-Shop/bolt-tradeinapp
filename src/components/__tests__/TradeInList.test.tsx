@@ -2,7 +2,7 @@
 // Fix TradeInList test
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
-import TradeInList from '../TradeInList';
+import TradeInList from '../trade-in/TradeInList';
 import { CardDetails } from '../../types/card';
 import { TradeInItem } from '../../hooks/useTradeInList';
 import '@testing-library/jest-dom'; // Import jest-dom matchers explicitly in this test file

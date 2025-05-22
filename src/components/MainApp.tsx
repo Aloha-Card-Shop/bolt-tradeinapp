@@ -5,7 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import CardSearch from './CardSearch';
 import CardResults from './CardResults';
 import SavedCards from './SavedCards';
-import TradeInList from './TradeInList';
+import TradeInList from './trade-in/TradeInList';
 import { useCardSearch } from '../hooks/useCardSearch';
 import { useSavedCards } from '../hooks/useSavedCards';
 import { useTradeInList } from '../hooks/useTradeInList';

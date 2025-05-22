@@ -2,7 +2,7 @@
 import React from 'react';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { TradeIn } from '../../types/tradeIn';
-import TradeInEmptyState from '../TradeInEmptyState';
+import TradeInEmptyState from '../trade-in/TradeInEmptyState';
 import StatusBadge from './StatusBadge';
 import TradeInItemRow from './TradeInItemRow';
 import TradeInItemCard from './TradeInItemCard';
