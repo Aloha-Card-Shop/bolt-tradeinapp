@@ -1,8 +1,4 @@
-
 import { useState, useEffect } from 'react';
-import { toast } from 'react-hot-toast';
-import { ERROR_MESSAGES } from '../constants/fallbackValues';
-import { CalculationResult } from '../types/calculation';
 
 interface TradeValueHookReturn {
   cashValue: number;
