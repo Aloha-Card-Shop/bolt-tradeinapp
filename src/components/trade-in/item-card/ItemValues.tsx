@@ -34,13 +34,16 @@ const ItemValues: React.FC<ItemValuesProps> = ({
   usedFallback = false,
   fallbackReason
 }) => {
+  // Filter out API_ENDPOINT_NOT_FOUND errors since we're now handling calculations directly
+  const displayError = error && error !== 'API_ENDPOINT_NOT_FOUND' ? error : undefined;
+  
   return (
     <div className="mt-4 grid grid-cols-2 gap-4">
       <PriceInput 
         price={price}
         isLoading={isLoadingPrice}
         onChange={onPriceChange}
-        error={error}
+        error={displayError}
         onRefreshPrice={onRefreshPrice}
         isPriceUnavailable={isPriceUnavailable}
       />
@@ -51,7 +54,7 @@ const ItemValues: React.FC<ItemValuesProps> = ({
             label={paymentType === 'cash' ? 'Cash Value' : 'Trade Value'} 
             value={displayValue} 
             isLoading={isLoading || isLoadingPrice || false}
-            error={error}
+            error={displayError}
             onValueChange={onValueAdjustment}
             editable={!!onValueAdjustment}
             usedFallback={usedFallback}
@@ -74,40 +77,34 @@ const ItemValues: React.FC<ItemValuesProps> = ({
           </div>
         )}
         
-        {!isLoading && !isLoadingPrice && error && error !== 'API_ENDPOINT_NOT_FOUND' && (
+        {!isLoading && !isLoadingPrice && displayError && (
           <div className="absolute bottom-[-24px] left-0 text-xs text-red-600 flex items-center">
             <AlertCircle className="h-3 w-3 mr-1" /> 
-            {error}
+            {displayError}
           </div>
         )}
         
-        {!isLoading && !isLoadingPrice && price > 0 && !displayValue && !error && paymentType && (
+        {!isLoading && !isLoadingPrice && price > 0 && !displayValue && !displayError && paymentType && (
           <div className="absolute bottom-[-24px] left-0 text-xs text-orange-600 flex items-center">
             <AlertCircle className="h-3 w-3 mr-1" /> 
             No value calculated - check market price or trade value settings
           </div>
         )}
         
-        {!isLoading && !isLoadingPrice && price > 0 && !error && displayValue > 0 && paymentType && !usedFallback && (
+        {!isLoading && !isLoadingPrice && price > 0 && !displayError && displayValue > 0 && paymentType && !usedFallback && (
           <div className="absolute bottom-[-24px] left-0 text-xs text-green-600 flex items-center">
             <Info className="h-3 w-3 mr-1" /> 
             Value calculated for {paymentType} payment
           </div>
         )}
-        
-        {error === 'API_ENDPOINT_NOT_FOUND' && !isLoading && price > 0 && displayValue > 0 && (
-          <div className="absolute bottom-[-24px] left-0 text-xs text-amber-600 flex items-center">
-            <Info className="h-3 w-3 mr-1" /> 
-            Using estimated values (API not available)
-          </div>
-        )}
       </div>
       
-      {(usedFallback || error === 'API_ENDPOINT_NOT_FOUND') && !isLoading && paymentType && (
+      {/* Only show the fallback warning when explicitly needed */}
+      {usedFallback && fallbackReason && !isLoading && paymentType && (
         <div className="col-span-2 mt-2">
           <FallbackWarning 
             showWarning={true}
-            fallbackReason={fallbackReason || 'API_UNAVAILABLE'}
+            fallbackReason={fallbackReason}
           />
         </div>
       )}

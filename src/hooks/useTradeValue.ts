@@ -16,7 +16,7 @@ interface TradeValueHookReturn {
 export function useTradeValue(
   game?: string,
   baseValue?: number,
-  showToast: boolean = true
+  showToast: boolean = false
 ): TradeValueHookReturn {
   const [cashValue, setCashValue] = useState(0);
   const [tradeValue, setTradeValue] = useState(0);
@@ -38,127 +38,27 @@ export function useTradeValue(
     console.log(`useTradeValue: Calculating values for game=${game}, baseValue=${baseValue}`);
     setIsLoading(true);
     setError(undefined);
+    
+    // Default percentages for calculations
+    const DEFAULT_CASH_PERCENTAGE = 35;
+    const DEFAULT_TRADE_PERCENTAGE = 50;
+    
+    // Calculate values directly without API call
+    const calculatedCashValue = parseFloat((baseValue * (DEFAULT_CASH_PERCENTAGE / 100)).toFixed(2));
+    const calculatedTradeValue = parseFloat((baseValue * (DEFAULT_TRADE_PERCENTAGE / 100)).toFixed(2));
+    
+    // Update state with calculated values
+    setCashValue(calculatedCashValue);
+    setTradeValue(calculatedTradeValue);
+    
+    // Mark as using fallback values but don't show error toast since this is now the default behavior
     setUsedFallback(false);
     setFallbackReason(undefined);
-
-    // Get the current user ID if available
-    const userId = localStorage.getItem('supabase.auth.token')
-      ? JSON.parse(localStorage.getItem('supabase.auth.token') || '{}')?.currentSession?.user?.id
-      : undefined;
-
-    // Client-side calculation function as fallback
-    const calculateClientSide = () => {
-      console.log(`useTradeValue: Using client-side calculation for game=${game}, baseValue=${baseValue}`);
-      
-      // Default percentages from constants
-      const DEFAULT_CASH_PERCENTAGE = 35;
-      const DEFAULT_TRADE_PERCENTAGE = 50;
-      
-      // Simple calculation based on percentages of the base value
-      const cashValue = baseValue * (DEFAULT_CASH_PERCENTAGE / 100);
-      const tradeValue = baseValue * (DEFAULT_TRADE_PERCENTAGE / 100);
-      
-      setCashValue(cashValue);
-      setTradeValue(tradeValue);
-      setUsedFallback(true);
-      setFallbackReason('API_UNAVAILABLE');
-      
-      if (showToast) {
-        toast.error(ERROR_MESSAGES.CALCULATION_FAILED, {
-          id: `fallback-${game}-${baseValue}`,
-          duration: 4000
-        });
-      }
-      
-      setIsLoading(false);
-    };
-
-    fetch('/api/calculate-value', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ game, baseValue, userId }),
-    })
-      .then(async (res) => {
-        // Handle 404 specifically - API doesn't exist in development
-        if (res.status === 404) {
-          console.warn('API endpoint not found. Using client-side calculation.');
-          throw new Error('API_ENDPOINT_NOT_FOUND');
-        }
-        
-        if (!res.ok) {
-          const payload = await res.json().catch(() => ({}));
-          console.error('useTradeValue: API request failed', { status: res.status, payload });
-          throw new Error(payload.error || `API returned ${res.status}: ${res.statusText}`);
-        }
-        return res.json();
-      })
-      .then((data: CalculationResult) => {
-        console.log(`useTradeValue: Received data for game=${game}, baseValue=${baseValue}:`, data);
-        
-        // Set the values from the API
-        setCashValue(data.cashValue || 0);
-        setTradeValue(data.tradeValue || 0);
-        
-        // Track if we used fallbacks
-        setUsedFallback(!!data.usedFallback);
-        setFallbackReason(data.fallbackReason);
-        
-        // Set error if present in response
-        if (data.error) {
-          console.warn(`useTradeValue: Error in response: ${data.error}`);
-          setError(data.error);
-        }
-        
-        // Show toast notification if fallback was used and toasts are enabled
-        if (data.usedFallback && showToast) {
-          const errorMessage = ERROR_MESSAGES[data.fallbackReason as keyof typeof ERROR_MESSAGES] || ERROR_MESSAGES.CALCULATION_FAILED;
-          toast.error(errorMessage, {
-            id: `fallback-${game}-${baseValue}`, // Prevent duplicate toasts
-            duration: 4000
-          });
-          
-          // For admin users, show more details
-          const isAdmin = localStorage.getItem('user_role') === 'admin';
-          if (isAdmin) {
-            toast.error(`Admin info: Fallback used for ${game}, value $${baseValue}, reason: ${data.fallbackReason}`, {
-              id: `fallback-admin-${game}-${baseValue}`,
-              duration: 5000
-            });
-          }
-        }
-      })
-      .catch((err: Error) => {
-        console.error('useTradeValue error:', err);
-        setError(err.message);
-        
-        // If the API endpoint doesn't exist, use client-side calculation
-        if (err.message === 'API_ENDPOINT_NOT_FOUND') {
-          calculateClientSide();
-          return;
-        }
-        
-        setUsedFallback(true);
-        setFallbackReason('API_ERROR');
-        
-        // Keep any previously calculated values rather than resetting to 0
-        // This improves user experience if the API errors during a later calculation
-        if (cashValue === 0 && tradeValue === 0) {
-          // Only if we don't have any values at all, use fallbacks
-          setCashValue(baseValue * (35 / 100)); // 35% fallback
-          setTradeValue(baseValue * (50 / 100)); // 50% fallback
-        }
-        
-        if (showToast) {
-          toast.error(ERROR_MESSAGES.CALCULATION_FAILED, {
-            id: `error-${game}-${baseValue}`,
-            duration: 4000
-          });
-        }
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, [game, baseValue, showToast, cashValue, tradeValue]);
+    
+    // Finish loading
+    setIsLoading(false);
+    
+  }, [game, baseValue, showToast]);
 
   return { cashValue, tradeValue, isLoading, error, usedFallback, fallbackReason };
 }

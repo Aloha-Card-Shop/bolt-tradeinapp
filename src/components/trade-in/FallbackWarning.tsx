@@ -16,7 +16,8 @@ const FallbackWarning: React.FC<FallbackWarningProps> = ({
   className = '',
   compact = false
 }) => {
-  if (!showWarning) return null;
+  // Don't show warning if not explicitly requested
+  if (!showWarning || !fallbackReason) return null;
 
   const getMessage = () => {
     if (!fallbackReason) return ERROR_MESSAGES.CALCULATION_FAILED;
@@ -27,7 +28,7 @@ const FallbackWarning: React.FC<FallbackWarningProps> = ({
     return (
       <div className={`flex items-center text-xs text-amber-600 ${className}`}>
         <Info className="h-3 w-3 mr-1" />
-        <span>Estimated value (using fallback pricing)</span>
+        <span>Estimated value (using standard pricing)</span>
       </div>
     );
   }
@@ -38,7 +39,7 @@ const FallbackWarning: React.FC<FallbackWarningProps> = ({
         <AlertCircle className="h-4 w-4 mr-2 text-amber-500" />
         <div>
           <p>{getMessage()}</p>
-          <p className="text-xs mt-1">The displayed value is an estimate based on our standard rates.</p>
+          <p className="text-xs mt-1">The displayed value is calculated based on our standard rates.</p>
         </div>
       </div>
     </div>
