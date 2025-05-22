@@ -56,8 +56,9 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   const [marketPriceSet, setMarketPriceSet] = useState<boolean>(false);
   
   const setInitialCalculation = useCallback((value: boolean) => {
+    console.log(`useItemPrice [${instanceId}]: Setting initialCalculation to ${value} for ${item.card.name}`);
     setInitialCalculationState(value);
-  }, []);
+  }, [item.card.name, instanceId]);
   
   // Add additional logging for the useTradeValue hook results
   useEffect(() => {
@@ -70,7 +71,10 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
       usedFallback,
       fallbackReason,
       currentPrice: item.price,
-      gameType: item.card.game
+      gameType: item.card.game,
+      initialCalculation,
+      cashValueDefined: item.cashValue !== undefined,
+      tradeValueDefined: item.tradeValue !== undefined
     });
     
     // Only show error toast for critical errors, not for price range mismatches or API not found
@@ -81,7 +85,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
       toast.error(`Trade value calculation issue: ${calculationError}`);
     }
   }, [calculatedCashValue, calculatedTradeValue, isLoading, calculationError, 
-      usedFallback, fallbackReason, item.card.name, item.price, item.card.game, instanceId]);
+      usedFallback, fallbackReason, item.card.name, item.price, item.card.game, instanceId, 
+      initialCalculation, item.cashValue, item.tradeValue]);
   
   // Use the manually set values if they exist, otherwise use the calculated values
   const cashValue = item.cashValue !== undefined ? item.cashValue : calculatedCashValue;
@@ -91,15 +96,26 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   
   // Calculate the display value based on payment type and force updates when needed
   useEffect(() => {
-    console.log(`useItemPrice [${instanceId}]: Effect triggered with cashValue=${cashValue}, tradeValue=${tradeValue}, isLoading=${isLoading}, paymentType=${item.paymentType}, initialCalculation=${initialCalculation}`);
+    const shouldCalculate = !isLoading && 
+                          item.price > 0 && 
+                          (initialCalculation || 
+                           item.cashValue === undefined || 
+                           item.tradeValue === undefined ||
+                           (item.paymentType === 'cash' && 
+                            haveValuesChanged(
+                              calculatedCashValue, 
+                              prevCalculatedCashValue.current, 
+                              calculatedTradeValue, 
+                              prevCalculatedTradeValue.current
+                            )));
+    
+    console.log(`useItemPrice [${instanceId}]: Effect triggered with cashValue=${cashValue}, tradeValue=${tradeValue}, isLoading=${isLoading}, paymentType=${item.paymentType}, initialCalculation=${initialCalculation}, shouldCalculate=${shouldCalculate}`);
     
     setDisplayValue(calculateDisplayValue(item.paymentType, cashValue, tradeValue, item.quantity));
     
-    // Only update the calculated values if:
-    // 1. Not loading and has price
-    // 2. AND it's either the initial calculation OR the calculated values have changed
-    if (!isLoading && item.price > 0) {
-      console.log(`useItemPrice [${instanceId}]: Checking if values changed:`, {
+    // Force calculation based on the shouldCalculate criteria
+    if (shouldCalculate) {
+      console.log(`useItemPrice [${instanceId}]: Forcing value calculation for ${item.card.name}`, {
         card: item.card.name,
         calculatedCash: calculatedCashValue,
         prevCalcCash: prevCalculatedCashValue.current,
@@ -107,44 +123,37 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         prevCalcTrade: prevCalculatedTradeValue.current,
         isInitial: initialCalculation,
         hasManualCashValue: item.cashValue !== undefined,
-        hasManualTradeValue: item.tradeValue !== undefined
+        hasManualTradeValue: item.tradeValue !== undefined,
+        paymentType: item.paymentType
       });
       
-      // Check if values have changed or if it's forced recalculation
-      const valuesChanged = haveValuesChanged(
+      // Store new calculated values in refs
+      prevCalculatedCashValue.current = calculatedCashValue;
+      prevCalculatedTradeValue.current = calculatedTradeValue;
+      
+      if (initialCalculation) {
+        setInitialCalculationState(false);
+      }
+      
+      // Get updates based on calculation results
+      const updates = createValueUpdates(
+        item, 
         calculatedCashValue, 
-        prevCalculatedCashValue.current, 
         calculatedTradeValue, 
-        prevCalculatedTradeValue.current
+        calculationError,
+        usedFallback,
+        fallbackReason,
+        marketPriceSet
       );
       
-      // If it's the first calculation or values have changed or cashValue/tradeValue is undefined, update
-      if (initialCalculation || valuesChanged || item.cashValue === undefined || item.tradeValue === undefined) {
-        // Store new calculated values in refs
-        prevCalculatedCashValue.current = calculatedCashValue;
-        prevCalculatedTradeValue.current = calculatedTradeValue;
-        setInitialCalculationState(false);
+      // Only update if we have changes to make
+      if (Object.keys(updates).length > 0) {
+        console.log(`useItemPrice [${instanceId}]: Updating ${item.card.name} with calculated values:`, updates);
+        onUpdate(updates);
         
-        // Get updates based on calculation results
-        const updates = createValueUpdates(
-          item, 
-          calculatedCashValue, 
-          calculatedTradeValue, 
-          calculationError,
-          usedFallback,
-          fallbackReason,
-          marketPriceSet
-        );
-        
-        // Only update if we have changes to make
-        if (Object.keys(updates).length > 0) {
-          console.log(`useItemPrice [${instanceId}]: Updating ${item.card.name} with calculated values:`, updates);
-          onUpdate(updates);
-          
-          // Update marketPriceSet if we're setting payment type
-          if (updates.paymentType === 'cash') {
-            setMarketPriceSet(true);
-          }
+        // Update marketPriceSet if we're setting payment type
+        if (updates.paymentType === 'cash') {
+          setMarketPriceSet(true);
         }
       }
     }

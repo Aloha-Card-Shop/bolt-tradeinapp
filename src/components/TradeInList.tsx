@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { TradeInItem as TradeInItemType } from '../hooks/useTradeInList';
 import { useCustomers } from '../hooks/useCustomers';
@@ -65,8 +64,17 @@ const TradeInList: React.FC<TradeInListProps> = ({
       onUpdateItem(i, { ...item, condition: cond as any });
       return;
     }
-    onUpdateItem(i, { ...item, condition: cond as any, isLoadingPrice: true, error: undefined });
+    
+    // First update to show loading state
+    onUpdateItem(i, { 
+      ...item, 
+      condition: cond as any, 
+      isLoadingPrice: true, 
+      error: undefined 
+    });
+    
     try {
+      console.log(`TradeInList: Fetching price for item ${i} with condition ${cond}`);
       const data = await fetchCardPrices(
         item.card.productId!,
         cond,
@@ -75,19 +83,29 @@ const TradeInList: React.FC<TradeInListProps> = ({
         item.card.game,
         item.isReverseHolo
       );
-      // Update with new values and force recalculation
-      onUpdateItem(i, { 
+      
+      // Update with new values and explicitly force recalculation
+      const newItem = { 
         ...item, 
         condition: cond as any, 
         price: parseFloat(data.price), 
         isLoadingPrice: false,
-        paymentType: 'cash',  // Set payment type to cash
-        cashValue: undefined,  // Reset any manual values
-        tradeValue: undefined  // Reset any manual values
-      });
-      console.log(`Updated item ${i} with price ${data.price} and set paymentType to cash, forcing recalculation`);
+        paymentType: 'cash',   // Always set payment type to cash
+        cashValue: undefined,  // Reset any manual values to force recalculation
+        tradeValue: undefined, // Reset any manual values to force recalculation
+        initialCalculation: true // Force recalculation in useItemPrice
+      };
+      
+      onUpdateItem(i, newItem);
+      console.log(`TradeInList: Updated item ${i} with price ${data.price}, reset values and forced recalculation`, newItem);
     } catch (e) {
-      onUpdateItem(i, { ...item, isLoadingPrice: false, error: (e as Error).message });
+      onUpdateItem(i, { 
+        ...item, 
+        isLoadingPrice: false, 
+        error: (e as Error).message,
+        initialCalculation: false // Don't try to recalculate if there's an error
+      });
+      console.error(`TradeInList: Error fetching price for item ${i}:`, e);
     }
   }, [items, onUpdateItem]);
 

@@ -34,7 +34,8 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
     game: item.card.game,
     productId: item.card.productId,
     usedFallback: item.usedFallback,
-    fallbackReason: item.fallbackReason
+    fallbackReason: item.fallbackReason,
+    initialCalculation: item.initialCalculation
   });
   
   // Handle manual value adjustment

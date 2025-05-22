@@ -1,4 +1,3 @@
-
 import { TradeInItem } from '../../../hooks/useTradeInList';
 
 /**
@@ -24,7 +23,11 @@ export function haveValuesChanged(
   calculatedTradeValue: number,
   prevCalculatedTradeValue: number
 ): boolean {
-  return calculatedCashValue !== prevCalculatedCashValue || calculatedTradeValue !== prevCalculatedTradeValue;
+  // Consider small floating point differences as unchanged (less than 1 cent)
+  const cashDiff = Math.abs(calculatedCashValue - prevCalculatedCashValue);
+  const tradeDiff = Math.abs(calculatedTradeValue - prevCalculatedTradeValue);
+  
+  return cashDiff > 0.01 || tradeDiff > 0.01;
 }
 
 /**
@@ -40,6 +43,16 @@ export function createValueUpdates(
   marketPriceSet: boolean
 ): Partial<TradeInItem> {
   const updates: Partial<TradeInItem> = {};
+  
+  // For debugging
+  console.log(`createValueUpdates: Creating updates for ${item.card?.name}`, {
+    calculatedCashValue,
+    calculatedTradeValue,
+    currentCashValue: item.cashValue,
+    currentTradeValue: item.tradeValue,
+    paymentType: item.paymentType,
+    marketPriceSet
+  });
   
   // Update cash value if not manually set
   if (item.cashValue === undefined) {
