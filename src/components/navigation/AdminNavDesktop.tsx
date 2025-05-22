@@ -3,7 +3,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Home, Settings, ClipboardList, UserCircle, DollarSign, 
-  LogOut, Barcode, Printer, ShoppingCart, Map
+  LogOut, Barcode, Printer, ShoppingCart, Map, Key
 } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import AdminNavLink from './AdminNavLink';
@@ -75,6 +75,13 @@ const AdminNavDesktop: React.FC<AdminNavDesktopProps> = ({ userRole }) => {
         {/* Admin Only Links */}
         {userRole === 'admin' && (
           <>
+            <AdminNavLink 
+              icon={Key} 
+              label="API Settings" 
+              path="/admin/api-settings" 
+              onClick={() => handleNavigation('/admin/api-settings')} 
+              activeColor="amber"
+            />
             <AdminNavLink 
               icon={DollarSign} 
               label="Trade Values" 

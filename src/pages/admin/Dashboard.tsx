@@ -44,6 +44,11 @@ const Dashboard: React.FC = () => {
                 <p className="text-gray-600">Manage staff users and roles</p>
               </Link>
               
+              <Link to="/admin/api-settings" className="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                <h2 className="text-lg font-medium mb-2">API Settings</h2>
+                <p className="text-gray-600">Manage API keys for external services</p>
+              </Link>
+              
               <Link to="/admin/trade-values" className="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
                 <h2 className="text-lg font-medium mb-2">Trade Values</h2>
                 <p className="text-gray-600">Configure trade-in value settings</p>

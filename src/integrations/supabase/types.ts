@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      api_keys: {
+        Row: {
+          description: string | null
+          expiration_date: string | null
+          id: string
+          is_active: boolean | null
+          key_name: string
+          key_value: string
+          last_updated: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          expiration_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_name: string
+          key_value: string
+          last_updated?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          expiration_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_name?: string
+          key_value?: string
+          last_updated?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       barcode_settings: {
         Row: {
           description: string | null

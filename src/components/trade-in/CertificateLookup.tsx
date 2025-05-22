@@ -1,8 +1,10 @@
 
 import React, { useState } from 'react';
-import { Search, Loader, AlertCircle, CheckCircle, KeySquare } from 'lucide-react';
+import { Search, Loader, AlertCircle, CheckCircle, KeySquare, ArrowRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
+import { Link } from 'react-router-dom';
+import { useSession } from '../../hooks/useSession';
 
 interface CertificateData {
   certNumber: string;
@@ -27,6 +29,8 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
   const [error, setError] = useState<string | null>(null);
   const [configError, setConfigError] = useState(false);
   const [result, setResult] = useState<CertificateData | null>(null);
+  const { user } = useSession();
+  const userRole = user?.user_metadata?.role || 'user';
 
   const handleCertLookup = async () => {
     if (!certNumber.trim()) {
@@ -58,7 +62,11 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
       }
 
       // Handle API configuration error
-      if (data.error === 'Server Error' && data.message === 'API key not configured') {
+      if (data.error === 'Server Error' && (
+          data.message === 'API key not configured' || 
+          data.message.includes('API key not configured') ||
+          data.message.includes('not found in database')
+      )) {
         setConfigError(true);
         setError('Certificate lookup API is not configured properly');
         toast.error('Certificate service not configured');
@@ -136,11 +144,23 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
       </div>
       
       {configError && (
-        <div className="p-3 bg-yellow-50 text-amber-700 rounded-lg flex items-center mb-3">
-          <KeySquare className="h-5 w-5 mr-2 flex-shrink-0" />
-          <div>
+        <div className="p-3 bg-yellow-50 text-amber-700 rounded-lg flex items-start mb-3">
+          <KeySquare className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
             <p className="font-medium">API Key Missing</p>
-            <p className="text-sm mt-1">The certificate lookup service requires configuration. Please contact your administrator.</p>
+            <p className="text-sm mt-1">The certificate lookup service requires configuration.</p>
+            {userRole === 'admin' && (
+              <Link 
+                to="/admin/api-settings" 
+                className="mt-2 text-sm inline-flex items-center text-amber-800 font-medium hover:text-amber-900"
+              >
+                Configure API key 
+                <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              </Link>
+            )}
+            {userRole !== 'admin' && (
+              <p className="text-sm mt-1">Please contact your administrator.</p>
+            )}
           </div>
         </div>
       )}

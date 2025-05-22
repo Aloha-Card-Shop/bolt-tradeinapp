@@ -54,11 +54,21 @@ serve(async (req) => {
       );
     }
 
-    // Check for API key
-    const apiKey = Deno.env.get("PSA_API_KEY");
+    // Initialize Supabase client to get API key from database
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") as string;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    if (!apiKey) {
-      console.error("PSA_API_KEY is not set");
+    // Fetch the API key from the database
+    const { data: apiKeyData, error: apiKeyError } = await supabase
+      .from("api_keys")
+      .select("key_value")
+      .eq("key_name", "PSA_API_TOKEN")
+      .eq("is_active", true)
+      .single();
+
+    if (apiKeyError || !apiKeyData) {
+      console.error("Error fetching API key:", apiKeyError);
       
       // If we're in development or testing mode, return mock data
       if (Deno.env.get("ENVIRONMENT") === "development" || Deno.env.get("ENVIRONMENT") === "test") {
@@ -75,7 +85,43 @@ serve(async (req) => {
           JSON.stringify({ 
             data: mockData, 
             isMockData: true,
-            message: "Using mock data as PSA_API_KEY is not configured"
+            message: "Using mock data as PSA_API_TOKEN is not configured or API key could not be retrieved from database"
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // In production, return an error
+      return new Response(
+        JSON.stringify({ 
+          error: "Server Error", 
+          message: apiKeyError ? apiKeyError.message : "API key not configured or not found in database" 
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const apiKey = apiKeyData.key_value;
+    
+    if (!apiKey || apiKey.trim() === "") {
+      console.error("PSA_API_TOKEN is empty in database");
+      
+      // If we're in development or testing mode, return mock data
+      if (Deno.env.get("ENVIRONMENT") === "development" || Deno.env.get("ENVIRONMENT") === "test") {
+        console.log("Using mock data for development/testing");
+        const mockData = createMockCertData(certNumber);
+        
+        // Store in cache
+        certCache.set(cacheKey, {
+          data: mockData,
+          timestamp: Date.now()
+        });
+        
+        return new Response(
+          JSON.stringify({ 
+            data: mockData, 
+            isMockData: true,
+            message: "Using mock data as PSA_API_TOKEN is not configured"
           }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
