@@ -2,7 +2,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
-import { authenticateAdmin } from "../_shared/auth.ts";
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -14,6 +13,45 @@ const corsHeaders = {
 const certCache = new Map();
 const CACHE_TTL = 1000 * 60 * 60; // 1 hour cache
 
+// Authentication function specifically for cert lookups
+// This is less restrictive than authenticateAdmin
+async function authenticateForCertLookup(req: Request) {
+  try {
+    // Extract authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.log("Missing authorization header");
+      return { userId: '', role: '', error: 'Missing authorization header' };
+    }
+
+    // Extract the JWT token
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Get environment variables
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
+    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") as string;
+    
+    // Create client for authentication check
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Verify the session
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.log("Authentication error:", authError?.message || "Invalid session");
+      return { userId: '', role: '', error: authError?.message || 'Invalid session' };
+    }
+
+    console.log("User authenticated successfully:", user.id);
+    
+    // For cert lookup, we allow any authenticated user
+    return { userId: user.id, role: 'user', error: undefined };
+  } catch (error) {
+    console.error('Certificate lookup authentication error:', error);
+    return { userId: '', role: '', error: `Authentication failed: ${error.message || 'Unknown error'}` };
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -21,8 +59,10 @@ serve(async (req) => {
   }
 
   try {
-    // Authenticate the request
-    const { userId, role, error: authError } = await authenticateAdmin(req);
+    console.log("Certificate lookup function called");
+    
+    // Authenticate the request - using our more permissive cert lookup auth
+    const { userId, error: authError } = await authenticateForCertLookup(req);
     if (authError) {
       console.error("Authentication error:", authError);
       return new Response(
@@ -30,11 +70,15 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    
+    console.log("User authenticated:", userId);
 
     // Get the cert number from the request body
-    const { certNumber } = await req.json();
+    const body = await req.json();
+    const { certNumber } = body;
     
     if (!certNumber) {
+      console.log("No certificate number provided");
       return new Response(
         JSON.stringify({ error: "Bad Request", message: "Certificate number is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -59,8 +103,7 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") as string;
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    // Fetch the API key from the database using maybeSingle instead of single
-    // This is the main fix for the error we were encountering
+    // Fetch the API key from the database using maybeSingle
     console.log("Fetching PSA_API_TOKEN from database");
     const { data: apiKeyData, error: apiKeyError } = await supabase
       .from("api_keys")
@@ -105,7 +148,7 @@ serve(async (req) => {
       );
     }
 
-    // Handle case where no API key was found, added from maybeSingle
+    // Handle case where no API key was found
     if (!apiKeyData) {
       console.error("PSA_API_TOKEN not found in database");
       
@@ -197,7 +240,7 @@ serve(async (req) => {
       }
       
       return new Response(
-        JSON.stringify({ error: "API Error", message: `Error from certification API: ${certResponse.status}` }),
+        JSON.stringify({ error: "API Error", message: `Error from certification API: ${certResponse.status} - ${errorText}` }),
         { status: certResponse.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

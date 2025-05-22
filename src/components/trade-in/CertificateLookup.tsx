@@ -44,6 +44,7 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
     setResult(null);
 
     try {
+      console.log('Starting certificate lookup for:', certNumber.trim());
       const { data, error } = await supabase.functions.invoke('cert-lookup', {
         body: { certNumber: certNumber.trim() }
       });
@@ -54,6 +55,8 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
         toast.error('Certificate lookup failed');
         return;
       }
+
+      console.log('Certificate lookup response:', data);
 
       // Handle server error response
       if (data && data.error) {
@@ -68,6 +71,9 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
           setConfigError(true);
           setError(data.message || 'Certificate lookup API is not configured properly');
           toast.error('Certificate service not configured');
+        } else if (data.error === 'Unauthorized') {
+          setError('You do not have permission to use the certificate lookup service');
+          toast.error('Access denied to certificate service');
         } else {
           setError(data.message || data.error || 'Certificate lookup failed');
           toast.error(data.message || 'Certificate lookup failed');
