@@ -11,7 +11,8 @@ const AppHeader: React.FC = () => {
   const { user, loading, signOut } = useSession();
   const location = useLocation();
   const navigate = useNavigate();
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  // Remove the unused isMobile variable since we're not using it in this component
+  // The MobileNavigation component is handling the responsive UI behavior
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Don't show header on login page
