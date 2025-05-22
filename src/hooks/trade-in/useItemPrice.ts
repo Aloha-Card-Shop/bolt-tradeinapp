@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TradeInItem } from '../useTradeInList';
 import { useTradeValue } from '../useTradeValue';
 import { usePriceManagement } from './usePriceManagement';
@@ -22,7 +22,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   logger.logInitialization();
   
   // Validate inputs
-  const { validGame, validPrice, validationWarnings } = useItemPriceValidation(item, instanceId);
+  const { validGame, validPrice } = useItemPriceValidation(item, instanceId);
   
   // Get standard calculated values from the trade value hook with explicit type
   const { 
@@ -48,7 +48,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   const { 
     initialCalculationState, 
     setInitialCalculation 
-  } = useInitialCalculation(item, onUpdate);
+  } = useInitialCalculation({ item, onUpdate });
   
   // Track if market price has been set
   const [marketPriceSet, setMarketPriceSet] = useState<boolean>(false);
@@ -76,7 +76,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   }, [
     calculatedCashValue, calculatedTradeValue, isLoading, calculationError, 
     usedFallback, fallbackReason, initialCalculationState,
-    item.cashValue, item.tradeValue
+    item.cashValue, item.tradeValue, logger
   ]);
   
   // Calculate the display value and update item values when needed
