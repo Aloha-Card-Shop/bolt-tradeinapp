@@ -106,6 +106,13 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
     }
   };
 
+  // Allow Enter key to trigger the lookup
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isLoading) {
+      handleCertLookup();
+    }
+  };
+
   const handleAddToTradeIn = () => {
     if (!result) return;
     
@@ -126,10 +133,23 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
       isCertified: true
     };
 
-    // Use a default price since we don't have pricing info yet
-    const defaultPrice = 0;
+    // Use a default estimated price based on grade
+    // Higher grades typically mean higher values
+    const gradeValue = parseFloat(result.grade) || 0;
+    let defaultPrice = 0;
+    
+    if (gradeValue >= 9.5) {
+      defaultPrice = 100; // Gem Mint estimate
+    } else if (gradeValue >= 9) {
+      defaultPrice = 50;  // Mint estimate
+    } else if (gradeValue >= 8) {
+      defaultPrice = 25;  // Near Mint estimate
+    } else {
+      defaultPrice = 10;  // Lower grades estimate
+    }
     
     onCardFound(cardDetails, defaultPrice);
+    toast.success('Added certified card to trade-in list');
     setResult(null);
     setCertNumber('');
   };
@@ -142,6 +162,7 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
           type="text"
           value={certNumber}
           onChange={(e) => setCertNumber(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="Enter certificate number..."
           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           disabled={isLoading}
@@ -199,6 +220,7 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
                 {result.set && <p>Set: {result.set}</p>}
                 {result.year && <p>Year: {result.year}</p>}
                 {result.cardNumber && <p>Card #: {result.cardNumber}</p>}
+                {result.game && <p>Game: {result.game.charAt(0).toUpperCase() + result.game.slice(1)}</p>}
               </div>
             </div>
             {result.imageUrl && (
