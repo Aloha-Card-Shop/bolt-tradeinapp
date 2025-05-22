@@ -1,11 +1,17 @@
-
 import { useState, useCallback } from 'react';
 import { CardDetails } from '../types/card';
 import { fetchCardPrices } from '../utils/scraper';
 import { toast } from 'react-hot-toast';
 
 export interface TradeInItem {
-  card: CardDetails;
+  card: CardDetails & {
+    certification?: {
+      certNumber: string;
+      grade: string;
+      certificationDate?: string;
+    };
+    isCertified?: boolean;
+  };
   quantity: number;
   condition: string;
   isFirstEdition: boolean;
@@ -21,7 +27,7 @@ export interface TradeInItem {
   isPriceUnavailable?: boolean;
   usedFallback?: boolean;
   fallbackReason?: string;
-  initialCalculation?: boolean; // Add the initialCalculation property
+  initialCalculation?: boolean;
 }
 
 export const useTradeInList = () => {
@@ -47,7 +53,7 @@ export const useTradeInList = () => {
       isLoadingPrice: false,
       error: undefined,
       isPriceUnavailable: false,
-      initialCalculation: true // Set initialCalculation to true for new items
+      initialCalculation: true
     }]);
   }, []);
 
@@ -57,6 +63,12 @@ export const useTradeInList = () => {
 
   const updateItem = useCallback((index: number, item: TradeInItem) => {
     setItems(prev => {
+      // If index is equal to length, this is an add operation
+      if (index === prev.length) {
+        return [...prev, item];
+      }
+      
+      // Otherwise it's an update operation
       const newItems = [...prev];
       newItems[index] = item;
       return newItems;
@@ -82,6 +94,14 @@ export const useTradeInList = () => {
   const fetchItemPrice = useCallback(async (index: number) => {
     const item = items[index];
     if (!item || !item.card.productId || !item.condition) {
+      return;
+    }
+    
+    // Check if this is a certified card
+    if (item.card.isCertified) {
+      // For certified cards, we'll need to implement separate pricing logic
+      // For now, we'll just use the existing price
+      console.log("Certificate card pricing not implemented yet, using default price");
       return;
     }
     
