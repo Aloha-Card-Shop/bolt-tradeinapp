@@ -1,14 +1,7 @@
 
-import React, { useState } from 'react';
-import CertificateLookup from './CertificateLookup';
+import React from 'react';
 
-interface TradeInEmptyStateProps {
-  onCertCardFound?: (card: any, price: number) => void;
-}
-
-const TradeInEmptyState: React.FC<TradeInEmptyStateProps> = ({ onCertCardFound }) => {
-  const [showCertLookup, setShowCertLookup] = useState(false);
-  
+const TradeInEmptyState: React.FC = () => {
   return (
     <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
       <div className="max-w-md mx-auto">
