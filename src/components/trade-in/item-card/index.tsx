@@ -1,3 +1,4 @@
+
 import React, { useCallback, useEffect, useRef } from 'react';
 import { TradeInItem as TradeInItemType } from '../../../hooks/useTradeInList';
 import CardHeader from './CardHeader';
@@ -5,6 +6,10 @@ import ItemControls from './ItemControls';
 import ItemValues from './ItemValues';
 import { useItemPrice } from '../../../hooks/trade-in/useItemPrice';
 import { useCardAttributes } from '../../../hooks/trade-in/useCardAttributes';
+import { useComponentLogger } from '../../../hooks/trade-in/useComponentLogger';
+import { useDebugInfo } from '../../../hooks/trade-in/useDebugInfo';
+import WarningMessages from './WarningMessages';
+import DebugPanel from './DebugPanel';
 
 interface TradeInItemProps {
   item: TradeInItemType;
@@ -25,19 +30,8 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   onValueChange,
   onValueAdjustment
 }) => {
-  // Component instance ID for debugging
-  const instanceId = useRef(Math.random().toString(36).substring(2, 9)).current;
-  
-  // Log component rendering with key details
-  console.log(`TradeInItem [${instanceId}]: Rendering for ${item.card.name}`, {
-    index,
-    price: item.price,
-    cashValue: item.cashValue,
-    tradeValue: item.tradeValue,
-    paymentType: item.paymentType,
-    game: item.card.game,
-    productId: item.card.productId
-  });
+  // Use the logger hook
+  const { instanceId } = useComponentLogger('TradeInItem', item, index);
   
   // Add refs to track previous values and prevent unnecessary updates
   const initialRender = useRef(true);
@@ -77,6 +71,9 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     item,
     onUpdate: handleUpdate
   });
+
+  // Get debug information
+  const { isDebugMode, debugInfo } = useDebugInfo(item, cashValue, tradeValue, error);
 
   // Check for price changes to force trade value recalculation
   useEffect(() => {
@@ -168,8 +165,6 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     }
   }, [item.price, item.card.productId, item.isLoadingPrice, refreshPrice, item.card.name, instanceId]);
 
-  // We'll use the GameType by updating the debug section at the bottom
-  
   return (
     <div className="border border-gray-200 rounded-xl p-5 hover:border-blue-100 transition-colors duration-200 bg-white shadow-sm">
       <CardHeader 
@@ -209,36 +204,15 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
         fallbackReason={item.fallbackReason}
       />
       
-      {/* Debug information about game type */}
-      {item.card && !item.card.game && (
-        <div className="mt-2 p-2 bg-red-50 rounded text-xs text-red-700">
-          Missing game type for {item.card.name}. Using default: pokemon. This is required for value calculation.
-        </div>
-      )}
+      <WarningMessages 
+        card={item.card}
+        price={item.price}
+      />
       
-      {item.price <= 0 && (
-        <div className="mt-2 p-2 bg-yellow-50 rounded text-xs text-yellow-700">
-          Card price must be greater than 0 to calculate values.
-        </div>
-      )}
-      
-      {/* Debug information panel - uncomment if needed */}
-      {process.env.NODE_ENV !== 'production' && (
-        <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-500 border border-gray-200">
-          <details>
-            <summary className="cursor-pointer font-medium">Debug Info</summary>
-            <div className="mt-1 space-y-1">
-              <div><span className="font-medium">Price:</span> ${item.price?.toFixed(2)}</div>
-              <div><span className="font-medium">Cash Value:</span> ${cashValue?.toFixed(2)}</div>
-              <div><span className="font-medium">Trade Value:</span> ${tradeValue?.toFixed(2)}</div>
-              <div><span className="font-medium">Game:</span> {item.card.game || 'pokemon (default)'}</div>
-              <div><span className="font-medium">Payment Type:</span> {item.paymentType || 'Not selected'}</div>
-              <div><span className="font-medium">Initial Calculation:</span> {item.initialCalculation ? 'Yes' : 'No'}</div>
-              {error && <div className="text-red-500"><span className="font-medium">Error:</span> {error}</div>}
-            </div>
-          </details>
-        </div>
-      )}
+      <DebugPanel 
+        isVisible={isDebugMode}
+        debugInfo={debugInfo}
+      />
     </div>
   );
 };
