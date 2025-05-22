@@ -1,3 +1,4 @@
+
 import React, { useCallback, useEffect, useRef } from 'react';
 import { TradeInItem as TradeInItemType } from '../../../hooks/useTradeInList';
 import CardHeader from './CardHeader';
@@ -5,7 +6,6 @@ import ItemControls from './ItemControls';
 import ItemValues from './ItemValues';
 import { useItemPrice } from '../../../hooks/trade-in/useItemPrice';
 import { useCardAttributes } from '../../../hooks/trade-in/useCardAttributes';
-import { GameType } from '../../../types/card';
 
 interface TradeInItemProps {
   item: TradeInItemType;
