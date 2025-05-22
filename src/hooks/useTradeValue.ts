@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 
 interface TradeValueHookReturn {
@@ -14,6 +15,8 @@ export function useTradeValue(
   baseValue?: number,
   showToast: boolean = false
 ): TradeValueHookReturn {
+  console.log(`[useTradeValue] Calculating trade values for game=${game}, baseValue=${baseValue}`);
+  
   const [cashValue, setCashValue] = useState(0);
   const [tradeValue, setTradeValue] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -56,5 +59,8 @@ export function useTradeValue(
     
   }, [game, baseValue, showToast]);
 
+  // Log results before returning
+  console.log(`[useTradeValue] Result → cashValue: ${cashValue}, tradeValue: ${tradeValue}`);
+  
   return { cashValue, tradeValue, isLoading, error, usedFallback, fallbackReason };
 }

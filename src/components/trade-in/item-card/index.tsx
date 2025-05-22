@@ -1,5 +1,5 @@
 
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { TradeInItem as TradeInItemType } from '../../../hooks/useTradeInList';
 import CardHeader from './CardHeader';
 import ItemControls from './ItemControls';
@@ -153,6 +153,14 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     }
   }, [item.card.name, onValueAdjustment, instanceId]);
 
+  // Fix: Make the handlePriceChange function accept the event format expected by ItemValues
+  const handlePriceChangeWrapper = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPrice = parseFloat(e.target.value);
+    if (!isNaN(newPrice)) {
+      handlePriceChange(newPrice);
+    }
+  }, [handlePriceChange]);
+
   // Force price refresh if we have a card without a price but with a productId
   useEffect(() => {
     if (item.price <= 0 && item.card.productId && !item.isLoadingPrice && initialRender.current) {
@@ -194,7 +202,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
         isLoading={isCalculating}
         isLoadingPrice={item.isLoadingPrice}
         error={error || item.error}
-        onPriceChange={handlePriceChange}
+        onPriceChange={handlePriceChangeWrapper}
         onRefreshPrice={refreshPrice}
         isPriceUnavailable={item.isPriceUnavailable}
         onValueAdjustment={handleValueAdjustment}
@@ -226,6 +234,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
               <div><span className="font-medium">Trade Value:</span> ${tradeValue?.toFixed(2)}</div>
               <div><span className="font-medium">Game:</span> {item.card.game || 'pokemon (default)'}</div>
               <div><span className="font-medium">Payment Type:</span> {item.paymentType || 'Not selected'}</div>
+              <div><span className="font-medium">Initial Calculation:</span> {item.initialCalculation ? 'Yes' : 'No'}</div>
               {error && <div className="text-red-500"><span className="font-medium">Error:</span> {error}</div>}
             </div>
           </details>
