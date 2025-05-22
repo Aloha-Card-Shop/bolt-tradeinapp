@@ -1,5 +1,6 @@
+
 import { useState, useCallback } from 'react';
-import { CardDetails, GameType } from '../types/card';
+import { CardDetails } from '../types/card';
 import { fetchCardPrices } from '../utils/scraper';
 import { toast } from 'react-hot-toast';
 

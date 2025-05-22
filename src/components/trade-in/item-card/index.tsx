@@ -1,4 +1,3 @@
-
 import React, { useCallback, useEffect, useRef } from 'react';
 import { TradeInItem as TradeInItemType } from '../../../hooks/useTradeInList';
 import CardHeader from './CardHeader';
@@ -162,9 +161,8 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     }
   }, [item.price, item.card.productId, item.isLoadingPrice, refreshPrice, item.card.name, instanceId]);
 
-  // Get game type with default or assert it's valid
-  const gameType = item.card.game || 'pokemon' as GameType;
-
+  // We'll use the GameType by updating the debug section at the bottom
+  
   return (
     <div className="border border-gray-200 rounded-xl p-5 hover:border-blue-100 transition-colors duration-200 bg-white shadow-sm">
       <CardHeader 
@@ -207,7 +205,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
       {/* Debug information about game type */}
       {item.card && !item.card.game && (
         <div className="mt-2 p-2 bg-red-50 rounded text-xs text-red-700">
-          Missing game type for {item.card.name}. This is required for value calculation.
+          Missing game type for {item.card.name}. Using default: pokemon. This is required for value calculation.
         </div>
       )}
       
@@ -226,7 +224,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
               <div><span className="font-medium">Price:</span> ${item.price?.toFixed(2)}</div>
               <div><span className="font-medium">Cash Value:</span> ${cashValue?.toFixed(2)}</div>
               <div><span className="font-medium">Trade Value:</span> ${tradeValue?.toFixed(2)}</div>
-              <div><span className="font-medium">Game:</span> {item.card.game || 'Unknown'}</div>
+              <div><span className="font-medium">Game:</span> {item.card.game || 'pokemon (default)'}</div>
               <div><span className="font-medium">Payment Type:</span> {item.paymentType || 'Not selected'}</div>
               {error && <div className="text-red-500"><span className="font-medium">Error:</span> {error}</div>}
             </div>
