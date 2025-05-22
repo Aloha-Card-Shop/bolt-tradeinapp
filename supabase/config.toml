@@ -1,56 +1,45 @@
 
 project_id = "qgsabaicokoynabxgdco"
 
+# Edge Functions don't verify JWT by default.
+# Unless you add "verify_jwt = true" to the functions or environment you want to secure.
+# The default is "verify_jwt = false" in all environments.
+[global.functions]
+sdk_version = 2
+
+[global.functions.deploy]
+node_version = 18
+
 [api]
-enabled = true
 port = 54321
 schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
 
 [db]
-port = 54322
+port = 5432
 shadow_port = 54320
 major_version = 15
 
-[db.pooler]
-enabled = false
-port = 54329
-pool_mode = "transaction"
-default_pool_size = 15
-max_client_conn = 100
-
-[realtime]
-enabled = false
-
 [studio]
-enabled = true
 port = 54323
-api_url = "http://localhost:54321"
+
+[storage]
+file_size_limit = "50MiB"
 
 [inbucket]
-enabled = true
 port = 54324
 smtp_port = 54325
 pop3_port = 54326
 
-[storage]
-enabled = true
-
 [auth]
-enabled = true
-port = 54327
-
-[auth.smtp]
-sender_name = "Supabase"
-sender_email = "noreply@example.com"
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
 
 [analytics]
-enabled = false
-port = 54328
-
-[experimental]
-enabled = false
-
-[functions]
-[functions.cert-lookup]
-verify_jwt = true
-
+port = 54327
+vector_port = 54328
