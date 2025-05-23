@@ -5,6 +5,7 @@ import CertificateSearchInput from './certificate/CertificateSearchInput';
 import CertificateResultCard from './certificate/CertificateResultCard';
 import CertificateError from './certificate/CertificateError';
 import { CardDetails } from '../../types/card';
+import { AlertCircle } from 'lucide-react';
 
 interface CertificateLookupProps {
   onCardFound: (card: CardDetails, price: number) => void;
@@ -38,9 +39,13 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
       
       {result && <CertificateResultCard result={result} onAddToTradeIn={handleAddToTradeIn} />}
       
-      <p className="text-xs text-gray-500 mt-2">
-        Enter a PSA certification number to look up graded cards
-      </p>
+      <div className="text-xs text-gray-500 mt-2 flex items-start gap-1">
+        <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+        <span>
+          Enter a PSA certification number to look up graded cards. 
+          Example numbers: 49392223, 82674292, 25777273
+        </span>
+      </div>
     </div>
   );
 };

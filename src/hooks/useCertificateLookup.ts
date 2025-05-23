@@ -33,7 +33,10 @@ export const useCertificateLookup = (onCardFound: (card: CardDetails, price: num
 
     try {
       console.log('Looking up certificate:', certNumber.trim());
-      const { data, error } = await supabase.functions.invoke('psa-scraper', {
+      
+      // Use cert-lookup function instead of psa-scraper directly
+      // This function has better error handling and fallback mechanisms
+      const { data, error } = await supabase.functions.invoke('cert-lookup', {
         body: { certNumber: certNumber.trim() }
       });
 
@@ -45,7 +48,8 @@ export const useCertificateLookup = (onCardFound: (card: CardDetails, price: num
       }
 
       if (!data || !data.data) {
-        setError('Certificate not found or invalid response');
+        // More descriptive error message for no data found
+        setError('Certificate not found or invalid response. The PSA website might be blocking our request.');
         toast.error('Certificate not found');
         return;
       }
@@ -54,7 +58,12 @@ export const useCertificateLookup = (onCardFound: (card: CardDetails, price: num
       toast.success('Certificate found!');
     } catch (err) {
       console.error('Certificate lookup error:', err);
-      setError('An unexpected error occurred');
+      // More descriptive error message
+      let errorMessage = 'An unexpected error occurred';
+      if (err.message) {
+        errorMessage += `: ${err.message}`;
+      }
+      setError(errorMessage);
       toast.error('Certificate lookup failed');
     } finally {
       setIsLoading(false);
