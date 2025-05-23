@@ -1,8 +1,8 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { CardDetails, GameType } from '../types/card';
+import { usePsaPriceLookup, PsaPriceData } from './usePsaPriceLookup';
 
 export interface CertificateData {
   certNumber: string;
@@ -20,6 +20,12 @@ export const useCertificateLookup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CertificateData | null>(null);
+  
+  // Get the price lookup hook
+  const { lookupPrice, priceData, isLoading: isPriceLoading, error: priceError } = usePsaPriceLookup();
+
+  // Keep track of the card with pricing information
+  const [certifiedCardWithPrice, setCertifiedCardWithPrice] = useState<CardDetails | null>(null);
 
   const handleCertLookup = async () => {
     if (!certNumber.trim()) {
@@ -53,6 +59,13 @@ export const useCertificateLookup = () => {
 
       setResult(data.data);
       toast.success('Certificate found!');
+      
+      // Convert to card details and look up the price automatically
+      const cardDetails = convertToCardDetails(data.data);
+      if (cardDetails) {
+        // Look up price from 130point.com
+        await lookupPrice(cardDetails);
+      }
     } catch (err: unknown) {
       console.error('Certificate lookup error:', err);
       let errorMessage = 'An unexpected error occurred';
@@ -67,25 +80,45 @@ export const useCertificateLookup = () => {
   };
 
   // Convert certificate result to a CardDetails object for the search results
-  const convertToCardDetails = (): CardDetails | null => {
-    if (!result) return null;
+  const convertToCardDetails = (certData?: CertificateData): CardDetails | null => {
+    if (!certData) return null;
 
     return {
-      id: result.certNumber,
-      name: result.cardName,
-      productId: result.certNumber, // Using cert number as product ID for uniqueness
-      game: result.game as GameType, // Cast to GameType since we know the value matches
-      set: result.set || 'PSA Certified',
-      number: result.cardNumber || '',
+      id: certData.certNumber,
+      name: certData.cardName,
+      productId: certData.certNumber, // Using cert number as product ID for uniqueness
+      game: certData.game as GameType, // Cast to GameType since we know the value matches
+      set: certData.set || 'PSA Certified',
+      number: certData.cardNumber || '',
       rarity: 'Certified',
-      imageUrl: result.imageUrl,
+      imageUrl: certData.imageUrl,
       certification: {
-        certNumber: result.certNumber,
-        grade: result.grade
+        certNumber: certData.certNumber,
+        grade: certData.grade
       },
       isCertified: true
     };
   };
+
+  // Update the certified card when we have price data
+  useEffect(() => {
+    if (result) {
+      const card = convertToCardDetails(result);
+      if (card) {
+        // Add price data if available
+        if (priceData) {
+          card.lastPrice = priceData.averagePrice;
+          card.priceSource = {
+            name: '130point.com',
+            url: priceData.searchUrl,
+            salesCount: priceData.filteredSalesCount,
+            foundSales: priceData.salesCount > 0
+          };
+        }
+        setCertifiedCardWithPrice(card);
+      }
+    }
+  }, [result, priceData]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !isLoading) {
@@ -96,17 +129,19 @@ export const useCertificateLookup = () => {
   const clearResult = () => {
     setResult(null);
     setCertNumber('');
+    setCertifiedCardWithPrice(null);
   };
 
   return {
     certNumber,
     setCertNumber,
-    isLoading,
-    error,
+    isLoading: isLoading || isPriceLoading,
+    error: error || priceError,
     result,
     handleCertLookup,
     handleKeyDown,
     clearResult,
-    certifiedCard: convertToCardDetails()
+    certifiedCard: certifiedCardWithPrice || convertToCardDetails(result),
+    priceData
   };
 };

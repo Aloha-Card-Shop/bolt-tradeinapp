@@ -1,7 +1,9 @@
 
 import React from 'react';
-import { RefreshCcw, DollarSign, AlertTriangle } from 'lucide-react';
-import MarketPriceInput from './MarketPriceInput';
+import PriceDisplay from '../../PriceDisplay';
+import { formatCurrency } from '../../../utils/formatters';
+import { ExternalLink, RefreshCcw } from 'lucide-react';
+import PriceInput from '../shared/PriceInput';
 
 interface ItemValuesProps {
   price: number;
@@ -10,13 +12,19 @@ interface ItemValuesProps {
   isLoading: boolean;
   isLoadingPrice?: boolean;
   error?: string;
-  isPriceUnavailable?: boolean;
   onPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRefreshPrice: () => void;
+  isPriceUnavailable?: boolean;
   onValueAdjustment?: (value: number) => void;
   usedFallback?: boolean;
   fallbackReason?: string;
   isCertified?: boolean;
+  priceSource?: {
+    name: string;
+    url: string;
+    salesCount: number;
+    foundSales: boolean;
+  };
 }
 
 const ItemValues: React.FC<ItemValuesProps> = ({
@@ -26,89 +34,80 @@ const ItemValues: React.FC<ItemValuesProps> = ({
   isLoading,
   isLoadingPrice,
   error,
-  isPriceUnavailable,
   onPriceChange,
   onRefreshPrice,
+  isPriceUnavailable,
   onValueAdjustment,
   usedFallback,
   fallbackReason,
-  isCertified = false
+  isCertified,
+  priceSource
 }) => {
+  const isDisabled = isLoading || isLoadingPrice;
+  
   return (
-    <div className="mt-4 relative">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <div className="mb-1">
-            <label className="block text-sm font-medium text-gray-700">Market Price</label>
-          </div>
-          <div className="relative">
-            <MarketPriceInput
-              price={price}
-              onChange={onPriceChange}
-              disabled={isLoadingPrice}
-            />
-            <button
-              onClick={onRefreshPrice}
-              disabled={isLoadingPrice}
-              className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-blue-500 disabled:opacity-50"
-              title="Refresh price"
-            >
-              <RefreshCcw className={`h-4 w-4 ${isLoadingPrice ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-          {isPriceUnavailable && (
-            <p className="text-amber-600 text-xs mt-1 flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3" />
-              No market price available
-            </p>
-          )}
-          {usedFallback && (
-            <p className="text-amber-600 text-xs mt-1 flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3" />
-              {fallbackReason || 'Using fallback pricing'}
-            </p>
+    <div className="mt-4 border-t border-gray-100 pt-4 space-y-3">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center">
+          <label htmlFor="price" className="block text-sm font-medium text-gray-700 mr-2">
+            Market Price:
+          </label>
+          <button
+            onClick={onRefreshPrice}
+            className="p-1 text-gray-500 hover:text-blue-600 disabled:opacity-50"
+            disabled={isDisabled}
+            title="Refresh price"
+          >
+            <RefreshCcw className="h-3 w-3" />
+          </button>
+        </div>
+        <div className="w-32">
+          <PriceInput
+            price={price}
+            onChange={onPriceChange}
+            error={error}
+            isPriceUnavailable={isPriceUnavailable}
+            disabled={isDisabled}
+          />
+        </div>
+      </div>
+      
+      {priceSource && isCertified && (
+        <div className="text-xs text-gray-500 flex items-center">
+          <span>Source: </span>
+          <a 
+            href={priceSource.url} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="flex items-center text-blue-600 hover:underline ml-1"
+          >
+            {priceSource.name} 
+            <ExternalLink className="h-3 w-3 ml-0.5" />
+          </a>
+          {priceSource.foundSales && (
+            <span className="ml-1">({priceSource.salesCount} sales)</span>
           )}
         </div>
-        
-        <div>
-          <div className="mb-1">
-            <label className="block text-sm font-medium text-gray-700">
-              {paymentType === 'cash' ? 'Cash Value' : 
-               paymentType === 'trade' ? 'Trade Value' : 
-               'Select Payment Type'}
-            </label>
-          </div>
-          <div className="relative">
-            <div className={`
-              flex items-center h-10 px-3 border rounded-md bg-gray-50 
-              ${!paymentType ? 'text-gray-400 italic' : 'text-gray-900 font-medium'} 
-              ${error ? 'border-red-300' : 'border-gray-300'}
-            `}>
-              <DollarSign className="h-4 w-4 text-gray-400 mr-1" />
-              {isLoading ? (
-                <div className="h-4 w-20 bg-gray-200 animate-pulse rounded"></div>
-              ) : paymentType ? (
-                <span 
-                  className={`${isCertified ? 'cursor-pointer hover:text-blue-600' : ''}`}
-                  onClick={() => {
-                    // Only enable manual adjustment for certified cards
-                    if (isCertified && onValueAdjustment) {
-                      onValueAdjustment(displayValue);
-                    }
-                  }}
-                >
-                  {displayValue.toFixed(2)}
-                </span>
-              ) : (
-                <span>Select payment type</span>
-              )}
-            </div>
-          </div>
-          {error && (
-            <p className="text-red-600 text-xs mt-1">{error}</p>
+      )}
+      
+      <div className="flex justify-between items-center">
+        <label className="block text-sm font-medium text-gray-700">
+          {paymentType === 'cash' ? 'Cash Value:' : 'Trade Value:'}
+        </label>
+        <div className={`text-xl font-bold ${isLoading ? 'opacity-50' : 'text-green-600'}`}>
+          {isLoading ? (
+            <div className="animate-pulse w-16 h-6 bg-gray-200 rounded"></div>
+          ) : (
+            <>${formatCurrency(displayValue)}</>
           )}
         </div>
       </div>
+
+      {usedFallback && fallbackReason && (
+        <div className="text-xs text-amber-600">
+          Using fallback value calculation: {fallbackReason}
+        </div>
+      )}
     </div>
   );
 };

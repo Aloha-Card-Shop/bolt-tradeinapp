@@ -53,6 +53,7 @@ const ItemContent: React.FC<ItemContentProps> = ({
   // Check if the card is certified (PSA card)
   const isCertified = item.card.isCertified;
   const certificationGrade = item.card.certification?.grade;
+  const priceSource = item.card.priceSource;
 
   return (
     <>
@@ -65,6 +66,7 @@ const ItemContent: React.FC<ItemContentProps> = ({
           onQuantityChange={updateQuantity}
           onPaymentTypeChange={updatePaymentType}
           grade={certificationGrade}
+          priceSource={priceSource}
         />
       ) : (
         // Render normal controls for regular cards
@@ -99,6 +101,7 @@ const ItemContent: React.FC<ItemContentProps> = ({
         usedFallback={item.usedFallback}
         fallbackReason={item.fallbackReason}
         isCertified={isCertified}
+        priceSource={priceSource}
       />
       
       <WarningMessages 

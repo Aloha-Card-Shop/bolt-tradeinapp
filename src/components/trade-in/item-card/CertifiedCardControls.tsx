@@ -2,6 +2,7 @@
 import React from 'react';
 import QuantityInput from '../shared/QuantityInput';
 import PaymentTypeSelector from '../shared/PaymentTypeSelector';
+import { ExternalLink } from 'lucide-react';
 
 interface CertifiedCardControlsProps {
   quantity: number;
@@ -10,6 +11,12 @@ interface CertifiedCardControlsProps {
   onQuantityChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onPaymentTypeChange: (type: 'cash' | 'trade') => void;
   grade?: string;
+  priceSource?: {
+    name: string;
+    url: string;
+    salesCount: number;
+    foundSales: boolean;
+  };
 }
 
 const CertifiedCardControls: React.FC<CertifiedCardControlsProps> = ({
@@ -18,7 +25,8 @@ const CertifiedCardControls: React.FC<CertifiedCardControlsProps> = ({
   isLoadingPrice,
   onQuantityChange,
   onPaymentTypeChange,
-  grade
+  grade,
+  priceSource
 }) => {
   return (
     <div className="mt-4">
@@ -32,6 +40,25 @@ const CertifiedCardControls: React.FC<CertifiedCardControlsProps> = ({
             Certified
           </div>
         </div>
+        
+        {priceSource && (
+          <div className="mt-2 text-xs">
+            <a 
+              href={priceSource.url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center text-blue-600 hover:text-blue-800"
+            >
+              <span>
+                {priceSource.foundSales 
+                  ? `Based on ${priceSource.salesCount} sales from ${priceSource.name}`
+                  : `View on ${priceSource.name}`
+                }
+              </span>
+              <ExternalLink className="h-3 w-3 ml-1" />
+            </a>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
