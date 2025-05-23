@@ -33,7 +33,8 @@ function MainApp() {
     handleUseAsCardNumber,
     performSearch,
     isSetFiltered,
-    handleShowAllSets
+    handleShowAllSets,
+    addCertificateToResults
   } = useCardSearch();
   
   const { savedCards, removeCard } = useSavedCards();

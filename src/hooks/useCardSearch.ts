@@ -322,34 +322,10 @@ export const useCardSearch = () => {
     hasMoreResults,
     loadMoreResults,
     totalResults,
-    handleUseAsCardNumber: useCallback(() => {
-      if (!potentialCardNumber) return;
-      
-      setCardDetails(prev => ({
-        ...prev,
-        name: '', // Clear the name field
-        number: potentialCardNumber // Move the value to card number field
-      }));
-      setPotentialCardNumber(null);
-      
-      // Focus back on the name input for better UX
-      if (searchInputRef.current) {
-        searchInputRef.current.focus();
-      }
-      
-      // Trigger search immediately
-      setTimeout(() => setShouldSearch(true), 50);
-    }, [potentialCardNumber]),
-    performSearch: useCallback(() => {
-      console.log("Manual search triggered with:", cardDetails);
-      if (cardDetails.name || cardDetails.number || cardDetails.set) {
-        setShouldSearch(true);
-      }
-    }, [cardDetails]),
-    handleShowAllSets: useCallback(() => {
-      showAllSets();
-      setIsSetFiltered(false);
-    }, [showAllSets]),
-    addCertificateToResults // Export the new function
+    handleUseAsCardNumber,
+    performSearch,
+    handleShowAllSets,
+    isSetFiltered,
+    addCertificateToResults
   };
 };
