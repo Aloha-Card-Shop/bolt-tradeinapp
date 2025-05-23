@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -24,6 +25,24 @@ export const usePsaPriceLookup = () => {
   const [error, setError] = useState<string | null>(null);
   const [priceData, setPriceData] = useState<PsaPriceData | null>(null);
 
+  // Helper function to format card name for optimal search
+  const formatCardName = (card: CardDetails): string => {
+    // Start with the base name
+    let formattedName = card.name || '';
+    
+    // For Pokemon cards with complex names, try to extract the base Pokemon name
+    // This helps with searches for cards like "Pikachu V SWSH063"
+    if (card.game === 'pokemon') {
+      // Extract the base Pokemon name before special card types
+      const pokemonNameMatch = formattedName.match(/^(.*?)\s(?:V|GX|EX|VMAX|VSTAR)/i);
+      if (pokemonNameMatch) {
+        formattedName = pokemonNameMatch[1].trim();
+      }
+    }
+    
+    return formattedName;
+  };
+
   // Lookup price data for a PSA card
   const lookupPrice = async (card: CardDetails) => {
     if (!card.name) {
@@ -43,9 +62,12 @@ export const usePsaPriceLookup = () => {
     try {
       console.log(`Looking up PSA price for ${card.name} (PSA ${card.certification.grade})`);
       
+      // Get formatted card name for better search results
+      const formattedName = formatCardName(card);
+      
       const { data, error } = await supabase.functions.invoke('psa-price-lookup', {
         body: {
-          cardName: card.name,
+          cardName: formattedName,
           setName: card.set || '',
           cardNumber: typeof card.number === 'object' ? card.number.raw : card.number || '',
           grade: card.certification.grade
@@ -62,7 +84,13 @@ export const usePsaPriceLookup = () => {
       if (!data || data.error) {
         const errorMsg = data?.error || 'No price data available';
         setError(errorMsg);
-        toast.error(errorMsg);
+        
+        // Show a more precise error message
+        if (errorMsg.includes('No sales data found')) {
+          toast.error('No recent sales found for this card and grade');
+        } else {
+          toast.error(errorMsg);
+        }
         
         // Still return the search URL even if no prices were found
         if (data?.searchUrl) {

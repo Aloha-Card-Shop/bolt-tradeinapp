@@ -28,6 +28,44 @@ export const useCertificateLookup = () => {
   // Keep track of the card with pricing information
   const [certifiedCardWithPrice, setCertifiedCardWithPrice] = useState<CardDetails | null>(null);
 
+  // Detect game type based on certificate data
+  const detectGameType = (certData: CertificateData): GameType => {
+    // Default to Pokémon if we can't determine
+    if (!certData) return 'pokemon';
+    
+    const name = certData.cardName.toLowerCase();
+    const set = (certData.set || '').toLowerCase();
+    
+    if (name.includes('magic') || set.includes('magic') || 
+        name.includes('mtg') || set.includes('mtg')) {
+      return 'magic';
+    }
+    
+    if (name.includes('yugioh') || set.includes('yugioh') || 
+        name.includes('yu-gi-oh') || set.includes('yu-gi-oh')) {
+      return 'yugioh';
+    }
+    
+    // Look for Pokémon-specific terms
+    if (name.includes('pokemon') || set.includes('pokemon') ||
+        name.includes('pikachu') || name.includes('charizard') ||
+        set.includes('base set') || set.includes('black star') ||
+        set.includes('swsh') || set.includes('sun & moon') ||
+        set.includes('ex') || set.includes('gx') || set.includes('v ')) {
+      return 'pokemon';
+    }
+    
+    // Look for sports card indicators
+    if (name.includes('topps') || name.includes('upper deck') ||
+        name.includes('panini') || name.includes('bowman') ||
+        name.includes('fleer')) {
+      return 'sports';
+    }
+    
+    // Default to Pokémon as the most common type
+    return 'pokemon';
+  };
+
   const handleCertLookup = async () => {
     if (!certNumber.trim()) {
       toast.error('Please enter a certificate number');
@@ -84,13 +122,31 @@ export const useCertificateLookup = () => {
   const convertToCardDetails = (certData: CertificateData | undefined): CardDetails | null => {
     if (!certData) return null;
 
+    // Detect the game type based on certificate data
+    const gameType = detectGameType(certData);
+    
+    // Create a more standardized card number format if available
+    let cardNumberValue = certData.cardNumber || '';
+    
+    // For Pokemon specifically, try to improve the card number format
+    if (gameType === 'pokemon' && cardNumberValue) {
+      // If we have SM or SWSH promo, format as SM### or SWSH###
+      if (certData.set?.toLowerCase().includes('black star promo') || certData.set?.toLowerCase().includes('promotional')) {
+        if (cardNumberValue.toLowerCase().includes('sm')) {
+          cardNumberValue = cardNumberValue.toUpperCase(); // Ensure uppercase
+        } else if (cardNumberValue.toLowerCase().includes('swsh')) {
+          cardNumberValue = cardNumberValue.toUpperCase(); // Ensure uppercase
+        }
+      }
+    }
+
     return {
       id: certData.certNumber,
       name: certData.cardName,
       productId: certData.certNumber, // Using cert number as product ID for uniqueness
-      game: certData.game as GameType, // Cast to GameType since we know the value matches
+      game: gameType,
       set: certData.set || 'PSA Certified',
-      number: certData.cardNumber || '',
+      number: cardNumberValue,
       rarity: 'Certified',
       imageUrl: certData.imageUrl,
       certification: {
