@@ -3,8 +3,7 @@ import React from 'react';
 import { useCertificateLookup } from '../../hooks/useCertificateLookup';
 import CertificateSearchInput from './certificate/CertificateSearchInput';
 import CertificateError from './certificate/CertificateError';
-import { AlertCircle, DollarSign } from 'lucide-react';
-import { formatCurrency } from '../../utils/formatters';
+import { AlertCircle } from 'lucide-react';
 
 interface CertificateLookupProps {
   onCertificateFound: (card: any) => void;
@@ -43,32 +42,6 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
       />
       
       {error && <CertificateError error={error} />}
-      
-      {priceData && priceData.averagePrice > 0 && (
-        <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded text-green-700 flex items-center">
-          <DollarSign className="h-4 w-4 mr-1 flex-shrink-0" />
-          <div>
-            <p className="font-medium">Average selling price: ${formatCurrency(priceData.averagePrice)}</p>
-            <p className="text-xs">Based on {priceData.filteredSalesCount} recent sales on 130point.com</p>
-          </div>
-        </div>
-      )}
-      
-      {priceData && priceData.averagePrice === 0 && priceData.searchUrl && (
-        <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-700">
-          <p className="font-medium">No recent sales data found</p>
-          <p className="text-xs">
-            <a 
-              href={priceData.searchUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              View on 130point.com for more information
-            </a>
-          </p>
-        </div>
-      )}
       
       <div className="text-xs text-gray-500 mt-2 flex items-start gap-1">
         <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />

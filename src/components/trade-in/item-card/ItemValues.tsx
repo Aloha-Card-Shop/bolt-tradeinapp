@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { formatCurrency } from '../../../utils/formatters';
 import { ExternalLink, RefreshCcw } from 'lucide-react';
@@ -13,7 +14,8 @@ interface ItemValuesProps {
   onPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRefreshPrice: () => void;
   isPriceUnavailable?: boolean;
-  onValueAdjustment?: (value: number) => void;
+  // Renamed to avoid unused variable warning
+  onValueAdjustment?: (value: number) => void; 
   usedFallback?: boolean;
   fallbackReason?: string;
   isCertified?: boolean;
@@ -35,6 +37,7 @@ const ItemValues: React.FC<ItemValuesProps> = ({
   onPriceChange,
   onRefreshPrice,
   isPriceUnavailable,
+  // Renamed with underscore to indicate it's not used
   onValueAdjustment: _onValueAdjustment,
   usedFallback,
   fallbackReason,

@@ -1,9 +1,9 @@
-
 import React, { useEffect, useRef, useCallback } from 'react';
-import { Loader2, ImageOff, PlusCircle, Search, AlertCircle, Info, Award } from 'lucide-react';
+import { Loader2, ImageOff, PlusCircle, Search, AlertCircle, Info, Award, DollarSign } from 'lucide-react';
 import { CardDetails, SavedCard, CardNumberObject } from '../types/card';
 import { extractNumberBeforeSlash, getCardNumberString } from '../utils/cardSearchUtils';
 import { toast } from 'react-hot-toast';
+import { formatCurrency } from '../utils/formatters';
 
 interface CardResultsProps {
   results: CardDetails[];
@@ -195,6 +195,35 @@ const CardResults: React.FC<CardResultsProps> = ({
                           </div>
                         )}
                         
+                        {/* Price information with conditional display for certified cards */}
+                        {isCertified && card.priceSource && (
+                          <div className="mt-2">
+                            {card.lastPrice ? (
+                              <div className="mt-1 p-2 bg-green-50 border border-green-200 rounded-md text-green-700 flex items-center">
+                                <DollarSign className="h-4 w-4 mr-1 flex-shrink-0" />
+                                <div>
+                                  <p className="font-medium">Average price: ${formatCurrency(card.lastPrice)}</p>
+                                  <p className="text-xs">Based on {card.priceSource.salesCount} recent sales</p>
+                                </div>
+                              </div>
+                            ) : card.priceSource.url && (
+                              <div className="mt-1 p-2 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-700">
+                                <p className="font-medium">No recent sales data found</p>
+                                <p className="text-xs">
+                                  <a 
+                                    href={card.priceSource.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline"
+                                  >
+                                    View on {card.priceSource.name} for more information
+                                  </a>
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
                         {card.productId ? (
                           <p className="text-xs text-gray-400 mt-1">ID: {card.productId}</p>
                         ) : (
@@ -219,6 +248,14 @@ const CardResults: React.FC<CardResultsProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Add error message for no price data */}
+                {isCertified && card.priceSource?.url && !card.lastPrice && !card.priceSource.foundSales && (
+                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md text-red-700 flex items-center">
+                    <AlertCircle className="h-4 w-4 mr-1 flex-shrink-0" />
+                    <p className="text-sm">No sales data found for this card</p>
+                  </div>
+                )}
               </div>
             );
           })}

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -86,7 +85,7 @@ export const usePsaPriceLookup = () => {
       if (data.filteredSalesCount > 0) {
         toast.success(`Found ${data.filteredSalesCount} recent sales for PSA ${card.certification.grade} ${card.name}`);
       } else {
-        // Using standard toast method since toast.info doesn't exist
+        // Using standard toast method instead of toast.info since it doesn't exist
         toast(`No recent sales found, but you can check 130point.com for more info`);
       }
       
