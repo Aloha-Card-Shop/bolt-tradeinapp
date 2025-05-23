@@ -90,7 +90,7 @@ const normalizeGameType = (gameType?: string): GameType => {
     return 'magic';
   
   // fallback
-  return ['pokemon', 'japanese-pokemon', 'magic'].includes(normalized as GameType)
+  return ['pokemon', 'japanese-pokemon', 'magic', 'yugioh', 'sports', 'other'].includes(normalized as GameType)
     ? (normalized as GameType)
     : 'pokemon';
 };

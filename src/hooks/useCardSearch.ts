@@ -32,10 +32,7 @@ export const useCardSearch = () => {
   // Track if sets are filtered
   const [isSetFiltered, setIsSetFiltered] = useState(false);
   
-  const { setOptions, filteredSetOptions, isLoadingSets, filterSetOptions, showAllSets, isFiltered } = useSetOptions(
-    cardDetails.game,
-    cardDetails.categoryId
-  );
+  const { setOptions, filteredSetOptions, isLoadingSets, filterSetOptions, showAllSets, isFiltered } = useSetOptions();
   
   const { 
     searchResults, 
@@ -91,9 +88,19 @@ export const useCardSearch = () => {
           // Search cards and get set IDs from results
           const foundSetIds = await searchCards(cardDetails, setOptions);
           
-          // Filter set options based on search results
+          // Convert string array to Set<number> for filterSetOptions
           const searchTerms = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
-          filterSetOptions(searchTerms, foundSetIds);
+          
+          // Create a new Set from the string array, converting strings to numbers
+          const setIdSet = new Set<number>();
+          foundSetIds.forEach(id => {
+            const numericId = parseInt(id, 10);
+            if (!isNaN(numericId)) {
+              setIdSet.add(numericId);
+            }
+          });
+          
+          filterSetOptions(searchTerms, setIdSet);
           
           // Record if sets are being filtered
           setIsSetFiltered(isFiltered);

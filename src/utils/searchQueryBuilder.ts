@@ -1,7 +1,4 @@
-
-import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
-import { SetOption } from '../hooks/useSetOptions';
 import { createCardNumberFilters } from './cardSearchUtils';
 
 // Constants

@@ -1,5 +1,4 @@
-
-export type GameType = 'pokemon' | 'magic' | 'yugioh' | 'sports' | 'other';
+export type GameType = 'pokemon' | 'magic' | 'yugioh' | 'sports' | 'other' | 'japanese-pokemon';
 
 export type CardNumberObject = {
   raw: string;
@@ -56,7 +55,8 @@ export const GAME_OPTIONS = [
   { label: 'Magic: The Gathering', value: 'magic', categoryId: 1 },
   { label: 'Yu-Gi-Oh!', value: 'yugioh', categoryId: 3 },
   { label: 'Sports Cards', value: 'sports', categoryId: 4 },
-  { label: 'Other Cards', value: 'other', categoryId: 8 }
+  { label: 'Other Cards', value: 'other', categoryId: 8 },
+  { label: 'Japanese Pokémon', value: 'japanese-pokemon', categoryId: 9 }
 ];
 
 export const CONDITION_OPTIONS = [

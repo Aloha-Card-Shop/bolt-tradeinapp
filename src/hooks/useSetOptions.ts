@@ -1,6 +1,5 @@
 
 import { useState } from 'react';
-import { GameType } from '../types/card';
 
 export interface SetOption {
   id: number;

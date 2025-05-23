@@ -23,7 +23,7 @@ const SavedCards: React.FC<SavedCardsProps> = ({
     if (!cardNumber) return '';
     
     if (typeof cardNumber === 'object') {
-      return cardNumber.displayName || cardNumber.value || '';
+      return cardNumber.displayName || cardNumber.value || cardNumber.formatted || '';
     }
     
     return cardNumber;
@@ -76,7 +76,7 @@ const SavedCards: React.FC<SavedCardsProps> = ({
                   </button>
                   
                   <button
-                    onClick={() => onRemove(card.id)}
+                    onClick={() => onRemove(card.id!)}
                     className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
                     title="Remove from saved cards"
                   >
