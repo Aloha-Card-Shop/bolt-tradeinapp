@@ -92,7 +92,7 @@ export const useCardSearchQuery = () => {
 
       // Process the search results
       const searchData = result.data?.search;
-      const formattedResults = formatResultsToCardDetails(searchData?.results || [], [], cardDetails);
+      const formattedResults = formatResultsToCardDetails(searchData?.results || [], setOptions, cardDetails);
       
       // Update state with the search results
       setSearchResults(formattedResults);

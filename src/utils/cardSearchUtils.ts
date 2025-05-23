@@ -64,43 +64,47 @@ export const normalizeCardNumber = (cardNumber: string | CardNumberObject | unde
 export const createCardNumberFilters = (cardNumber: string): string[] => {
   if (!cardNumber) return [];
   
+  // Ensure cardNumber is a string
+  const cardNumberStr = String(cardNumber).trim();
+  if (!cardNumberStr) return [];
+  
   const filters = [];
-  const numberBeforeSlash = extractNumberBeforeSlash(cardNumber);
-  const normalizedNumber = normalizeCardNumber(cardNumber);
-  const isNumericOnly = /^\d+$/.test(cardNumber);
+  const numberBeforeSlash = extractNumberBeforeSlash(cardNumberStr);
+  const normalizedNumber = normalizeCardNumber(cardNumberStr);
+  const isNumericOnly = /^\d+$/.test(cardNumberStr);
   
   // Priority 1: Exact matches (highest priority)
-  filters.push(`attributes->>'card_number'.eq.${cardNumber}`);
-  filters.push(`attributes->>'Number'.eq.${cardNumber}`);
+  filters.push(`attributes->>'card_number'.eq.${cardNumberStr}`);
+  filters.push(`attributes->>'Number'.eq.${cardNumberStr}`);
   
   // Priority 1.5: Normalized matches (also high priority)
-  if (normalizedNumber !== cardNumber) {
+  if (normalizedNumber !== cardNumberStr) {
     filters.push(`attributes->>'card_number'.eq.${normalizedNumber}`);
     filters.push(`attributes->>'Number'.eq.${normalizedNumber}`);
   }
   
   // Priority 2: Prefix matches (card number starts with the search term)
-  filters.push(`attributes->>'card_number'.ilike.${cardNumber}%`);
-  filters.push(`attributes->>'Number'.ilike.${cardNumber}%`);
+  filters.push(`attributes->>'card_number'.ilike.${cardNumberStr}%`);
+  filters.push(`attributes->>'Number'.ilike.${cardNumberStr}%`);
   
   // Priority 3: Handle where card number might be a prefix with slash
-  filters.push(`attributes->>'card_number'.ilike.${cardNumber}/%`);
-  filters.push(`attributes->>'Number'.ilike.${cardNumber}/%`);
+  filters.push(`attributes->>'card_number'.ilike.${cardNumberStr}/%`);
+  filters.push(`attributes->>'Number'.ilike.${cardNumberStr}/%`);
   
   // Priority 4: If searching for just digits, look for those digits at start of number
   if (isNumericOnly) {
     // For numeric searches, add specific pattern match for numbers at the start
     // This helps when searching for "25" to find "25/123" or similar patterns
-    filters.push(`attributes->>'card_number'.ilike.${cardNumber}/%`);
-    filters.push(`attributes->>'Number'.ilike.${cardNumber}/%`);
+    filters.push(`attributes->>'card_number'.ilike.${cardNumberStr}/%`);
+    filters.push(`attributes->>'Number'.ilike.${cardNumberStr}/%`);
     
     // Also look for the digits anywhere in the number
-    filters.push(`attributes->>'card_number'.ilike.%${cardNumber}%`);
-    filters.push(`attributes->>'Number'.ilike.%${cardNumber}%`);
+    filters.push(`attributes->>'card_number'.ilike.%${cardNumberStr}%`);
+    filters.push(`attributes->>'Number'.ilike.%${cardNumberStr}%`);
     
     // Add padded number patterns (e.g., searching for "4" also finds "004")
-    const paddedNumber = cardNumber.padStart(3, '0');
-    if (paddedNumber !== cardNumber) {
+    const paddedNumber = cardNumberStr.padStart(3, '0');
+    if (paddedNumber !== cardNumberStr) {
       filters.push(`attributes->>'card_number'.eq.${paddedNumber}`);
       filters.push(`attributes->>'Number'.eq.${paddedNumber}`);
       filters.push(`attributes->>'card_number'.ilike.${paddedNumber}%`);
@@ -109,7 +113,7 @@ export const createCardNumberFilters = (cardNumber: string): string[] => {
   }
   
   // Handle specific case where numberBeforeSlash is different
-  if (numberBeforeSlash !== cardNumber) {
+  if (numberBeforeSlash !== cardNumberStr) {
     // Add search for just the number before slash followed by slash
     filters.push(`attributes->>'card_number'.ilike.${numberBeforeSlash}/%`);
     filters.push(`attributes->>'Number'.ilike.${numberBeforeSlash}/%`);
@@ -130,14 +134,14 @@ export const createCardNumberFilters = (cardNumber: string): string[] => {
     // - 123/ABC (number before slash)
     // - 123A (number followed by letter)
     
-    filters.push(`attributes->>'card_number'.ilike.%${cardNumber}`); // Ends with number
-    filters.push(`attributes->>'Number'.ilike.%${cardNumber}`);
+    filters.push(`attributes->>'card_number'.ilike.%${cardNumberStr}`); // Ends with number
+    filters.push(`attributes->>'Number'.ilike.%${cardNumberStr}`);
     
-    filters.push(`attributes->>'card_number'.ilike.%-${cardNumber}%`); // After hyphen
-    filters.push(`attributes->>'Number'.ilike.%-${cardNumber}%`);
+    filters.push(`attributes->>'card_number'.ilike.%-${cardNumberStr}%`); // After hyphen
+    filters.push(`attributes->>'Number'.ilike.%-${cardNumberStr}%`);
     
-    filters.push(`attributes->>'card_number'.ilike.${cardNumber}/%`); // Before slash
-    filters.push(`attributes->>'Number'.ilike.${cardNumber}/%`);
+    filters.push(`attributes->>'card_number'.ilike.${cardNumberStr}/%`); // Before slash
+    filters.push(`attributes->>'Number'.ilike.${cardNumberStr}/%`);
   }
   
   return filters;
@@ -179,7 +183,7 @@ export const getCardNumberString = (cardNumber: string | CardNumberObject | unde
     return '';
   }
   
-  return cardNumber;
+  return String(cardNumber);
 };
 
 /**

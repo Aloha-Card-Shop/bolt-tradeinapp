@@ -4,14 +4,7 @@ import { fetchCardPrices } from '../utils/scraper';
 import { toast } from 'react-hot-toast';
 
 export interface TradeInItem {
-  card: CardDetails & {
-    certification?: {
-      certNumber: string;
-      grade: string;
-      certificationDate?: string;
-    };
-    isCertified?: boolean;
-  };
+  card: CardDetails;
   quantity: number;
   condition: string;
   isFirstEdition: boolean;
@@ -41,20 +34,23 @@ export const useTradeInList = () => {
     };
 
     // Always add as a new item
-    setItems(prev => [...prev, {
-      card: cardWithId,
-      quantity: 1,
-      condition: '',
-      isFirstEdition: false,
-      isHolo: true,
-      isReverseHolo: false,
-      price: price || 0,
-      paymentType: null, 
-      isLoadingPrice: false,
-      error: undefined,
-      isPriceUnavailable: false,
-      initialCalculation: true
-    }]);
+    setItems(prev => {
+      const newItem: TradeInItem = {
+        card: cardWithId,
+        quantity: 1,
+        condition: '',
+        isFirstEdition: false,
+        isHolo: true,
+        isReverseHolo: false,
+        price: price || 0,
+        paymentType: null, 
+        isLoadingPrice: false,
+        error: undefined,
+        isPriceUnavailable: false,
+        initialCalculation: true
+      };
+      return [...prev, newItem];
+    });
   }, []);
 
   const removeItem = useCallback((index: number) => {

@@ -139,7 +139,7 @@ export const useCardSearch = () => {
     
     // Always update set options to show all sets when no name search is active
     if (!cardDetails.name) {
-      const searchTerms = cardDetails.name.toLowerCase().split(' ').filter(Boolean);
+      const searchTerms: string[] = [];
       filterSetOptions(searchTerms, new Set<number>());
     }
     

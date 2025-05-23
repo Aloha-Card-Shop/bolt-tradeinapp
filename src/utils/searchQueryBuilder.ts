@@ -1,173 +1,137 @@
+
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
-import { extractNumberBeforeSlash } from './cardSearchUtils';
+import { createCardNumberFilters } from './cardSearchUtils';
 
-// Debug mode flag - set to true to enable verbose logging
-const DEBUG_MODE = true;
+// Constants
+export const DEBUG_MODE = true;
+export const RESULTS_PER_PAGE = 12;
 
-// Define the number of results per page
-export const RESULTS_PER_PAGE = 48;
-
-// Utility function to build the Supabase query with optimized performance
-export const buildSearchQuery = async (
+// This function builds the GraphQL query for card search
+export const buildSearchQuery = (
   cardDetails: CardDetails,
-  setOptions: SetOption[],
-  page: number = 0
-): Promise<{ query: any; foundSetIds: Set<number> }> => {
-  // Destructure card details for easier use
-  const { name, set, number, categoryId } = cardDetails;
+  page = 0,
+  limit = RESULTS_PER_PAGE
+): { query: any; variables: any } => {
+  // Basic variables
+  const variables: any = {
+    limit,
+    offset: page * limit,
+    sort: "most_relevant"
+  };
 
-  // Initialize set to store found set IDs
-  const foundSetIds: Set<number> = new Set();
+  // Build filter array
+  const filters: string[] = [];
 
-  // Calculate the range for pagination
-  const from = page * RESULTS_PER_PAGE;
-  const to = (page + 1) * RESULTS_PER_PAGE - 1;
-
-  if (DEBUG_MODE) {
-    console.log('🔧 Building search query with parameters:', { 
-      name, 
-      set, 
-      number, 
-      categoryId,
-      pagination: { page, from, to }
-    });
-  }
-
-  // Always use unified_products table for all searches for consistency
-  if (DEBUG_MODE) {
-    console.log('Using unified_products table for all searches');
-  }
-
-  // Start building the query with select fields specified to reduce data transfer
-  let query = supabase
-    .from('unified_products')
-    .select('id, name, group_id, image_url, attributes, product_id, tcgplayer_product_id, card_number', { count: 'exact' })
-    .order('name');
-  
-  // Apply pagination
-  query = query.range(from, to);
-
-  // Apply filters based on provided card details
-  if (categoryId) {
-    query = query.eq('category_id', categoryId);
-    if (DEBUG_MODE) console.log(`Added category filter: ${categoryId}`);
-  }
-  
-  // Optimize set filtering first since it's highly restrictive
-  if (set) {
-    const setId = setOptions.find(s => s.name === set)?.id;
-    if (setId) {
-      query = query.eq('group_id', setId);
-      foundSetIds.add(setId);
-      if (DEBUG_MODE) console.log(`Added set filter, mapped "${set}" to ID: ${setId}`);
-    } else if (DEBUG_MODE) {
-      console.warn(`Set "${set}" not found in setOptions`);
+  // Game type filtering - only include if game is provided
+  if (cardDetails.game) {
+    if (cardDetails.game === 'pokemon') {
+      filters.push("game.eq.pokemon");
+    } else if (cardDetails.game === 'magic') {
+      filters.push("game.eq.mtg");
+    } else if (cardDetails.game === 'yugioh') {
+      filters.push("game.eq.yugioh");
+    } else if (cardDetails.game === 'sports') {
+      filters.push("game.eq.sports");
+    } else if (cardDetails.game === 'other') {
+      filters.push("game.neq.mtg");
+      filters.push("game.neq.pokemon");
+      filters.push("game.neq.yugioh");
+      filters.push("game.neq.sports");
     }
   }
-  
-  // Enhanced card number search using the dedicated card_number column
-  if (number) {
-    // Normalize the card number for more consistent matching
-    const normalizedNumber = number.trim().replace(/^0+(\d+)/, '$1'); // Remove leading zeros from numeric part
-    const numberBeforeSlash = extractNumberBeforeSlash(number);
-    const fullNumber = number.toString();
+
+  // Name search - enhance name match with product_name
+  if (cardDetails.name && cardDetails.name.trim().length > 0) {
+    // Split the name into terms for better matching
+    const nameTerms = cardDetails.name.trim().toLowerCase().split(/\s+/);
     
-    // Build card number filters for direct column search instead of JSON attribute search
-    let cardNumberFilters = [];
-    
-    // Exact match (highest priority)
-    cardNumberFilters.push(`card_number.eq.${fullNumber}`);
-    
-    // Also try with normalized number (without leading zeros)
-    if (normalizedNumber !== fullNumber) {
-      cardNumberFilters.push(`card_number.eq.${normalizedNumber}`);
+    if (nameTerms.length === 1) {
+      // For single-term searches, allow for more flexibility
+      filters.push(`(product_name.ilike.%${nameTerms[0]}%,attributes->>'Name'.ilike.%${nameTerms[0]}%)`);
+    } else {
+      // For multi-term searches, require all terms to match
+      nameTerms.forEach(term => {
+        filters.push(`(product_name.ilike.%${term}%,attributes->>'Name'.ilike.%${term}%)`);
+      });
     }
     
-    // Case-insensitive contains match
-    cardNumberFilters.push(`card_number.ilike.%${fullNumber}%`);
-    
-    // Match with normalized number (without leading zeros)
-    if (normalizedNumber !== fullNumber) {
-      cardNumberFilters.push(`card_number.ilike.%${normalizedNumber}%`);
-    }
-    
-    // For pattern like "4/102", also check for "004/102"
-    if (fullNumber.includes('/') && normalizedNumber !== fullNumber) {
-      const parts = fullNumber.split('/');
-      if (parts.length === 2) {
-        const paddedNumber = parts[0].padStart(3, '0') + '/' + parts[1];
-        cardNumberFilters.push(`card_number.eq.${paddedNumber}`);
-        cardNumberFilters.push(`card_number.ilike.${paddedNumber}%`);
+    variables.name = cardDetails.name.trim();
+  }
+
+  // Set filtering
+  if (cardDetails.set && cardDetails.set.trim().length > 0) {
+    filters.push(`attributes->>'Set Name'.ilike.%${cardDetails.set.trim()}%`);
+    variables.set = cardDetails.set.trim();
+  }
+
+  // Card number filtering with enhanced matching
+  if (cardDetails.number) {
+    const cardNumberStr = typeof cardDetails.number === 'string' 
+      ? cardDetails.number.trim() 
+      : cardDetails.number.value || cardDetails.number.formatted || cardDetails.number.raw || '';
+      
+    if (cardNumberStr.length > 0) {
+      // Use the utility function to create robust card number filters
+      const cardNumberFilters = createCardNumberFilters(cardNumberStr);
+      if (cardNumberFilters.length > 0) {
+        filters.push(`(${cardNumberFilters.join(',')})`);
+        variables.cardNumber = cardNumberStr;
       }
     }
-    
-    // Partial number match (if applicable)
-    if (numberBeforeSlash && numberBeforeSlash !== fullNumber) {
-      cardNumberFilters.push(`card_number.ilike.${numberBeforeSlash}/%`);
-    }
-    
-    // Use OR logic to match any of these patterns
-    query = query.or(cardNumberFilters.join(','));
-    
-    if (DEBUG_MODE) {
-      console.log(`Added enhanced card number filter for: ${number}`);
-      console.log(`Using direct card_number column search`);
-      console.log(`Also searching for normalized form: ${normalizedNumber}`);
-      console.log(`And partial matches with: ${numberBeforeSlash}`);
-    }
-  }
-  
-  // Apply name filter last - this is typically the broadest
-  if (name) {
-    // For names, use startsWith search first (more efficient) with ilike as fallback
-    if (name.length <= 2) {
-      // For very short names, use more restrictive startsWith pattern
-      query = query.ilike('name', `${name}%`);
-      if (DEBUG_MODE) console.log(`Added restrictive name prefix filter: ${name}%`);
-    } else {
-      // For longer names, use contains pattern
-      query = query.ilike('name', `%${name}%`);
-      if (DEBUG_MODE) console.log(`Added name contains filter: %${name}%`);
-    }
   }
 
-  // Log the final query filters for debugging
+  // If no filters provided, limit results to prevent too broad a search
+  if (filters.length === 0) {
+    variables.limit = 20;
+  }
+
+  // Combine all filters with AND logic
+  variables.filter = filters.join(',');
+
+  // For debug logging
   if (DEBUG_MODE) {
-    console.log('Final query filters on unified_products table:', { 
-      category_id: categoryId || 'any',
-      name: name ? (name.length <= 2 ? `${name}%` : `%${name}%`) : 'any',
-      set_id: set ? (setOptions.find(s => s.name === set)?.id || 'not found') : 'any',
-      number: number ? `Direct search on card_number column with multiple patterns for: ${number}` : 'any'
-    });
+    console.log("Search variables:", variables);
   }
 
-  return { query, foundSetIds };
-};
-
-// Helper function to extract set ID for a set name
-export const findSetIdByName = (setName: string, setOptions: SetOption[]): number | undefined => {
-  const setOption = setOptions.find(option => option.name === setName);
-  return setOption?.id;
+  // Return the query and variables
+  return {
+    query: `
+      query Search($filter: String!, $sort: String!, $limit: Int!, $offset: Int!) {
+        search(filter: $filter, sort: $sort, limit: $limit, offset: $offset) {
+          total
+          results {
+            id
+            product_id
+            product_name
+            group_name
+            group_id
+            image_url
+            rarity
+            card_number
+            attributes
+            release_date
+            game
+          }
+        }
+      }
+    `,
+    variables
+  };
 };
 
 export const formatResultsToCardDetails = (
   results: any[],
   setOptions: any[] = [],
-  searchCriteria: CardDetails
+  searchCriteria?: CardDetails
 ): CardDetails[] => {
   if (DEBUG_MODE) {
-    console.log(`Formatting ${results.length} raw results to CardDetails objects`);
-    
-    // Log a sample of the results to help debug structure
-    if (results.length > 0) {
-      console.log('Sample result structure:', {
-        firstRecord: results[0],
-        hasCardNumber: results[0].card_number !== undefined,
-        cardNumberValue: results[0].card_number || 'Not available'
-      });
-    }
+    console.log("Formatting results:", results);
+  }
+
+  if (!results || results.length === 0) {
+    return [];
   }
   
   return results.map(item => {
@@ -177,93 +141,53 @@ export const formatResultsToCardDetails = (
     
     // Use the direct card_number column instead of extracting from attributes
     let cardNumber = item.card_number || '';
-
-    // If card_number from the direct column is empty, fall back to the attributes as a last resort
+    
+    // Fall back to attributes if card_number is not available
     if (!cardNumber && item.attributes) {
-      try {
-        if (DEBUG_MODE && item.name.includes(searchCriteria.name || '')) {
-          console.log(`Card "${item.name}" missing card_number column value, falling back to attributes`);
-        }
-        
-        // This fallback logic is just temporary until the database is fully migrated
-        if (typeof item.attributes === 'object') {
-          if (item.attributes.number) {
-            cardNumber = typeof item.attributes.number === 'object' 
-              ? (item.attributes.number.value || item.attributes.number.displayName || '') 
-              : String(item.attributes.number);
-          } 
-          else if (item.attributes.Number) {
-            cardNumber = typeof item.attributes.Number === 'object'
-              ? (item.attributes.Number.value || item.attributes.Number.displayName || '')
-              : String(item.attributes.Number);
-          }
-        }
-      } catch (error) {
-        console.error(`Failed to extract fallback card number for "${item.name}":`, error);
-      }
-    }
-    
-    // Extract product ID with improved priority hierarchy
-    const productId = extractProductId(item);
-    
-    // Debug output to trace card number usage
-    if (DEBUG_MODE && cardNumber) {
-      console.log(`Card: ${item.name}, Using card_number column: ${item.card_number !== undefined}, Value: ${cardNumber}`);
+      const attributes = typeof item.attributes === 'string'
+        ? JSON.parse(item.attributes)
+        : item.attributes;
+      
+      cardNumber = attributes?.Number || attributes?.card_number || '';
     }
 
-    return {
-      name: item.name || item.clean_name || '',
-      set: setName,
+    // Extract the game type from item and convert to our GameType enum
+    let gameType = item.game || searchCriteria?.game || 'other';
+    
+    // Map from database game types to our GameType enum
+    if (gameType === 'mtg') gameType = 'magic';
+    if (gameType === 'pkmn' || gameType === 'pokemon-card') gameType = 'pokemon';
+    
+    // Format the card details
+    const cardDetails: CardDetails = {
+      id: item.id || `result-${Math.random().toString(36).substring(2, 11)}`,
+      name: item.product_name || '',
+      set: setName || item.group_name || '',
+      setId: item.group_id?.toString() || undefined,
       number: cardNumber,
-      game: searchCriteria.game,
-      categoryId: searchCriteria.categoryId,
-      productId: productId,
-      imageUrl: item.image_url || item.imageUrl || null,
-      id: item.id?.toString() || null
+      game: gameType,
+      imageUrl: item.image_url || null,
+      rarity: item.rarity || undefined,
+      releaseYear: item.release_date?.substring(0, 4) || undefined,
+      productId: item.product_id?.toString() || null
     };
+
+    return cardDetails;
   });
 };
 
-// Helper function to extract product ID using a more robust approach
-function extractProductId(item: any): string | null {
-  // Check each possible location for product ID in order of preference
-  // 1. Direct tcgplayer_product_id field (new field added in migration)
-  if (item.tcgplayer_product_id) {
-    if (DEBUG_MODE) console.log(`Found product ID in tcgplayer_product_id: ${item.tcgplayer_product_id}`);
-    return String(item.tcgplayer_product_id);
+export const getCategoryIdForGame = (gameType: string): number => {
+  switch (gameType) {
+    case 'magic':
+      return 1;
+    case 'pokemon':
+      return 2;
+    case 'yugioh':
+      return 3;
+    case 'sports':
+      return 4;
+    case 'other':
+    default:
+      return 8; // Default category for other games
   }
-  
-  // 2. Direct product_id field
-  if (item.product_id) {
-    if (DEBUG_MODE) console.log(`Found product ID in product_id: ${item.product_id}`);
-    return String(item.product_id);
-  }
-  
-  // 3. In attributes object as tcgplayer_id (actual field used in database)
-  if (item.attributes?.tcgplayer_id) {
-    if (DEBUG_MODE) console.log(`Found product ID in attributes.tcgplayer_id: ${item.attributes.tcgplayer_id}`);
-    return String(item.attributes.tcgplayer_id);
-  }
-  
-  // 4. In attributes object as product_id
-  if (item.attributes?.product_id) {
-    if (DEBUG_MODE) console.log(`Found product ID in attributes.product_id: ${item.attributes.product_id}`);
-    return String(item.attributes.product_id);
-  }
-  
-  // 5. In attributes object as tcgplayer_product_id
-  if (item.attributes?.tcgplayer_product_id) {
-    if (DEBUG_MODE) console.log(`Found product ID in attributes.tcgplayer_product_id: ${item.attributes.tcgplayer_product_id}`);
-    return String(item.attributes.tcgplayer_product_id);
-  }
-  
-  // 6. Fallback to item.id
-  if (item.id) {
-    if (DEBUG_MODE) console.log(`No specific product ID found, using item.id: ${item.id}`);
-    return String(item.id);
-  }
-  
-  // If none found
-  if (DEBUG_MODE) console.log(`No product ID found for item: ${item.name || 'Unknown'}`);
-  return null;
-}
+};
