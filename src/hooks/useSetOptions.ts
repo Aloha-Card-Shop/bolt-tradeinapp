@@ -9,7 +9,7 @@ export interface SetOption {
   count?: number;
 }
 
-export const useSetOptions = (gameType: GameType, categoryId?: number) => {
+export const useSetOptions = () => {
   const [setOptions, setSetOptions] = useState<SetOption[]>([]);
   const [filteredSetOptions, setFilteredSetOptions] = useState<SetOption[]>([]);
   const [isLoadingSets, setIsLoadingSets] = useState(false);
@@ -50,12 +50,20 @@ export const useSetOptions = (gameType: GameType, categoryId?: number) => {
     setIsFiltered(false);
   };
 
+  // Add function to update set options
+  const updateSetOptions = (options: SetOption[], isLoading: boolean = false) => {
+    setSetOptions(options);
+    setFilteredSetOptions(options);
+    setIsLoadingSets(isLoading);
+  };
+
   return {
     setOptions,
     filteredSetOptions,
     isLoadingSets,
     isFiltered,
     filterSetOptions,
-    showAllSets
+    showAllSets,
+    updateSetOptions
   };
 };

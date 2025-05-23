@@ -1,20 +1,16 @@
 
-import React, { useState } from 'react';
-import { TradeInItem as TradeInItemType } from '../../hooks/useTradeInList';
+import React from 'react';
 import { useCustomers } from '../../hooks/useCustomers';
-import { Customer } from '../../hooks/useCustomers';
 import TradeInReview from './TradeInReview';
-import TradeInItem from './item-card';
-import { fetchCardPrices } from '../../utils/scraper';
+import TradeInItemsList from './TradeInItemsList';
 import TradeInHeader from './TradeInHeader';
 import TradeInEmptyState from './TradeInEmptyState';
-import { useTradeInSubmission } from '../../hooks/useTradeInSubmission';
-import { toast } from 'react-hot-toast';
+import { useTradeInReview } from '../../hooks/useTradeInReview';
 
 interface TradeInListProps {
-  items: TradeInItemType[];
+  items: any[];
   onRemoveItem: (index: number) => void;
-  onUpdateItem: (index: number, item: TradeInItemType) => void;
+  onUpdateItem: (index: number, item: any) => void;
   clearList: () => void;
 }
 
@@ -24,112 +20,34 @@ const TradeInList: React.FC<TradeInListProps> = ({
   onUpdateItem,
   clearList
 }) => {
-  const [isReviewing, setIsReviewing] = useState(false);
   const { customers, isLoading: isLoadingCustomers, createCustomer } = useCustomers();
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [itemValuesMap, setItemValuesMap] = useState<Record<string, { tradeValue: number; cashValue: number }>>({});
   
-  const { 
-    isSubmitting, 
-    error, 
-    validItems, 
-    totalCashValue,
-    totalTradeValue,
-    handleSubmit
-  } = useTradeInSubmission({
-    items,
+  const {
+    isReviewing,
     selectedCustomer,
     itemValuesMap,
-    clearList,
-    onSuccess: () => {
-      setIsReviewing(false);
-      setSelectedCustomer(null);
-      toast.success('Trade-in submitted successfully!');
-    }
-  });
-
-  const handleCustomerSelect = (customer: Customer | null) => {
-    if (customer) {
-      setSelectedCustomer(customer);
-    }
-  };
+    isSubmitting,
+    error,
+    validItems,
+    totalCashValue,
+    totalTradeValue,
+    startReview,
+    cancelReview,
+    handleCustomerSelect,
+    handleValueChange,
+    handleSubmit
+  } = useTradeInReview({ items, clearList });
 
   const handleCreateCustomer = async (first: string, last: string, email?: string, phone?: string) => {
     const newCustomer = await createCustomer(first, last, email, phone);
-    setSelectedCustomer(newCustomer);
-  };
-
-  const handleConditionChange = async (i: number, cond: string) => {
-    const item = items[i];
-    if (!item || !cond) {
-      onUpdateItem(i, { ...item, condition: cond as any });
-      return;
-    }
-    
-    // First update to show loading state
-    onUpdateItem(i, { 
-      ...item, 
-      condition: cond as any, 
-      isLoadingPrice: true, 
-      error: undefined 
-    });
-    
-    try {
-      console.log(`TradeInList: Fetching price for item ${i} with condition ${cond}`);
-      const data = await fetchCardPrices(
-        item.card.productId!,
-        cond,
-        item.isFirstEdition,
-        item.isHolo,
-        item.card.game,
-        item.isReverseHolo
-      );
-      
-      // Update with new values and explicitly force recalculation
-      const newItem: TradeInItemType = { 
-        ...item, 
-        condition: cond as any, 
-        price: parseFloat(data.price), 
-        isLoadingPrice: false,
-        paymentType: 'cash',   // Always set payment type to cash
-        cashValue: undefined,  // Reset any manual values to force recalculation
-        tradeValue: undefined, // Reset any manual values to force recalculation
-        initialCalculation: true // Force recalculation in useItemPrice
-      };
-      
-      onUpdateItem(i, newItem);
-      console.log(`TradeInList: Updated item ${i} with price ${data.price}, reset values and forced recalculation`, newItem);
-    } catch (e) {
-      onUpdateItem(i, { 
-        ...item, 
-        isLoadingPrice: false, 
-        error: (e as Error).message,
-        initialCalculation: false // Don't try to recalculate if there's an error
-      });
-      console.error(`TradeInList: Error fetching price for item ${i}:`, e);
-    }
-  };
-
-  const handleValueChange = (itemId: string, values: { tradeValue: number; cashValue: number }) => {
-    if (!itemId) return;
-    
-    setItemValuesMap(prev => {
-      const currentValues = prev[itemId];
-      if (currentValues && 
-          currentValues.tradeValue === values.tradeValue && 
-          currentValues.cashValue === values.cashValue) {
-        return prev;
-      }
-      
-      return { ...prev, [itemId]: values };
-    });
+    handleCustomerSelect(newCustomer);
   };
 
   if (isReviewing) {
     return (
       <TradeInReview
         items={items}
-        onBack={() => setIsReviewing(false)}
+        onBack={cancelReview}
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
         error={error}
@@ -160,22 +78,16 @@ const TradeInList: React.FC<TradeInListProps> = ({
 
       {items.length ? (
         <div className="space-y-6">
-          <div className="space-y-4">
-            {items.map((item, idx) => (
-              <TradeInItem
-                key={item.card.id || `item-${idx}`}
-                item={item}
-                index={idx}
-                onRemove={onRemoveItem}
-                onUpdate={onUpdateItem}
-                onConditionChange={(cond) => handleConditionChange(idx, cond)}
-                onValueChange={(values) => handleValueChange(item.card.id || `item-${idx}`, values)}
-              />
-            ))}
-          </div>
+          <TradeInItemsList 
+            items={items}
+            onRemoveItem={onRemoveItem}
+            onUpdateItem={onUpdateItem}
+            onValueChange={handleValueChange}
+          />
+          
           <div className="flex justify-end">
             <button
-              onClick={() => setIsReviewing(true)}
+              onClick={startReview}
               disabled={!validItems.length}
               className="px-6 py-3 bg-blue-600 text-white rounded-xl disabled:opacity-50"
             >
