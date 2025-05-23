@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { CardDetails, GameType } from '../types/card';
-import { usePsaPriceLookup, PsaPriceData } from './usePsaPriceLookup';
+import { usePsaPriceLookup } from './usePsaPriceLookup';
 
 export interface CertificateData {
   certNumber: string;
@@ -80,7 +81,7 @@ export const useCertificateLookup = () => {
   };
 
   // Convert certificate result to a CardDetails object for the search results
-  const convertToCardDetails = (certData?: CertificateData): CardDetails | null => {
+  const convertToCardDetails = (certData: CertificateData | undefined): CardDetails | null => {
     if (!certData) return null;
 
     return {

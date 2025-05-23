@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
-import { CardCertification, CardDetails } from '../types/card';
+import { CardDetails } from '../types/card';
 
 export interface PsaPriceData {
   averagePrice: number;
@@ -86,7 +86,7 @@ export const usePsaPriceLookup = () => {
       if (data.filteredSalesCount > 0) {
         toast.success(`Found ${data.filteredSalesCount} recent sales for PSA ${card.certification.grade} ${card.name}`);
       } else {
-        toast.warning('No recent sales found, but you can check 130point.com for more info');
+        toast.info('No recent sales found, but you can check 130point.com for more info');
       }
       
       return data;

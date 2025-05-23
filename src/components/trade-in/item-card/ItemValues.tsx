@@ -1,6 +1,5 @@
 
 import React from 'react';
-import PriceDisplay from '../../PriceDisplay';
 import { formatCurrency } from '../../../utils/formatters';
 import { ExternalLink, RefreshCcw } from 'lucide-react';
 import PriceInput from '../shared/PriceInput';
@@ -44,6 +43,16 @@ const ItemValues: React.FC<ItemValuesProps> = ({
   priceSource
 }) => {
   const isDisabled = isLoading || isLoadingPrice;
+  
+  // Manual value adjustment function to use the onValueAdjustment prop
+  const handleManualValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (onValueAdjustment) {
+      const newValue = parseFloat(e.target.value);
+      if (!isNaN(newValue)) {
+        onValueAdjustment(newValue);
+      }
+    }
+  };
   
   return (
     <div className="mt-4 border-t border-gray-100 pt-4 space-y-3">

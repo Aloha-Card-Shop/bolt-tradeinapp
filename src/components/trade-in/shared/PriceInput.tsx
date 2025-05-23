@@ -12,6 +12,7 @@ interface PriceInputProps {
   isPriceUnavailable?: boolean;
   label?: string;
   readOnly?: boolean;
+  disabled?: boolean; // Add the disabled prop
 }
 
 const PriceInput: React.FC<PriceInputProps> = ({ 
@@ -22,7 +23,8 @@ const PriceInput: React.FC<PriceInputProps> = ({
   onRefreshPrice,
   isPriceUnavailable,
   label = "Market Price",
-  readOnly = false
+  readOnly = false,
+  disabled = false // Add default value for disabled prop
 }) => {
   return (
     <div>
@@ -33,7 +35,7 @@ const PriceInput: React.FC<PriceInputProps> = ({
         {!readOnly && onRefreshPrice && (
           <button 
             onClick={onRefreshPrice}
-            disabled={isLoading}
+            disabled={isLoading || disabled}
             className="text-xs text-blue-600 hover:text-blue-800 disabled:text-gray-400 flex items-center mb-1"
             title="Fetch new price"
             type="button"
@@ -64,7 +66,7 @@ const PriceInput: React.FC<PriceInputProps> = ({
             'border-gray-300'
           }`}
           placeholder="0.00"
-          disabled={isLoading || readOnly}
+          disabled={isLoading || readOnly || disabled}
           readOnly={readOnly}
         />
         
