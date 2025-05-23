@@ -80,6 +80,7 @@ const TradeInList: React.FC<TradeInListProps> = ({
             items={items}
             onRemoveItem={onRemoveItem}
             onUpdateItem={onUpdateItem}
+            onValueChange={() => {}} // Add this empty function to satisfy the prop type
           />
           
           <div className="p-5 border-t border-gray-200">
