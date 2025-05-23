@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+
+import React, { useState } from 'react';
 import { TradeInItem as TradeInItemType } from '../../hooks/useTradeInList';
 import { useCustomers } from '../../hooks/useCustomers';
 import { Customer } from '../../hooks/useCustomers';
@@ -9,7 +10,6 @@ import TradeInHeader from './TradeInHeader';
 import TradeInEmptyState from './TradeInEmptyState';
 import { useTradeInSubmission } from '../../hooks/useTradeInSubmission';
 import { toast } from 'react-hot-toast';
-import CertificateLookup from './CertificateLookup';
 
 interface TradeInListProps {
   items: TradeInItemType[];
@@ -25,7 +25,6 @@ const TradeInList: React.FC<TradeInListProps> = ({
   clearList
 }) => {
   const [isReviewing, setIsReviewing] = useState(false);
-  const [showCertLookup, setShowCertLookup] = useState(false);
   const { customers, isLoading: isLoadingCustomers, createCustomer } = useCustomers();
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [itemValuesMap, setItemValuesMap] = useState<Record<string, { tradeValue: number; cashValue: number }>>({});
@@ -60,7 +59,7 @@ const TradeInList: React.FC<TradeInListProps> = ({
     setSelectedCustomer(newCustomer);
   };
 
-  const handleConditionChange = useCallback(async (i: number, cond: string) => {
+  const handleConditionChange = async (i: number, cond: string) => {
     const item = items[i];
     if (!item || !cond) {
       onUpdateItem(i, { ...item, condition: cond as any });
@@ -109,9 +108,9 @@ const TradeInList: React.FC<TradeInListProps> = ({
       });
       console.error(`TradeInList: Error fetching price for item ${i}:`, e);
     }
-  }, [items, onUpdateItem]);
+  };
 
-  const handleValueChange = useCallback((itemId: string, values: { tradeValue: number; cashValue: number }) => {
+  const handleValueChange = (itemId: string, values: { tradeValue: number; cashValue: number }) => {
     if (!itemId) return;
     
     setItemValuesMap(prev => {
@@ -124,35 +123,7 @@ const TradeInList: React.FC<TradeInListProps> = ({
       
       return { ...prev, [itemId]: values };
     });
-  }, []);
-
-  const handleCertCardFound = useCallback((card: any, price: number) => {
-    // Create a TradeInItem from the certificate card info
-    const cardDetails = {
-      ...card,
-      // Ensure it has all required properties
-      isCertified: true,
-      certification: card.certification || {
-        certNumber: card.productId,
-        grade: card.grade || 'Unknown'
-      }
-    };
-    
-    toast.success(`Added certified card: ${card.name}`);
-    console.log("Adding certified card to trade-in:", cardDetails);
-    
-    onUpdateItem(items.length, {
-      card: cardDetails,
-      quantity: 1,
-      condition: 'near_mint', // Default condition for certified cards
-      isFirstEdition: false,
-      isHolo: true,
-      price: price,
-      paymentType: 'cash',
-      isLoadingPrice: false,
-      initialCalculation: true
-    });
-  }, [items.length, onUpdateItem]);
+  };
 
   if (isReviewing) {
     return (
@@ -186,21 +157,6 @@ const TradeInList: React.FC<TradeInListProps> = ({
         totalCashValue={totalCashValue} 
         totalTradeValue={totalTradeValue} 
       />
-
-      <div className="mb-4">
-        <button
-          onClick={() => setShowCertLookup(!showCertLookup)}
-          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-        >
-          {showCertLookup ? 'Hide Certificate Lookup' : 'Look up by Certificate Number'}
-        </button>
-        
-        {showCertLookup && (
-          <div className="mt-3">
-            <CertificateLookup onCardFound={handleCertCardFound} />
-          </div>
-        )}
-      </div>
 
       {items.length ? (
         <div className="space-y-6">

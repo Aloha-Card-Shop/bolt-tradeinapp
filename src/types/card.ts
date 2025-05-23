@@ -1,49 +1,66 @@
 
-export type GameType = 'pokemon' | 'japanese-pokemon' | 'magic';
+export type GameType = 'pokemon' | 'magic' | 'yugioh' | 'sports' | 'other';
 
-// Define a type for card numbers that might be objects
-export interface CardNumberObject {
-  value?: string;
-  displayName?: string;
-  [key: string]: any;
+export type CardNumberObject = {
+  raw: string;
+  formatted: string;
+  prefix?: string;
+  number?: number;
+  suffix?: string;
+};
+
+export interface CardCertification {
+  certNumber: string;
+  grade: string;
+  certificationDate?: string | null;
+  certifier?: string;
 }
 
 export interface CardDetails {
+  id?: string;
   name: string;
   set?: string;
+  setId?: string;
   number?: string | CardNumberObject;
-  url?: string;
   game: GameType;
   categoryId?: number;
+  rarity?: string;
+  releaseYear?: string;
   imageUrl?: string | null;
   productId?: string | null;
-  id?: string;
-}
-
-export interface PriceData {
-  marketPrice: string | null;
-  lowPrice: string | null;
-  midPrice: string | null;
-  highPrice: string | null;
-  lastUpdated: string | null;
-  isLoading: boolean;
-  error: string | null;
+  savedAt?: Date;
+  lastPrice?: number;
+  certification?: CardCertification;
+  isCertified?: boolean;
 }
 
 export interface SavedCard extends CardDetails {
-  id: string;
-  lastChecked: string;
-  lastPrice: string | null;
+  savedAt: Date;
+  lastPrice?: number;
 }
 
-export interface GameOption {
-  value: GameType;
-  label: string;
-  categoryId: number;
-}
-
-export const GAME_OPTIONS: GameOption[] = [
-  { value: 'pokemon', label: 'Pokemon', categoryId: 3 },
-  { value: 'japanese-pokemon', label: 'Japanese Pokemon', categoryId: 85 },
-  { value: 'magic', label: 'Magic: The Gathering', categoryId: 1 }
+export const GAME_OPTIONS = [
+  { label: 'Pokémon', value: 'pokemon', categoryId: 2 },
+  { label: 'Magic: The Gathering', value: 'magic', categoryId: 1 },
+  { label: 'Yu-Gi-Oh!', value: 'yugioh', categoryId: 3 },
+  { label: 'Sports Cards', value: 'sports', categoryId: 4 },
+  { label: 'Other Cards', value: 'other', categoryId: 8 }
 ];
+
+export const CONDITION_OPTIONS = [
+  { label: 'Near Mint', value: 'near_mint' },
+  { label: 'Lightly Played', value: 'lightly_played' },
+  { label: 'Moderately Played', value: 'moderately_played' },
+  { label: 'Heavily Played', value: 'heavily_played' },
+  { label: 'Damaged', value: 'damaged' }
+];
+
+export type CardCondition = 'near_mint' | 'lightly_played' | 'moderately_played' | 'heavily_played' | 'damaged';
+
+export const CONDITION_ABBR: Record<CardCondition, string> = {
+  near_mint: 'NM',
+  lightly_played: 'LP',
+  moderately_played: 'MP',
+  heavily_played: 'HP',
+  damaged: 'DMG'
+};
