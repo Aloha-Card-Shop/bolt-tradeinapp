@@ -9,6 +9,7 @@ interface MarketPriceInputProps {
   error?: string;
   onRefreshPrice?: () => void;
   isPriceUnavailable?: boolean;
+  disabled?: boolean; // Add the missing disabled prop
 }
 
 const MarketPriceInput: React.FC<MarketPriceInputProps> = (props) => {
