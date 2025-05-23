@@ -252,7 +252,6 @@ async function callPsaScraper(certNumber: string) {
     
     // Get Supabase URL and service role key
     const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
-    const projectRef = supabaseUrl.split(".")[0].replace("https://", "");
     
     // Call our PSA scraper function
     const scraperUrl = `${supabaseUrl}/functions/v1/psa-scraper`;

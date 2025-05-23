@@ -2,7 +2,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
-import { chromium } from "https://deno.land/x/playwright@v1.35.0/mod.ts";
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -47,63 +46,50 @@ serve(async (req) => {
     const psaUrl = `https://www.psacard.com/cert/${certNumber}`;
     console.log(`Scraping URL: ${psaUrl}`);
     
-    // Launch browser
-    const browser = await chromium.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    // Fetch the page content
+    const response = await fetch(psaUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
     });
-    
-    try {
-      const context = await browser.newContext({
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      });
-      const page = await context.newPage();
 
-      // Navigate to PSA certificate page
-      await page.goto(psaUrl, { 
-        waitUntil: 'networkidle',
-        timeout: 30000 
-      });
-
-      // Check if certificate is found
-      const notFoundSelector = 'text=Certificate not found';
-      const notFound = await page.$(notFoundSelector);
-      
-      if (notFound) {
+    if (!response.ok) {
+      if (response.status === 404) {
         console.log(`Certificate not found: ${certNumber}`);
         return new Response(
           JSON.stringify({ error: "Not Found", message: "Certificate not found" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
-      // Extract certificate data
-      const html = await page.content();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, "text/html");
       
-      if (!doc) {
-        throw new Error("Failed to parse HTML document");
-      }
-
-      // Extract data from the DOM
-      const certData = extractCertificateData(doc, certNumber);
-      
-      // Store in cache
-      certCache.set(cacheKey, {
-        data: certData,
-        timestamp: Date.now()
-      });
-
-      // Clean up old cache entries
-      cleanupCache();
-
-      return new Response(
-        JSON.stringify({ data: certData }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    } finally {
-      await browser.close();
+      throw new Error(`Failed to fetch PSA certificate page: ${response.status} ${response.statusText}`);
     }
+
+    // Get the HTML content
+    const html = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    
+    if (!doc) {
+      throw new Error("Failed to parse HTML document");
+    }
+
+    // Extract certificate data
+    const certData = extractCertificateData(doc, certNumber);
+    
+    // Store in cache
+    certCache.set(cacheKey, {
+      data: certData,
+      timestamp: Date.now()
+    });
+
+    // Clean up old cache entries
+    cleanupCache();
+
+    return new Response(
+      JSON.stringify({ data: certData }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (error) {
     console.error("PSA scraper error:", error);
     return new Response(
