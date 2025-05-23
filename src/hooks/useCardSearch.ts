@@ -308,11 +308,19 @@ export const useCardSearch = () => {
   const clearSearchResults = useCallback(() => {
     setSearchResults([]);
     resetSearch();
-    // Clear total results counter and pagination state
-    setTotalResults(0);
-    setHasMoreResults(false);
+    // Instead of directly using setTotalResults and setHasMoreResults (which don't exist),
+    // we need to perform another empty search to reset those values in useCardSearchQuery
+    setTimeout(() => {
+      searchCards({
+        name: '',
+        set: '',
+        number: '',
+        game: cardDetails.game,
+        categoryId: cardDetails.categoryId
+      }, setOptions);
+    }, 50);
     toast.success('Search results cleared');
-  }, [resetSearch, setSearchResults, setTotalResults, setHasMoreResults]);
+  }, [resetSearch, setSearchResults, searchCards, cardDetails.game, cardDetails.categoryId, setOptions]);
 
   return {
     cardDetails,
