@@ -1,10 +1,6 @@
 
-import { CalculationResult } from '../src/types/calculation';
-import { 
-  DEFAULT_FALLBACK_CASH_PERCENTAGE, 
-  DEFAULT_FALLBACK_TRADE_PERCENTAGE,
-  ERROR_MESSAGES
-} from '../src/constants/fallbackValues';
+import { DEFAULT_FALLBACK_CASH_PERCENTAGE, DEFAULT_FALLBACK_TRADE_PERCENTAGE, ERROR_MESSAGES } from '../../src/constants/fallbackValues';
+import { CalculationResult } from './calculateValues';
 
 // Create structured response with errors and fallback info
 export function createErrorResponse(

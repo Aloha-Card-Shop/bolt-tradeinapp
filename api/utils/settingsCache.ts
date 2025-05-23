@@ -1,6 +1,4 @@
-
 import { createClient } from '@supabase/supabase-js';
-import { GameType } from '../src/types/card';
 
 // Initialize Supabase client
 const supabaseUrl = 'https://qgsabaicokoynabxgdco.supabase.co';

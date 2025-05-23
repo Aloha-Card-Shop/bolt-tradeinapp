@@ -1,8 +1,6 @@
 
-import { GameType } from '../src/types/card';
-
 // Helper function to normalize game type strings
-export const normalizeGameType = (gameType?: string): GameType => {
+export const normalizeGameType = (gameType?: string): string => {
   if (!gameType) return 'pokemon';
   
   const normalized = gameType.toLowerCase().trim();
@@ -14,7 +12,7 @@ export const normalizeGameType = (gameType?: string): GameType => {
     return 'magic';
   
   // fallback
-  return ['pokemon', 'japanese-pokemon', 'magic', 'yugioh', 'sports', 'other'].includes(normalized as GameType)
-    ? (normalized as GameType)
+  return ['pokemon', 'japanese-pokemon', 'magic', 'yugioh', 'sports', 'other'].includes(normalized)
+    ? normalized
     : 'pokemon';
 };

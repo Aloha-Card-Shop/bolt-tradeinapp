@@ -7,7 +7,13 @@ import {
   DEFAULT_FALLBACK_TRADE_PERCENTAGE 
 } from '../../constants/fallbackValues';
 
-// Mock Supabase client
+// Import the test suites
+import './tests/method-validation.test';
+import './tests/input-validation.test';
+import './tests/calculation.test';
+import './tests/error-handling.test';
+
+// Mock Supabase client and other dependencies for the shared test environment
 vi.mock('@supabase/supabase-js', () => {
   const mockSupabaseFrom = vi.fn();
   const mockSupabaseSelect = vi.fn();
@@ -35,7 +41,7 @@ vi.mock('@supabase/supabase-js', () => {
   };
 });
 
-// Mock the utilities modules that are now separated
+// Mock the utilities modules
 vi.mock('../../../api/utils/calculateValues', () => ({
   calculateValues: vi.fn().mockImplementation(({ baseValue }) => {
     if (baseValue === 0) {
@@ -84,171 +90,3 @@ vi.mock('process', () => ({
     SUPABASE_ANON_KEY: 'mock-anon-key'
   }
 }));
-
-// Mock console methods to test logging
-const originalConsoleLog = console.log;
-const originalConsoleError = console.error;
-const originalConsoleWarn = console.warn;
-
-describe('calculate-value API endpoint', () => {
-  // Set up console mocks
-  let consoleLogSpy: any;
-  let consoleErrorSpy: any;
-  let consoleWarnSpy: any;
-  
-  beforeEach(() => {
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-  });
-  
-  afterEach(() => {
-    vi.clearAllMocks();
-    console.log = originalConsoleLog;
-    console.error = originalConsoleError;
-    console.warn = originalConsoleWarn;
-  });
-  
-  it('should return 405 with fallback info for non-POST requests', async () => {
-    const req = new Request('http://localhost/api/calculate-value', {
-      method: 'GET'
-    });
-    
-    const response = await handler(req);
-    const result = await response.json();
-    
-    expect(response.status).toBe(405);
-    expect(result).toEqual(expect.objectContaining({ 
-      error: 'Method not allowed',
-      usedFallback: true,
-      fallbackReason: 'METHOD_NOT_ALLOWED'
-    }));
-    expect(consoleWarnSpy).toHaveBeenCalled();
-  });
-  
-  it('should return 400 with fallback info for invalid baseValue', async () => {
-    const req = new Request('http://localhost/api/calculate-value', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ game: 'pokemon', baseValue: 'not-a-number' })
-    });
-    
-    const response = await handler(req);
-    const result = await response.json();
-    
-    expect(response.status).toBe(400);
-    expect(result).toEqual(expect.objectContaining({
-      error: 'Invalid baseValue',
-      usedFallback: true,
-      fallbackReason: 'INVALID_INPUT'
-    }));
-    expect(consoleWarnSpy).toHaveBeenCalled();
-  });
-  
-  it('should return 400 with fallback info for negative baseValue', async () => {
-    const req = new Request('http://localhost/api/calculate-value', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ game: 'pokemon', baseValue: -10 })
-    });
-    
-    const response = await handler(req);
-    const result = await response.json();
-    
-    expect(response.status).toBe(400);
-    expect(result).toEqual(expect.objectContaining({
-      error: 'Invalid baseValue',
-      usedFallback: true,
-      fallbackReason: 'INVALID_INPUT'
-    }));
-    expect(consoleWarnSpy).toHaveBeenCalled();
-  });
-  
-  it('should return 0 values without fallback when baseValue is 0', async () => {
-    const req = new Request('http://localhost/api/calculate-value', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ game: 'pokemon', baseValue: 0 })
-    });
-    
-    const response = await handler(req);
-    const result = await response.json();
-    
-    expect(response.status).toBe(200);
-    expect(result).toEqual({ cashValue: 0, tradeValue: 0 });
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('[INFO] Base value is 0'));
-  });
-  
-  it('should use fallback values when database error occurs and log it', async () => {
-    // Set up mock to simulate db error through the calculateValues mock
-    const calculateValues = require('../../../api/utils/calculateValues').calculateValues;
-    calculateValues.mockImplementationOnce(() => {
-      throw new Error('Database error');
-    });
-    
-    const req = new Request('http://localhost/api/calculate-value', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ game: 'pokemon', baseValue: 100 })
-    });
-    
-    const response = await handler(req);
-    const result = await response.json();
-    
-    expect(response.status).toBe(200);
-    expect(result).toEqual(expect.objectContaining({
-      cashValue: expect.any(Number),
-      tradeValue: expect.any(Number),
-      usedFallback: true,
-      error: expect.stringMatching(/database error/i)
-    }));
-    expect(consoleErrorSpy).toHaveBeenCalled();
-  });
-  
-  it('should handle catastrophic errors gracefully with fallback values and detailed error info', async () => {
-    // Mock a catastrophic error by making the normalizeGameType throw
-    const normalizeGameType = require('../../../api/utils/gameUtils').normalizeGameType;
-    const originalImpl = normalizeGameType.mockImplementation;
-    normalizeGameType.mockImplementationOnce(() => {
-      throw new Error('Critical error');
-    });
-    
-    const req = new Request('http://localhost/api/calculate-value', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ game: 'pokemon', baseValue: 50 })
-    });
-    
-    const response = await handler(req);
-    const result = await response.json();
-    
-    expect(response.status).toBe(200);
-    expect(result).toEqual(expect.objectContaining({
-      cashValue: expect.any(Number),
-      tradeValue: expect.any(Number),
-      usedFallback: true,
-      fallbackReason: 'UNKNOWN_ERROR',
-      error: 'Critical error'
-    }));
-    expect(consoleErrorSpy).toHaveBeenCalled();
-    
-    // Restore original implementation
-    normalizeGameType.mockImplementation = originalImpl;
-  });
-  
-  it('should log calculation attempts with structured logging', async () => {
-    const req = new Request('http://localhost/api/calculate-value', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ game: 'pokemon', baseValue: 75, userId: 'test-user' })
-    });
-    
-    await handler(req);
-    
-    // Check that logs were called 
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('[REQUEST]'));
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[INFO] Processing calculation')
-    );
-  });
-});

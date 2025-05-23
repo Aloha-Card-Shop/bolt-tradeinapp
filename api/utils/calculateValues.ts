@@ -2,7 +2,7 @@
 import { getGameSettings } from './settingsCache';
 import { logFallbackEvent } from './fallbackLogger';
 import { createErrorResponse } from './errorResponse';
-import { DEFAULT_FALLBACK_CASH_PERCENTAGE, DEFAULT_FALLBACK_TRADE_PERCENTAGE } from '../src/constants/fallbackValues';
+import { DEFAULT_FALLBACK_CASH_PERCENTAGE, DEFAULT_FALLBACK_TRADE_PERCENTAGE } from '../../src/constants/fallbackValues';
 
 export interface CalculationOptions {
   game: string;

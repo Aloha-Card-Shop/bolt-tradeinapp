@@ -1,4 +1,3 @@
-
 import { describe, it, expect, beforeAll, vi } from 'vitest';
 import handler from '../../../api/calculate-value';
 import { clearSettingsCache } from '../../../api/utils/settingsCache';
