@@ -1,10 +1,8 @@
 
 import React, { useState } from 'react';
-import { Search, Loader, AlertCircle, CheckCircle, KeySquare, ArrowRight } from 'lucide-react';
+import { Search, Loader } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
-import { Link } from 'react-router-dom';
-import { useSession } from '../../hooks/useSession';
 
 interface CertificateData {
   certNumber: string;
@@ -13,9 +11,7 @@ interface CertificateData {
   year?: string;
   set?: string;
   cardNumber?: string;
-  playerName?: string;
   imageUrl?: string | null;
-  certificationDate?: string | null;
   game: string;
 }
 
@@ -27,10 +23,7 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
   const [certNumber, setCertNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [configError, setConfigError] = useState(false);
   const [result, setResult] = useState<CertificateData | null>(null);
-  const { user } = useSession();
-  const userRole = user?.user_metadata?.role || 'user';
 
   const handleCertLookup = async () => {
     if (!certNumber.trim()) {
@@ -40,47 +33,18 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
 
     setIsLoading(true);
     setError(null);
-    setConfigError(false);
     setResult(null);
 
     try {
-      console.log('Starting certificate lookup for:', certNumber.trim());
-      const { data, error } = await supabase.functions.invoke('cert-lookup', {
+      console.log('Looking up certificate:', certNumber.trim());
+      const { data, error } = await supabase.functions.invoke('psa-scraper', {
         body: { certNumber: certNumber.trim() }
       });
 
       if (error) {
-        console.error('Cert lookup error:', error);
+        console.error('Certificate lookup error:', error);
         setError(error.message || 'Failed to look up certificate');
         toast.error('Certificate lookup failed');
-        return;
-      }
-
-      console.log('Certificate lookup response:', data);
-
-      // Handle server error response
-      if (data && data.error) {
-        console.error('Cert lookup API error:', data.error);
-        
-        // Handle configuration errors
-        if (data.error === 'Configuration Error' || 
-            data.error === 'Server Error' && 
-            (data.message?.includes('API key not configured') || 
-             data.message?.includes('not found in database') || 
-             data.message?.includes('PSA API key'))) {
-          setConfigError(true);
-          setError(data.message || 'Certificate lookup API is not configured properly');
-          toast.error('Certificate service not configured');
-        } else if (data.error === 'Unauthorized') {
-          setError('You do not have permission to use the certificate lookup service');
-          toast.error('Access denied to certificate service');
-        } else if (data.error === 'Not Found') {
-          setError('Certificate not found. Please check the number and try again.');
-          toast.error('Certificate not found');
-        } else {
-          setError(data.message || data.error || 'Certificate lookup failed');
-          toast.error(data.message || 'Certificate lookup failed');
-        }
         return;
       }
 
@@ -91,12 +55,7 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
       }
 
       setResult(data.data);
-      
-      if (data.isMockData) {
-        toast.success('Certificate found (using mock data)');
-      } else {
-        toast.success('Certificate found!');
-      }
+      toast.success('Certificate found!');
     } catch (err) {
       console.error('Certificate lookup error:', err);
       setError('An unexpected error occurred');
@@ -106,7 +65,6 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
     }
   };
 
-  // Allow Enter key to trigger the lookup
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !isLoading) {
       handleCertLookup();
@@ -127,14 +85,12 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
       rarity: 'Certified',
       certification: {
         certNumber: result.certNumber,
-        grade: result.grade,
-        certificationDate: result.certificationDate
+        grade: result.grade
       },
       isCertified: true
     };
 
     // Use a default estimated price based on grade
-    // Higher grades typically mean higher values
     const gradeValue = parseFloat(result.grade) || 0;
     let defaultPrice = 0;
     
@@ -163,7 +119,7 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
           value={certNumber}
           onChange={(e) => setCertNumber(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Enter certificate number..."
+          placeholder="Enter PSA certificate number..."
           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           disabled={isLoading}
         />
@@ -180,68 +136,32 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
         </button>
       </div>
       
-      {configError && (
-        <div className="p-3 bg-yellow-50 text-amber-700 rounded-lg flex items-start mb-3">
-          <KeySquare className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="font-medium">API Key Missing</p>
-            <p className="text-sm mt-1">The PSA certificate lookup service requires configuration.</p>
-            {userRole === 'admin' && (
-              <Link 
-                to="/admin/api-settings" 
-                className="mt-2 text-sm inline-flex items-center text-amber-800 font-medium hover:text-amber-900"
-              >
-                Configure PSA API key 
-                <ArrowRight className="h-3.5 w-3.5 ml-1" />
-              </Link>
-            )}
-            {userRole !== 'admin' && (
-              <p className="text-sm mt-1">Please contact your administrator.</p>
-            )}
-          </div>
-        </div>
-      )}
-      
-      {error && !configError && (
+      {error && (
         <div className="p-3 bg-red-50 text-red-700 rounded-lg flex items-center mb-3">
-          <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
       
       {result && (
         <div className="border border-gray-200 rounded-lg p-4 mb-3">
-          <div className="flex items-start justify-between">
-            <div>
-              <h4 className="font-medium">{result.cardName}</h4>
-              <div className="text-sm text-gray-600 mt-1">
-                <p>Certificate: <span className="font-medium">{result.certNumber}</span></p>
-                <p>Grade: <span className="font-medium">{result.grade}</span></p>
-                {result.set && <p>Set: {result.set}</p>}
-                {result.year && <p>Year: {result.year}</p>}
-                {result.cardNumber && <p>Card #: {result.cardNumber}</p>}
-                {result.game && <p>Game: {result.game.charAt(0).toUpperCase() + result.game.slice(1)}</p>}
-              </div>
-            </div>
-            {result.imageUrl && (
-              <img 
-                src={result.imageUrl} 
-                alt={result.cardName} 
-                className="w-16 h-16 object-contain rounded" 
-              />
-            )}
+          <h4 className="font-medium">{result.cardName}</h4>
+          <div className="text-sm text-gray-600 mt-1">
+            <p>Certificate: <span className="font-medium">{result.certNumber}</span></p>
+            <p>Grade: <span className="font-medium">{result.grade}</span></p>
+            {result.set && <p>Set: {result.set}</p>}
+            {result.year && <p>Year: {result.year}</p>}
+            {result.game && <p>Game: {result.game.charAt(0).toUpperCase() + result.game.slice(1)}</p>}
           </div>
           <button
             onClick={handleAddToTradeIn}
-            className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 w-full flex items-center justify-center"
+            className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 w-full"
           >
-            <CheckCircle className="h-4 w-4 mr-2" />
             Add to Trade-In
           </button>
         </div>
       )}
       
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-gray-500 mt-2">
         Enter a PSA certification number to look up graded cards
       </p>
     </div>
