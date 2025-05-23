@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DatabaseIcon, Sparkles, Menu } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
@@ -162,6 +161,7 @@ function MainApp() {
                 performSearch={performSearch}
                 isFiltered={isSetFiltered}
                 onShowAllSets={handleShowAllSets}
+                onAddCertificateToResults={addCertificateToResults}
               />
             </div>
             
@@ -218,6 +218,7 @@ function MainApp() {
                   performSearch={performSearch}
                   isFiltered={isSetFiltered}
                   onShowAllSets={handleShowAllSets}
+                  onAddCertificateToResults={addCertificateToResults}
                 />
               </div>
               
