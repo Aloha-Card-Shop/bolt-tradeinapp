@@ -1,5 +1,5 @@
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import handler from '../../../../api/calculate-value';
 import { createRequest } from './setup';
 import { clearSettingsCache } from '../../../../api/utils/settingsCache';
@@ -9,9 +9,6 @@ describe('Cache Handling E2E Tests', () => {
     // First request to populate the cache
     const req1 = createRequest({ game: 'pokemon', baseValue: 5 });
     await handler(req1);
-    
-    // Modify the mock to verify the cache is used
-    const getGameSettings = require('../../../../api/utils/settingsCache').getGameSettings;
     
     // Second request should use cache
     const req2 = createRequest({ game: 'pokemon', baseValue: 8 });

@@ -1,6 +1,5 @@
 
-import { describe, beforeAll, vi } from 'vitest';
-import { clearSettingsCache } from '../../../../api/utils/settingsCache';
+import { beforeAll, vi } from 'vitest';
 
 // Mock data for supabase response
 export const mockSettings = [

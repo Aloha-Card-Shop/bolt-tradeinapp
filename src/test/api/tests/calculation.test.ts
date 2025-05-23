@@ -10,13 +10,11 @@ const originalConsoleWarn = console.warn;
 describe('API Calculation Logic', () => {
   // Set up console mocks
   let consoleLogSpy: any;
-  let consoleErrorSpy: any;
-  let consoleWarnSpy: any;
   
   beforeEach(() => {
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
   
   afterEach(() => {
