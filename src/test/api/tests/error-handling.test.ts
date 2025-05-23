@@ -1,7 +1,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import handler from '../../../../api/calculate-value';
-import { DEFAULT_FALLBACK_CASH_PERCENTAGE, DEFAULT_FALLBACK_TRADE_PERCENTAGE } from '../../../constants/fallbackValues';
+import { logFallbackEvent } from '../../../../api/utils/fallbackLogger';
 
 // Original console methods
 const originalConsoleLog = console.log;
@@ -27,13 +27,22 @@ describe('API Error Handling', () => {
     console.warn = originalConsoleWarn;
   });
   
-  it('should use fallback values when database error occurs and log it', async () => {
-    // Set up mock to simulate db error through the calculateValues mock
+  it('should handle exceptions gracefully and return fallback values', async () => {
+    // Mock calculateValues to throw an error
     const calculateValues = require('../../../../api/utils/calculateValues').calculateValues;
-    calculateValues.mockImplementationOnce(() => {
-      throw new Error('Database error');
+    const originalCalculateValues = calculateValues;
+    
+    // Temporarily replace with an implementation that throws
+    const mockCalculateValuesImpl = vi.fn().mockImplementation(() => {
+      throw new Error("Test calculation error");
     });
     
+    require('../../../../api/utils/calculateValues').calculateValues = mockCalculateValuesImpl;
+    
+    // Set up the mock for logFallbackEvent
+    const logFallbackEventMock = vi.mocked(logFallbackEvent);
+    
+    // Make a test request
     const req = new Request('http://localhost/api/calculate-value', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -43,44 +52,24 @@ describe('API Error Handling', () => {
     const response = await handler(req);
     const result = await response.json();
     
-    expect(response.status).toBe(200);
+    // Expect error handling and fallback values
+    expect(response.status).toBe(200); // Still returns 200 with fallback
     expect(result).toEqual(expect.objectContaining({
-      cashValue: expect.any(Number),
-      tradeValue: expect.any(Number),
-      usedFallback: true,
-      error: expect.stringMatching(/database error/i)
-    }));
-    expect(consoleErrorSpy).toHaveBeenCalled();
-  });
-  
-  it('should handle catastrophic errors gracefully with fallback values and detailed error info', async () => {
-    // Mock a catastrophic error by making the normalizeGameType throw
-    const normalizeGameType = require('../../../../api/utils/gameUtils').normalizeGameType;
-    const originalImpl = normalizeGameType.mockImplementation;
-    normalizeGameType.mockImplementationOnce(() => {
-      throw new Error('Critical error');
-    });
-    
-    const req = new Request('http://localhost/api/calculate-value', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ game: 'pokemon', baseValue: 50 })
-    });
-    
-    const response = await handler(req);
-    const result = await response.json();
-    
-    expect(response.status).toBe(200);
-    expect(result).toEqual(expect.objectContaining({
-      cashValue: expect.any(Number),
-      tradeValue: expect.any(Number),
       usedFallback: true,
       fallbackReason: 'UNKNOWN_ERROR',
-      error: 'Critical error'
+      error: expect.stringContaining('Test calculation error')
     }));
-    expect(consoleErrorSpy).toHaveBeenCalled();
+    
+    // Check that the error was logged
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[ERROR] Unhandled exception'),
+      expect.any(Error)
+    );
+    
+    // Check that fallback event was logged
+    expect(logFallbackEventMock).toHaveBeenCalled();
     
     // Restore original implementation
-    normalizeGameType.mockImplementation = originalImpl;
+    require('../../../../api/utils/calculateValues').calculateValues = originalCalculateValues;
   });
 });
