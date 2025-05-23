@@ -86,7 +86,8 @@ export const usePsaPriceLookup = () => {
       if (data.filteredSalesCount > 0) {
         toast.success(`Found ${data.filteredSalesCount} recent sales for PSA ${card.certification.grade} ${card.name}`);
       } else {
-        toast.info('No recent sales found, but you can check 130point.com for more info');
+        // Using standard toast method since toast.info doesn't exist
+        toast(`No recent sales found, but you can check 130point.com for more info`);
       }
       
       return data;
