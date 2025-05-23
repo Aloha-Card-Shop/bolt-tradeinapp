@@ -304,6 +304,16 @@ export const useCardSearch = () => {
     setIsSetFiltered(false);
   }, []);
 
+  // Add a new function to completely clear search results
+  const clearSearchResults = useCallback(() => {
+    setSearchResults([]);
+    resetSearch();
+    // Clear total results counter and pagination state
+    setTotalResults(0);
+    setHasMoreResults(false);
+    toast.success('Search results cleared');
+  }, [resetSearch, setSearchResults, setTotalResults, setHasMoreResults]);
+
   return {
     cardDetails,
     searchResults,
@@ -326,6 +336,7 @@ export const useCardSearch = () => {
     performSearch,
     handleShowAllSets,
     isSetFiltered,
-    addCertificateToResults
+    addCertificateToResults,
+    clearSearchResults
   };
 };

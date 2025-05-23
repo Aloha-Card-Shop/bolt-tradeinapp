@@ -11,6 +11,7 @@ import SearchNameInput from './card-search/SearchNameInput';
 import CardNumberSuggestion from './card-search/CardNumberSuggestion';
 import SearchSetSelect from './card-search/SearchSetSelect';
 import CardNumberInput from './card-search/CardNumberInput';
+import ClearSearchButton from './card-search/ClearSearchButton';
 
 interface CardSearchProps {
   cardDetails: CardDetails;
@@ -25,6 +26,7 @@ interface CardSearchProps {
   isFiltered?: boolean;
   onShowAllSets?: () => void;
   onAddCertificateToResults?: (card: CardDetails) => void;
+  onClearResults?: () => void;
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
@@ -39,7 +41,8 @@ const CardSearch: React.FC<CardSearchProps> = ({
   performSearch = () => {},
   isFiltered = false,
   onShowAllSets,
-  onAddCertificateToResults
+  onAddCertificateToResults,
+  onClearResults
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -68,13 +71,27 @@ const CardSearch: React.FC<CardSearchProps> = ({
     }
   };
 
+  // Determine if clear button should be enabled
+  const hasSearchCriteria = Boolean(
+    cardDetails.name || cardDetails.number || cardDetails.set
+  );
+
   return (
     <div className="p-6">
-      <div className="flex items-center mb-4">
-        <div className="p-2 bg-blue-100 rounded-lg">
-          <Package className="h-5 w-5 text-blue-600" />
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Package className="h-5 w-5 text-blue-600" />
+          </div>
+          <h2 className="ml-3 text-xl font-semibold text-gray-800">Find Cards</h2>
         </div>
-        <h2 className="ml-3 text-xl font-semibold text-gray-800">Find Cards</h2>
+        
+        {onClearResults && (
+          <ClearSearchButton 
+            onClear={onClearResults} 
+            isDisabled={!hasSearchCriteria && !isSearching}
+          />
+        )}
       </div>
       
       {/* Certificate Lookup - now adds to search results */}

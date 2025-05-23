@@ -33,7 +33,8 @@ function MainApp() {
     performSearch,
     isSetFiltered,
     handleShowAllSets,
-    addCertificateToResults
+    addCertificateToResults,
+    clearSearchResults
   } = useCardSearch();
   
   const { savedCards, removeCard } = useSavedCards();
@@ -162,6 +163,7 @@ function MainApp() {
                 isFiltered={isSetFiltered}
                 onShowAllSets={handleShowAllSets}
                 onAddCertificateToResults={addCertificateToResults}
+                onClearResults={clearSearchResults}
               />
             </div>
             
@@ -219,6 +221,7 @@ function MainApp() {
                   isFiltered={isSetFiltered}
                   onShowAllSets={handleShowAllSets}
                   onAddCertificateToResults={addCertificateToResults}
+                  onClearResults={clearSearchResults}
                 />
               </div>
               
