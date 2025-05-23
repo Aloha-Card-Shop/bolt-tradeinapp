@@ -40,6 +40,7 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
         isLoading={isLoading}
       />
       
+      {/* Only show certificate lookup errors, not price lookup errors */}
       {error && <CertificateError error={error} />}
       
       <div className="text-xs text-gray-500 mt-2 flex items-start gap-1">

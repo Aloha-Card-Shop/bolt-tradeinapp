@@ -133,11 +133,29 @@ export const useCertificateLookup = () => {
     setCertifiedCardWithPrice(null);
   };
 
+  // Filter out "No sales data found" errors from the price lookup
+  // This prevents the red box from displaying in the CertificateLookup UI
+  // while allowing the certification lookup errors to be shown
+  const filteredError = (() => {
+    if (!priceError) return error;
+    
+    // Check if price error contains the "No sales data found" message
+    if (typeof priceError === 'string' && 
+        (priceError.includes('No sales data found') || 
+         priceError.includes('No sales found'))) {
+      // Return null to hide this specific error in the UI
+      return error; // Keep any cert lookup errors, just filter out price lookup errors
+    }
+    
+    // For all other errors, return both
+    return error || priceError;
+  })();
+
   return {
     certNumber,
     setCertNumber,
     isLoading: isLoading || isPriceLoading,
-    error: error || priceError,
+    error: filteredError, // Use the filtered error instead of raw errors
     result,
     handleCertLookup,
     handleKeyDown,
