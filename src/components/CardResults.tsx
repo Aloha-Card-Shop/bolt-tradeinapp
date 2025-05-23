@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useCallback } from 'react';
-import { Loader2, ImageOff, PlusCircle, Search, AlertCircle, Info } from 'lucide-react';
+import { Loader2, ImageOff, PlusCircle, Search, AlertCircle, Info, Award } from 'lucide-react';
 import { CardDetails, SavedCard, CardNumberObject } from '../types/card';
 import { extractNumberBeforeSlash, getCardNumberString } from '../utils/cardSearchUtils';
 import { toast } from 'react-hot-toast';
@@ -83,7 +83,26 @@ const CardResults: React.FC<CardResultsProps> = ({
     }
     
     console.log("Adding card with productId:", card.productId, card);
-    onAddToList(card, 0);
+    
+    // For certified cards, use grade-based pricing
+    if (card.isCertified && card.certification?.grade) {
+      const gradeValue = parseFloat(card.certification.grade || '0');
+      let defaultPrice = 0;
+      
+      if (gradeValue >= 9.5) {
+        defaultPrice = 100; // Gem Mint estimate
+      } else if (gradeValue >= 9) {
+        defaultPrice = 50;  // Mint estimate
+      } else if (gradeValue >= 8) {
+        defaultPrice = 25;  // Near Mint estimate
+      } else {
+        defaultPrice = 10;  // Lower grades estimate
+      }
+      
+      onAddToList(card, defaultPrice);
+    } else {
+      onAddToList(card, 0);
+    }
   };
 
   if (isLoading && results.length === 0) {
@@ -125,11 +144,12 @@ const CardResults: React.FC<CardResultsProps> = ({
             // Add ref to last element for infinite scrolling
             const isLastElement = index === results.length - 1;
             const hasProductId = Boolean(card.productId);
+            const isCertified = Boolean(card.isCertified);
               
             return (
               <div 
                 key={`${card.name}-${card.productId || index}`}
-                className={`bg-white rounded-xl border ${hasProductId ? 'border-gray-200' : 'border-red-200'} p-4 hover:border-blue-200 hover:shadow-md transition duration-200`}
+                className={`bg-white rounded-xl border ${isCertified ? 'border-blue-200' : hasProductId ? 'border-gray-200' : 'border-red-200'} p-4 hover:border-blue-200 hover:shadow-md transition duration-200`}
                 ref={isLastElement ? lastCardElementRef : null}
               >
                 <div className="flex items-start space-x-4">
@@ -164,6 +184,17 @@ const CardResults: React.FC<CardResultsProps> = ({
                         {card.set && (
                           <p className="text-sm text-gray-600 mt-1">{card.set}</p>
                         )}
+                        
+                        {/* Special display for certified cards */}
+                        {isCertified && card.certification && (
+                          <div className="bg-blue-50 text-blue-700 rounded-md px-2 py-1 mt-1 inline-flex items-center">
+                            <Award className="h-3 w-3 mr-1" />
+                            <span className="text-xs font-medium">
+                              PSA {card.certification.grade} | #{card.certification.certNumber}
+                            </span>
+                          </div>
+                        )}
+                        
                         {card.productId ? (
                           <p className="text-xs text-gray-400 mt-1">ID: {card.productId}</p>
                         ) : (

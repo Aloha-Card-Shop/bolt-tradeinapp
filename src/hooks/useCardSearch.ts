@@ -4,6 +4,7 @@ import { useSetOptions } from './useSetOptions';
 import { useCardSearchQuery } from './useCardSearchQuery';
 import { useCardSuggestions } from './useCardSuggestions';
 import { isLikelyCardNumber } from '../utils/cardSearchUtils';
+import { toast } from 'react-hot-toast';
 
 // Increased debounce timeouts to reduce race conditions
 const SEARCH_DEBOUNCE_MS = 200; // Increased from 50ms
@@ -36,6 +37,7 @@ export const useCardSearch = () => {
   
   const { 
     searchResults, 
+    setSearchResults,
     isSearching, 
     searchCards, 
     hasMoreResults, 
@@ -58,6 +60,42 @@ export const useCardSearch = () => {
   
   // Cache for recent search results to avoid redundant DB queries
   const searchCacheRef = useRef<Map<string, any>>(new Map());
+
+  // New function to add certificate results to search results
+  const addCertificateToResults = useCallback((certificateCard: CardDetails) => {
+    // Make sure the certificate card has required fields
+    if (!certificateCard) {
+      console.error("Invalid certificate card:", certificateCard);
+      return;
+    }
+
+    // Ensure the certificate has an ID to use as productId if not present
+    if (!certificateCard.productId && certificateCard.certification?.certNumber) {
+      certificateCard.productId = certificateCard.certification.certNumber;
+    }
+
+    console.log("Adding certificate to results:", certificateCard);
+
+    // Add the certificate to the beginning of the results array
+    setSearchResults(prevResults => {
+      // Check if this certificate is already in the results
+      const existingIndex = prevResults.findIndex(
+        card => card.isCertified && 
+               card.certification?.certNumber === certificateCard.certification?.certNumber
+      );
+      
+      if (existingIndex >= 0) {
+        // Replace the existing entry if it exists
+        const newResults = [...prevResults];
+        newResults[existingIndex] = certificateCard;
+        return newResults;
+      }
+      
+      // Otherwise add to the beginning
+      toast.success(`Found certificate: ${certificateCard.name} (PSA ${certificateCard.certification?.grade || '?'})`);
+      return [certificateCard, ...prevResults];
+    });
+  }, [setSearchResults]);
 
   // Perform search when shouldSearch is true
   useEffect(() => {
@@ -284,9 +322,34 @@ export const useCardSearch = () => {
     hasMoreResults,
     loadMoreResults,
     totalResults,
-    handleUseAsCardNumber,
-    performSearch,
-    isSetFiltered,
-    handleShowAllSets
+    handleUseAsCardNumber: useCallback(() => {
+      if (!potentialCardNumber) return;
+      
+      setCardDetails(prev => ({
+        ...prev,
+        name: '', // Clear the name field
+        number: potentialCardNumber // Move the value to card number field
+      }));
+      setPotentialCardNumber(null);
+      
+      // Focus back on the name input for better UX
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+      
+      // Trigger search immediately
+      setTimeout(() => setShouldSearch(true), 50);
+    }, [potentialCardNumber]),
+    performSearch: useCallback(() => {
+      console.log("Manual search triggered with:", cardDetails);
+      if (cardDetails.name || cardDetails.number || cardDetails.set) {
+        setShouldSearch(true);
+      }
+    }, [cardDetails]),
+    handleShowAllSets: useCallback(() => {
+      showAllSets();
+      setIsSetFiltered(false);
+    }, [showAllSets]),
+    addCertificateToResults // Export the new function
   };
 };

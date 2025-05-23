@@ -24,7 +24,7 @@ interface CardSearchProps {
   performSearch?: () => void;
   isFiltered?: boolean;
   onShowAllSets?: () => void;
-  onCardFound?: (card: CardDetails, price: number) => void;
+  onAddCertificateToResults?: (card: CardDetails) => void;
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
@@ -39,7 +39,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
   performSearch = () => {},
   isFiltered = false,
   onShowAllSets,
-  onCardFound
+  onAddCertificateToResults
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -77,10 +77,10 @@ const CardSearch: React.FC<CardSearchProps> = ({
         <h2 className="ml-3 text-xl font-semibold text-gray-800">Find Cards</h2>
       </div>
       
-      {/* Add Certificate Lookup at the top of the search area */}
-      {onCardFound && (
+      {/* Certificate Lookup - now adds to search results */}
+      {onAddCertificateToResults && (
         <div className="mb-6">
-          <CertificateLookup onCardFound={onCardFound} />
+          <CertificateLookup onCertificateFound={onAddCertificateToResults} />
         </div>
       )}
       
@@ -128,8 +128,6 @@ const CardSearch: React.FC<CardSearchProps> = ({
           onKeyDown={handleKeyDown}
           isSearching={isSearching}
         />
-        
-        {/* Search button has been removed */}
       </div>
     </div>
   );

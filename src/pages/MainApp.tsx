@@ -5,7 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import CardSearch from '../components/CardSearch';
 import CardResults from '../components/CardResults';
 import SavedCards from '../components/SavedCards';
-import TradeInList from '../components/trade-in/TradeInList'; // Updated import path
+import TradeInList from '../components/trade-in/TradeInList';
 import { useCardSearch } from '../hooks/useCardSearch';
 import { useSavedCards } from '../hooks/useSavedCards';
 import { useTradeInList } from '../hooks/useTradeInList';
@@ -29,7 +29,8 @@ function MainApp() {
     handleUseAsCardNumber,
     performSearch,
     isSetFiltered,
-    handleShowAllSets
+    handleShowAllSets,
+    addCertificateToResults
   } = useCardSearch();
   
   const { savedCards, removeCard } = useSavedCards();
@@ -112,7 +113,7 @@ function MainApp() {
                 performSearch={performSearch}
                 isFiltered={isSetFiltered}
                 onShowAllSets={handleShowAllSets}
-                onCardFound={handleAddToList}
+                onAddCertificateToResults={addCertificateToResults}
               />
             </div>
             

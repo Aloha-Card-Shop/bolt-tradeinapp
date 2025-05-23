@@ -4,13 +4,12 @@ import { useCertificateLookup } from '../../hooks/useCertificateLookup';
 import CertificateSearchInput from './certificate/CertificateSearchInput';
 import CertificateError from './certificate/CertificateError';
 import { AlertCircle } from 'lucide-react';
-import { CardDetails } from '../../types/card';
 
 interface CertificateLookupProps {
-  onCardFound: (card: CardDetails, price: number) => void;
+  onCertificateFound: (card: any) => void;
 }
 
-const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) => {
+const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFound }) => {
   const {
     certNumber,
     setCertNumber,
@@ -21,27 +20,13 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCardFound }) =>
     certifiedCard
   } = useCertificateLookup();
 
-  // Effect to add the certified card to the results when found
+  // Effect to add the certified card to search results when found
   React.useEffect(() => {
     if (certifiedCard) {
-      // Estimate a default price based on grade
-      const gradeValue = parseFloat(certifiedCard.certification?.grade || '0');
-      let defaultPrice = 0;
-      
-      if (gradeValue >= 9.5) {
-        defaultPrice = 100; // Gem Mint estimate
-      } else if (gradeValue >= 9) {
-        defaultPrice = 50;  // Mint estimate
-      } else if (gradeValue >= 8) {
-        defaultPrice = 25;  // Near Mint estimate
-      } else {
-        defaultPrice = 10;  // Lower grades estimate
-      }
-      
-      // Add the certified card to the search results
-      onCardFound(certifiedCard, defaultPrice);
+      // Send the certificate card to search results instead of directly to trade-in list
+      onCertificateFound(certifiedCard);
     }
-  }, [certifiedCard, onCardFound]);
+  }, [certifiedCard, onCertificateFound]);
 
   return (
     <div className="p-4 border border-gray-200 bg-white rounded-lg shadow-sm mb-4">

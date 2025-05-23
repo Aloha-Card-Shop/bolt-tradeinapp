@@ -1,176 +1,135 @@
-
-import { useState } from 'react';
-import { CardDetails } from '../types/card';
-import { buildSearchQuery, formatResultsToCardDetails, RESULTS_PER_PAGE } from '../utils/searchQueryBuilder';
+import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
-
-// Debug mode flag - set to true to enable verbose logging
-const DEBUG_MODE = true;
-// Increased timeout from 5 seconds to 12 seconds to allow for more complex queries
-const SEARCH_TIMEOUT_MS = 12000;
+import { supabase } from '../lib/supabase';
+import { CardDetails } from '../types/card';
 
 export const useCardSearchQuery = () => {
   const [searchResults, setSearchResults] = useState<CardDetails[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [totalResults, setTotalResults] = useState(0);
   const [hasMoreResults, setHasMoreResults] = useState(false);
+  const [totalResults, setTotalResults] = useState(0);
+  const [lastPage, setLastPage] = useState(0);
   
-  // Track the current search query string
-  const [currentSearchQueryId, setCurrentSearchQueryId] = useState<string | null>(null);
-
-  // Function to add a certification result to the top of search results
-  const addCertificationResult = (certCard: CardDetails) => {
-    // Add certification result at the top of the list
-    setSearchResults(prevResults => {
-      // Check if the cert is already in the results
-      const exists = prevResults.some(card => 
-        card.certification?.certNumber === certCard.certification?.certNumber);
-      
-      if (exists) {
-        return prevResults;
-      }
-      
-      return [certCard, ...prevResults];
-    });
-  };
-
-  // Main search function
-  const searchCards = async (
-    cardDetails: CardDetails,
-    setOptions: any[]
-  ): Promise<string[]> => {
-    // Don't search if no meaningful criteria provided
-    if (!cardDetails.name && !cardDetails.number && !cardDetails.set) {
-      if (DEBUG_MODE) console.log('Skipping search - no criteria provided');
-      return [];
-    }
-
+  // Perform the search
+  const searchCards = useCallback(async (cardDetails: CardDetails, setOptions: any[]) => {
     setIsSearching(true);
-
+    const foundSetIds: string[] = [];
+    
     try {
-      // Generate a unique query identifier
-      const queryId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      setCurrentSearchQueryId(queryId);
-
-      // Build the search query
-      const { query, variables } = buildSearchQuery(cardDetails, 0, RESULTS_PER_PAGE);
-      
-      if (DEBUG_MODE) {
-        console.log('Executing search query:', { query, variables });
-      }
-
-      // Execute the search query with a timeout
-      const searchPromise = fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, variables })
-      });
-
-      // Create a timeout promise
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Search timeout')), SEARCH_TIMEOUT_MS);
-      });
-
-      // Race the search against the timeout
-      const response = await Promise.race([searchPromise, timeoutPromise]) as Response;
-      
-      // Check if this is still the current search
-      if (queryId !== currentSearchQueryId) {
-        if (DEBUG_MODE) console.log('Search aborted - newer search in progress');
-        return [];
-      }
-
-      const result = await response.json();
-
-      if (result.errors) {
-        console.error('Search query errors:', result.errors);
-        toast.error('Search failed. Please try again.');
+      // If no search criteria provided, just return empty results
+      if (!cardDetails.name && !cardDetails.number && !cardDetails.set) {
+        setSearchResults([]);
         setIsSearching(false);
-        return [];
+        setHasMoreResults(false);
+        setTotalResults(0);
+        return foundSetIds;
       }
-
-      // Process the search results
-      const searchData = result.data?.search;
-      const formattedResults = formatResultsToCardDetails(searchData?.results || [], setOptions, cardDetails);
       
-      // Update state with the search results
-      setSearchResults(formattedResults);
-      setCurrentPage(0);
-      setTotalResults(searchData?.total || 0);
-      setHasMoreResults(formattedResults.length < (searchData?.total || 0));
-
-      // Extract set IDs from the results for filtering options
-      const foundSetIds = formattedResults
-        .map(card => card.setId)
-        .filter(Boolean) as string[];
-
-      if (DEBUG_MODE) {
-        console.log('Search complete:', {
-          results: formattedResults.length,
-          totalResults: searchData?.total || 0,
-          foundSetIds: foundSetIds.length
-        });
+      // Build query parameters
+      const params: any = {
+        game: cardDetails.game || 'pokemon'
+      };
+      
+      if (cardDetails.categoryId) {
+        params.categoryId = cardDetails.categoryId;
       }
-
-      return foundSetIds;
-    } catch (error) {
-      console.error('Search error:', error);
-      toast.error('Search failed. Please try again.');
-      return [];
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Function to load more results for pagination
-  const loadMoreResults = async () => {
-    if (isSearching || !hasMoreResults) return;
-    
-    const nextPage = currentPage + 1;
-    setIsSearching(true);
-    
-    try {
-      // We need to reconstruct the last search query with the next page
-      // Ideally this would come from a ref that stores the last query details
-      // For now, this is a simplified version
       
-      // This is where you would reconstruct the query with the next page
-      // const { query, variables } = buildSearchQuery(lastSearchCriteria, nextPage, RESULTS_PER_PAGE);
+      if (cardDetails.name) {
+        params.name = cardDetails.name;
+      }
       
-      // For the sake of this implementation, we'll skip the actual implementation
-      // of loading more results and just show how we would process them
+      if (cardDetails.number) {
+        params.number = cardDetails.number;
+      }
       
-      /* 
-      // Execute query...
-      const response = await fetch('/api/search', {...});
-      const result = await response.json();
+      if (cardDetails.set) {
+        // Find the setId from the name
+        const selectedSet = setOptions.find(setOpt => 
+          setOpt.label === cardDetails.set || setOpt.value === cardDetails.set
+        );
+        
+        if (selectedSet) {
+          params.setId = selectedSet.value;
+        } else {
+          // If no exact match, try to search by set name
+          params.setName = cardDetails.set;
+        }
+      }
+      
+      console.log('Searching cards with params:', params);
+      
+      // Call the API
+      const { data, error } = await supabase.functions.invoke('card-search', {
+        body: params
+      });
+      
+      if (error) {
+        console.error('Search error:', error);
+        toast.error('Error searching cards');
+        setIsSearching(false);
+        return foundSetIds;
+      }
+      
+      console.log('Search results:', data);
       
       // Process results
-      const searchData = result.data?.search;
-      const newResults = formatResultsToCardDetails(searchData?.results || []);
-      */
-      
-      // Update the next page and add new results
-      setCurrentPage(nextPage);
-      // setSearchResults(prev => [...prev, ...newResults]);
-      // setHasMoreResults(prev => prev && newResults.length >= RESULTS_PER_PAGE);
-      
-    } catch (error) {
-      console.error('Load more results error:', error);
-      toast.error('Failed to load more results');
+      if (data && Array.isArray(data.cards)) {
+        setSearchResults(data.cards);
+        setTotalResults(data.total || data.cards.length);
+        setHasMoreResults(data.hasMore || false);
+        setLastPage(1);
+        
+        // Extract set IDs from results for set filtering
+        data.cards.forEach((card: CardDetails) => {
+          if (card.setId) {
+            foundSetIds.push(card.setId);
+          }
+        });
+      } else {
+        setSearchResults([]);
+        setHasMoreResults(false);
+        setTotalResults(0);
+        toast.error('No results found');
+      }
+    } catch (err) {
+      console.error('Card search error:', err);
+      toast.error('Error searching cards');
     } finally {
       setIsSearching(false);
     }
-  };
-
+    
+    return foundSetIds;
+  }, []);
+  
+  // Load more results
+  const loadMoreResults = useCallback(async () => {
+    if (!hasMoreResults || isSearching) return;
+    
+    setIsSearching(true);
+    const nextPage = lastPage + 1;
+    
+    try {
+      // Implementation for pagination would go here
+      // ... in a real app, you would call the API with the next page parameter
+      
+      setLastPage(nextPage);
+      
+      // For now, just set hasMore to false since we're not implementing pagination
+      setHasMoreResults(false);
+    } catch (err) {
+      console.error('Load more error:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [hasMoreResults, isSearching, lastPage]);
+  
   return {
     searchResults,
+    setSearchResults, // Expose the setter to add manual results like certificates
     isSearching,
     searchCards,
     hasMoreResults,
     loadMoreResults,
-    totalResults,
-    addCertificationResult
+    totalResults
   };
 };
