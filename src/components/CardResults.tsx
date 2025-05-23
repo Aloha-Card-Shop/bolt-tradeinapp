@@ -248,14 +248,6 @@ const CardResults: React.FC<CardResultsProps> = ({
                     </div>
                   </div>
                 </div>
-
-                {/* Add error message for no price data */}
-                {isCertified && card.priceSource?.url && !card.lastPrice && !card.priceSource.foundSales && (
-                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md text-red-700 flex items-center">
-                    <AlertCircle className="h-4 w-4 mr-1 flex-shrink-0" />
-                    <p className="text-sm">No sales data found for this card</p>
-                  </div>
-                )}
               </div>
             );
           })}
