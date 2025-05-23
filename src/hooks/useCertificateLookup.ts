@@ -15,7 +15,7 @@ export interface CertificateData {
   game: string;
 }
 
-export const useCertificateLookup = (onCardFound: (card: CardDetails, price: number) => void) => {
+export const useCertificateLookup = () => {
   const [certNumber, setCertNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,8 +34,6 @@ export const useCertificateLookup = (onCardFound: (card: CardDetails, price: num
     try {
       console.log('Looking up certificate:', certNumber.trim());
       
-      // Use cert-lookup function instead of psa-scraper directly
-      // This function has better error handling and fallback mechanisms
       const { data, error } = await supabase.functions.invoke('cert-lookup', {
         body: { certNumber: certNumber.trim() }
       });
@@ -48,7 +46,6 @@ export const useCertificateLookup = (onCardFound: (card: CardDetails, price: num
       }
 
       if (!data || !data.data) {
-        // More descriptive error message for no data found
         setError('Certificate not found or invalid response. The PSA website might be blocking our request.');
         toast.error('Certificate not found');
         return;
@@ -58,7 +55,6 @@ export const useCertificateLookup = (onCardFound: (card: CardDetails, price: num
       toast.success('Certificate found!');
     } catch (err: unknown) {
       console.error('Certificate lookup error:', err);
-      // More descriptive error message with proper type checking
       let errorMessage = 'An unexpected error occurred';
       if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
         errorMessage += `: ${err.message}`;
@@ -70,49 +66,36 @@ export const useCertificateLookup = (onCardFound: (card: CardDetails, price: num
     }
   };
 
-  const handleAddToTradeIn = () => {
-    if (!result) return;
-    
-    // Convert the certificate result to the format expected by the trade-in functionality
-    const cardDetails: CardDetails = {
+  // Convert certificate result to a CardDetails object for the search results
+  const convertToCardDetails = (): CardDetails | null => {
+    if (!result) return null;
+
+    return {
       id: result.certNumber,
       name: result.cardName,
       productId: result.certNumber, // Using cert number as product ID for uniqueness
       game: result.game as GameType, // Cast to GameType since we know the value matches
-      set: result.set || 'Unknown Set',
+      set: result.set || 'PSA Certified',
       number: result.cardNumber || '',
       rarity: 'Certified',
+      imageUrl: result.imageUrl,
       certification: {
         certNumber: result.certNumber,
         grade: result.grade
       },
       isCertified: true
     };
-
-    // Use a default estimated price based on grade
-    const gradeValue = parseFloat(result.grade) || 0;
-    let defaultPrice = 0;
-    
-    if (gradeValue >= 9.5) {
-      defaultPrice = 100; // Gem Mint estimate
-    } else if (gradeValue >= 9) {
-      defaultPrice = 50;  // Mint estimate
-    } else if (gradeValue >= 8) {
-      defaultPrice = 25;  // Near Mint estimate
-    } else {
-      defaultPrice = 10;  // Lower grades estimate
-    }
-    
-    onCardFound(cardDetails, defaultPrice);
-    toast.success('Added certified card to trade-in list');
-    setResult(null);
-    setCertNumber('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !isLoading) {
       handleCertLookup();
     }
+  };
+
+  const clearResult = () => {
+    setResult(null);
+    setCertNumber('');
   };
 
   return {
@@ -122,7 +105,8 @@ export const useCertificateLookup = (onCardFound: (card: CardDetails, price: num
     error,
     result,
     handleCertLookup,
-    handleAddToTradeIn,
-    handleKeyDown
+    handleKeyDown,
+    clearResult,
+    certifiedCard: convertToCardDetails()
   };
 };

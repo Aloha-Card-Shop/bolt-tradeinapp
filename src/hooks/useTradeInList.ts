@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { CardDetails } from '../types/card';
 import { fetchCardPrices } from '../utils/scraper';
@@ -33,15 +34,20 @@ export const useTradeInList = () => {
       id: card.id || crypto.randomUUID()
     };
 
+    // Check if it's a certified card
+    const isCertified = card.isCertified || false;
+
     // Always add as a new item
     setItems(prev => {
       const newItem: TradeInItem = {
         card: cardWithId,
         quantity: 1,
-        condition: '',
-        isFirstEdition: false,
-        isHolo: true,
-        isReverseHolo: false,
+        // For certified cards, we don't need condition
+        condition: isCertified ? 'certified' : '',
+        // For certified cards, we don't need these attributes
+        isFirstEdition: isCertified ? false : false,
+        isHolo: isCertified ? false : true,
+        isReverseHolo: isCertified ? false : false,
         price: price || 0,
         paymentType: null, 
         isLoadingPrice: false,
@@ -51,6 +57,11 @@ export const useTradeInList = () => {
       };
       return [...prev, newItem];
     });
+    
+    // If it's a certified card, show a different success message
+    if (isCertified) {
+      toast.success(`Added PSA grade ${card.certification?.grade} ${card.name} to trade-in list`);
+    }
   }, []);
 
   const removeItem = useCallback((index: number) => {
@@ -89,15 +100,14 @@ export const useTradeInList = () => {
 
   const fetchItemPrice = useCallback(async (index: number) => {
     const item = items[index];
-    if (!item || !item.card.productId || !item.condition) {
+    if (!item || !item.card.productId || (!item.condition && !item.card.isCertified)) {
       return;
     }
     
     // Check if this is a certified card
     if (item.card.isCertified) {
-      // For certified cards, we'll need to implement separate pricing logic
-      // For now, we'll just use the existing price
-      console.log("Certificate card pricing not implemented yet, using default price");
+      // For certified cards, we'll use the default price and not fetch from API
+      console.log("Certificate card - using default price");
       return;
     }
     

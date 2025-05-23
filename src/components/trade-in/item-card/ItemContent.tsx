@@ -5,6 +5,7 @@ import ItemControls from './ItemControls';
 import ItemValues from './ItemValues';
 import WarningMessages from './WarningMessages';
 import DebugPanel from './DebugPanel';
+import CertifiedCardControls from './CertifiedCardControls';
 
 interface ItemContentProps {
   item: TradeInItem;
@@ -49,23 +50,40 @@ const ItemContent: React.FC<ItemContentProps> = ({
   isDebugMode,
   debugInfo
 }) => {
+  // Check if the card is certified (PSA card)
+  const isCertified = item.card.isCertified;
+  const certificationGrade = item.card.certification?.grade;
+
   return (
     <>
-      <ItemControls
-        condition={item.condition}
-        quantity={item.quantity}
-        isFirstEdition={item.isFirstEdition}
-        isHolo={item.isHolo}
-        isReverseHolo={item.isReverseHolo || false}
-        paymentType={item.paymentType}
-        isLoadingPrice={item.isLoadingPrice}
-        onConditionChange={handleConditionChange}
-        onQuantityChange={updateQuantity}
-        onToggleFirstEdition={toggleFirstEdition}
-        onToggleHolo={toggleHolo}
-        onToggleReverseHolo={toggleReverseHolo}
-        onPaymentTypeChange={updatePaymentType}
-      />
+      {isCertified ? (
+        // Render simplified controls for certified cards
+        <CertifiedCardControls
+          quantity={item.quantity}
+          paymentType={item.paymentType}
+          isLoadingPrice={item.isLoadingPrice}
+          onQuantityChange={updateQuantity}
+          onPaymentTypeChange={updatePaymentType}
+          grade={certificationGrade}
+        />
+      ) : (
+        // Render normal controls for regular cards
+        <ItemControls
+          condition={item.condition}
+          quantity={item.quantity}
+          isFirstEdition={item.isFirstEdition}
+          isHolo={item.isHolo}
+          isReverseHolo={item.isReverseHolo || false}
+          paymentType={item.paymentType}
+          isLoadingPrice={item.isLoadingPrice}
+          onConditionChange={handleConditionChange}
+          onQuantityChange={updateQuantity}
+          onToggleFirstEdition={toggleFirstEdition}
+          onToggleHolo={toggleHolo}
+          onToggleReverseHolo={toggleReverseHolo}
+          onPaymentTypeChange={updatePaymentType}
+        />
+      )}
 
       <ItemValues
         price={item.price}
@@ -80,6 +98,7 @@ const ItemContent: React.FC<ItemContentProps> = ({
         onValueAdjustment={onValueAdjustment}
         usedFallback={item.usedFallback}
         fallbackReason={item.fallbackReason}
+        isCertified={isCertified}
       />
       
       <WarningMessages 

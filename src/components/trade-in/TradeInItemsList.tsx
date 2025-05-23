@@ -24,6 +24,12 @@ const TradeInItemsList: React.FC<TradeInItemsListProps> = ({
       return;
     }
     
+    // Skip price fetching for certified cards
+    if (item.card.isCertified) {
+      onUpdateItem(i, { ...item, condition: cond as any });
+      return;
+    }
+    
     // First update to show loading state
     onUpdateItem(i, { 
       ...item, 
