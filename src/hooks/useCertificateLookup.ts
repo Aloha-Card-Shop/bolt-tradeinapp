@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
-import { CardDetails } from '../types/card';
+import { CardDetails, GameType } from '../types/card';
 
 export interface CertificateData {
   certNumber: string;
@@ -65,11 +65,11 @@ export const useCertificateLookup = (onCardFound: (card: CardDetails, price: num
     if (!result) return;
     
     // Convert the certificate result to the format expected by the trade-in functionality
-    const cardDetails = {
+    const cardDetails: CardDetails = {
       id: result.certNumber,
       name: result.cardName,
       productId: result.certNumber, // Using cert number as product ID for uniqueness
-      game: result.game,
+      game: result.game as GameType, // Cast to GameType since we know the value matches
       set: result.set || 'Unknown Set',
       number: result.cardNumber || '',
       rarity: 'Certified',

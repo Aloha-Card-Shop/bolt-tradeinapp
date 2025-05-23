@@ -2,6 +2,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import { 
+  extractCertificateData,
+  determineGameType,
+  determinePlayerName
+} from "./utils.ts";
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -32,64 +37,13 @@ serve(async (req) => {
     console.log(`Scraping PSA cert data for: ${certNumber}`);
 
     // Check cache first
-    const cacheKey = `cert-${certNumber}`;
-    const cachedResult = certCache.get(cacheKey);
-    if (cachedResult && (Date.now() - cachedResult.timestamp) < CACHE_TTL) {
-      console.log(`Cache hit for certificate: ${certNumber}`);
-      return new Response(
-        JSON.stringify({ data: cachedResult.data, fromCache: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const cacheResult = checkCache(certNumber);
+    if (cacheResult) {
+      return cacheResult;
     }
 
-    // Scrape the PSA certificate page
-    const psaUrl = `https://www.psacard.com/cert/${certNumber}`;
-    console.log(`Scraping URL: ${psaUrl}`);
-    
-    // Fetch the page content
-    const response = await fetch(psaUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
-    });
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        console.log(`Certificate not found: ${certNumber}`);
-        return new Response(
-          JSON.stringify({ error: "Not Found", message: "Certificate not found" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      throw new Error(`Failed to fetch PSA certificate page: ${response.status} ${response.statusText}`);
-    }
-
-    // Get the HTML content
-    const html = await response.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-    
-    if (!doc) {
-      throw new Error("Failed to parse HTML document");
-    }
-
-    // Extract certificate data
-    const certData = extractCertificateData(doc, certNumber);
-    
-    // Store in cache
-    certCache.set(cacheKey, {
-      data: certData,
-      timestamp: Date.now()
-    });
-
-    // Clean up old cache entries
-    cleanupCache();
-
-    return new Response(
-      JSON.stringify({ data: certData }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // Fetch certificate data
+    return await fetchCertificateData(certNumber);
   } catch (error) {
     console.error("PSA scraper error:", error);
     return new Response(
@@ -99,166 +53,94 @@ serve(async (req) => {
   }
 });
 
-// Extract certificate data from the DOM
-function extractCertificateData(doc: Document, certNumber: string): any {
-  try {
-    // Card name is usually in a heading element
-    let cardName = "";
-    const cardNameElement = doc.querySelector(".cert-details h1, .cert-details h2, .cert-item-details h1");
-    if (cardNameElement) {
-      cardName = cardNameElement.textContent.trim();
-    }
-
-    // Grade is typically displayed prominently
-    let grade = "";
-    const gradeElement = doc.querySelector(".cert-grade, .grade-value");
-    if (gradeElement) {
-      grade = gradeElement.textContent.trim().replace("GRADE:", "").trim();
-    }
-
-    // Set information
-    let set = "";
-    const setElement = doc.querySelector(".cert-set, .set-name");
-    if (setElement) {
-      set = setElement.textContent.trim();
-    }
-
-    // Year information
-    let year = "";
-    const yearElement = doc.querySelector(".cert-year, .year-value");
-    if (yearElement) {
-      year = yearElement.textContent.trim();
-    }
-
-    // Card number information
-    let cardNumber = "";
-    const cardNumberElement = doc.querySelector(".cert-number, .card-number");
-    if (cardNumberElement) {
-      cardNumber = cardNumberElement.textContent.trim().replace("#", "").trim();
-    }
-
-    // Get image if available
-    let imageUrl = null;
-    const imageElement = doc.querySelector(".cert-image img, .card-image img");
-    if (imageElement) {
-      imageUrl = imageElement.getAttribute("src");
-      if (imageUrl && !imageUrl.startsWith("http")) {
-        imageUrl = `https://www.psacard.com${imageUrl}`;
-      }
-    }
-
-    // Determine game type based on the certificate details
-    let game = determineGameType(cardName, set);
-
-    // Format certification date
-    const certDate = doc.querySelector(".cert-date");
-    let certificationDate = null;
-    if (certDate) {
-      certificationDate = certDate.textContent.trim();
-      // Try to format to ISO string if possible
-      try {
-        const dateObj = new Date(certificationDate);
-        if (!isNaN(dateObj.getTime())) {
-          certificationDate = dateObj.toISOString();
-        }
-      } catch (e) {
-        console.log("Failed to parse date:", e);
-      }
-    }
-
-    // Construct the certificate data in the format expected by our frontend
-    return {
-      certNumber: certNumber,
-      cardName: cardName || "Unknown Card",
-      grade: grade || "Unknown",
-      year: year || "",
-      set: set || "",
-      cardNumber: cardNumber || "",
-      playerName: determinePlayerName(cardName),
-      imageUrl,
-      certificationDate,
-      game
-    };
-  } catch (error) {
-    console.error("Error extracting cert data:", error);
-    // Return minimal data if extraction fails
-    return {
-      certNumber,
-      cardName: "Certificate Data Extraction Failed",
-      grade: "Unknown",
-      game: "other"
-    };
+// Check certificate cache and return cached result if available
+function checkCache(certNumber: string): Response | null {
+  const cacheKey = `cert-${certNumber}`;
+  const cachedResult = certCache.get(cacheKey);
+  
+  if (cachedResult && (Date.now() - cachedResult.timestamp) < CACHE_TTL) {
+    console.log(`Cache hit for certificate: ${certNumber}`);
+    return new Response(
+      JSON.stringify({ data: cachedResult.data, fromCache: true }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
+  
+  return null;
 }
 
-// Helper function to determine game type from card details
-function determineGameType(cardName: string, set: string): string {
-  const lowerCardName = (cardName || "").toLowerCase();
-  const lowerSet = (set || "").toLowerCase();
+// Fetch certificate data from PSA website
+async function fetchCertificateData(certNumber: string): Promise<Response> {
+  // Scrape the PSA certificate page
+  const psaUrl = `https://www.psacard.com/cert/${certNumber}`;
+  console.log(`Scraping URL: ${psaUrl}`);
   
-  // Check for Pokemon
-  if (lowerCardName.includes("pokemon") || 
-      lowerSet.includes("pokemon") || 
-      lowerCardName.includes("pikachu") ||
-      lowerCardName.includes("charizard")) {
-    return "pokemon";
+  // Fetch the page content
+  const response = await fetch(psaUrl, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      console.log(`Certificate not found: ${certNumber}`);
+      return new Response(
+        JSON.stringify({ error: "Not Found", message: "Certificate not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    throw new Error(`Failed to fetch PSA certificate page: ${response.status} ${response.statusText}`);
   }
+
+  // Get the HTML content
+  const html = await response.text();
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
   
-  // Check for Magic: The Gathering
-  if (lowerCardName.includes("magic") || 
-      lowerSet.includes("magic") ||
-      lowerSet.includes("mtg") ||
-      lowerCardName.includes("gathering")) {
-    return "magic";
+  if (!doc) {
+    throw new Error("Failed to parse HTML document");
   }
+
+  // Extract certificate data
+  const certData = extractCertificateData(doc, certNumber);
   
-  // Check for Yu-Gi-Oh
-  if (lowerCardName.includes("yugioh") || 
-      lowerCardName.includes("yu-gi-oh") || 
-      lowerSet.includes("yugioh") ||
-      lowerSet.includes("yu-gi-oh")) {
-    return "yugioh";
-  }
-  
-  // Check for sports cards
-  if (lowerCardName.includes("topps") || 
-      lowerCardName.includes("upper deck") ||
-      lowerCardName.includes("fleer") ||
-      lowerCardName.includes("panini") ||
-      lowerCardName.includes("bowman") ||
-      lowerSet.includes("baseball") ||
-      lowerSet.includes("football") ||
-      lowerSet.includes("basketball") ||
-      lowerSet.includes("hockey")) {
-    return "sports";
-  }
-  
-  // Default
-  return "other";
+  // Store in cache
+  storeCertInCache(certNumber, certData);
+
+  // Clean up old cache entries
+  cleanupCache();
+
+  return new Response(
+    JSON.stringify({ data: certData }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
 }
 
-// Extract player name from card name for sports cards
-function determinePlayerName(cardName: string): string {
-  // This is a simplistic approach, would need refinement for production
-  if (!cardName) return "";
-  
-  // For sports cards, often the first part is the player name
-  const parts = cardName.split(' ');
-  if (parts.length >= 2) {
-    // Very basic heuristic - take first two parts as name
-    // A more sophisticated approach would be needed for production
-    return `${parts[0]} ${parts[1]}`;
-  }
-  
-  return "";
+// Store certificate data in cache
+function storeCertInCache(certNumber: string, certData: any): void {
+  const cacheKey = `cert-${certNumber}`;
+  certCache.set(cacheKey, {
+    data: certData,
+    timestamp: Date.now()
+  });
+  console.log(`Stored certificate ${certNumber} in cache`);
 }
 
 // Clean up old cache entries
 function cleanupCache(): void {
   const now = Date.now();
+  let cleanedEntries = 0;
+  
   for (const [key, value] of certCache.entries()) {
     if (now - value.timestamp > CACHE_TTL) {
       certCache.delete(key);
+      cleanedEntries++;
     }
+  }
+  
+  if (cleanedEntries > 0) {
+    console.log(`Cleaned up ${cleanedEntries} expired cache entries`);
   }
 }
