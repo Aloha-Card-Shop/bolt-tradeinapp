@@ -1,146 +1,9 @@
 
-import { createClient } from '@supabase/supabase-js';
-import { GameType } from '../src/types/card';
-import { CalculationResult } from '../src/types/calculation';
-import { 
-  DEFAULT_FALLBACK_CASH_PERCENTAGE, 
-  DEFAULT_FALLBACK_TRADE_PERCENTAGE,
-  ERROR_MESSAGES
-} from '../src/constants/fallbackValues';
-
-// Initialize Supabase client
-const supabaseUrl = 'https://qgsabaicokoynabxgdco.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey!);
-
-// In-memory cache for trade value settings
-interface SettingsCache {
-  [game: string]: {
-    settings: any[];
-    timestamp: number;
-  }
-}
-
-const settingsCache: SettingsCache = {};
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
-
-// Helper function to get settings from cache or database
-async function getGameSettings(game: string): Promise<any[]> {
-  const normalizedGame = game.toLowerCase();
-  const now = Date.now();
-  
-  // Check if we have valid cached settings
-  if (
-    settingsCache[normalizedGame] && 
-    now - settingsCache[normalizedGame].timestamp < CACHE_TTL
-  ) {
-    console.log(`[CACHE] Using cached settings for ${normalizedGame}, age: ${(now - settingsCache[normalizedGame].timestamp) / 1000}s`);
-    return settingsCache[normalizedGame].settings;
-  }
-  
-  // If not in cache or expired, fetch from database
-  console.log(`[CACHE] Cache miss for ${normalizedGame}, fetching from database`);
-  const { data: settings, error } = await supabase
-    .from('trade_value_settings')
-    .select('*')
-    .eq('game', normalizedGame);
-    
-  if (error) {
-    console.error('[ERROR] Failed to fetch settings:', error);
-    throw error;
-  }
-  
-  // Update cache
-  settingsCache[normalizedGame] = {
-    settings: settings || [],
-    timestamp: now
-  };
-  
-  console.log(`[CACHE] Updated cache for ${normalizedGame} with ${settings?.length || 0} settings`);
-  return settings || [];
-}
-
-// Function to clear cache for a specific game
-export function clearSettingsCache(game?: string): void {
-  if (game) {
-    const normalizedGame = game.toLowerCase();
-    if (settingsCache[normalizedGame]) {
-      delete settingsCache[normalizedGame];
-      console.log(`[CACHE] Cleared cache for ${normalizedGame}`);
-    }
-  } else {
-    // Clear entire cache
-    Object.keys(settingsCache).forEach(key => {
-      delete settingsCache[key];
-    });
-    console.log('[CACHE] Cleared entire settings cache');
-  }
-}
-
-// Helper function to normalize game type strings
-const normalizeGameType = (gameType?: string): GameType => {
-  if (!gameType) return 'pokemon';
-  
-  const normalized = gameType.toLowerCase().trim();
-  
-  if (['pokémon', 'pokemon'].includes(normalized)) return 'pokemon';
-  if (['japanese-pokemon', 'japanese pokemon', 'pokemon (japanese)', 'pokemon japanese'].includes(normalized)) 
-    return 'japanese-pokemon';
-  if (['magic', 'magic: the gathering', 'mtg', 'magic the gathering'].includes(normalized)) 
-    return 'magic';
-  
-  // fallback
-  return ['pokemon', 'japanese-pokemon', 'magic', 'yugioh', 'sports', 'other'].includes(normalized as GameType)
-    ? (normalized as GameType)
-    : 'pokemon';
-};
-
-// Log fallback events for future review
-async function logFallbackEvent(
-  game: string, 
-  baseValue: number, 
-  reason: string,
-  userId?: string
-) {
-  try {
-    console.log(`[FALLBACK LOG] Game: ${game}, Value: ${baseValue}, Reason: ${reason}, User: ${userId || 'anonymous'}`);
-    
-    await supabase
-      .from('calculation_fallback_logs')
-      .insert({
-        game,
-        base_value: baseValue,
-        reason,
-        user_id: userId || null,
-        created_at: new Date().toISOString()
-      });
-      
-    console.log('[FALLBACK LOG] Successfully logged to database');
-  } catch (err) {
-    // Silent fail on logging - shouldn't impact user experience
-    console.error('[ERROR] Failed to log fallback event:', err);
-  }
-}
-
-// Create structured response with errors and fallback info
-function createErrorResponse(
-  baseValue: number,
-  errorMessage: string, 
-  fallbackReason: keyof typeof ERROR_MESSAGES
-): CalculationResult {
-  // Calculate fallback values
-  const cashValue = parseFloat((baseValue * (DEFAULT_FALLBACK_CASH_PERCENTAGE / 100)).toFixed(2));
-  const tradeValue = parseFloat((baseValue * (DEFAULT_FALLBACK_TRADE_PERCENTAGE / 100)).toFixed(2));
-  
-  // Return structured response with the appropriate error message from constants
-  return {
-    cashValue,
-    tradeValue,
-    usedFallback: true,
-    fallbackReason,
-    error: ERROR_MESSAGES[fallbackReason] || errorMessage
-  };
-}
+import { normalizeGameType } from './utils/gameUtils';
+import { calculateValues } from './utils/calculateValues';
+import { createErrorResponse } from './utils/errorResponse';
+import { logFallbackEvent } from './utils/fallbackLogger';
+import { clearSettingsCache } from './utils/settingsCache';
 
 // Standard API handler
 export default async function handler(req: Request): Promise<Response> {
@@ -198,113 +61,18 @@ export default async function handler(req: Request): Promise<Response> {
     const gameKey = normalizeGameType(game);
     console.log(`[INFO] Normalized game type from "${game}" to "${gameKey}"`);
     
-    let usedFallback = false;
-    let fallbackReason = '';
+    // Calculate values
+    const result = await calculateValues({
+      game: gameKey,
+      baseValue: numericBase,
+      userId
+    });
 
-    try {
-      // Get settings from cache or database using the helper function
-      const settings = await getGameSettings(gameKey);
-
-      // Default fallback values
-      let cashValue = numericBase * (DEFAULT_FALLBACK_CASH_PERCENTAGE / 100);
-      let tradeValue = numericBase * (DEFAULT_FALLBACK_TRADE_PERCENTAGE / 100);
-      let calculationMethod = 'default';
-
-      if (settings && settings.length > 0) {
-        console.log(`[INFO] Found ${settings.length} setting(s) for game: ${gameKey}`);
-        
-        // Check for fixed values first
-        const fixedSetting = settings.find(
-          s => s.fixed_cash_value !== null && s.fixed_trade_value !== null
-        );
-        
-        if (fixedSetting) {
-          console.log('[INFO] Using fixed values from settings');
-          cashValue = fixedSetting.fixed_cash_value!;
-          tradeValue = fixedSetting.fixed_trade_value!;
-          calculationMethod = 'fixed';
-        } else {
-          // Find percentage-based range match
-          const rangeSetting = settings.find(
-            s => numericBase >= s.min_value && numericBase <= s.max_value
-          );
-          
-          if (rangeSetting) {
-            console.log(`[INFO] Found matching range for value ${numericBase}: ${rangeSetting.min_value} to ${rangeSetting.max_value}`);
-            cashValue = numericBase * (rangeSetting.cash_percentage / 100);
-            tradeValue = numericBase * (rangeSetting.trade_percentage / 100);
-            calculationMethod = 'percentage';
-          } else {
-            // No range found, use fallbacks
-            usedFallback = true;
-            fallbackReason = 'NO_PRICE_RANGE_MATCH';
-            console.warn(`[WARN] No price range match found for game ${gameKey} and value ${numericBase}, using fallback values`);
-            
-            // Log the fallback event
-            await logFallbackEvent(
-              game, 
-              numericBase, 
-              `No price range match found for game ${gameKey} and value ${numericBase}`,
-              userId
-            );
-          }
-        }
-      } else {
-        // No settings found for this game, using defaults
-        usedFallback = true;
-        fallbackReason = 'NO_SETTINGS_FOUND';
-        console.warn(`[WARN] No settings found for game ${gameKey}, using fallback values`);
-        
-        // Log the fallback event
-        await logFallbackEvent(
-          game, 
-          numericBase, 
-          `No settings found for game ${gameKey}`,
-          userId
-        );
-      }
-
-      // Round to exactly two decimal places
-      const roundedCashValue = parseFloat(cashValue.toFixed(2));
-      const roundedTradeValue = parseFloat(tradeValue.toFixed(2));
-
-      console.log(`[INFO] Calculation result for ${gameKey}, $${numericBase}: Cash=$${roundedCashValue}, Trade=$${roundedTradeValue}, Method=${calculationMethod}, Fallback=${usedFallback}`);
-
-      // Return the calculated values along with fallback information
-      return new Response(
-        JSON.stringify({ 
-          cashValue: roundedCashValue, 
-          tradeValue: roundedTradeValue,
-          usedFallback,
-          fallbackReason
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
-    } catch (dbError: any) {
-      console.error('[ERROR] Database error while fetching settings:', dbError);
-      
-      // Clear potentially corrupt cache for this game
-      clearSettingsCache(gameKey);
-      
-      // Use fallbacks if database query fails
-      usedFallback = true;
-      fallbackReason = 'DATABASE_ERROR';
-      
-      // Log the fallback event
-      await logFallbackEvent(
-        game, 
-        numericBase, 
-        `Database error: ${dbError.message || 'Unknown error'}`,
-        userId
-      );
-      
-      // Return fallback values with error details
-      return new Response(
-        JSON.stringify(createErrorResponse(numericBase, `Database error: ${dbError.message || 'Unknown error'}`, 'DATABASE_ERROR')),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-    
+    // Return the calculated values
+    return new Response(
+      JSON.stringify(result),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (err: any) {
     console.error('[ERROR] Unhandled exception in calculate-value API:', err);
     
@@ -341,3 +109,6 @@ export default async function handler(req: Request): Promise<Response> {
     );
   }
 }
+
+// Export clearSettingsCache for other modules to use
+export { clearSettingsCache };

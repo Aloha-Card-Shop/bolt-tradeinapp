@@ -1,27 +1,35 @@
 
-import type { NextApiRequest, NextApiResponse } from 'next';
 import { clearSettingsCache } from './calculate-value';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+// API handler to clear the settings cache
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { status: 405, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 
   try {
-    const { game } = req.body;
+    const { game } = await req.json();
     
-    // Clear cache for specific game or all games
+    // Clear either a specific game's cache or the entire cache
     clearSettingsCache(game);
     
-    return res.status(200).json({ 
-      success: true, 
-      message: game ? `Cache cleared for game: ${game}` : 'All game settings cache cleared'
-    });
-  } catch (error: any) {
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: game 
+          ? `Cache cleared for game: ${game}` 
+          : 'Entire settings cache cleared'
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
     console.error('Error clearing cache:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: `Error clearing cache: ${error.message}`
-    });
+    return new Response(
+      JSON.stringify({ error: 'Failed to clear cache' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }
