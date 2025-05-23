@@ -43,7 +43,7 @@ const ItemValues: React.FC<ItemValuesProps> = ({
           </div>
           <div className="relative">
             <MarketPriceInput
-              value={price}
+              price={price}
               onChange={onPriceChange}
               disabled={isLoadingPrice}
             />
