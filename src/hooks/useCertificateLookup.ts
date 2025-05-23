@@ -56,11 +56,11 @@ export const useCertificateLookup = (onCardFound: (card: CardDetails, price: num
 
       setResult(data.data);
       toast.success('Certificate found!');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Certificate lookup error:', err);
-      // More descriptive error message
+      // More descriptive error message with proper type checking
       let errorMessage = 'An unexpected error occurred';
-      if (err.message) {
+      if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
         errorMessage += `: ${err.message}`;
       }
       setError(errorMessage);
