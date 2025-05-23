@@ -17,8 +17,7 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
     error,
     handleCertLookup,
     handleKeyDown,
-    certifiedCard,
-    priceData
+    certifiedCard
   } = useCertificateLookup();
 
   // Effect to add the certified card to search results when found
