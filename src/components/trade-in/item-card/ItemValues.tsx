@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { formatCurrency } from '../../../utils/formatters';
 import { ExternalLink, RefreshCcw } from 'lucide-react';
@@ -36,7 +35,7 @@ const ItemValues: React.FC<ItemValuesProps> = ({
   onPriceChange,
   onRefreshPrice,
   isPriceUnavailable,
-  onValueAdjustment,
+  onValueAdjustment: _onValueAdjustment,
   usedFallback,
   fallbackReason,
   isCertified,

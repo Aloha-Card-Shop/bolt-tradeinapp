@@ -142,7 +142,8 @@ export const useCertificateLookup = () => {
     handleCertLookup,
     handleKeyDown,
     clearResult,
-    certifiedCard: certifiedCardWithPrice || convertToCardDetails(result),
+    // Fix the type mismatch by ensuring we don't pass null when undefined is expected
+    certifiedCard: certifiedCardWithPrice || (result ? convertToCardDetails(result) : undefined),
     priceData
   };
 };
