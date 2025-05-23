@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
@@ -117,13 +116,8 @@ serve(async (req) => {
       
       if (!supabaseServiceKey) {
         console.error("SUPABASE_SERVICE_ROLE_KEY is not configured in secrets");
-        return new Response(
-          JSON.stringify({ 
-            error: "Configuration Error", 
-            message: "Service role key not configured. Please add it to edge function secrets." 
-          }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        console.log("Falling back to web scraper...");
+        return await callPsaScraper(certNumber);
       }
       
       // Create client with service role for admin access to api_keys table
@@ -145,71 +139,15 @@ serve(async (req) => {
       
       if (apiKeyError) {
         console.error("Error fetching API key:", apiKeyError);
-        
-        // If we're in development or testing mode, return mock data
-        if (environment === "development" || environment === "test") {
-          console.log("Using mock data for development/testing");
-          const mockData = createMockCertData(certNumber);
-          
-          // Store in cache
-          certCache.set(cacheKey, {
-            data: mockData,
-            timestamp: Date.now()
-          });
-          
-          return new Response(
-            JSON.stringify({ 
-              data: mockData, 
-              isMockData: true,
-              message: "Using mock data as PSA_API_TOKEN is not configured or API key could not be retrieved from database"
-            }),
-            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        
-        // In production, return an error
-        return new Response(
-          JSON.stringify({ 
-            error: "Server Error", 
-            message: apiKeyError ? apiKeyError.message : "API key not configured or not found in database" 
-          }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        console.log("Falling back to web scraper due to database error...");
+        return await callPsaScraper(certNumber);
       }
 
       // Handle case where no API key was found
       if (!apiKeyData) {
         console.error("PSA_API_TOKEN not found in database");
-        
-        // If we're in development or testing mode, return mock data
-        if (environment === "development" || environment === "test") {
-          console.log("Using mock data for development/testing");
-          const mockData = createMockCertData(certNumber);
-          
-          // Store in cache
-          certCache.set(cacheKey, {
-            data: mockData,
-            timestamp: Date.now()
-          });
-          
-          return new Response(
-            JSON.stringify({ 
-              data: mockData, 
-              isMockData: true,
-              message: "Using mock data as PSA_API_TOKEN not found in database"
-            }),
-            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        
-        // In production, return an error
-        return new Response(
-          JSON.stringify({ 
-            error: "Configuration Error", 
-            message: "PSA API key not found in database. Please configure it in API Settings." 
-          }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        console.log("Falling back to web scraper due to missing API key...");
+        return await callPsaScraper(certNumber);
       }
 
       apiKey = apiKeyData.key_value;
@@ -217,100 +155,87 @@ serve(async (req) => {
     
     if (!apiKey || apiKey.trim() === "") {
       console.error("PSA API token is empty");
-      
-      // If we're in development or testing mode, return mock data
-      if (environment === "development" || environment === "test") {
-        console.log("Using mock data for development/testing");
-        const mockData = createMockCertData(certNumber);
-        
-        // Store in cache
-        certCache.set(cacheKey, {
-          data: mockData,
-          timestamp: Date.now()
-        });
-        
-        return new Response(
-          JSON.stringify({ 
-            data: mockData, 
-            isMockData: true,
-            message: "Using mock data as PSA_API_TOKEN is not configured"
-          }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      // In production, return an error
-      return new Response(
-        JSON.stringify({ error: "Server Error", message: "API key not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.log("Falling back to web scraper due to empty API key...");
+      return await callPsaScraper(certNumber);
     }
 
-    // Make the request to the CORRECT PSA API URL
+    // Make the request to the PSA API
     const apiUrl = `https://api.psacard.com/publicapi/cert/GetByCertNumber/${encodeURIComponent(certNumber)}`;
     console.log(`Making request to PSA API: ${apiUrl}`);
 
-    const certResponse = await fetch(apiUrl, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-    });
+    try {
+      const certResponse = await fetch(apiUrl, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-    if (!certResponse.ok) {
-      const errorText = await certResponse.text();
-      console.error(`API error (${certResponse.status}):`, errorText);
-      
-      if (certResponse.status === 404) {
+      if (!certResponse.ok) {
+        const errorText = await certResponse.text();
+        console.error(`API error (${certResponse.status}):`, errorText);
+        
+        // If API returns rate limit error (429) or other error, fall back to scraper
+        if (certResponse.status === 429 || certResponse.status >= 500) {
+          console.log("API rate limited or error, falling back to web scraper...");
+          return await callPsaScraper(certNumber);
+        }
+        
+        if (certResponse.status === 404) {
+          return new Response(
+            JSON.stringify({ error: "Not Found", message: "Certificate not found" }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
+        // Other API errors
         return new Response(
-          JSON.stringify({ error: "Not Found", message: "Certificate not found" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "API Error", message: `Error from certification API: ${certResponse.status} - ${errorText}` }),
+          { status: certResponse.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      // Get the response from PSA's API
+      const psaResponse = await certResponse.json();
+      console.log("Received PSA certification data:", JSON.stringify(psaResponse).substring(0, 200) + "...");
       
+      // Extract relevant data from PSA API response format
+      const psaCert = psaResponse.PSACert || {};
+      
+      // Process the data to format it for our needs
+      const processedData = {
+        certNumber: psaCert.CertNumber || certNumber,
+        cardName: psaCert.Subject || psaCert.Brand || "Unknown Card",
+        grade: psaCert.CardGrade || "Unknown",
+        year: psaCert.Year || "",
+        set: psaCert.Brand || "",
+        cardNumber: psaCert.CardNumber || "",
+        playerName: psaCert.Subject || "",
+        imageUrl: null, // PSA API doesn't provide image URLs
+        certificationDate: null,
+        game: mapCardGame(psaCert.Category || ""), 
+      };
+
+      // Store in cache
+      certCache.set(cacheKey, {
+        data: processedData,
+        timestamp: Date.now()
+      });
+
+      // Clean up old cache entries
+      cleanupCache();
+
+      console.log("Returning processed certification data");
       return new Response(
-        JSON.stringify({ error: "API Error", message: `Error from certification API: ${certResponse.status} - ${errorText}` }),
-        { status: certResponse.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ data: processedData }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    } catch (error) {
+      console.error("Error calling PSA API:", error);
+      console.log("API call failed, falling back to web scraper...");
+      return await callPsaScraper(certNumber);
     }
-
-    // Get the response from PSA's API
-    const psaResponse = await certResponse.json();
-    console.log("Received PSA certification data:", JSON.stringify(psaResponse).substring(0, 200) + "...");
-    
-    // Extract relevant data from PSA API response format
-    const psaCert = psaResponse.PSACert || {};
-    
-    // Process the data to format it for our needs
-    const processedData = {
-      certNumber: psaCert.CertNumber || certNumber,
-      cardName: psaCert.Subject || psaCert.Brand || "Unknown Card",
-      grade: psaCert.CardGrade || "Unknown",
-      year: psaCert.Year || "",
-      set: psaCert.Brand || "",
-      cardNumber: psaCert.CardNumber || "",
-      playerName: psaCert.Subject || "",
-      imageUrl: null, // PSA API doesn't provide image URLs
-      certificationDate: null,
-      game: mapCardGame(psaCert.Category || ""), 
-    };
-
-    // Store in cache
-    certCache.set(cacheKey, {
-      data: processedData,
-      timestamp: Date.now()
-    });
-
-    // Clean up old cache entries
-    cleanupCache();
-
-    console.log("Returning processed certification data");
-    return new Response(
-      JSON.stringify({ data: processedData }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-
   } catch (error) {
     console.error("Error in cert-lookup function:", error);
     return new Response(
@@ -319,6 +244,76 @@ serve(async (req) => {
     );
   }
 });
+
+// Helper function to call the PSA scraper edge function
+async function callPsaScraper(certNumber: string) {
+  try {
+    console.log("Calling PSA scraper function for certificate:", certNumber);
+    
+    // Get Supabase URL and service role key
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
+    const projectRef = supabaseUrl.split(".")[0].replace("https://", "");
+    
+    // Call our PSA scraper function
+    const scraperUrl = `${supabaseUrl}/functions/v1/psa-scraper`;
+    
+    console.log(`Calling scraper at: ${scraperUrl}`);
+    
+    const response = await fetch(scraperUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`
+      },
+      body: JSON.stringify({ certNumber })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Scraper error (${response.status}):`, errorText);
+      
+      // Return error from scraper
+      return new Response(
+        JSON.stringify({ 
+          error: "Scraper Error", 
+          message: `Failed to scrape certificate data: ${errorText}`
+        }),
+        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Get response from scraper
+    const scraperResponse = await response.json();
+    console.log("Scraper returned data successfully");
+    
+    // Update cache with scraped data
+    if (scraperResponse.data) {
+      const cacheKey = `cert-${certNumber}`;
+      certCache.set(cacheKey, {
+        data: scraperResponse.data,
+        timestamp: Date.now()
+      });
+    }
+    
+    // Return the scraper response
+    return new Response(
+      JSON.stringify({ 
+        data: scraperResponse.data, 
+        source: "scraper" 
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("Error in PSA scraper fallback:", error);
+    return new Response(
+      JSON.stringify({ 
+        error: "Scraper Error", 
+        message: `Failed to scrape certificate data: ${error.message}`
+      }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+}
 
 // Helper to map certification categories to our game types
 function mapCardGame(category: string): string {
@@ -343,7 +338,7 @@ function cleanupCache() {
   });
 }
 
-// Generate mock certificate data for development and testing environments
+// Generate mock certificate data for development and testing environments (keep for consistency)
 function createMockCertData(certNumber: string) {
   // Create deterministic but "random-looking" data based on the cert number
   const lastDigit = parseInt(certNumber.slice(-1));
