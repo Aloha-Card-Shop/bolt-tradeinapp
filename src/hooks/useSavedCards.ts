@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { SavedCard, CardDetails } from '../types/card';
 
@@ -31,23 +32,26 @@ export const useSavedCards = () => {
         c.name === card.name && c.set === card.set && c.number === card.number
       );
       
+      const numericPrice = price ? parseFloat(price) : undefined;
+      
       if (existingCardIndex >= 0) {
         // Update existing card
         const updatedCards = [...prev];
         updatedCards[existingCardIndex] = {
           ...updatedCards[existingCardIndex],
-          lastChecked: new Date().toISOString(),
-          lastPrice: price
+          savedAt: new Date(),
+          lastPrice: numericPrice
         };
         return updatedCards;
       } else {
-        // Add new card
-        return [...prev, {
+        // Add new card as SavedCard type
+        const newCard: SavedCard = {
           ...card,
-          id,
-          lastChecked: new Date().toISOString(),
-          lastPrice: price
-        }];
+          id: id,
+          savedAt: new Date(),
+          lastPrice: numericPrice
+        };
+        return [...prev, newCard];
       }
     });
   };

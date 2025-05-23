@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { CardDetails } from '../types/card';
 import { SetOption } from '../hooks/useSetOptions';
@@ -155,7 +154,7 @@ export const findSetIdByName = (setName: string, setOptions: SetOption[]): numbe
 
 export const formatResultsToCardDetails = (
   results: any[],
-  setOptions: SetOption[],
+  setOptions: any[] = [],
   searchCriteria: CardDetails
 ): CardDetails[] => {
   if (DEBUG_MODE) {
@@ -173,7 +172,8 @@ export const formatResultsToCardDetails = (
   
   return results.map(item => {
     // Set name lookup for unified_products table
-    const setName = (item.group_id && setOptions.find(s => s.id === item.group_id)?.name) || '';
+    const setName = (item.group_id && setOptions.length > 0 && 
+      setOptions.find((s:any) => s.id === item.group_id)?.name) || '';
     
     // Use the direct card_number column instead of extracting from attributes
     let cardNumber = item.card_number || '';

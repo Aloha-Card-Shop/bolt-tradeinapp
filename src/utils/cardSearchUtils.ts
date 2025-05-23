@@ -172,7 +172,11 @@ export const getCardNumberString = (cardNumber: string | CardNumberObject | unde
   if (!cardNumber) return '';
   
   if (typeof cardNumber === 'object') {
-    return cardNumber.displayName || cardNumber.value || '';
+    if (cardNumber.displayName) return cardNumber.displayName;
+    if (cardNumber.value) return cardNumber.value;
+    if (cardNumber.formatted) return cardNumber.formatted;
+    if (cardNumber.raw) return cardNumber.raw;
+    return '';
   }
   
   return cardNumber;

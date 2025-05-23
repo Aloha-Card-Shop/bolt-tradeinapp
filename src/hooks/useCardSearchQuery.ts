@@ -1,6 +1,6 @@
+
 import { useState } from 'react';
 import { CardDetails } from '../types/card';
-import { SetOption } from './useSetOptions';
 import { buildSearchQuery, formatResultsToCardDetails, RESULTS_PER_PAGE } from '../utils/searchQueryBuilder';
 import { toast } from 'react-hot-toast';
 
@@ -38,7 +38,7 @@ export const useCardSearchQuery = () => {
   // Main search function
   const searchCards = async (
     cardDetails: CardDetails,
-    setOptions: SetOption[]
+    setOptions: any[]
   ): Promise<string[]> => {
     // Don't search if no meaningful criteria provided
     if (!cardDetails.name && !cardDetails.number && !cardDetails.set) {
@@ -92,7 +92,7 @@ export const useCardSearchQuery = () => {
 
       // Process the search results
       const searchData = result.data?.search;
-      const formattedResults = formatResultsToCardDetails(searchData?.results || []);
+      const formattedResults = formatResultsToCardDetails(searchData?.results || [], [], cardDetails);
       
       // Update state with the search results
       setSearchResults(formattedResults);

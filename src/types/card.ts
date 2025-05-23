@@ -7,6 +7,8 @@ export type CardNumberObject = {
   prefix?: string;
   number?: number;
   suffix?: string;
+  displayName?: string; // Added for compatibility with existing code
+  value?: string; // Added for compatibility with existing code
 };
 
 export interface CardCertification {
@@ -32,6 +34,16 @@ export interface CardDetails {
   lastPrice?: number;
   certification?: CardCertification;
   isCertified?: boolean;
+}
+
+export interface PriceData {
+  marketPrice?: string;
+  lowPrice?: string;
+  midPrice?: string;
+  highPrice?: string;
+  lastUpdated?: string;
+  isLoading?: boolean;
+  error?: string;
 }
 
 export interface SavedCard extends CardDetails {
