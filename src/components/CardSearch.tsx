@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { CardDetails } from '../types/card';
 import { Package } from 'lucide-react';
 import { SetOption } from '../hooks/useSetOptions';
+import CertificateLookup from './trade-in/CertificateLookup';
 
 // Import the smaller component pieces
 import SearchGameSelect from './card-search/SearchGameSelect';
@@ -23,6 +24,7 @@ interface CardSearchProps {
   performSearch?: () => void;
   isFiltered?: boolean;
   onShowAllSets?: () => void;
+  onCardFound?: (card: CardDetails, price: number) => void;
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
@@ -36,7 +38,8 @@ const CardSearch: React.FC<CardSearchProps> = ({
   onUseAsCardNumber = () => {},
   performSearch = () => {},
   isFiltered = false,
-  onShowAllSets
+  onShowAllSets,
+  onCardFound
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -73,6 +76,13 @@ const CardSearch: React.FC<CardSearchProps> = ({
         </div>
         <h2 className="ml-3 text-xl font-semibold text-gray-800">Find Cards</h2>
       </div>
+      
+      {/* Add Certificate Lookup at the top of the search area */}
+      {onCardFound && (
+        <div className="mb-6">
+          <CertificateLookup onCardFound={onCardFound} />
+        </div>
+      )}
       
       <div className="space-y-4">
         {/* Game Selection */}

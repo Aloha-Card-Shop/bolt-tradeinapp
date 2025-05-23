@@ -3,7 +3,6 @@ import React from 'react';
 import { ShoppingBagIcon, XCircleIcon } from 'lucide-react';
 import { TradeInItem } from '../../hooks/useTradeInList';
 import TradeInItemsList from './TradeInItemsList';
-import CertificateLookup from './CertificateLookup';
 
 interface TradeInListProps {
   items: TradeInItem[];
@@ -43,23 +42,6 @@ const TradeInList: React.FC<TradeInListProps> = ({
         </div>
         <h2 className="text-xl font-semibold text-gray-800">Trade-In List</h2>
       </div>
-
-      {/* Add the certificate lookup component */}
-      <CertificateLookup 
-        onCardFound={(card, price) => {
-          // Create a new item and add it at the end of the items array
-          const newItem: TradeInItem = {
-            card,
-            quantity: 1,
-            condition: 'near_mint',
-            isFirstEdition: false,
-            isHolo: false,
-            price,
-            paymentType: null,
-          };
-          onUpdateItem(items.length, newItem);
-        }}
-      />
 
       {items.length > 0 ? (
         <div className="mb-6 bg-white rounded-xl border border-gray-200">

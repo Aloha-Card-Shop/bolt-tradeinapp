@@ -112,6 +112,7 @@ function MainApp() {
                 performSearch={performSearch}
                 isFiltered={isSetFiltered}
                 onShowAllSets={handleShowAllSets}
+                onCardFound={handleAddToList}
               />
             </div>
             
