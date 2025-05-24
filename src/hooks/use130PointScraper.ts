@@ -17,6 +17,7 @@ export interface ScrapeResult {
   filteredSalesCount: number;
   searchUrl: string;
   query: string;
+  error?: string;  // Added error property
   debug?: any;
   htmlSnippet?: string;
   pageTitle?: string;

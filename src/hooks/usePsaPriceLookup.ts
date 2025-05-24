@@ -10,6 +10,7 @@ export interface PsaPriceData {
   filteredSalesCount: number;
   searchUrl: string;
   query: string;
+  error?: string;  // Added to match the structure in ScrapeResult
   debug?: any; // Debug data
   htmlSnippet?: string; // HTML snippet for debugging
   pageTitle?: string; // Page title for debugging
