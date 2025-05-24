@@ -9,12 +9,12 @@ const corsHeaders = {
 };
 
 interface EbayAccountDeletionNotification {
-  metadata: {
+  metadata?: {
     topic: string;
   };
   notification: {
-    notificationId: string;
-    eventDate: string;
+    notificationId?: string;
+    eventDate?: string;
     data: {
       username: string;
       userId: string;
@@ -44,7 +44,7 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     
-    // GET REQUEST - Challenge Code Verification
+    // GET REQUEST - Challenge Code Validation
     if (req.method === 'GET') {
       const challengeCode = url.searchParams.get('challenge_code');
       
@@ -84,7 +84,7 @@ serve(async (req) => {
         );
       }
 
-      // Create hash: challenge_code + verification_token + endpoint_url
+      // Create hash: challenge_code + verification_token + endpoint_url (exact order as per eBay spec)
       const hashInput = challengeCode + verificationToken + endpointUrl;
       const challengeResponse = await createSHA256Hash(hashInput);
 
@@ -95,7 +95,7 @@ serve(async (req) => {
         timestamp: new Date().toISOString()
       });
 
-      // Return challenge response
+      // Return challenge response as JSON with proper content type
       return new Response(
         JSON.stringify({ challengeResponse }),
         { 
@@ -137,13 +137,13 @@ serve(async (req) => {
         );
       }
 
-      // Validate notification structure
-      if (!notificationData.metadata?.topic || 
-          !notificationData.notification?.data?.userId ||
-          !notificationData.notification?.data?.username) {
-        console.error('Invalid notification structure:', notificationData);
+      // Validate required notification structure
+      if (!notificationData.notification?.data?.userId ||
+          !notificationData.notification?.data?.username ||
+          !notificationData.notification?.data?.eiasToken) {
+        console.error('Invalid notification structure - missing required fields:', notificationData);
         return new Response(
-          JSON.stringify({ error: 'Invalid notification structure' }),
+          JSON.stringify({ error: 'Invalid notification structure - missing required fields' }),
           { 
             status: 400, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -151,13 +151,14 @@ serve(async (req) => {
         );
       }
 
-      // Log the account deletion notification
+      // Log the account deletion notification with all required fields
       console.log('eBay Account Deletion Notification Received:', {
-        topic: notificationData.metadata.topic,
+        topic: notificationData.metadata?.topic || 'MARKETPLACE_ACCOUNT_DELETION',
         notificationId: notificationData.notification.notificationId,
         eventDate: notificationData.notification.eventDate,
         username: notificationData.notification.data.username,
         userId: notificationData.notification.data.userId,
+        eiasToken: notificationData.notification.data.eiasToken,
         timestamp: new Date().toISOString()
       });
 
@@ -169,27 +170,32 @@ serve(async (req) => {
         if (supabaseUrl && supabaseServiceKey) {
           const supabase = createClient(supabaseUrl, supabaseServiceKey);
           
-          await supabase
+          // Try to insert into ebay_account_deletions table
+          const { error: insertError } = await supabase
             .from("ebay_account_deletions")
             .insert({
               username: notificationData.notification.data.username,
               user_id: notificationData.notification.data.userId,
               eias_token: notificationData.notification.data.eiasToken,
-              event_date: notificationData.notification.eventDate,
-              notification_id: notificationData.notification.notificationId,
-              topic: notificationData.metadata.topic,
+              event_date: notificationData.notification.eventDate || new Date().toISOString(),
+              notification_id: notificationData.notification.notificationId || crypto.randomUUID(),
+              topic: notificationData.metadata?.topic || 'MARKETPLACE_ACCOUNT_DELETION',
               raw_payload: notificationData,
               received_at: new Date().toISOString()
             });
           
-          console.log('Account deletion notification stored in database');
+          if (insertError) {
+            console.log('Failed to store in database (table may not exist):', insertError);
+          } else {
+            console.log('Account deletion notification stored in database successfully');
+          }
         }
       } catch (dbError) {
-        console.log('Failed to store in database (table may not exist):', dbError);
+        console.log('Database operation failed:', dbError);
         // Don't fail the request if database storage fails
       }
 
-      // Return immediate acknowledgment (200 OK or 202 Accepted)
+      // Return immediate acknowledgment (200 OK as per eBay spec)
       return new Response(
         null,
         { 
@@ -199,7 +205,7 @@ serve(async (req) => {
       );
     }
 
-    // Method not allowed
+    // Method not allowed - return 405 for unsupported HTTP methods
     return new Response(
       JSON.stringify({ error: 'Method not allowed. Only GET and POST requests are supported.' }),
       { 
