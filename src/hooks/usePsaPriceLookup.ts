@@ -100,7 +100,7 @@ export const usePsaPriceLookup = () => {
         if (errorMsg.includes('No sales data found')) {
           toast.error('No recent sales found for this card and grade');
           console.log('Search query used:', data?.query || 'Unknown');
-          console.log('Form submission URL:', data?.debug?.formSubmitUrl || 'https://130point.com/cards/');
+          console.log('Form submission URL:', data?.debug?.formSubmitUrl || 'https://130point.com/sales/');
           
           // Log process steps if available
           if (data?.debug?.processSteps) {

@@ -1,3 +1,4 @@
+
 // Import required libraries for Deno environment
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { DOMParser, Element } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
@@ -214,11 +215,11 @@ async function scrapePriceWithDenoDom(
     return cachedResult.data;
   }
   
-  // The correct URL for 130point.com searches - this is the actual URL we need to submit the form to
-  const FORM_SUBMIT_URL = 'https://130point.com/cards/';
+  // The correct URL for 130point.com searches - using sales endpoint instead of cards
+  const FORM_SUBMIT_URL = 'https://130point.com/sales/';
   
   // Reference search URL (only for frontend reference, not used for scraping)
-  const searchUrl = `https://130point.com/cards/?search=${encodeURIComponent(searchQuery)}&searchButton=&sortBy=date_desc`;
+  const searchUrl = `https://130point.com/sales/?search=${encodeURIComponent(searchQuery)}&searchButton=&sortBy=date_desc`;
   
   let debugData: any = {
     searchQuery,
@@ -238,7 +239,7 @@ async function scrapePriceWithDenoDom(
       "User-Agent": userAgent,
       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
       "Accept-Language": "en-US,en;q=0.9",
-      "Referer": "https://130point.com/cards/",
+      "Referer": "https://130point.com/sales/",
       "Content-Type": "application/x-www-form-urlencoded",
       "Upgrade-Insecure-Requests": "1",
       "DNT": "1",
@@ -250,7 +251,7 @@ async function scrapePriceWithDenoDom(
     
     debugData.headers = { ...headers };
     debugData.processSteps.push(`Using user agent: ${userAgent}`);
-    debugData.processSteps.push(`Making initial request to 130point.com/cards to get cookies and session`);
+    debugData.processSteps.push(`Making initial request to 130point.com/sales to get cookies and session`);
     const startTime = Date.now();
     
     // First make a GET request to get any cookies and session data
@@ -303,7 +304,7 @@ async function scrapePriceWithDenoDom(
     debugData.processSteps.push(`Submitting search form with query "${searchQuery}"`);
     const searchStartTime = Date.now();
     
-    // Now submit the search form with our query - ALWAYS to the FORM_SUBMIT_URL
+    // Now submit the search form with our query - to the FORM_SUBMIT_URL (sales endpoint)
     const formData = new URLSearchParams();
     formData.append("search", searchQuery);
     formData.append("searchButton", "");
