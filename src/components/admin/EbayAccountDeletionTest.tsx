@@ -15,32 +15,29 @@ const EbayAccountDeletionTest: React.FC = () => {
     try {
       console.log('Testing GET request with challenge code:', challengeCode);
       
-      // For GET requests, we need to pass parameters differently
-      const { data, error } = await supabase.functions.invoke('account-deletion', {
+      // For GET requests with query parameters, we need to use the direct endpoint
+      const url = `https://qgsabaicokoynabxgdco.supabase.co/functions/v1/account-deletion?challenge_code=${encodeURIComponent(challengeCode)}`;
+      
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ challenge_code: challengeCode })
+        }
       });
 
-      if (error) {
-        console.error('Challenge test error:', error);
-        setTestResult({ 
-          success: false, 
-          error: error.message || 'Unknown error',
-          type: 'challenge'
-        });
-        toast.error('Challenge validation test failed');
-      } else {
-        console.log('Challenge test response:', data);
-        setTestResult({ 
-          success: true, 
-          data,
-          type: 'challenge'
-        });
-        toast.success('Challenge validation test passed');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
+      const data = await response.json();
+      console.log('Challenge test response:', data);
+      
+      setTestResult({ 
+        success: true, 
+        data,
+        type: 'challenge'
+      });
+      toast.success('Challenge validation test passed');
     } catch (err) {
       console.error('Challenge test exception:', err);
       setTestResult({ 
@@ -113,44 +110,60 @@ const EbayAccountDeletionTest: React.FC = () => {
     }
   };
 
-  const testDirectEndpoint = async () => {
+  const testDirectPostEndpoint = async () => {
     setIsLoading(true);
     setTestResult(null);
 
+    const testPayload = {
+      metadata: {
+        topic: 'MARKETPLACE_ACCOUNT_DELETION'
+      },
+      notification: {
+        notificationId: 'test-notification-' + Date.now(),
+        eventDate: new Date().toISOString(),
+        data: {
+          username: 'directtest123',
+          userId: 'direct-test-id-456',
+          eiasToken: 'direct-test-eias-789'
+        }
+      }
+    };
+
     try {
-      console.log('Testing direct endpoint with challenge code:', challengeCode);
+      console.log('Testing direct POST request with payload:', testPayload);
       
-      // Test direct endpoint with query parameter
-      const url = `https://qgsabaicokoynabxgdco.supabase.co/functions/v1/account-deletion?challenge_code=${encodeURIComponent(challengeCode)}`;
-      
-      const response = await fetch(url, {
-        method: 'GET',
+      const response = await fetch('https://qgsabaicokoynabxgdco.supabase.co/functions/v1/account-deletion', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify(testPayload)
       });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json();
-      console.log('Direct endpoint test response:', data);
+      // eBay spec expects empty response body for successful POST
+      const responseText = await response.text();
+      const data = responseText ? JSON.parse(responseText) : 'Success (empty response)';
+      
+      console.log('Direct POST test response:', data);
       
       setTestResult({ 
         success: true, 
         data,
-        type: 'direct-challenge'
+        type: 'direct-post'
       });
-      toast.success('Direct endpoint test passed');
+      toast.success('Direct POST endpoint test passed');
     } catch (err) {
-      console.error('Direct endpoint test exception:', err);
+      console.error('Direct POST test exception:', err);
       setTestResult({ 
         success: false, 
         error: err instanceof Error ? err.message : 'Unknown error',
-        type: 'direct-challenge'
+        type: 'direct-post'
       });
-      toast.error('Direct endpoint test failed');
+      toast.error('Direct POST endpoint test failed');
     } finally {
       setIsLoading(false);
     }
@@ -161,9 +174,9 @@ const EbayAccountDeletionTest: React.FC = () => {
       <h2 className="text-xl font-semibold mb-4">eBay Account Deletion Function Test</h2>
       
       <div className="space-y-6">
-        {/* Challenge Validation Test via Supabase Client */}
+        {/* Challenge Validation Test */}
         <div className="border rounded-lg p-4">
-          <h3 className="font-medium mb-3">GET Request - Challenge Validation (via Supabase Client)</h3>
+          <h3 className="font-medium mb-3">GET Request - Challenge Validation</h3>
           <div className="flex gap-2 mb-3">
             <input
               type="text"
@@ -181,37 +194,13 @@ const EbayAccountDeletionTest: React.FC = () => {
             </button>
           </div>
           <p className="text-sm text-gray-600">
-            Tests GET request with challenge_code parameter via Supabase client
+            Tests GET request with challenge_code query parameter (eBay compliance test)
           </p>
         </div>
 
-        {/* Direct Endpoint Test */}
+        {/* Notification Handling Test via Supabase Client */}
         <div className="border rounded-lg p-4">
-          <h3 className="font-medium mb-3">GET Request - Direct Endpoint Test</h3>
-          <div className="flex gap-2 mb-3">
-            <input
-              type="text"
-              value={challengeCode}
-              onChange={(e) => setChallengeCode(e.target.value)}
-              placeholder="Challenge code"
-              className="px-3 py-2 border rounded-md flex-1"
-            />
-            <button
-              onClick={testDirectEndpoint}
-              disabled={isLoading}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
-            >
-              {isLoading ? 'Testing...' : 'Test Direct'}
-            </button>
-          </div>
-          <p className="text-sm text-gray-600">
-            Tests GET request directly to the edge function endpoint with query parameter
-          </p>
-        </div>
-
-        {/* Notification Handling Test */}
-        <div className="border rounded-lg p-4">
-          <h3 className="font-medium mb-3">POST Request - Notification Handling</h3>
+          <h3 className="font-medium mb-3">POST Request - Notification Handling (Supabase Client)</h3>
           <button
             onClick={testNotificationHandling}
             disabled={isLoading}
@@ -220,7 +209,22 @@ const EbayAccountDeletionTest: React.FC = () => {
             {isLoading ? 'Testing...' : 'Test Notification'}
           </button>
           <p className="text-sm text-gray-600 mt-2">
-            Tests POST request with eBay account deletion notification payload
+            Tests POST request with eBay account deletion notification payload via Supabase client
+          </p>
+        </div>
+
+        {/* Direct POST Endpoint Test */}
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-3">POST Request - Direct Endpoint Test</h3>
+          <button
+            onClick={testDirectPostEndpoint}
+            disabled={isLoading}
+            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
+          >
+            {isLoading ? 'Testing...' : 'Test Direct POST'}
+          </button>
+          <p className="text-sm text-gray-600 mt-2">
+            Tests POST request directly to the edge function endpoint (simulates eBay notification)
           </p>
         </div>
 
@@ -231,9 +235,9 @@ const EbayAccountDeletionTest: React.FC = () => {
             <div className={`p-3 rounded-md ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
               <div className="flex items-center gap-2 mb-2">
                 <span className={`font-medium ${testResult.success ? 'text-green-700' : 'text-red-700'}`}>
-                  {testResult.type === 'challenge' ? 'Challenge Validation (Supabase)' : 
-                   testResult.type === 'direct-challenge' ? 'Challenge Validation (Direct)' : 
-                   'Notification Handling'}
+                  {testResult.type === 'challenge' ? 'Challenge Validation' : 
+                   testResult.type === 'notification' ? 'Notification Handling (Client)' : 
+                   'Direct POST Test'}
                 </span>
                 <span className={`text-sm px-2 py-1 rounded ${testResult.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                   {testResult.success ? 'PASSED' : 'FAILED'}
@@ -265,6 +269,7 @@ const EbayAccountDeletionTest: React.FC = () => {
             <p><strong>Methods supported:</strong> GET (challenge), POST (notification), OPTIONS (CORS)</p>
             <p><strong>Challenge format:</strong> GET ?challenge_code=value</p>
             <p><strong>Expected response:</strong> JSON with challengeResponse field</p>
+            <p><strong>eBay Compliance:</strong> ✅ GET challenge validation, ✅ POST notification handling</p>
           </div>
         </div>
       </div>

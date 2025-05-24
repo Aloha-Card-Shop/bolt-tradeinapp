@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-ebay-verification-token, x-ebay-signature',
+  'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
@@ -46,18 +46,8 @@ serve(async (req) => {
     
     // GET REQUEST - Challenge Code Validation
     if (req.method === 'GET') {
-      let challengeCode = url.searchParams.get('challenge_code');
-      
-      // If not in URL params, try to get from body (for Supabase client requests)
-      if (!challengeCode && req.body) {
-        try {
-          const body = await req.json();
-          challengeCode = body.challenge_code;
-        } catch (e) {
-          // Ignore JSON parsing errors for GET requests without body
-          console.log('No JSON body found in GET request, using URL params only');
-        }
-      }
+      // Only read challenge_code from URL query parameters (no JSON body parsing)
+      const challengeCode = url.searchParams.get('challenge_code');
       
       if (!challengeCode) {
         console.error('Missing challenge_code parameter in GET request');
@@ -119,22 +109,7 @@ serve(async (req) => {
 
     // POST REQUEST - Account Deletion Notification
     if (req.method === 'POST') {
-      // Verify the eBay verification token in header (if provided)
-      const verificationToken = req.headers.get('x-ebay-verification-token');
-      const expectedToken = Deno.env.get('EBAY_VERIFICATION_TOKEN');
-
-      if (expectedToken && verificationToken && verificationToken !== expectedToken) {
-        console.log(`Verification failed. Received: ${verificationToken}, Expected: [REDACTED]`);
-        return new Response(
-          JSON.stringify({ error: 'Unauthorized. Invalid verification token.' }),
-          { 
-            status: 401, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
-
-      // Parse the incoming JSON payload
+      // Parse the incoming JSON payload safely
       let notificationData: EbayAccountDeletionNotification;
       try {
         notificationData = await req.json();
