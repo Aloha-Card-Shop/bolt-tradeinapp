@@ -12,6 +12,17 @@ export interface PsaPriceData {
     price: number;
     url: string;
   }>;
+  // Add the missing properties that are being used in CertificateLookup
+  debug?: {
+    searchQuery?: string;
+    filterCriteria?: string;
+    pageTitle?: string;
+    filteredSalesCount?: number;
+  };
+  htmlSnippet?: string;
+  pageTitle?: string;
+  timestamp?: string;
+  filteredSalesCount?: number;
 }
 
 // Adapter hook to maintain compatibility with existing components
@@ -29,7 +40,13 @@ export const usePsaPriceLookup = () => {
       salesCount: result.salesCount,
       searchUrl: result.searchUrl,
       query: result.query,
-      soldItems: result.soldItems
+      soldItems: result.soldItems,
+      timestamp: result.timestamp,
+      filteredSalesCount: result.salesCount, // Map salesCount to filteredSalesCount for compatibility
+      // Add empty debug and other optional fields for compatibility
+      debug: undefined,
+      htmlSnippet: undefined,
+      pageTitle: undefined
     };
   };
 
@@ -43,7 +60,13 @@ export const usePsaPriceLookup = () => {
     salesCount: priceData.salesCount,
     searchUrl: priceData.searchUrl,
     query: priceData.query,
-    soldItems: priceData.soldItems
+    soldItems: priceData.soldItems,
+    timestamp: priceData.timestamp,
+    filteredSalesCount: priceData.salesCount, // Map salesCount to filteredSalesCount
+    // Add empty debug and other optional fields for compatibility
+    debug: undefined,
+    htmlSnippet: undefined,
+    pageTitle: undefined
   } : null;
 
   return {
