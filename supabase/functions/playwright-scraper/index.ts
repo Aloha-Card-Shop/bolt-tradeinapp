@@ -1,4 +1,3 @@
-
 // Import required libraries for Deno environment
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { DOMParser, Element } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
@@ -23,15 +22,30 @@ const USER_AGENTS = [
 
 // Format search query for the specific site format
 const formatSearchQuery = (cardName: string, setName: string, cardNumber: string, grade: string): string => {
-  let query = "POKEMON";
+  let query = "";
   
-  // Add set name if available
+  // Add set name if available, checking if it already contains POKEMON to avoid duplication
   if (setName && setName.trim() !== '') {
-    query += ` ${setName.trim().toUpperCase()}`;
+    // Check if setName already contains POKEMON to avoid duplication
+    const formattedSetName = setName.trim().toUpperCase();
+    query = formattedSetName;
+    
+    // If set name doesn't already include "POKEMON", add it as a prefix
+    if (!formattedSetName.includes('POKEMON')) {
+      query = "POKEMON " + query;
+    }
+  } else {
+    // If no set name, just use POKEMON as prefix
+    query = "POKEMON";
   }
   
-  // Clean card name by replacing slashes with spaces
-  let cleanedCardName = cardName.trim().replace(/\//g, ' ');
+  // Clean card name by replacing slashes, periods and other special characters with spaces
+  let cleanedCardName = cardName.trim()
+    .replace(/\//g, ' ')  // Replace slashes with spaces
+    .replace(/\./g, ' ')  // Replace periods with spaces
+    .replace(/,/g, ' ')   // Replace commas with spaces
+    .replace(/-/g, ' ')   // Replace hyphens with spaces
+    .replace(/\s+/g, ' '); // Replace multiple spaces with a single space
   
   // Add card name
   query += ` ${cleanedCardName}`;
@@ -44,7 +58,12 @@ const formatSearchQuery = (cardName: string, setName: string, cardNumber: string
   }
   
   // Add PSA and grade (without "GEM MT" or other qualifiers)
-  query += ` PSA ${grade.trim()}`;
+  // Just keep the numeric grade without qualifiers
+  const numericGrade = grade.trim().replace(/[^\d\.]/g, '');
+  query += ` PSA ${numericGrade || grade.trim()}`;
+  
+  // Remove any double spaces that might have been introduced
+  query = query.replace(/\s+/g, ' ').trim();
   
   console.log(`Generated search query: "${query}"`);
   return query;
