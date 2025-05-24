@@ -3,7 +3,7 @@ import React from 'react';
 import { useCertificateLookup } from '../../hooks/useCertificateLookup';
 import CertificateSearchInput from './certificate/CertificateSearchInput';
 import CertificateError from './certificate/CertificateError';
-import { AlertCircle, ExternalLink, Bug, Code, FileText, Terminal } from 'lucide-react';
+import { AlertCircle, Bug, Code, FileText, Terminal } from 'lucide-react';
 
 interface CertificateLookupProps {
   onCertificateFound: (card: any) => void;
