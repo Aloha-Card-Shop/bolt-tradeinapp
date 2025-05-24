@@ -31,6 +31,8 @@ export const usePsaPriceLookup = () => {
   const [error, setError] = useState<string | null>(null);
   const [priceData, setPriceData] = useState<PsaPriceData | null>(null);
   const [debugInfo, setDebugInfo] = useState<any | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 2;
 
   // Lookup price data for a PSA card
   const lookupPrice = async (card: CardDetails) => {
@@ -64,9 +66,22 @@ export const usePsaPriceLookup = () => {
 
       if (error) {
         console.error('PSA price lookup error:', error);
+        
+        // If we still have retries left, try again
+        if (retryCount < MAX_RETRIES) {
+          setRetryCount(prevCount => prevCount + 1);
+          toast.loading(`Retrying price lookup (attempt ${retryCount + 1})...`);
+          return await lookupPrice(card);
+        }
+        
         setError(error.message || 'Failed to look up price data');
-        toast.error('Price lookup failed');
+        toast.error('Price lookup failed after multiple attempts');
         return null;
+      }
+
+      // Reset retry count on success
+      if (retryCount > 0) {
+        setRetryCount(0);
       }
 
       // Store debug info
@@ -133,8 +148,18 @@ export const usePsaPriceLookup = () => {
       if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
         errorMessage += `: ${err.message}`;
       }
+      
+      // If we still have retries left, try again
+      if (retryCount < MAX_RETRIES) {
+        setRetryCount(prevCount => prevCount + 1);
+        toast.loading(`Retrying price lookup (attempt ${retryCount + 1})...`);
+        // Short delay before retry
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return await lookupPrice(card);
+      }
+      
       setError(errorMessage);
-      toast.error('Price lookup failed');
+      toast.error('Price lookup failed after multiple attempts');
       return null;
     } finally {
       setIsLoading(false);
@@ -145,6 +170,7 @@ export const usePsaPriceLookup = () => {
     setPriceData(null);
     setError(null);
     setDebugInfo(null);
+    setRetryCount(0);
   };
 
   return {

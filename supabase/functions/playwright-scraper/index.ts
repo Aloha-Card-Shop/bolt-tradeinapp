@@ -1,7 +1,7 @@
 
+// Import required libraries
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 import { Puppeteer } from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 const corsHeaders = {
@@ -85,7 +85,7 @@ async function scrapePriceWithPuppeteer(
     console.log("Launching headless browser...");
     const startLaunchTime = Date.now();
     
-    // Initialize Puppeteer
+    // Initialize Puppeteer with more robust options
     const puppeteer = new Puppeteer();
     
     // Launch browser with appropriate options for serverless environment
@@ -98,64 +98,123 @@ async function scrapePriceWithPuppeteer(
         '--no-first-run',
         '--no-sandbox',
         '--no-zygote',
-        '--single-process'
-      ]
+        '--single-process',
+        '--disable-extensions'
+      ],
+      timeout: 60000 // Increase timeout to 60 seconds
     });
     
     debugData.timing.browserLaunch = Date.now() - startLaunchTime;
     console.log(`Browser launched in ${debugData.timing.browserLaunch}ms`);
     
-    // Create new page
+    // Create new page with longer timeout
     const page = await browser.newPage();
+    await page.setDefaultNavigationTimeout(90000); // 90 seconds timeout for navigation
     await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36");
     await page.setViewport({ width: 1280, height: 720 });
     
-    // Navigate to 130point.com
+    // Navigate to 130point.com with retry mechanism
     console.log("Navigating to 130point.com/cards...");
-    const startNavTime = Date.now();
-    await page.goto('https://130point.com/cards/', { 
-      waitUntil: 'networkidle0',
-      timeout: 30000 
-    });
-    debugData.timing.initialNavigation = Date.now() - startNavTime;
+    let retries = 0;
+    const maxRetries = 3;
+    let navigationSuccess = false;
+    
+    while (retries < maxRetries && !navigationSuccess) {
+      try {
+        const startNavTime = Date.now();
+        await page.goto('https://130point.com/cards/', { 
+          waitUntil: 'networkidle0',
+          timeout: 60000 // 60 second timeout
+        });
+        debugData.timing.initialNavigation = Date.now() - startNavTime;
+        navigationSuccess = true;
+      } catch (error) {
+        retries++;
+        console.error(`Navigation attempt ${retries} failed: ${error.message}`);
+        debugData.errors.push(`Navigation attempt ${retries} failed: ${error.message}`);
+        
+        if (retries >= maxRetries) {
+          throw new Error(`Failed to navigate to 130point.com after ${maxRetries} attempts`);
+        }
+        
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+    }
     
     // Take screenshot of the initial page
-    debugData.screenshots.initialPage = await page.screenshot({ 
-      encoding: "base64", 
-      type: "jpeg", 
-      quality: 80 
-    });
+    try {
+      debugData.screenshots.initialPage = await page.screenshot({ 
+        encoding: "base64", 
+        type: "jpeg", 
+        quality: 80 
+      });
+    } catch (screenshotError) {
+      console.error("Failed to take initial page screenshot:", screenshotError);
+      debugData.errors.push(`Screenshot error: ${screenshotError.message}`);
+    }
     
     // Fill the search form
     console.log(`Filling search form with query: "${searchQuery}"`);
-    await page.type('input[name="search"]', searchQuery);
+    try {
+      await page.type('input[name="search"]', searchQuery);
+    } catch (inputError) {
+      console.error("Failed to input search query:", inputError);
+      debugData.errors.push(`Input error: ${inputError.message}`);
+      
+      // Return error result with debug data
+      const errorResult = {
+        error: "Failed to input search query",
+        searchUrl,
+        query: searchQuery,
+        debug: debugData
+      };
+      return errorResult;
+    }
     
     // Take screenshot of filled form
-    debugData.screenshots.filledForm = await page.screenshot({ 
-      encoding: "base64", 
-      type: "jpeg", 
-      quality: 80 
-    });
+    try {
+      debugData.screenshots.filledForm = await page.screenshot({ 
+        encoding: "base64", 
+        type: "jpeg", 
+        quality: 80 
+      });
+    } catch (screenshotError) {
+      console.error("Failed to take filled form screenshot:", screenshotError);
+      debugData.errors.push(`Screenshot error: ${screenshotError.message}`);
+    }
     
     // Submit the search form
     console.log("Submitting search form...");
     const searchStartTime = Date.now();
     
-    // Click the search button and wait for navigation
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 30000 }),
-      page.click('input[name="searchButton"]')
-    ]);
-    
-    debugData.timing.searchSubmission = Date.now() - searchStartTime;
-    console.log(`Search completed in ${debugData.timing.searchSubmission}ms`);
+    try {
+      // Click the search button and wait for navigation
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 60000 }),
+        page.click('input[name="searchButton"]')
+      ]);
+      
+      debugData.timing.searchSubmission = Date.now() - searchStartTime;
+      console.log(`Search completed in ${debugData.timing.searchSubmission}ms`);
+    } catch (searchError) {
+      console.error("Search submission failed:", searchError);
+      debugData.errors.push(`Search error: ${searchError.message}`);
+      
+      // Try to continue anyway and check for results
+    }
     
     // Take screenshot of results page
-    debugData.screenshots.resultsPage = await page.screenshot({ 
-      encoding: "base64", 
-      type: "jpeg", 
-      quality: 80 
-    });
+    try {
+      debugData.screenshots.resultsPage = await page.screenshot({ 
+        encoding: "base64", 
+        type: "jpeg", 
+        quality: 80 
+      });
+    } catch (screenshotError) {
+      console.error("Failed to take results page screenshot:", screenshotError);
+      debugData.errors.push(`Screenshot error: ${screenshotError.message}`);
+    }
     
     // Check if results table exists
     const hasResultsTable = await page.evaluate(() => {
@@ -293,8 +352,12 @@ async function scrapePriceWithPuppeteer(
     // Always close the browser
     if (browser) {
       console.log("Closing browser...");
-      await browser.close();
-      console.log("Browser closed successfully");
+      try {
+        await browser.close();
+        console.log("Browser closed successfully");
+      } catch (closeError) {
+        console.error("Error closing browser:", closeError);
+      }
     }
   }
 }
