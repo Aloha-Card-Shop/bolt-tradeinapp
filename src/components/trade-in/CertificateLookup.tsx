@@ -3,7 +3,7 @@ import React from 'react';
 import { useCertificateLookup } from '../../hooks/useCertificateLookup';
 import CertificateSearchInput from './certificate/CertificateSearchInput';
 import CertificateError from './certificate/CertificateError';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ExternalLink } from 'lucide-react';
 
 interface CertificateLookupProps {
   onCertificateFound: (card: any) => void;
@@ -17,7 +17,8 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
     error,
     handleCertLookup,
     handleKeyDown,
-    certifiedCard
+    certifiedCard,
+    priceData
   } = useCertificateLookup();
 
   // Effect to add the certified card to search results when found
@@ -42,6 +43,24 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
       
       {/* Only show certificate lookup errors, not price lookup errors */}
       {error && <CertificateError error={error} />}
+      
+      {/* Show 130point.com search link if available even when no price found */}
+      {priceData && priceData.searchUrl && !priceData.filteredSalesCount && (
+        <div className="mt-3 text-sm">
+          <a 
+            href={priceData.searchUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            <span>View prices on 130point.com</span>
+            <ExternalLink className="ml-1 h-3.5 w-3.5" />
+          </a>
+          <p className="text-xs text-gray-500 mt-1">
+            No recent sales found through automatic search, but you can check manually
+          </p>
+        </div>
+      )}
       
       <div className="text-xs text-gray-500 mt-2 flex items-start gap-1">
         <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />

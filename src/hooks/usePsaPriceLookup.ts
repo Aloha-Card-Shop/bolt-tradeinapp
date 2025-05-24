@@ -30,13 +30,29 @@ export const usePsaPriceLookup = () => {
     // Start with the base name
     let formattedName = card.name || '';
     
+    // Remove common problematic special characters
+    formattedName = formattedName
+      .replace(/\//g, ' ') // Replace slashes with spaces
+      .replace(/\./g, ' ') // Replace periods with spaces
+      .replace(/-/g, ' ') // Replace hyphens with spaces
+      .replace(/[^\w\s\d]/g, ' ') // Replace other special chars with spaces
+      .replace(/\s+/g, ' ') // Remove extra spaces
+      .trim();
+    
     // For Pokemon cards with complex names, try to extract the base Pokemon name
-    // This helps with searches for cards like "Pikachu V SWSH063"
+    // This helps as a fallback if the full name doesn't match
     if (card.game === 'pokemon') {
-      // Extract the base Pokemon name before special card types
-      const pokemonNameMatch = formattedName.match(/^(.*?)\s(?:V|GX|EX|VMAX|VSTAR)/i);
-      if (pokemonNameMatch) {
-        formattedName = pokemonNameMatch[1].trim();
+      // Handle common Pokemon naming issues
+      if (formattedName.includes('SM Black Star')) {
+        // Format Black Star promos correctly
+        formattedName = formattedName
+          .replace(/SM Black Star/i, 'SM') // Standardize Black Star format
+          .trim();
+      }
+      
+      // Handle VMAX, V, GX, etc.
+      if (formattedName.match(/(V|GX|EX|VMAX|VSTAR)\s*$/i)) {
+        formattedName = formattedName.trim();
       }
     }
     
@@ -65,7 +81,8 @@ export const usePsaPriceLookup = () => {
       // Get formatted card name for better search results
       const formattedName = formatCardName(card);
       
-      const { data, error } = await supabase.functions.invoke('psa-price-lookup', {
+      // Use the new price-scraper function instead of psa-price-lookup
+      const { data, error } = await supabase.functions.invoke('price-scraper', {
         body: {
           cardName: formattedName,
           setName: card.set || '',
