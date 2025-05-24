@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { CardDetails } from '../types/card';
@@ -523,7 +522,7 @@ export const use130PointScraper = () => {
     
     // Show a more helpful error message with specific suggestion to try manual search
     toast.custom((t) => {
-      return (
+      const toastContent = (
         <div className="flex flex-col bg-white p-4 shadow-lg rounded-lg border border-gray-200">
           <div className="flex items-center">
             <span className="text-xl mr-2">🔍</span>
@@ -547,6 +546,7 @@ export const use130PointScraper = () => {
           )}
         </div>
       );
+      return toastContent;
     });
     
     return errorResult;
