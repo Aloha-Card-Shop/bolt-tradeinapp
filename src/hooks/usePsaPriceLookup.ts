@@ -10,7 +10,12 @@ export interface PsaPriceData {
   filteredSalesCount: number;
   searchUrl: string;
   query: string;
-  debug?: any; // Add debug data
+  debug?: any; // Debug data
+  screenshots?: {
+    initialPage?: string;
+    filledForm?: string;
+    resultsPage?: string;
+  };
   sales: Array<{
     date: string;
     title: string;
@@ -47,8 +52,8 @@ export const usePsaPriceLookup = () => {
     try {
       console.log(`Looking up PSA price for ${card.name} (PSA ${card.certification.grade})`);
       
-      // Send detailed card information to the price-scraper function
-      const { data, error } = await supabase.functions.invoke('price-scraper', {
+      // Send detailed card information to the playwright-scraper function
+      const { data, error } = await supabase.functions.invoke('playwright-scraper', {
         body: {
           cardName: card.name,
           setName: card.set || 'SM BLACK STAR PROMO', // Default to SM BLACK STAR PROMO for Pokemon cards
@@ -85,22 +90,34 @@ export const usePsaPriceLookup = () => {
         
         // Still return the search URL even if no prices were found
         if (data?.searchUrl) {
-          setPriceData({
+          const resultData = {
             averagePrice: 0,
             salesCount: 0,
             filteredSalesCount: 0,
             searchUrl: data.searchUrl,
             query: data.query || '',
             debug: data.debug,
+            screenshots: data.debug?.screenshots,
             sales: []
-          });
-          return { searchUrl: data.searchUrl, debug: data.debug };
+          };
+          setPriceData(resultData);
+          return resultData;
         }
         return null;
       }
 
       console.log('Retrieved PSA price data:', data);
-      setPriceData(data);
+      
+      // Extract screenshots if they exist in debug data
+      const screenshots = data.debug?.screenshots || {};
+      
+      // Add screenshots to the price data
+      const enhancedData = {
+        ...data,
+        screenshots
+      };
+      
+      setPriceData(enhancedData);
       
       if (data.filteredSalesCount > 0) {
         toast.success(`Found ${data.filteredSalesCount} recent sales for PSA ${card.certification.grade} ${card.name}`);
@@ -109,7 +126,7 @@ export const usePsaPriceLookup = () => {
         toast(`No recent sales found, but you can check 130point.com for more info`);
       }
       
-      return data;
+      return enhancedData;
     } catch (err: unknown) {
       console.error('PSA price lookup error:', err);
       let errorMessage = 'An unexpected error occurred';

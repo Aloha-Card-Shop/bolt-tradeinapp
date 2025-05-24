@@ -1,0 +1,348 @@
+
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { Browser, chromium } from "https://deno.land/x/playwright@v1.27.2/mod.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Cache for storing price data
+const priceCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
+
+// Format search query for the specific site format
+const formatSearchQuery = (cardName: string, setName: string, cardNumber: string, grade: string): string => {
+  let query = "POKEMON";
+  
+  // Add set name if available
+  if (setName && setName.trim() !== '') {
+    query += ` ${setName.trim().toUpperCase()}`;
+  }
+  
+  // Add card name
+  query += ` ${cardName.trim()}`;
+  
+  // Add card number with # prefix
+  if (cardNumber && cardNumber.trim() !== '') {
+    query += ` ${cardNumber.trim().includes('#') ? cardNumber.trim() : '#' + cardNumber.trim()}`;
+  }
+  
+  // Add PSA and grade
+  query += ` PSA ${grade.trim()}`;
+  
+  console.log(`Generated search query: "${query}"`);
+  return query;
+};
+
+// Clean up old cache entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of priceCache.entries()) {
+    if (now - entry.timestamp > CACHE_TTL) {
+      priceCache.delete(key);
+    }
+  }
+}, 30 * 60 * 1000); // Check every 30 minutes
+
+// Main scraping function
+async function scrapePriceWithPlaywright(
+  cardName: string, 
+  setName: string, 
+  cardNumber: string, 
+  grade: string
+): Promise<any> {
+  console.log(`Starting Playwright scrape for: ${cardName} (Set: ${setName}, Number: ${cardNumber}, Grade: PSA ${grade})`);
+  
+  // Generate search query
+  const searchQuery = formatSearchQuery(cardName, setName, cardNumber, grade);
+  
+  // Create cache key
+  const cacheKey = `${cardName}|${setName}|${cardNumber}|${grade}`;
+  
+  // Check cache first
+  const cachedResult = priceCache.get(cacheKey);
+  if (cachedResult && (Date.now() - cachedResult.timestamp) < CACHE_TTL) {
+    console.log(`Returning cached price data for "${cardName}" (PSA ${grade})`);
+    return cachedResult.data;
+  }
+  
+  // Search URL for reference (not used directly but returned to frontend)
+  const searchUrl = `https://130point.com/cards/?search=${encodeURIComponent(searchQuery)}&searchButton=&sortBy=date_desc`;
+  
+  let browser: Browser | null = null;
+  let debugData: any = {
+    searchQuery,
+    searchUrl,
+    timing: {},
+    errors: [],
+    screenshots: {}
+  };
+  
+  try {
+    console.log("Launching headless browser...");
+    const startLaunchTime = Date.now();
+    
+    // Launch browser with appropriate options for serverless environment
+    browser = await chromium.launch({
+      headless: true,
+      args: [
+        '--disable-gpu',
+        '--disable-dev-shm-usage',
+        '--disable-setuid-sandbox',
+        '--no-first-run',
+        '--no-sandbox',
+        '--no-zygote',
+        '--single-process'
+      ]
+    });
+    
+    debugData.timing.browserLaunch = Date.now() - startLaunchTime;
+    console.log(`Browser launched in ${debugData.timing.browserLaunch}ms`);
+    
+    // Create context and page
+    const context = await browser.newContext({
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
+      viewport: { width: 1280, height: 720 },
+      deviceScaleFactor: 1,
+    });
+    
+    const page = await context.newPage();
+    
+    // Navigate to 130point.com
+    console.log("Navigating to 130point.com/cards...");
+    const startNavTime = Date.now();
+    await page.goto('https://130point.com/cards/', { 
+      waitUntil: 'networkidle',
+      timeout: 30000 
+    });
+    debugData.timing.initialNavigation = Date.now() - startNavTime;
+    
+    // Take screenshot of the initial page
+    debugData.screenshots.initialPage = await page.screenshot({ 
+      type: 'jpeg', 
+      quality: 80,
+      encoding: 'base64'
+    });
+    
+    // Fill the search form
+    console.log(`Filling search form with query: "${searchQuery}"`);
+    await page.fill('input[name="search"]', searchQuery);
+    
+    // Take screenshot of filled form
+    debugData.screenshots.filledForm = await page.screenshot({ 
+      type: 'jpeg', 
+      quality: 80,
+      encoding: 'base64'
+    });
+    
+    // Submit the search form
+    console.log("Submitting search form...");
+    const searchStartTime = Date.now();
+    
+    // Click the search button and wait for navigation
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 }),
+      page.click('input[name="searchButton"]')
+    ]);
+    
+    debugData.timing.searchSubmission = Date.now() - searchStartTime;
+    console.log(`Search completed in ${debugData.timing.searchSubmission}ms`);
+    
+    // Take screenshot of results page
+    debugData.screenshots.resultsPage = await page.screenshot({ 
+      type: 'jpeg', 
+      quality: 80,
+      encoding: 'base64'
+    });
+    
+    // Check if results table exists
+    const hasResultsTable = await page.locator('table.sales-table').count() > 0;
+    
+    if (!hasResultsTable) {
+      console.log("No results table found on the page");
+      debugData.errors.push("No sales data table found");
+      
+      // Return error with debug data
+      const errorResult = {
+        error: "No sales data found for this card",
+        searchUrl,
+        query: searchQuery,
+        debug: debugData
+      };
+      
+      // Cache the error result too
+      priceCache.set(cacheKey, {
+        data: errorResult,
+        timestamp: Date.now()
+      });
+      
+      return errorResult;
+    }
+    
+    // Extract sales data from the table
+    console.log("Extracting sales data from results table...");
+    const sales = await page.evaluate(() => {
+      const rows = Array.from(document.querySelectorAll('table.sales-table tr:not(:first-child)'));
+      return rows.map(row => {
+        const cells = Array.from(row.querySelectorAll('td'));
+        if (cells.length < 5) return null;
+        
+        const priceText = cells[4]?.textContent?.trim() || '';
+        if (!priceText) return null;
+        
+        // Extract numeric price
+        const priceMatch = priceText.match(/[\d,.]+/);
+        if (!priceMatch) return null;
+        
+        const priceValue = parseFloat(priceMatch[0].replace(/,/g, ''));
+        if (isNaN(priceValue)) return null;
+        
+        const title = cells[1]?.textContent?.trim() || '';
+        const linkElement = cells[1]?.querySelector('a');
+        const link = linkElement ? linkElement.getAttribute('href') || '' : '';
+        
+        return {
+          date: cells[0]?.textContent?.trim() || '',
+          title: title,
+          link: link,
+          auction: cells[2]?.textContent?.trim() || '',
+          bids: cells[3]?.textContent?.trim() || '',
+          price: priceValue
+        };
+      }).filter(item => item !== null);
+    });
+    
+    debugData.salesCount = sales.length;
+    console.log(`Found ${sales.length} sales records`);
+    
+    if (sales.length === 0) {
+      console.log("No valid sales data extracted from table");
+      debugData.errors.push("No valid sales data extracted");
+      
+      // Return error with debug data
+      const errorResult = {
+        error: "No valid sales data found for this card",
+        searchUrl,
+        query: searchQuery,
+        debug: debugData
+      };
+      
+      // Cache the error result too
+      priceCache.set(cacheKey, {
+        data: errorResult,
+        timestamp: Date.now()
+      });
+      
+      return errorResult;
+    }
+    
+    // Calculate average price
+    const initialAverage = sales.reduce((sum, sale) => sum + sale.price, 0) / sales.length;
+    
+    // Filter out outliers (±50% from the average)
+    const filteredSales = sales.filter(sale => {
+      const lowerBound = initialAverage * 0.5;
+      const upperBound = initialAverage * 1.5;
+      return sale.price >= lowerBound && sale.price <= upperBound;
+    });
+    
+    // Calculate final average
+    const finalSales = filteredSales.length > 0 ? filteredSales : sales;
+    const averagePrice = finalSales.reduce((sum, sale) => sum + sale.price, 0) / finalSales.length;
+    
+    console.log(`Average price: $${averagePrice.toFixed(2)} (filtered from ${sales.length} to ${finalSales.length} sales)`);
+    
+    // Prepare the result
+    const result = {
+      averagePrice: parseFloat(averagePrice.toFixed(2)),
+      salesCount: sales.length,
+      filteredSalesCount: finalSales.length,
+      sales: finalSales,
+      allSales: sales,
+      searchUrl,
+      query: searchQuery,
+      debug: debugData
+    };
+    
+    // Cache the result
+    priceCache.set(cacheKey, {
+      data: result,
+      timestamp: Date.now()
+    });
+    
+    return result;
+    
+  } catch (error) {
+    console.error(`Error during Playwright scraping: ${error.message}`);
+    
+    // Add error to debug data
+    debugData.errors.push(error.message);
+    
+    // Return error with any debug data collected
+    return {
+      error: `Failed to scrape price data: ${error.message}`,
+      searchUrl,
+      query: searchQuery,
+      debug: debugData
+    };
+  } finally {
+    // Always close the browser
+    if (browser) {
+      console.log("Closing browser...");
+      await browser.close();
+      console.log("Browser closed successfully");
+    }
+  }
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { cardName, setName, cardNumber, grade } = await req.json();
+    
+    if (!cardName) {
+      return new Response(
+        JSON.stringify({ error: "Card name is required" }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    console.log(`Playwright scraper called for: ${cardName} #${cardNumber || 'N/A'} (PSA ${grade || 'N/A'}) from ${setName || 'N/A'}`);
+    
+    // Run the scraping operation
+    const result = await scrapePriceWithPlaywright(
+      cardName,
+      setName || '',
+      cardNumber || '',
+      grade || '10' // Default to PSA 10 if not provided
+    );
+    
+    return new Response(
+      JSON.stringify(result),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+  } catch (error) {
+    console.error('Error in playwright-scraper function:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: error.message || 'An unexpected error occurred',
+        details: 'Failed to scrape price data'
+      }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+  }
+});

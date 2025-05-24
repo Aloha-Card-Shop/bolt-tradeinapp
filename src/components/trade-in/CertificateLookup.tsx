@@ -3,7 +3,7 @@ import React from 'react';
 import { useCertificateLookup } from '../../hooks/useCertificateLookup';
 import CertificateSearchInput from './certificate/CertificateSearchInput';
 import CertificateError from './certificate/CertificateError';
-import { AlertCircle, ExternalLink, Bug } from 'lucide-react';
+import { AlertCircle, ExternalLink, Bug, Image } from 'lucide-react';
 
 interface CertificateLookupProps {
   onCertificateFound: (card: any) => void;
@@ -23,6 +23,9 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
   
   // State to toggle debug info visibility
   const [showDebug, setShowDebug] = React.useState(false);
+  
+  // State to toggle screenshots visibility
+  const [showScreenshots, setShowScreenshots] = React.useState(false);
 
   // Effect to add the certified card to search results when found
   React.useEffect(() => {
@@ -31,6 +34,12 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
       onCertificateFound(certifiedCard);
     }
   }, [certifiedCard, onCertificateFound]);
+
+  // Check if we have screenshots
+  const hasScreenshots = priceData?.screenshots && 
+    (priceData.screenshots.initialPage || 
+     priceData.screenshots.filledForm || 
+     priceData.screenshots.resultsPage);
 
   return (
     <div className="p-4 border border-gray-200 bg-white rounded-lg shadow-sm mb-4">
@@ -61,14 +70,27 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
               <ExternalLink className="ml-1 h-3.5 w-3.5" />
             </a>
             
-            <button
-              onClick={() => setShowDebug(!showDebug)}
-              className="flex items-center text-gray-500 hover:text-gray-700 text-xs"
-              title="Toggle debug information"
-            >
-              <Bug className="h-3.5 w-3.5 mr-1" />
-              {showDebug ? 'Hide Debug Info' : 'Show Debug Info'}
-            </button>
+            <div className="flex gap-2">
+              {hasScreenshots && (
+                <button
+                  onClick={() => setShowScreenshots(!showScreenshots)}
+                  className="flex items-center text-gray-500 hover:text-gray-700 text-xs"
+                  title="Toggle screenshots"
+                >
+                  <Image className="h-3.5 w-3.5 mr-1" />
+                  {showScreenshots ? 'Hide Screenshots' : 'Show Screenshots'}
+                </button>
+              )}
+              
+              <button
+                onClick={() => setShowDebug(!showDebug)}
+                className="flex items-center text-gray-500 hover:text-gray-700 text-xs"
+                title="Toggle debug information"
+              >
+                <Bug className="h-3.5 w-3.5 mr-1" />
+                {showDebug ? 'Hide Debug Info' : 'Show Debug Info'}
+              </button>
+            </div>
           </div>
           
           {!priceData.filteredSalesCount && (
@@ -81,6 +103,48 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
           <p className="text-xs text-gray-600 mt-1">
             <strong>Search query:</strong> "{priceData.query || 'Unknown'}"
           </p>
+          
+          {/* Screenshots section */}
+          {showScreenshots && hasScreenshots && (
+            <div className="mt-3 space-y-3">
+              <h4 className="text-sm font-semibold">Search Process Screenshots:</h4>
+              
+              <div className="space-y-4">
+                {priceData.screenshots?.initialPage && (
+                  <div>
+                    <p className="text-xs font-medium mb-1">Initial Page:</p>
+                    <img 
+                      src={`data:image/jpeg;base64,${priceData.screenshots.initialPage}`}
+                      alt="Initial search page" 
+                      className="border border-gray-200 rounded-md w-full"
+                    />
+                  </div>
+                )}
+                
+                {priceData.screenshots?.filledForm && (
+                  <div>
+                    <p className="text-xs font-medium mb-1">Form Filled:</p>
+                    <img 
+                      src={`data:image/jpeg;base64,${priceData.screenshots.filledForm}`}
+                      alt="Search form filled" 
+                      className="border border-gray-200 rounded-md w-full"
+                    />
+                  </div>
+                )}
+                
+                {priceData.screenshots?.resultsPage && (
+                  <div>
+                    <p className="text-xs font-medium mb-1">Results Page:</p>
+                    <img 
+                      src={`data:image/jpeg;base64,${priceData.screenshots.resultsPage}`}
+                      alt="Search results page" 
+                      className="border border-gray-200 rounded-md w-full"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           
           {/* Debug information section */}
           {showDebug && priceData.debug && (
