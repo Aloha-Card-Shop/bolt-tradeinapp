@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { CardDetails } from '../types/card';
@@ -522,22 +521,18 @@ export const use130PointScraper = () => {
     setIsLoading(false);
     
     // Show a more helpful error message with specific suggestion to try manual search
-    toast((t) => (
-      <div className="space-y-2">
-        <p>No sales found through automated search.</p>
-        <p className="text-sm text-amber-600">Try searching manually - results may be available!</p>
-        <a 
-          href={directUrl} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="flex items-center justify-center mt-2 px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-        >
-          Open in 130point.com
-        </a>
-      </div>
-    ), { 
-      duration: 8000,
-      icon: '🔍'
+    toast.custom((t) => {
+      // This returns an actual JSX element that React can render
+      // We're using a generic object here that toast.custom can handle
+      return {
+        id: t.id,
+        title: "No Sales Found",
+        message: "No sales found through automated search. Try searching manually - results may be available!",
+        icon: "🔍",
+        url: directUrl,
+        urlText: "Open in 130point.com",
+        duration: 8000
+      };
     });
     
     return errorResult;
