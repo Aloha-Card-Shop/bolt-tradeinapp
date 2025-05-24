@@ -10,6 +10,7 @@ export interface PsaPriceData {
   filteredSalesCount: number;
   searchUrl: string;
   query: string;
+  debug?: any; // Add debug data
   sales: Array<{
     date: string;
     title: string;
@@ -24,6 +25,7 @@ export const usePsaPriceLookup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [priceData, setPriceData] = useState<PsaPriceData | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any | null>(null);
 
   // Lookup price data for a PSA card
   const lookupPrice = async (card: CardDetails) => {
@@ -40,11 +42,12 @@ export const usePsaPriceLookup = () => {
     setIsLoading(true);
     setError(null);
     setPriceData(null);
+    setDebugInfo(null);
 
     try {
       console.log(`Looking up PSA price for ${card.name} (PSA ${card.certification.grade})`);
       
-      // Use the card name exactly as provided without additional formatting
+      // Send detailed card information to the price-scraper function
       const { data, error } = await supabase.functions.invoke('price-scraper', {
         body: {
           cardName: card.name,
@@ -61,13 +64,21 @@ export const usePsaPriceLookup = () => {
         return null;
       }
 
+      // Store debug info
+      if (data?.debug) {
+        console.log('Debug information:', data.debug);
+        setDebugInfo(data.debug);
+      }
+
       if (!data || data.error) {
         const errorMsg = data?.error || 'No price data available';
         setError(errorMsg);
         
-        // Show a more precise error message
+        // Show a more precise error message with debugging details
         if (errorMsg.includes('No sales data found')) {
           toast.error('No recent sales found for this card and grade');
+          console.log('Search query used:', data?.query || 'Unknown');
+          console.log('Search URL:', data?.searchUrl || 'Unknown');
         } else {
           toast.error(errorMsg);
         }
@@ -80,9 +91,10 @@ export const usePsaPriceLookup = () => {
             filteredSalesCount: 0,
             searchUrl: data.searchUrl,
             query: data.query || '',
+            debug: data.debug,
             sales: []
           });
-          return { searchUrl: data.searchUrl };
+          return { searchUrl: data.searchUrl, debug: data.debug };
         }
         return null;
       }
@@ -115,12 +127,14 @@ export const usePsaPriceLookup = () => {
   const clearPriceData = () => {
     setPriceData(null);
     setError(null);
+    setDebugInfo(null);
   };
 
   return {
     isLoading,
     error,
     priceData,
+    debugInfo,
     lookupPrice,
     clearPriceData
   };

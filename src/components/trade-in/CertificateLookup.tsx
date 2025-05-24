@@ -3,7 +3,7 @@ import React from 'react';
 import { useCertificateLookup } from '../../hooks/useCertificateLookup';
 import CertificateSearchInput from './certificate/CertificateSearchInput';
 import CertificateError from './certificate/CertificateError';
-import { AlertCircle, ExternalLink } from 'lucide-react';
+import { AlertCircle, ExternalLink, Bug } from 'lucide-react';
 
 interface CertificateLookupProps {
   onCertificateFound: (card: any) => void;
@@ -20,6 +20,9 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
     certifiedCard,
     priceData
   } = useCertificateLookup();
+  
+  // State to toggle debug info visibility
+  const [showDebug, setShowDebug] = React.useState(false);
 
   // Effect to add the certified card to search results when found
   React.useEffect(() => {
@@ -45,20 +48,49 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
       {error && <CertificateError error={error} />}
       
       {/* Show 130point.com search link if available even when no price found */}
-      {priceData && priceData.searchUrl && !priceData.filteredSalesCount && (
+      {priceData && priceData.searchUrl && (
         <div className="mt-3 text-sm">
-          <a 
-            href={priceData.searchUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
-          >
-            <span>View prices on 130point.com</span>
-            <ExternalLink className="ml-1 h-3.5 w-3.5" />
-          </a>
-          <p className="text-xs text-gray-500 mt-1">
-            No recent sales found through automatic search, but you can check manually
+          <div className="flex items-center justify-between">
+            <a 
+              href={priceData.searchUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              <span>View prices on 130point.com</span>
+              <ExternalLink className="ml-1 h-3.5 w-3.5" />
+            </a>
+            
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="flex items-center text-gray-500 hover:text-gray-700 text-xs"
+              title="Toggle debug information"
+            >
+              <Bug className="h-3.5 w-3.5 mr-1" />
+              {showDebug ? 'Hide Debug Info' : 'Show Debug Info'}
+            </button>
+          </div>
+          
+          {!priceData.filteredSalesCount && (
+            <p className="text-xs text-gray-500 mt-1">
+              No recent sales found through automatic search, but you can check manually
+            </p>
+          )}
+          
+          {/* Show search query used */}
+          <p className="text-xs text-gray-600 mt-1">
+            <strong>Search query:</strong> "{priceData.query || 'Unknown'}"
           </p>
+          
+          {/* Debug information section */}
+          {showDebug && priceData.debug && (
+            <div className="mt-3 p-2 bg-gray-100 rounded text-xs font-mono overflow-auto max-h-60">
+              <h4 className="font-bold mb-1">Debug Info:</h4>
+              <pre className="whitespace-pre-wrap break-words">
+                {JSON.stringify(priceData.debug, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
       )}
       

@@ -23,25 +23,27 @@ const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
 
 // Format search query in the specific required format
 const generateSearchQuery = (cardName: string, setName: string, cardNumber: string, grade: string): string => {
-  // For Pokemon cards with specific pattern MLTRS/ZPDS/ARTCN, use this exact format:
-  // POKEMON SM BLACK STAR PROMO MLTRS/ZPDS/ARTCN.GX#SM210 PSA 10
+  // Use the exact format: POKEMON SET_NAME CARD_NAME #CARD_NUMBER PSA GRADE
+  let query = "POKEMON";
   
-  // Format set name properly (if provided)
-  let formattedSet = '';
+  // Add set name
   if (setName && setName.trim() !== '') {
-    formattedSet = setName.trim().toUpperCase();
+    query += ` ${setName.trim().toUpperCase()}`;
   }
   
-  // Format card number with # prefix (if provided)
-  let formattedNumber = '';
+  // Add card name
+  query += ` ${cardName.trim()}`;
+  
+  // Add card number with # prefix
   if (cardNumber && cardNumber.trim() !== '') {
-    formattedNumber = cardNumber.trim().includes('#') ? 
-      cardNumber.trim() : 
-      `#${cardNumber.trim()}`;
+    query += ` ${cardNumber.trim().includes('#') ? cardNumber.trim() : '#' + cardNumber.trim()}`;
   }
   
-  // Build the search query in the exact format requested
-  return `POKEMON ${formattedSet} ${cardName} ${formattedNumber} PSA ${grade}`.trim();
+  // Add PSA and grade
+  query += ` PSA ${grade.trim()}`;
+  
+  console.log(`Generated search query: "${query}"`);
+  return query;
 };
 
 // Get a random user agent with browser fingerprinting
@@ -103,30 +105,58 @@ const scrapePrice = async (
   
   let cookies = '';
   let searchUrl = '';
+  let debugData: any = {
+    requestHeaders: headers,
+    searchQuery: searchQuery,
+    timing: {}
+  };
   
   // Create the parser outside the try-catch blocks so it's available throughout the function
   const parser = new DOMParser();
   
   // Get the initial page to get cookies and form structure
   console.log("Fetching initial page to prepare for form submission...");
+  const startFetchTime = Date.now();
   try {
     const initialResponse = await fetch('https://130point.com/cards/', { headers });
+    debugData.timing.initialFetch = Date.now() - startFetchTime;
+    
     if (!initialResponse.ok) {
       console.error(`Failed to fetch initial page: ${initialResponse.status}`);
+      debugData.initialPageError = {
+        status: initialResponse.status,
+        statusText: initialResponse.statusText
+      };
       throw new Error(`Error accessing search site: ${initialResponse.status}`);
     }
     
     // Store cookies for session
     cookies = initialResponse.headers.get('set-cookie') || '';
+    debugData.cookies = cookies ? '(cookies received)' : 'no cookies';
+    
     const initialHtml = await initialResponse.text();
+    debugData.initialPageSize = initialHtml.length;
     
     // Parse the HTML to get form details
     const document = parser.parseFromString(initialHtml, 'text/html');
     if (!document) {
+      debugData.parseError = "Failed to parse initial HTML";
       throw new Error("Failed to parse initial HTML");
     }
+    
+    // Get the form action URL and method to ensure we're submitting correctly
+    const searchForm = document.querySelector('form');
+    if (searchForm) {
+      const action = searchForm.getAttribute('action') || '';
+      const method = searchForm.getAttribute('method') || 'GET';
+      debugData.formDetails = { action, method };
+    } else {
+      debugData.formError = "No search form found on initial page";
+    }
+    
   } catch (error) {
     console.error("Error during initial page fetch:", error);
+    debugData.initialFetchError = error.message;
     throw new Error(`Failed to access search site: ${error.message}`);
   }
   
@@ -135,6 +165,7 @@ const scrapePrice = async (
   
   try {
     console.log(`Submitting search query: "${searchQuery}"`);
+    const searchStartTime = Date.now();
     
     // Create form data for submission
     const params = new URLSearchParams();
@@ -144,6 +175,7 @@ const scrapePrice = async (
     
     // Create the search URL for reference
     searchUrl = `https://130point.com/cards/?search=${encodeURIComponent(searchQuery)}&searchButton=&sortBy=date_desc`;
+    debugData.searchUrl = searchUrl;
     
     // Submit the form
     const searchResponse = await fetch('https://130point.com/cards/', {
@@ -156,33 +188,61 @@ const scrapePrice = async (
       body: params.toString()
     });
     
+    debugData.timing.searchSubmission = Date.now() - searchStartTime;
+    
     if (!searchResponse.ok) {
       console.error(`Error submitting search: ${searchResponse.status}`);
+      debugData.searchError = {
+        status: searchResponse.status,
+        statusText: searchResponse.statusText
+      };
       throw new Error(`Failed to submit search: ${searchResponse.status}`);
     }
     
     const html = await searchResponse.text();
+    debugData.resultsPageSize = html.length;
+    
+    // Save a snippet of HTML for debugging
+    debugData.htmlSnippet = html.substring(0, 500) + '...';
     
     // Parse the search results HTML
     const resultDocument = parser.parseFromString(html, 'text/html');
     if (!resultDocument) {
+      debugData.parseResultsError = "Failed to parse search results HTML";
       console.error('Failed to parse search results HTML');
       throw new Error('Failed to parse search results HTML');
     }
+    
+    // Store the page title to help with debugging
+    debugData.pageTitle = resultDocument.querySelector('title')?.textContent || 'No title';
     
     // Check if we got any results by looking for the table
     const resultsTable = resultDocument.querySelector('table.sales-table');
     if (!resultsTable) {
       console.log(`No results table found for query: "${searchQuery}"`);
+      
+      // Check if there's an error message on the page
+      const errorEl = resultDocument.querySelector('.error-message, .alert, .notification');
+      if (errorEl) {
+        debugData.siteErrorMessage = errorEl.textContent?.trim();
+      }
+      
+      // Debug: check what buttons/forms are present
+      const buttons = resultDocument.querySelectorAll('button, input[type="submit"]');
+      const buttonTexts = Array.from(buttons).map(el => el.textContent?.trim() || el.getAttribute('value') || 'no text');
+      debugData.pageButtons = buttonTexts;
+      
       return {
         error: "No sales data found for this card",
         searchUrl,
-        query: searchQuery
+        query: searchQuery,
+        debug: debugData
       };
     }
     
     // Extract sales data from the table
     const rows = resultDocument.querySelectorAll('table.sales-table tr');
+    debugData.rowCount = rows.length;
     const sales = [];
     
     // Skip the header row and process the data rows
@@ -222,7 +282,8 @@ const scrapePrice = async (
       return {
         error: "No sales data found for this card",
         searchUrl,
-        query: searchQuery
+        query: searchQuery,
+        debug: debugData
       };
     }
     
@@ -253,7 +314,8 @@ const scrapePrice = async (
       sales: finalSales,
       allSales: sales,
       searchUrl,
-      query: searchQuery
+      query: searchQuery,
+      debug: debugData
     };
     
     // Cache the result
@@ -276,7 +338,8 @@ const scrapePrice = async (
     return {
       error: error.message || "Failed to search for card data",
       searchUrl,
-      query: searchQuery
+      query: searchQuery,
+      debug: debugData
     };
   }
 };
