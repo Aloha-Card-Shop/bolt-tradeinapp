@@ -11,11 +11,9 @@ export interface PsaPriceData {
   searchUrl: string;
   query: string;
   debug?: any; // Debug data
-  screenshots?: {
-    initialPage?: string;
-    filledForm?: string;
-    resultsPage?: string;
-  };
+  htmlSnippet?: string; // HTML snippet for debugging
+  pageTitle?: string; // Page title for debugging
+  timestamp?: string; // Timestamp when the data was fetched
   sales: Array<{
     date: string;
     title: string;
@@ -103,6 +101,21 @@ export const usePsaPriceLookup = () => {
           toast.error('No recent sales found for this card and grade');
           console.log('Search query used:', data?.query || 'Unknown');
           console.log('Search URL:', data?.searchUrl || 'Unknown');
+          
+          // Log HTML snippet if available for debugging
+          if (data?.debug?.htmlSnippet) {
+            console.log('HTML snippet:', data.debug.htmlSnippet);
+          }
+          
+          // Log page title if available for debugging
+          if (data?.debug?.pageTitle) {
+            console.log('Page title:', data.debug.pageTitle);
+          }
+          
+          // Log process steps if available
+          if (data?.debug?.processSteps) {
+            console.log('Process steps:', data.debug.processSteps);
+          }
         } else {
           toast.error(errorMsg);
         }
@@ -116,7 +129,9 @@ export const usePsaPriceLookup = () => {
             searchUrl: data.searchUrl,
             query: data.query || '',
             debug: data.debug,
-            screenshots: data.debug?.screenshots,
+            htmlSnippet: data.debug?.htmlSnippet,
+            pageTitle: data.debug?.pageTitle,
+            timestamp: data.timestamp,
             sales: []
           };
           setPriceData(resultData);
@@ -127,13 +142,15 @@ export const usePsaPriceLookup = () => {
 
       console.log('Retrieved PSA price data:', data);
       
-      // Extract screenshots if they exist in debug data
-      const screenshots = data.debug?.screenshots || {};
+      // Extract HTML snippet if it exists in debug data
+      const htmlSnippet = data.debug?.htmlSnippet || '';
+      const pageTitle = data.debug?.pageTitle || data.debug?.resultsTitle || '';
       
-      // Add screenshots to the price data
+      // Add HTML snippet and page title to the price data
       const enhancedData = {
         ...data,
-        screenshots
+        htmlSnippet,
+        pageTitle
       };
       
       setPriceData(enhancedData);

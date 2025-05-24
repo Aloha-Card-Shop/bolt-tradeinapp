@@ -1,7 +1,7 @@
 
 // Import required libraries for Deno environment
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import * as puppeteer from "https://deno.land/x/puppeteer@14.1.1/mod.ts";
+import { DOMParser, Element } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -46,8 +46,89 @@ setInterval(() => {
   }
 }, 30 * 60 * 1000); // Check every 30 minutes
 
+// Function to extract sales data from HTML
+const extractSalesFromHTML = (html: string): { sales: any[]; error?: string; htmlSnippet?: string } => {
+  try {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    if (!doc) {
+      return { 
+        sales: [], 
+        error: "Failed to parse HTML document",
+        htmlSnippet: html.substring(0, 500) + "..." 
+      };
+    }
+
+    // Check for page title to see if we've been blocked or redirected
+    const pageTitle = doc.querySelector("title")?.textContent || "";
+    if (pageTitle.toLowerCase().includes("captcha") || 
+        pageTitle.toLowerCase().includes("blocked") || 
+        pageTitle.toLowerCase().includes("access denied")) {
+      return { 
+        sales: [], 
+        error: `Bot protection detected: ${pageTitle}`,
+        htmlSnippet: html.substring(0, 500) + "..." 
+      };
+    }
+
+    // Extract sales data from the table
+    const salesTable = doc.querySelector('table.sales-table');
+    if (!salesTable) {
+      return { 
+        sales: [], 
+        error: "No sales table found on page",
+        htmlSnippet: html.substring(0, 500) + "..." 
+      };
+    }
+
+    const salesRows = Array.from(salesTable.querySelectorAll('tr:not(:first-child)'));
+    if (!salesRows || salesRows.length === 0) {
+      return { 
+        sales: [], 
+        error: "No sales data rows found in table",
+        htmlSnippet: html.substring(0, 500) + "..." 
+      };
+    }
+
+    const sales = salesRows.map((row) => {
+      const cells = Array.from(row.querySelectorAll('td'));
+      if (cells.length < 5) return null;
+      
+      const priceText = cells[4]?.textContent?.trim() || '';
+      if (!priceText) return null;
+      
+      // Extract numeric price
+      const priceMatch = priceText.match(/[\d,.]+/);
+      if (!priceMatch) return null;
+      
+      const priceValue = parseFloat(priceMatch[0].replace(/,/g, ''));
+      if (isNaN(priceValue)) return null;
+      
+      const title = cells[1]?.textContent?.trim() || '';
+      const linkElement = cells[1]?.querySelector('a');
+      const link = linkElement ? (linkElement as Element).getAttribute('href') || '' : '';
+      
+      return {
+        date: cells[0]?.textContent?.trim() || '',
+        title: title,
+        link: link,
+        auction: cells[2]?.textContent?.trim() || '',
+        bids: cells[3]?.textContent?.trim() || '',
+        price: priceValue
+      };
+    }).filter(item => item !== null);
+
+    return { sales };
+  } catch (error) {
+    return { 
+      sales: [], 
+      error: `HTML parsing error: ${error.message}`,
+      htmlSnippet: html.substring(0, 500) + "..." 
+    };
+  }
+};
+
 // Main scraping function
-async function scrapePriceWithPuppeteer(
+async function scrapePriceWithDenoDom(
   cardName: string, 
   setName: string, 
   cardNumber: string, 
@@ -71,143 +152,101 @@ async function scrapePriceWithPuppeteer(
   // Search URL for reference (not used directly but returned to frontend)
   const searchUrl = `https://130point.com/cards/?search=${encodeURIComponent(searchQuery)}&searchButton=&sortBy=date_desc`;
   
-  let browser = null;
   let debugData: any = {
     searchQuery,
     searchUrl,
     timing: {},
     errors: [],
-    screenshots: {}
+    processSteps: []
   };
   
   try {
-    console.log("Launching puppeteer browser...");
-    const startLaunchTime = Date.now();
+    // Set up the headers to mimic a browser request
+    const headers = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Upgrade-Insecure-Requests": "1",
+      "DNT": "1",
+      "Connection": "keep-alive"
+    };
+
+    debugData.processSteps.push(`Making initial request to 130point.com/cards to get cookies and session`);
+    const startTime = Date.now();
     
-    // Launch browser with appropriate options for Deno environment
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--disable-gpu',
-        '--disable-dev-shm-usage',
-        '--disable-setuid-sandbox',
-        '--no-first-run',
-        '--no-sandbox',
-        '--no-zygote',
-        '--single-process'
-      ]
+    // First make a GET request to get any cookies and session data
+    const initialResponse = await fetch('https://130point.com/cards/', {
+      method: 'GET',
+      headers
     });
+
+    if (!initialResponse.ok) {
+      throw new Error(`Initial page load failed with status: ${initialResponse.status}`);
+    }
+
+    const cookies = initialResponse.headers.get('set-cookie');
+    const initialHtml = await initialResponse.text();
     
-    debugData.timing.browserLaunch = Date.now() - startLaunchTime;
-    console.log(`Browser launched in ${debugData.timing.browserLaunch}ms`);
+    debugData.timing.initialRequest = Date.now() - startTime;
+    debugData.processSteps.push(`Initial page loaded in ${debugData.timing.initialRequest}ms`);
     
-    // Create new page with longer timeout
-    const page = await browser.newPage();
-    await page.setDefaultNavigationTimeout(90000); // 90 seconds timeout for navigation
-    await page.setViewport({ width: 1280, height: 720 });
+    // Check initial HTML for any bot detection
+    const initialTitle = initialHtml.match(/<title>(.*?)<\/title>/i)?.[1] || "";
+    debugData.pageTitle = initialTitle;
     
-    // Navigate to 130point.com with retry mechanism
-    console.log("Navigating to 130point.com/cards...");
-    let retries = 0;
-    const maxRetries = 3;
-    let navigationSuccess = false;
-    
-    while (retries < maxRetries && !navigationSuccess) {
-      try {
-        const startNavTime = Date.now();
-        await page.goto('https://130point.com/cards/', { 
-          waitUntil: 'networkidle2',
-          timeout: 60000 // 60 second timeout
-        });
-        debugData.timing.initialNavigation = Date.now() - startNavTime;
-        navigationSuccess = true;
-      } catch (error) {
-        retries++;
-        console.error(`Navigation attempt ${retries} failed: ${error.message}`);
-        debugData.errors.push(`Navigation attempt ${retries} failed: ${error.message}`);
-        
-        if (retries >= maxRetries) {
-          throw new Error(`Failed to navigate to 130point.com after ${maxRetries} attempts`);
-        }
-        
-        // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, 3000));
-      }
+    if (initialTitle.toLowerCase().includes("captcha") || initialTitle.toLowerCase().includes("blocked")) {
+      throw new Error(`Bot protection detected on initial page: ${initialTitle}`);
     }
     
-    // Take screenshot of the initial page
-    try {
-      const screenshot = await page.screenshot({ type: "jpeg", quality: 60 });
-      debugData.screenshots.initialPage = btoa(String.fromCharCode(...new Uint8Array(screenshot)));
-    } catch (screenshotError) {
-      console.error("Failed to take initial page screenshot:", screenshotError);
-      debugData.errors.push(`Screenshot error: ${screenshotError.message}`);
+    // Update headers with cookies if they exist
+    const updatedHeaders = { ...headers };
+    if (cookies) {
+      updatedHeaders["Cookie"] = cookies;
     }
     
-    // Fill the search form
-    console.log(`Filling search form with query: "${searchQuery}"`);
-    try {
-      await page.type('input[name="search"]', searchQuery);
-    } catch (inputError) {
-      console.error("Failed to input search query:", inputError);
-      debugData.errors.push(`Input error: ${inputError.message}`);
-      
-      // Return error result with debug data
-      const errorResult = {
-        error: "Failed to input search query",
-        searchUrl,
-        query: searchQuery,
-        debug: debugData
-      };
-      return errorResult;
-    }
-    
-    // Take screenshot of filled form
-    try {
-      const screenshot = await page.screenshot({ type: "jpeg", quality: 60 });
-      debugData.screenshots.filledForm = btoa(String.fromCharCode(...new Uint8Array(screenshot)));
-    } catch (screenshotError) {
-      console.error("Failed to take filled form screenshot:", screenshotError);
-      debugData.errors.push(`Screenshot error: ${screenshotError.message}`);
-    }
-    
-    // Submit the search form
-    console.log("Submitting search form...");
+    debugData.processSteps.push(`Submitting search form with query "${searchQuery}"`);
     const searchStartTime = Date.now();
     
-    try {
-      // Click the search button and wait for navigation
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 }),
-        page.click('input[name="searchButton"]')
-      ]);
-      
-      debugData.timing.searchSubmission = Date.now() - searchStartTime;
-      console.log(`Search completed in ${debugData.timing.searchSubmission}ms`);
-    } catch (searchError) {
-      console.error("Search submission failed:", searchError);
-      debugData.errors.push(`Search error: ${searchError.message}`);
-      
-      // Try to continue anyway and check for results
-    }
+    // Now submit the search form with our query
+    const formData = new URLSearchParams();
+    formData.append("search", searchQuery);
+    formData.append("searchButton", "");
+    formData.append("sortBy", "date_desc");
     
-    // Take screenshot of results page
-    try {
-      const screenshot = await page.screenshot({ type: "jpeg", quality: 60 });
-      debugData.screenshots.resultsPage = btoa(String.fromCharCode(...new Uint8Array(screenshot)));
-    } catch (screenshotError) {
-      console.error("Failed to take results page screenshot:", screenshotError);
-      debugData.errors.push(`Screenshot error: ${screenshotError.message}`);
-    }
-    
-    // Check if results table exists
-    const hasResultsTable = await page.evaluate(() => {
-      return document.querySelector('table.sales-table') !== null;
+    // Submit the search form
+    const searchResponse = await fetch('https://130point.com/cards/', {
+      method: 'POST',
+      headers: updatedHeaders,
+      body: formData,
+      redirect: 'follow'
     });
     
-    if (!hasResultsTable) {
-      console.log("No results table found on the page");
-      debugData.errors.push("No sales data table found");
+    if (!searchResponse.ok) {
+      throw new Error(`Search submission failed with status: ${searchResponse.status}`);
+    }
+    
+    const resultsHtml = await searchResponse.text();
+    debugData.timing.searchRequest = Date.now() - searchStartTime;
+    debugData.processSteps.push(`Search results received in ${debugData.timing.searchRequest}ms`);
+    
+    // Store a snippet of the HTML for debugging
+    debugData.htmlSnippet = resultsHtml.substring(0, 500) + "...";
+    
+    // Extract the page title for debugging
+    const resultsTitle = resultsHtml.match(/<title>(.*?)<\/title>/i)?.[1] || "";
+    debugData.resultsTitle = resultsTitle;
+    
+    // Extract sales data from HTML
+    const extractionResult = extractSalesFromHTML(resultsHtml);
+    const sales = extractionResult.sales;
+    
+    if (extractionResult.error) {
+      debugData.errors.push(extractionResult.error);
+    }
+    
+    if (sales.length === 0) {
+      console.log("No valid sales data found");
       
       // Return error with debug data
       const errorResult = {
@@ -226,62 +265,8 @@ async function scrapePriceWithPuppeteer(
       return errorResult;
     }
     
-    // Extract sales data from the table
-    console.log("Extracting sales data from results table...");
-    const sales = await page.evaluate(() => {
-      const rows = Array.from(document.querySelectorAll('table.sales-table tr:not(:first-child)'));
-      return rows.map(row => {
-        const cells = Array.from(row.querySelectorAll('td'));
-        if (cells.length < 5) return null;
-        
-        const priceText = cells[4]?.textContent?.trim() || '';
-        if (!priceText) return null;
-        
-        // Extract numeric price
-        const priceMatch = priceText.match(/[\d,.]+/);
-        if (!priceMatch) return null;
-        
-        const priceValue = parseFloat(priceMatch[0].replace(/,/g, ''));
-        if (isNaN(priceValue)) return null;
-        
-        const title = cells[1]?.textContent?.trim() || '';
-        const linkElement = cells[1]?.querySelector('a');
-        const link = linkElement ? linkElement.getAttribute('href') || '' : '';
-        
-        return {
-          date: cells[0]?.textContent?.trim() || '',
-          title: title,
-          link: link,
-          auction: cells[2]?.textContent?.trim() || '',
-          bids: cells[3]?.textContent?.trim() || '',
-          price: priceValue
-        };
-      }).filter(item => item !== null);
-    });
-    
     debugData.salesCount = sales.length;
     console.log(`Found ${sales.length} sales records`);
-    
-    if (sales.length === 0) {
-      console.log("No valid sales data extracted from table");
-      debugData.errors.push("No valid sales data extracted");
-      
-      // Return error with debug data
-      const errorResult = {
-        error: "No valid sales data found for this card",
-        searchUrl,
-        query: searchQuery,
-        debug: debugData
-      };
-      
-      // Cache the error result too
-      priceCache.set(cacheKey, {
-        data: errorResult,
-        timestamp: Date.now()
-      });
-      
-      return errorResult;
-    }
     
     // Calculate average price
     const initialAverage = sales.reduce((sum, sale) => sum + sale.price, 0) / sales.length;
@@ -308,7 +293,8 @@ async function scrapePriceWithPuppeteer(
       allSales: sales,
       searchUrl,
       query: searchQuery,
-      debug: debugData
+      debug: debugData,
+      timestamp: new Date().toISOString()
     };
     
     // Cache the result
@@ -318,7 +304,6 @@ async function scrapePriceWithPuppeteer(
     });
     
     return result;
-    
   } catch (error) {
     console.error(`Error during price scraping: ${error.message}`);
     
@@ -332,17 +317,6 @@ async function scrapePriceWithPuppeteer(
       query: searchQuery,
       debug: debugData
     };
-  } finally {
-    // Always close the browser
-    if (browser) {
-      console.log("Closing browser...");
-      try {
-        await browser.close();
-        console.log("Browser closed successfully");
-      } catch (closeError) {
-        console.error("Error closing browser:", closeError);
-      }
-    }
   }
 }
 
@@ -368,7 +342,7 @@ serve(async (req) => {
     console.log(`Price scraper called for: ${cardName} #${cardNumber || 'N/A'} (PSA ${grade || 'N/A'}) from ${setName || 'N/A'}`);
     
     // Run the scraping operation
-    const result = await scrapePriceWithPuppeteer(
+    const result = await scrapePriceWithDenoDom(
       cardName,
       setName || '',
       cardNumber || '',

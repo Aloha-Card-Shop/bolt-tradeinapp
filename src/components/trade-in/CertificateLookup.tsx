@@ -3,7 +3,7 @@ import React from 'react';
 import { useCertificateLookup } from '../../hooks/useCertificateLookup';
 import CertificateSearchInput from './certificate/CertificateSearchInput';
 import CertificateError from './certificate/CertificateError';
-import { AlertCircle, ExternalLink, Bug, Image } from 'lucide-react';
+import { AlertCircle, ExternalLink, Bug, Code, FileText } from 'lucide-react';
 
 interface CertificateLookupProps {
   onCertificateFound: (card: any) => void;
@@ -24,8 +24,8 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
   // State to toggle debug info visibility
   const [showDebug, setShowDebug] = React.useState(false);
   
-  // State to toggle screenshots visibility
-  const [showScreenshots, setShowScreenshots] = React.useState(false);
+  // State to toggle HTML snippet visibility
+  const [showHtml, setShowHtml] = React.useState(false);
 
   // Effect to add the certified card to search results when found
   React.useEffect(() => {
@@ -35,11 +35,15 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
     }
   }, [certifiedCard, onCertificateFound]);
 
-  // Check if we have screenshots
-  const hasScreenshots = priceData?.screenshots && 
-    (priceData.screenshots.initialPage || 
-     priceData.screenshots.filledForm || 
-     priceData.screenshots.resultsPage);
+  // Format timestamps for better readability
+  const formatTimestamp = (timestamp?: string) => {
+    if (!timestamp) return 'Unknown';
+    try {
+      return new Date(timestamp).toLocaleString();
+    } catch (e) {
+      return timestamp;
+    }
+  };
 
   return (
     <div className="p-4 border border-gray-200 bg-white rounded-lg shadow-sm mb-4">
@@ -71,14 +75,14 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
             </a>
             
             <div className="flex gap-2">
-              {hasScreenshots && (
+              {priceData.htmlSnippet && (
                 <button
-                  onClick={() => setShowScreenshots(!showScreenshots)}
+                  onClick={() => setShowHtml(!showHtml)}
                   className="flex items-center text-gray-500 hover:text-gray-700 text-xs"
-                  title="Toggle screenshots"
+                  title="Toggle HTML snippet"
                 >
-                  <Image className="h-3.5 w-3.5 mr-1" />
-                  {showScreenshots ? 'Hide Screenshots' : 'Show Screenshots'}
+                  <Code className="h-3.5 w-3.5 mr-1" />
+                  {showHtml ? 'Hide HTML' : 'Show HTML'}
                 </button>
               )}
               
@@ -104,44 +108,30 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
             <strong>Search query:</strong> "{priceData.query || 'Unknown'}"
           </p>
           
-          {/* Screenshots section */}
-          {showScreenshots && hasScreenshots && (
+          {/* Show page title if available */}
+          {priceData.pageTitle && (
+            <p className="text-xs text-gray-600 mt-1">
+              <strong>Page title:</strong> {priceData.pageTitle}
+            </p>
+          )}
+          
+          {/* Show timestamp if available */}
+          {priceData.timestamp && (
+            <p className="text-xs text-gray-600 mt-1">
+              <strong>Last updated:</strong> {formatTimestamp(priceData.timestamp)}
+            </p>
+          )}
+          
+          {/* HTML snippet section */}
+          {showHtml && priceData.htmlSnippet && (
             <div className="mt-3 space-y-3">
-              <h4 className="text-sm font-semibold">Search Process Screenshots:</h4>
+              <h4 className="text-sm font-semibold flex items-center">
+                <FileText className="h-4 w-4 mr-1" />
+                HTML Snippet
+              </h4>
               
-              <div className="space-y-4">
-                {priceData.screenshots?.initialPage && (
-                  <div>
-                    <p className="text-xs font-medium mb-1">Initial Page:</p>
-                    <img 
-                      src={`data:image/jpeg;base64,${priceData.screenshots.initialPage}`}
-                      alt="Initial search page" 
-                      className="border border-gray-200 rounded-md w-full"
-                    />
-                  </div>
-                )}
-                
-                {priceData.screenshots?.filledForm && (
-                  <div>
-                    <p className="text-xs font-medium mb-1">Form Filled:</p>
-                    <img 
-                      src={`data:image/jpeg;base64,${priceData.screenshots.filledForm}`}
-                      alt="Search form filled" 
-                      className="border border-gray-200 rounded-md w-full"
-                    />
-                  </div>
-                )}
-                
-                {priceData.screenshots?.resultsPage && (
-                  <div>
-                    <p className="text-xs font-medium mb-1">Results Page:</p>
-                    <img 
-                      src={`data:image/jpeg;base64,${priceData.screenshots.resultsPage}`}
-                      alt="Search results page" 
-                      className="border border-gray-200 rounded-md w-full"
-                    />
-                  </div>
-                )}
+              <div className="p-2 bg-gray-50 rounded text-xs font-mono overflow-auto max-h-60 whitespace-pre-wrap break-words border border-gray-200">
+                {priceData.htmlSnippet}
               </div>
             </div>
           )}
@@ -150,7 +140,33 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
           {showDebug && priceData.debug && (
             <div className="mt-3 p-2 bg-gray-100 rounded text-xs font-mono overflow-auto max-h-60">
               <h4 className="font-bold mb-1">Debug Info:</h4>
-              <pre className="whitespace-pre-wrap break-words">
+              
+              {/* Process steps if available */}
+              {priceData.debug.processSteps && priceData.debug.processSteps.length > 0 && (
+                <div className="mb-2">
+                  <h5 className="font-semibold">Process Steps:</h5>
+                  <ol className="list-decimal pl-5 space-y-1">
+                    {priceData.debug.processSteps.map((step: string, index: number) => (
+                      <li key={index}>{step}</li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+              
+              {/* Errors if available */}
+              {priceData.debug.errors && priceData.debug.errors.length > 0 && (
+                <div className="mb-2">
+                  <h5 className="font-semibold text-red-600">Errors:</h5>
+                  <ul className="list-disc pl-5 space-y-1 text-red-600">
+                    {priceData.debug.errors.map((err: string, index: number) => (
+                      <li key={index}>{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {/* Full debug data */}
+              <pre className="whitespace-pre-wrap break-words mt-2">
                 {JSON.stringify(priceData.debug, null, 2)}
               </pre>
             </div>
