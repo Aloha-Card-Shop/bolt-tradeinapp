@@ -49,6 +49,7 @@ serve(async (req) => {
       const challengeCode = url.searchParams.get('challenge_code');
       
       if (!challengeCode) {
+        console.error('Missing challenge_code parameter in GET request');
         return new Response(
           JSON.stringify({ error: 'Missing challenge_code parameter' }),
           { 
@@ -88,7 +89,7 @@ serve(async (req) => {
       const hashInput = challengeCode + verificationToken + endpointUrl;
       const challengeResponse = await createSHA256Hash(hashInput);
 
-      console.log('eBay Challenge Request:', {
+      console.log('eBay Challenge Request processed:', {
         challengeCode,
         endpointUrl,
         challengeResponse,
@@ -141,9 +142,13 @@ serve(async (req) => {
       if (!notificationData.notification?.data?.userId ||
           !notificationData.notification?.data?.username ||
           !notificationData.notification?.data?.eiasToken) {
-        console.error('Invalid notification structure - missing required fields:', notificationData);
+        console.error('Invalid notification structure - missing required fields:', {
+          hasUserId: !!notificationData.notification?.data?.userId,
+          hasUsername: !!notificationData.notification?.data?.username,
+          hasEiasToken: !!notificationData.notification?.data?.eiasToken
+        });
         return new Response(
-          JSON.stringify({ error: 'Invalid notification structure - missing required fields' }),
+          JSON.stringify({ error: 'Bad Request: Missing required fields (username, userId, eiasToken)' }),
           { 
             status: 400, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

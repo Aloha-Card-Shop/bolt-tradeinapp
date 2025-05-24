@@ -47,7 +47,15 @@ export const usePsaPriceLookup = () => {
       timestamp: result.timestamp,
       filteredSalesCount: result.salesCount, // Map salesCount to filteredSalesCount for compatibility
       // Add empty debug and other optional fields for compatibility
-      debug: undefined,
+      debug: {
+        processSteps: [],
+        errors: [],
+        formSubmitUrl: undefined,
+        searchQuery: result.query,
+        filterCriteria: undefined,
+        pageTitle: undefined,
+        filteredSalesCount: result.salesCount
+      },
       htmlSnippet: undefined,
       pageTitle: undefined
     };
@@ -67,7 +75,15 @@ export const usePsaPriceLookup = () => {
     timestamp: priceData.timestamp,
     filteredSalesCount: priceData.salesCount, // Map salesCount to filteredSalesCount
     // Add empty debug and other optional fields for compatibility
-    debug: undefined,
+    debug: {
+      processSteps: [],
+      errors: [],
+      formSubmitUrl: undefined,
+      searchQuery: priceData.query,
+      filterCriteria: undefined,
+      pageTitle: undefined,
+      filteredSalesCount: priceData.salesCount
+    },
     htmlSnippet: undefined,
     pageTitle: undefined
   } : null;
