@@ -76,3 +76,6 @@ url = ""
 [functions]
 [functions.scrape-130point]
 verify_jwt = false
+
+[functions.account-deletion]
+verify_jwt = false

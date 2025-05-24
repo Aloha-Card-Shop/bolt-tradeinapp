@@ -25,6 +25,9 @@ const EbayAccountDeletionTest: React.FC = () => {
         }
       });
 
+      console.log('Challenge response status:', response.status);
+      console.log('Challenge response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Challenge test failed:', response.status, errorText);
@@ -37,7 +40,8 @@ const EbayAccountDeletionTest: React.FC = () => {
       setTestResult({ 
         success: true, 
         data,
-        type: 'challenge'
+        type: 'challenge',
+        status: response.status
       });
       toast.success('Challenge validation test passed');
     } catch (err) {
@@ -79,6 +83,8 @@ const EbayAccountDeletionTest: React.FC = () => {
         body: testPayload
       });
 
+      console.log('Supabase function response:', { data, error });
+
       if (error) {
         console.error('Notification test error:', error);
         setTestResult({ 
@@ -92,7 +98,8 @@ const EbayAccountDeletionTest: React.FC = () => {
         setTestResult({ 
           success: true, 
           data: data || 'Success (empty response)',
-          type: 'notification'
+          type: 'notification',
+          status: 200
         });
         toast.success('Notification handling test passed');
       }
@@ -139,8 +146,8 @@ const EbayAccountDeletionTest: React.FC = () => {
         body: JSON.stringify(testPayload)
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      console.log('Direct POST response status:', response.status);
+      console.log('Direct POST response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -157,7 +164,8 @@ const EbayAccountDeletionTest: React.FC = () => {
       setTestResult({ 
         success: true, 
         data,
-        type: 'direct-post'
+        type: 'direct-post',
+        status: response.status
       });
       toast.success('Direct POST endpoint test passed');
     } catch (err) {
@@ -178,6 +186,16 @@ const EbayAccountDeletionTest: React.FC = () => {
       <h2 className="text-xl font-semibold mb-4">eBay Account Deletion Function Test</h2>
       
       <div className="space-y-6">
+        {/* Status Banner */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="font-medium text-blue-800 mb-2">Function Status</h3>
+          <div className="text-sm text-blue-700 space-y-1">
+            <p><strong>Authentication:</strong> ✅ Public (No JWT required)</p>
+            <p><strong>eBay Compliance:</strong> ✅ GET challenge + POST notification</p>
+            <p><strong>Configuration:</strong> verify_jwt = false</p>
+          </div>
+        </div>
+
         {/* Challenge Validation Test */}
         <div className="border rounded-lg p-4">
           <h3 className="font-medium mb-3">GET Request - Challenge Validation</h3>
@@ -246,6 +264,11 @@ const EbayAccountDeletionTest: React.FC = () => {
                 <span className={`text-sm px-2 py-1 rounded ${testResult.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                   {testResult.success ? 'PASSED' : 'FAILED'}
                 </span>
+                {testResult.status && (
+                  <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                    HTTP {testResult.status}
+                  </span>
+                )}
               </div>
               
               {testResult.success ? (
@@ -275,6 +298,7 @@ const EbayAccountDeletionTest: React.FC = () => {
             <p><strong>Expected response:</strong> JSON with challengeResponse field</p>
             <p><strong>eBay Compliance:</strong> ✅ GET challenge validation, ✅ POST notification handling</p>
             <p><strong>Authentication:</strong> ❌ No auth required (eBay spec compliance)</p>
+            <p><strong>Configuration:</strong> verify_jwt = false (Public function)</p>
           </div>
         </div>
       </div>
