@@ -30,15 +30,20 @@ const formatSearchQuery = (cardName: string, setName: string, cardNumber: string
     query += ` ${setName.trim().toUpperCase()}`;
   }
   
-  // Add card name
-  query += ` ${cardName.trim()}`;
+  // Clean card name by replacing slashes with spaces
+  let cleanedCardName = cardName.trim().replace(/\//g, ' ');
   
-  // Add card number with # prefix
+  // Add card name
+  query += ` ${cleanedCardName}`;
+  
+  // Add card number without # prefix
   if (cardNumber && cardNumber.trim() !== '') {
-    query += ` ${cardNumber.trim().includes('#') ? cardNumber.trim() : '#' + cardNumber.trim()}`;
+    // Remove any # symbol if present
+    const cleanedNumber = cardNumber.trim().replace(/^#/, '');
+    query += ` ${cleanedNumber}`;
   }
   
-  // Add PSA and grade
+  // Add PSA and grade (without "GEM MT" or other qualifiers)
   query += ` PSA ${grade.trim()}`;
   
   console.log(`Generated search query: "${query}"`);
