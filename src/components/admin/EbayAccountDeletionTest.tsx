@@ -26,7 +26,9 @@ const EbayAccountDeletionTest: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('Challenge test failed:', response.status, errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
@@ -74,10 +76,7 @@ const EbayAccountDeletionTest: React.FC = () => {
       console.log('Testing POST request with payload:', testPayload);
       
       const { data, error } = await supabase.functions.invoke('account-deletion', {
-        body: testPayload,
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        body: testPayload
       });
 
       if (error) {
@@ -140,8 +139,13 @@ const EbayAccountDeletionTest: React.FC = () => {
         body: JSON.stringify(testPayload)
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('Direct POST test failed:', response.status, errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
       // eBay spec expects empty response body for successful POST
@@ -270,6 +274,7 @@ const EbayAccountDeletionTest: React.FC = () => {
             <p><strong>Challenge format:</strong> GET ?challenge_code=value</p>
             <p><strong>Expected response:</strong> JSON with challengeResponse field</p>
             <p><strong>eBay Compliance:</strong> ✅ GET challenge validation, ✅ POST notification handling</p>
+            <p><strong>Authentication:</strong> ❌ No auth required (eBay spec compliance)</p>
           </div>
         </div>
       </div>

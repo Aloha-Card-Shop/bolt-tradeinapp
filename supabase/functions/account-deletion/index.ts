@@ -44,9 +44,9 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     
-    // GET REQUEST - Challenge Code Validation
+    // GET REQUEST - Challenge Code Validation (eBay compliance test)
     if (req.method === 'GET') {
-      // Only read challenge_code from URL query parameters (no JSON body parsing)
+      // Only read challenge_code from URL query parameters (no authentication required)
       const challengeCode = url.searchParams.get('challenge_code');
       
       if (!challengeCode) {
@@ -107,12 +107,27 @@ serve(async (req) => {
       );
     }
 
-    // POST REQUEST - Account Deletion Notification
+    // POST REQUEST - Account Deletion Notification (no authentication required for eBay notifications)
     if (req.method === 'POST') {
-      // Parse the incoming JSON payload safely
       let notificationData: EbayAccountDeletionNotification;
+      
+      // Parse the incoming JSON payload safely
       try {
-        notificationData = await req.json();
+        const body = await req.text();
+        console.log('Received POST body:', body);
+        
+        if (!body || body.trim() === '') {
+          console.error('Empty request body received');
+          return new Response(
+            JSON.stringify({ error: 'Empty request body' }),
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+        
+        notificationData = JSON.parse(body);
       } catch (parseError) {
         console.error('Failed to parse JSON payload:', parseError);
         return new Response(
@@ -131,7 +146,8 @@ serve(async (req) => {
         console.error('Invalid notification structure - missing required fields:', {
           hasUserId: !!notificationData.notification?.data?.userId,
           hasUsername: !!notificationData.notification?.data?.username,
-          hasEiasToken: !!notificationData.notification?.data?.eiasToken
+          hasEiasToken: !!notificationData.notification?.data?.eiasToken,
+          receivedData: notificationData
         });
         return new Response(
           JSON.stringify({ error: 'Bad Request: Missing required fields (username, userId, eiasToken)' }),
