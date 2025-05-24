@@ -17,6 +17,7 @@ import UsersPage from './pages/admin/users';
 import BarcodesPage from './pages/admin/barcodes';
 import PrintersPage from './pages/admin/printers';
 import ApiSettingsPage from './pages/admin/api-settings';
+import EbayTestPage from './pages/admin/ebay-test';
 import MobileNavigation from './components/layout/MobileNavigation';
 import { useMediaQuery } from './hooks/useMediaQuery';
 
@@ -42,6 +43,7 @@ function App() {
             <Route path="/admin/barcodes" element={<BarcodesPage />} />
             <Route path="/admin/printers" element={<PrintersPage />} />
             <Route path="/admin/api-settings" element={<ApiSettingsPage />} />
+            <Route path="/admin/ebay-test" element={<EbayTestPage />} />
             <Route path="/admin/shopify/settings" element={<ShopifySettingsPage />} />
             <Route path="/admin/shopify/mappings" element={<ShopifyMappingsPage />} />
           </Routes>
