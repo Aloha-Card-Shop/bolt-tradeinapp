@@ -1,7 +1,7 @@
 
 // Import required libraries for Deno environment
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import * as chromium from "https://deno.land/x/puppeteer@16.2.0/vendor/puppeteer-core/puppeteer/puppeteer-core.js";
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import * as puppeteer from "https://deno.land/x/puppeteer@14.1.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -81,11 +81,11 @@ async function scrapePriceWithPuppeteer(
   };
   
   try {
-    console.log("Launching chromium browser...");
+    console.log("Launching puppeteer browser...");
     const startLaunchTime = Date.now();
     
     // Launch browser with appropriate options for Deno environment
-    browser = await chromium.launch({
+    browser = await puppeteer.launch({
       headless: true,
       args: [
         '--disable-gpu',
