@@ -12,12 +12,15 @@ export interface PsaPriceData {
     price: number;
     url: string;
   }>;
-  // Add the missing properties that are being used in CertificateLookup
+  // Fix the debug interface to include the missing properties
   debug?: {
     searchQuery?: string;
     filterCriteria?: string;
     pageTitle?: string;
     filteredSalesCount?: number;
+    processSteps?: string[];
+    errors?: string[];
+    formSubmitUrl?: string;
   };
   htmlSnippet?: string;
   pageTitle?: string;
