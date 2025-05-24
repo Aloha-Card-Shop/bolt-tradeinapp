@@ -30,16 +30,61 @@ export interface ScrapeResult {
 
 // Cache for storing price data
 const priceCache = new Map<string, { data: ScrapeResult; timestamp: number }>();
-const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
+const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+const MAX_RETRIES = 3;
 
-// User agents to rotate through for anti-bot detection evasion
+// Enhanced browser fingerprinting - more realistic user agents
 const USER_AGENTS = [
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/123.0",
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15",
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Mobile/15E148 Safari/604.1"
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Mobile/15E148 Safari/604.1",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 OPR/108.0.0.0",
+  "Mozilla/5.0 (iPad; CPU OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/122.0.6261.89 Mobile/15E148 Safari/604.1"
 ];
+
+// Common screen resolutions for more realistic fingerprinting
+const SCREEN_RESOLUTIONS = [
+  "1920x1080", "1366x768", "2560x1440", "1440x900", 
+  "1536x864", "1280x720", "3840x2160", "1600x900"
+];
+
+// Common browser languages
+const BROWSER_LANGUAGES = [
+  "en-US,en;q=0.9", "en-GB,en;q=0.9", "es-ES,es;q=0.9,en;q=0.8",
+  "fr-FR,fr;q=0.9,en;q=0.8", "de-DE,de;q=0.9,en;q=0.8"
+];
+
+// Common color depths
+const COLOR_DEPTHS = [24, 30, 48];
+
+// Generate realistic browser fingerprinting data
+const generateBrowserFingerprint = () => {
+  const userAgent = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+  const resolution = SCREEN_RESOLUTIONS[Math.floor(Math.random() * SCREEN_RESOLUTIONS.length)];
+  const [width, height] = resolution.split('x').map(Number);
+  const language = BROWSER_LANGUAGES[Math.floor(Math.random() * BROWSER_LANGUAGES.length)];
+  const colorDepth = COLOR_DEPTHS[Math.floor(Math.random() * COLOR_DEPTHS.length)];
+  
+  // Generate a consistent but random browser fingerprint
+  const browserFingerprint = {
+    userAgent,
+    platform: userAgent.includes('Windows') ? 'Win32' : 
+              userAgent.includes('Mac') ? 'MacIntel' : 
+              userAgent.includes('iPhone') || userAgent.includes('iPad') ? 'iPhone' : 'Linux',
+    screenWidth: width,
+    screenHeight: height,
+    colorDepth,
+    language,
+    timezone: -new Date().getTimezoneOffset() / 60,
+    webdriver: false,
+    cookiesEnabled: true
+  };
+  
+  return browserFingerprint;
+};
 
 export const use130PointScraper = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -140,11 +185,6 @@ export const use130PointScraper = () => {
     }
   };
 
-  // Get a random user agent to avoid bot detection
-  const getRandomUserAgent = () => {
-    return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
-  };
-  
   // Parse HTML response to extract sales data
   const extractSalesFromHTML = (html: string): { 
     sales: SaleData[]; 
@@ -171,7 +211,8 @@ export const use130PointScraper = () => {
       if (pageTitle.toLowerCase().includes("captcha") || 
           pageTitle.toLowerCase().includes("blocked") || 
           pageTitle.toLowerCase().includes("access denied") ||
-          pageTitle.toLowerCase().includes("cloudflare")) {
+          pageTitle.toLowerCase().includes("cloudflare") ||
+          pageTitle.toLowerCase().includes("attention required")) {
         return { 
           sales: [], 
           error: `Bot protection detected: ${pageTitle}`,
@@ -247,6 +288,12 @@ export const use130PointScraper = () => {
         htmlSnippet: html.substring(0, 1000) + "..." 
       };
     }
+  };
+
+  // Add random delay between requests to appear more human-like
+  const addRandomDelay = (min = 500, max = 2000): Promise<void> => {
+    const delay = Math.floor(Math.random() * (max - min)) + min;
+    return new Promise(resolve => setTimeout(resolve, delay));
   };
 
   // Improved scraping function with multiple search strategies
@@ -330,16 +377,22 @@ export const use130PointScraper = () => {
         console.log(`Trying search strategy "${strategy}" with query: "${searchQuery}"`);
         debugData.processSteps.push(`Trying search strategy "${strategy}" with query: "${searchQuery}"`);
         
-        // Select a random user agent
-        const userAgent = getRandomUserAgent();
-        debugData.processSteps.push(`Using user agent: ${userAgent}`);
+        // Generate realistic browser fingerprint for this request
+        const browserFingerprint = generateBrowserFingerprint();
         
-        // Call the Supabase Edge Function
+        // Add human-like delay between requests
+        await addRandomDelay();
+        
+        // Detailed logging for debugging
+        debugData.processSteps.push(`Using fingerprint with UA: ${browserFingerprint.userAgent.substring(0, 30)}...`);
+        
+        // Call the Supabase Edge Function with enhanced fingerprinting
         const startTime = Date.now();
         const response = await supabase.functions.invoke('scrape-130point', {
           body: {
             searchQuery,
-            userAgent
+            fingerprint: browserFingerprint,
+            strategy
           }
         });
         strategyDebug.timing.totalTime = Date.now() - startTime;
