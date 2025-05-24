@@ -1,4 +1,3 @@
-
 export type GameType = 'pokemon' | 'magic' | 'yugioh' | 'sports' | 'other' | 'japanese-pokemon';
 
 export type CardNumberObject = {
@@ -53,6 +52,7 @@ export interface PriceData {
   lastUpdated?: string;
   isLoading?: boolean;
   error?: string;
+  directUrl?: string; // Add this property to fix the TypeScript errors
 }
 
 export interface SavedCard extends CardDetails {

@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { CardDetails } from '../types/card';
@@ -46,7 +47,6 @@ export const use130PointScraper = () => {
   const [priceData, setPriceData] = useState<ScrapeResult | null>(null);
   const [debugInfo, setDebugInfo] = useState<any | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const MAX_RETRIES = 3;
   const [searchAttempts, setSearchAttempts] = useState<string[]>([]);
 
   // Enhanced search query formatter with multiple strategies
