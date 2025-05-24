@@ -521,18 +521,15 @@ export const use130PointScraper = () => {
     setIsLoading(false);
     
     // Show a more helpful error message with specific suggestion to try manual search
-    toast.custom((t) => {
-      // This returns an actual JSX element that React can render
-      // We're using a generic object here that toast.custom can handle
-      return {
-        id: t.id,
-        title: "No Sales Found",
-        message: "No sales found through automated search. Try searching manually - results may be available!",
-        icon: "🔍",
-        url: directUrl,
-        urlText: "Open in 130point.com",
-        duration: 8000
-      };
+    toast({
+      icon: '🔍',
+      title: "No Sales Found",
+      description: "No sales found through automated search. Try searching manually - results may be available!",
+      action: directUrl ? {
+        label: "Open in 130point.com",
+        onClick: () => window.open(directUrl, '_blank')
+      } : undefined,
+      duration: 8000
     });
     
     return errorResult;
