@@ -21,80 +21,27 @@ const USER_AGENTS = [
 const priceCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
 
-// Transform abbreviated card names to full names (mainly for Pokémon)
-const transformPokemonName = (name: string): string[] => {
-  const nameMappings: Record<string, string> = {
-    'MLTRS/ZPDS/ARTCN': 'Moltres Zapdos Articuno',
-    'LTNG/FRFR/ZAPDOS': 'Lightning Fire Zapdos',
-    'CHARIZRD': 'Charizard',
-    'PIKACH': 'Pikachu',
-    'MEWTWX': 'Mewtwo X',
-    'BLSTOIS': 'Blastoise',
-    'VNSR': 'Venusaur',
-    'GNGR': 'Gengar'
-  };
-
-  // Create variants of the name
-  const variants: string[] = [name]; // Original name
-  const upperName = name.toUpperCase();
+// Format search query in the specific required format
+const generateSearchQuery = (cardName: string, setName: string, cardNumber: string, grade: string): string => {
+  // For Pokemon cards with specific pattern MLTRS/ZPDS/ARTCN, use this exact format:
+  // POKEMON SM BLACK STAR PROMO MLTRS/ZPDS/ARTCN.GX#SM210 PSA 10
   
-  // Check for mapped names
-  for (const [abbr, full] of Object.entries(nameMappings)) {
-    if (upperName.includes(abbr)) {
-      variants.push(name.replace(new RegExp(abbr, 'i'), full));
-      break;
-    }
+  // Format set name properly (if provided)
+  let formattedSet = '';
+  if (setName && setName.trim() !== '') {
+    formattedSet = setName.trim().toUpperCase();
   }
   
-  // Pokemon special case: extract base name before special types
-  const pokemonNameMatch = name.match(/^(.*?)\s(?:V|GX|EX|VMAX|VSTAR)/i);
-  if (pokemonNameMatch) {
-    variants.push(pokemonNameMatch[1].trim());
+  // Format card number with # prefix (if provided)
+  let formattedNumber = '';
+  if (cardNumber && cardNumber.trim() !== '') {
+    formattedNumber = cardNumber.trim().includes('#') ? 
+      cardNumber.trim() : 
+      `#${cardNumber.trim()}`;
   }
   
-  // Remove special characters from all variants and clean up
-  return variants.map(variant => 
-    variant.replace(/[^\w\s\d]/g, ' ') // Replace special chars with spaces
-           .replace(/\s+/g, ' ')       // Remove extra spaces
-           .trim()
-  ).filter((v, i, a) => a.indexOf(v) === i); // Remove duplicates
-};
-
-// Format search query for different attempts
-const generateSearchQueries = (cardName: string, setName: string, cardNumber: string, grade: string): string[] => {
-  // Get possible name variants
-  const nameVariants = transformPokemonName(cardName);
-  
-  const queries: string[] = [];
-  
-  // Generate multiple query formats
-  nameVariants.forEach(nameVariant => {
-    // Base query with just the card name and grade
-    queries.push(`${nameVariant} PSA ${grade}`);
-    
-    // Query with set name
-    if (setName && setName.trim() !== '') {
-      queries.push(`${nameVariant} ${setName} PSA ${grade}`);
-    }
-    
-    // Query with card number
-    if (cardNumber && cardNumber.trim() !== '') {
-      // Format with hashtag
-      if (!cardNumber.includes('#')) {
-        queries.push(`${nameVariant} #${cardNumber} PSA ${grade}`);
-      } else {
-        queries.push(`${nameVariant} ${cardNumber} PSA ${grade}`);
-      }
-      
-      // Query with set name and card number
-      if (setName && setName.trim() !== '') {
-        queries.push(`${nameVariant} ${setName} ${cardNumber} PSA ${grade}`);
-      }
-    }
-  });
-  
-  // Remove any duplicate queries and return
-  return [...new Set(queries)];
+  // Build the search query in the exact format requested
+  return `POKEMON ${formattedSet} ${cardName} ${formattedNumber} PSA ${grade}`.trim();
 };
 
 // Get a random user agent with browser fingerprinting
@@ -136,9 +83,9 @@ const scrapePrice = async (
 ): Promise<any> => {
   console.log(`Scraping price for card: "${cardName}" from set: "${setName}" with number: "${cardNumber}" and grade: "PSA ${grade}"`);
   
-  // Generate search query variations to try
-  const searchQueries = generateSearchQueries(cardName, setName, cardNumber, grade);
-  console.log(`Generated ${searchQueries.length} search variations to try:`, searchQueries);
+  // Generate search query in the specific requested format
+  const searchQuery = generateSearchQuery(cardName, setName, cardNumber, grade);
+  console.log(`Using search query: "${searchQuery}"`);
   
   // Use randomized user agent for this session
   const userAgent = getRandomUserAgent();
@@ -186,153 +133,152 @@ const scrapePrice = async (
   // Add slight delay between requests to mimic human behavior
   await addRandomDelay();
   
-  // Try each search query until we find results
-  for (const searchQuery of searchQueries) {
-    try {
-      console.log(`Trying search query: "${searchQuery}"`);
-      
-      // Create form data for submission
-      const params = new URLSearchParams();
-      params.append('search', searchQuery);
-      params.append('searchButton', '');
-      params.append('sortBy', 'date_desc');
-      
-      // Create the search URL for reference
-      searchUrl = `https://130point.com/cards/?search=${encodeURIComponent(searchQuery)}&searchButton=&sortBy=date_desc`;
-      
-      // Submit the form
-      const searchResponse = await fetch('https://130point.com/cards/', {
-        method: 'POST',
-        headers: {
-          ...headers,
-          'Cookie': cookies,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: params.toString()
-      });
-      
-      if (!searchResponse.ok) {
-        console.error(`Error submitting search: ${searchResponse.status}`);
-        continue; // Try next query
-      }
-      
-      const html = await searchResponse.text();
-      
-      // Parse the search results HTML
-      const resultDocument = parser.parseFromString(html, 'text/html');
-      if (!resultDocument) {
-        console.error('Failed to parse search results HTML');
-        continue; // Try next query
-      }
-      
-      // Check if we got any results by looking for the table
-      const resultsTable = resultDocument.querySelector('table.sales-table');
-      if (!resultsTable) {
-        console.log(`No results table found for query: "${searchQuery}"`);
-        continue; // Try next query
-      }
-      
-      // Extract sales data from the table
-      const rows = resultDocument.querySelectorAll('table.sales-table tr');
-      const sales = [];
-      
-      // Skip the header row and process the data rows
-      for (let i = 1; i < rows.length && sales.length < 15; i++) {
-        const row = rows[i];
-        if (!row) continue;
-        
-        const cells = row.querySelectorAll('td');
-        if (cells.length < 5) continue;
-        
-        const priceText = cells[4]?.textContent?.trim() || '';
-        if (!priceText) continue;
-        
-        // Extract the price value (removing currency symbols and commas)
-        const priceMatch = priceText.match(/[\d,.]+/);
-        if (!priceMatch) continue;
-        
-        const priceValue = parseFloat(priceMatch[0].replace(/,/g, ''));
-        if (isNaN(priceValue)) continue;
-        
-        const title = cells[1]?.textContent?.trim() || '';
-        const linkElement = cells[1]?.querySelector('a');
-        const link = linkElement ? (linkElement.getAttribute('href') || '') : '';
-        
-        sales.push({
-          date: cells[0]?.textContent?.trim() || '',
-          title: title,
-          link: link,
-          auction: cells[2]?.textContent?.trim() || '',
-          bids: cells[3]?.textContent?.trim() || '',
-          price: priceValue
-        });
-      }
-      
-      if (sales.length === 0) {
-        console.log(`No valid price data found for query: "${searchQuery}"`);
-        continue; // Try next query
-      }
-      
-      // We found sales data, calculate prices and prepare result
-      console.log(`Found ${sales.length} sales records for query: "${searchQuery}"`);
-      
-      // Calculate average price
-      const initialAverage = sales.reduce((sum, sale) => sum + sale.price, 0) / sales.length;
-      
-      // Filter out outliers (±50% from the average)
-      const filteredSales = sales.filter(sale => {
-        const lowerBound = initialAverage * 0.5;
-        const upperBound = initialAverage * 1.5;
-        return sale.price >= lowerBound && sale.price <= upperBound;
-      });
-      
-      // Calculate the final average price from filtered sales
-      const finalSales = filteredSales.length > 0 ? filteredSales : sales;
-      const averagePrice = finalSales.reduce((sum, sale) => sum + sale.price, 0) / finalSales.length;
-      
-      console.log(`Average price: $${averagePrice.toFixed(2)} (from ${finalSales.length} filtered sales)`);
-      
-      // Prepare the result
-      const result = {
-        averagePrice: parseFloat(averagePrice.toFixed(2)),
-        salesCount: sales.length,
-        filteredSalesCount: finalSales.length,
-        sales: finalSales,
-        allSales: sales,
+  try {
+    console.log(`Submitting search query: "${searchQuery}"`);
+    
+    // Create form data for submission
+    const params = new URLSearchParams();
+    params.append('search', searchQuery);
+    params.append('searchButton', '');
+    params.append('sortBy', 'date_desc');
+    
+    // Create the search URL for reference
+    searchUrl = `https://130point.com/cards/?search=${encodeURIComponent(searchQuery)}&searchButton=&sortBy=date_desc`;
+    
+    // Submit the form
+    const searchResponse = await fetch('https://130point.com/cards/', {
+      method: 'POST',
+      headers: {
+        ...headers,
+        'Cookie': cookies,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString()
+    });
+    
+    if (!searchResponse.ok) {
+      console.error(`Error submitting search: ${searchResponse.status}`);
+      throw new Error(`Failed to submit search: ${searchResponse.status}`);
+    }
+    
+    const html = await searchResponse.text();
+    
+    // Parse the search results HTML
+    const resultDocument = parser.parseFromString(html, 'text/html');
+    if (!resultDocument) {
+      console.error('Failed to parse search results HTML');
+      throw new Error('Failed to parse search results HTML');
+    }
+    
+    // Check if we got any results by looking for the table
+    const resultsTable = resultDocument.querySelector('table.sales-table');
+    if (!resultsTable) {
+      console.log(`No results table found for query: "${searchQuery}"`);
+      return {
+        error: "No sales data found for this card",
         searchUrl,
         query: searchQuery
       };
-      
-      // Cache the result
-      priceCache.set(cacheKey, {
-        data: result,
-        timestamp: Date.now()
-      });
-      
-      // Clean up old cache entries
-      const now = Date.now();
-      for (const [key, entry] of priceCache.entries()) {
-        if (now - entry.timestamp > CACHE_TTL) {
-          priceCache.delete(key);
-        }
-      }
-      
-      return result;
-    } catch (queryError) {
-      console.error(`Error with search query "${searchQuery}":`, queryError);
-      // Continue to the next query
     }
     
-    // Add slight delay between queries
-    await addRandomDelay();
+    // Extract sales data from the table
+    const rows = resultDocument.querySelectorAll('table.sales-table tr');
+    const sales = [];
+    
+    // Skip the header row and process the data rows
+    for (let i = 1; i < rows.length && sales.length < 15; i++) {
+      const row = rows[i];
+      if (!row) continue;
+      
+      const cells = row.querySelectorAll('td');
+      if (cells.length < 5) continue;
+      
+      const priceText = cells[4]?.textContent?.trim() || '';
+      if (!priceText) continue;
+      
+      // Extract the price value (removing currency symbols and commas)
+      const priceMatch = priceText.match(/[\d,.]+/);
+      if (!priceMatch) continue;
+      
+      const priceValue = parseFloat(priceMatch[0].replace(/,/g, ''));
+      if (isNaN(priceValue)) continue;
+      
+      const title = cells[1]?.textContent?.trim() || '';
+      const linkElement = cells[1]?.querySelector('a');
+      const link = linkElement ? (linkElement.getAttribute('href') || '') : '';
+      
+      sales.push({
+        date: cells[0]?.textContent?.trim() || '',
+        title: title,
+        link: link,
+        auction: cells[2]?.textContent?.trim() || '',
+        bids: cells[3]?.textContent?.trim() || '',
+        price: priceValue
+      });
+    }
+    
+    if (sales.length === 0) {
+      console.log(`No valid price data found for query: "${searchQuery}"`);
+      return {
+        error: "No sales data found for this card",
+        searchUrl,
+        query: searchQuery
+      };
+    }
+    
+    // We found sales data, calculate prices and prepare result
+    console.log(`Found ${sales.length} sales records for query: "${searchQuery}"`);
+    
+    // Calculate average price
+    const initialAverage = sales.reduce((sum, sale) => sum + sale.price, 0) / sales.length;
+    
+    // Filter out outliers (±50% from the average)
+    const filteredSales = sales.filter(sale => {
+      const lowerBound = initialAverage * 0.5;
+      const upperBound = initialAverage * 1.5;
+      return sale.price >= lowerBound && sale.price <= upperBound;
+    });
+    
+    // Calculate the final average price from filtered sales
+    const finalSales = filteredSales.length > 0 ? filteredSales : sales;
+    const averagePrice = finalSales.reduce((sum, sale) => sum + sale.price, 0) / finalSales.length;
+    
+    console.log(`Average price: $${averagePrice.toFixed(2)} (from ${finalSales.length} filtered sales)`);
+    
+    // Prepare the result
+    const result = {
+      averagePrice: parseFloat(averagePrice.toFixed(2)),
+      salesCount: sales.length,
+      filteredSalesCount: finalSales.length,
+      sales: finalSales,
+      allSales: sales,
+      searchUrl,
+      query: searchQuery
+    };
+    
+    // Cache the result
+    priceCache.set(cacheKey, {
+      data: result,
+      timestamp: Date.now()
+    });
+    
+    // Clean up old cache entries
+    const now = Date.now();
+    for (const [key, entry] of priceCache.entries()) {
+      if (now - entry.timestamp > CACHE_TTL) {
+        priceCache.delete(key);
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    console.error(`Error with search query "${searchQuery}":`, error);
+    return {
+      error: error.message || "Failed to search for card data",
+      searchUrl,
+      query: searchQuery
+    };
   }
-  
-  // No results found with any query
-  return {
-    error: "No sales data found for this card",
-    searchUrl,
-    query: searchQueries.join(", ")
-  };
 };
 
 serve(async (req) => {

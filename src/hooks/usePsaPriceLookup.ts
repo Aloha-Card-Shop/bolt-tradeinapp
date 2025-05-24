@@ -25,40 +25,6 @@ export const usePsaPriceLookup = () => {
   const [error, setError] = useState<string | null>(null);
   const [priceData, setPriceData] = useState<PsaPriceData | null>(null);
 
-  // Helper function to format card name for optimal search
-  const formatCardName = (card: CardDetails): string => {
-    // Start with the base name
-    let formattedName = card.name || '';
-    
-    // Remove common problematic special characters
-    formattedName = formattedName
-      .replace(/\//g, ' ') // Replace slashes with spaces
-      .replace(/\./g, ' ') // Replace periods with spaces
-      .replace(/-/g, ' ') // Replace hyphens with spaces
-      .replace(/[^\w\s\d]/g, ' ') // Replace other special chars with spaces
-      .replace(/\s+/g, ' ') // Remove extra spaces
-      .trim();
-    
-    // For Pokemon cards with complex names, try to extract the base Pokemon name
-    // This helps as a fallback if the full name doesn't match
-    if (card.game === 'pokemon') {
-      // Handle common Pokemon naming issues
-      if (formattedName.includes('SM Black Star')) {
-        // Format Black Star promos correctly
-        formattedName = formattedName
-          .replace(/SM Black Star/i, 'SM') // Standardize Black Star format
-          .trim();
-      }
-      
-      // Handle VMAX, V, GX, etc.
-      if (formattedName.match(/(V|GX|EX|VMAX|VSTAR)\s*$/i)) {
-        formattedName = formattedName.trim();
-      }
-    }
-    
-    return formattedName;
-  };
-
   // Lookup price data for a PSA card
   const lookupPrice = async (card: CardDetails) => {
     if (!card.name) {
@@ -78,14 +44,11 @@ export const usePsaPriceLookup = () => {
     try {
       console.log(`Looking up PSA price for ${card.name} (PSA ${card.certification.grade})`);
       
-      // Get formatted card name for better search results
-      const formattedName = formatCardName(card);
-      
-      // Use the new price-scraper function instead of psa-price-lookup
+      // Use the card name exactly as provided without additional formatting
       const { data, error } = await supabase.functions.invoke('price-scraper', {
         body: {
-          cardName: formattedName,
-          setName: card.set || '',
+          cardName: card.name,
+          setName: card.set || 'SM BLACK STAR PROMO', // Default to SM BLACK STAR PROMO for Pokemon cards
           cardNumber: typeof card.number === 'object' ? card.number.raw : card.number || '',
           grade: card.certification.grade
         }
