@@ -12,6 +12,15 @@ const corsHeaders = {
 const priceCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
 
+// Pool of user agents to rotate through for anti-bot detection evasion
+const USER_AGENTS = [
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/123.0",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15",
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Mobile/15E148 Safari/604.1"
+];
+
 // Format search query for the specific site format
 const formatSearchQuery = (cardName: string, setName: string, cardNumber: string, grade: string): string => {
   let query = "POKEMON";
@@ -36,6 +45,17 @@ const formatSearchQuery = (cardName: string, setName: string, cardNumber: string
   return query;
 };
 
+// Get a random user agent to avoid bot detection
+const getRandomUserAgent = () => {
+  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+};
+
+// Add random delay to mimic human behavior
+const addRandomDelay = async (min = 500, max = 2000) => {
+  const delay = Math.floor(Math.random() * (max - min)) + min;
+  await new Promise(resolve => setTimeout(resolve, delay));
+};
+
 // Clean up old cache entries periodically
 setInterval(() => {
   const now = Date.now();
@@ -47,36 +67,52 @@ setInterval(() => {
 }, 30 * 60 * 1000); // Check every 30 minutes
 
 // Function to extract sales data from HTML
-const extractSalesFromHTML = (html: string): { sales: any[]; error?: string; htmlSnippet?: string } => {
+const extractSalesFromHTML = (html: string): { 
+  sales: any[]; 
+  error?: string; 
+  htmlSnippet?: string;
+  pageTitle?: string;
+} => {
   try {
     const doc = new DOMParser().parseFromString(html, "text/html");
     if (!doc) {
       return { 
         sales: [], 
         error: "Failed to parse HTML document",
-        htmlSnippet: html.substring(0, 500) + "..." 
+        htmlSnippet: html.substring(0, 1000) + "..." 
       };
     }
 
-    // Check for page title to see if we've been blocked or redirected
+    // Extract page title for debugging
     const pageTitle = doc.querySelector("title")?.textContent || "";
+    
+    // Check for page title to see if we've been blocked or redirected
     if (pageTitle.toLowerCase().includes("captcha") || 
         pageTitle.toLowerCase().includes("blocked") || 
-        pageTitle.toLowerCase().includes("access denied")) {
+        pageTitle.toLowerCase().includes("access denied") ||
+        pageTitle.toLowerCase().includes("cloudflare")) {
       return { 
         sales: [], 
         error: `Bot protection detected: ${pageTitle}`,
-        htmlSnippet: html.substring(0, 500) + "..." 
+        htmlSnippet: html.substring(0, 1000) + "...",
+        pageTitle
       };
     }
 
     // Extract sales data from the table
     const salesTable = doc.querySelector('table.sales-table');
     if (!salesTable) {
+      // Try to find any error messages on the page
+      const errorMessages = doc.querySelectorAll('.error-message, .alert, .notification');
+      const errors = Array.from(errorMessages).map(el => el.textContent?.trim()).filter(Boolean);
+      
       return { 
         sales: [], 
-        error: "No sales table found on page",
-        htmlSnippet: html.substring(0, 500) + "..." 
+        error: errors.length > 0 
+          ? `No sales table found: ${errors.join(', ')}` 
+          : "No sales table found on page",
+        htmlSnippet: html.substring(0, 1000) + "...",
+        pageTitle 
       };
     }
 
@@ -85,7 +121,8 @@ const extractSalesFromHTML = (html: string): { sales: any[]; error?: string; htm
       return { 
         sales: [], 
         error: "No sales data rows found in table",
-        htmlSnippet: html.substring(0, 500) + "..." 
+        htmlSnippet: html.substring(0, 1000) + "...",
+        pageTitle 
       };
     }
 
@@ -117,12 +154,16 @@ const extractSalesFromHTML = (html: string): { sales: any[]; error?: string; htm
       };
     }).filter(item => item !== null);
 
-    return { sales };
+    return { 
+      sales,
+      pageTitle,
+      htmlSnippet: salesTable.outerHTML.substring(0, 1000) + "..." 
+    };
   } catch (error) {
     return { 
       sales: [], 
       error: `HTML parsing error: ${error.message}`,
-      htmlSnippet: html.substring(0, 500) + "..." 
+      htmlSnippet: html.substring(0, 1000) + "..." 
     };
   }
 };
@@ -149,7 +190,7 @@ async function scrapePriceWithDenoDom(
     return cachedResult.data;
   }
   
-  // Search URL for reference (not used directly but returned to frontend)
+  // Reference search URL (only for frontend reference, not used for scraping)
   const searchUrl = `https://130point.com/cards/?search=${encodeURIComponent(searchQuery)}&searchButton=&sortBy=date_desc`;
   
   let debugData: any = {
@@ -161,17 +202,26 @@ async function scrapePriceWithDenoDom(
   };
   
   try {
+    // Select a random user agent
+    const userAgent = getRandomUserAgent();
+    
     // Set up the headers to mimic a browser request
     const headers = {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.5",
+      "User-Agent": userAgent,
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Referer": "https://130point.com/cards/",
       "Content-Type": "application/x-www-form-urlencoded",
       "Upgrade-Insecure-Requests": "1",
       "DNT": "1",
-      "Connection": "keep-alive"
+      "Connection": "keep-alive",
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "same-origin"
     };
-
+    
+    debugData.headers = { ...headers };
+    debugData.processSteps.push(`Using user agent: ${userAgent}`);
     debugData.processSteps.push(`Making initial request to 130point.com/cards to get cookies and session`);
     const startTime = Date.now();
     
@@ -182,27 +232,57 @@ async function scrapePriceWithDenoDom(
     });
 
     if (!initialResponse.ok) {
+      debugData.errors.push(`Initial page load failed with status: ${initialResponse.status}`);
       throw new Error(`Initial page load failed with status: ${initialResponse.status}`);
     }
 
     const cookies = initialResponse.headers.get('set-cookie');
-    const initialHtml = await initialResponse.text();
+    debugData.cookies = cookies ? 'Received cookies' : 'No cookies received';
     
+    const initialHtml = await initialResponse.text();
     debugData.timing.initialRequest = Date.now() - startTime;
     debugData.processSteps.push(`Initial page loaded in ${debugData.timing.initialRequest}ms`);
     
-    // Check initial HTML for any bot detection
-    const initialTitle = initialHtml.match(/<title>(.*?)<\/title>/i)?.[1] || "";
-    debugData.pageTitle = initialTitle;
+    // Parse the initial HTML to check form structure
+    const initialDoc = new DOMParser().parseFromString(initialHtml, "text/html");
+    if (!initialDoc) {
+      debugData.errors.push("Failed to parse initial HTML");
+      throw new Error("Failed to parse initial HTML");
+    }
     
-    if (initialTitle.toLowerCase().includes("captcha") || initialTitle.toLowerCase().includes("blocked")) {
+    // Check initial HTML for any bot detection
+    const initialTitle = initialDoc.querySelector("title")?.textContent || "";
+    debugData.initialPageTitle = initialTitle;
+    
+    if (initialTitle.toLowerCase().includes("captcha") || 
+        initialTitle.toLowerCase().includes("blocked") ||
+        initialTitle.toLowerCase().includes("cloudflare")) {
+      debugData.errors.push(`Bot protection detected on initial page: ${initialTitle}`);
       throw new Error(`Bot protection detected on initial page: ${initialTitle}`);
     }
+    
+    // Check if search form exists
+    const searchForm = initialDoc.querySelector('form');
+    if (!searchForm) {
+      debugData.errors.push("Search form not found on initial page");
+      throw new Error("Search form not found on initial page");
+    }
+    
+    // Extract form action and method
+    const formAction = searchForm.getAttribute('action') || '';
+    const formMethod = searchForm.getAttribute('method')?.toUpperCase() || 'POST';
+    debugData.formDetails = { action: formAction, method: formMethod };
+    debugData.processSteps.push(`Found search form with action: "${formAction}" and method: "${formMethod}"`);
+    
+    // Add a random delay to mimic human behavior
+    await addRandomDelay();
+    debugData.processSteps.push("Added random delay to mimic human behavior");
     
     // Update headers with cookies if they exist
     const updatedHeaders = { ...headers };
     if (cookies) {
       updatedHeaders["Cookie"] = cookies;
+      debugData.processSteps.push("Added cookies to request headers");
     }
     
     debugData.processSteps.push(`Submitting search form with query "${searchQuery}"`);
@@ -214,32 +294,41 @@ async function scrapePriceWithDenoDom(
     formData.append("searchButton", "");
     formData.append("sortBy", "date_desc");
     
+    // Use the form action if available, otherwise default to /cards/
+    const formUrl = formAction ? 
+      (formAction.startsWith('http') ? formAction : `https://130point.com${formAction.startsWith('/') ? formAction : '/' + formAction}`) : 
+      'https://130point.com/cards/';
+    
+    debugData.processSteps.push(`Submitting form to URL: ${formUrl}`);
+    debugData.formSubmissionUrl = formUrl;
+    
     // Submit the search form
-    const searchResponse = await fetch('https://130point.com/cards/', {
-      method: 'POST',
+    const searchResponse = await fetch(formUrl, {
+      method: formMethod === 'GET' ? 'GET' : 'POST',
       headers: updatedHeaders,
-      body: formData,
+      body: formMethod === 'GET' ? null : formData,
       redirect: 'follow'
     });
     
     if (!searchResponse.ok) {
+      debugData.errors.push(`Search submission failed with status: ${searchResponse.status}`);
       throw new Error(`Search submission failed with status: ${searchResponse.status}`);
     }
     
     const resultsHtml = await searchResponse.text();
     debugData.timing.searchRequest = Date.now() - searchStartTime;
     debugData.processSteps.push(`Search results received in ${debugData.timing.searchRequest}ms`);
+    debugData.resultsSize = resultsHtml.length;
     
-    // Store a snippet of the HTML for debugging
-    debugData.htmlSnippet = resultsHtml.substring(0, 500) + "...";
-    
-    // Extract the page title for debugging
-    const resultsTitle = resultsHtml.match(/<title>(.*?)<\/title>/i)?.[1] || "";
-    debugData.resultsTitle = resultsTitle;
+    // Store a larger snippet of the HTML for debugging
+    debugData.htmlSnippet = resultsHtml.substring(0, 1000) + "...";
     
     // Extract sales data from HTML
     const extractionResult = extractSalesFromHTML(resultsHtml);
     const sales = extractionResult.sales;
+    
+    // Add page title to debug data
+    debugData.resultsTitle = extractionResult.pageTitle;
     
     if (extractionResult.error) {
       debugData.errors.push(extractionResult.error);
@@ -253,7 +342,8 @@ async function scrapePriceWithDenoDom(
         error: "No sales data found for this card",
         searchUrl,
         query: searchQuery,
-        debug: debugData
+        debug: debugData,
+        timestamp: new Date().toISOString()
       };
       
       // Cache the error result too
@@ -315,7 +405,8 @@ async function scrapePriceWithDenoDom(
       error: `Failed to scrape price data: ${error.message}`,
       searchUrl,
       query: searchQuery,
-      debug: debugData
+      debug: debugData,
+      timestamp: new Date().toISOString()
     };
   }
 }

@@ -52,7 +52,7 @@ export const usePsaPriceLookup = () => {
     try {
       console.log(`Looking up PSA price for ${card.name} (PSA ${card.certification.grade})`);
       
-      // Send detailed card information to the puppeteer-scraper function
+      // Send detailed card information to the playwright-scraper function
       const { data, error: requestError } = await supabase.functions.invoke('playwright-scraper', {
         body: {
           cardName: card.name,
@@ -100,37 +100,31 @@ export const usePsaPriceLookup = () => {
         if (errorMsg.includes('No sales data found')) {
           toast.error('No recent sales found for this card and grade');
           console.log('Search query used:', data?.query || 'Unknown');
-          console.log('Search URL:', data?.searchUrl || 'Unknown');
-          
-          // Log HTML snippet if available for debugging
-          if (data?.debug?.htmlSnippet) {
-            console.log('HTML snippet:', data.debug.htmlSnippet);
-          }
-          
-          // Log page title if available for debugging
-          if (data?.debug?.pageTitle) {
-            console.log('Page title:', data.debug.pageTitle);
-          }
           
           // Log process steps if available
           if (data?.debug?.processSteps) {
             console.log('Process steps:', data.debug.processSteps);
           }
+          
+          // Log errors if available
+          if (data?.debug?.errors && data.debug.errors.length > 0) {
+            console.log('Errors encountered:', data.debug.errors);
+          }
         } else {
           toast.error(errorMsg);
         }
         
-        // Still return the search URL even if no prices were found
-        if (data?.searchUrl) {
+        // Still return the debug data even if no prices were found
+        if (data) {
           const resultData = {
             averagePrice: 0,
             salesCount: 0,
             filteredSalesCount: 0,
-            searchUrl: data.searchUrl,
+            searchUrl: data.searchUrl || '',
             query: data.query || '',
             debug: data.debug,
             htmlSnippet: data.debug?.htmlSnippet,
-            pageTitle: data.debug?.pageTitle,
+            pageTitle: data.debug?.resultsTitle || data.debug?.pageTitle,
             timestamp: data.timestamp,
             sales: []
           };
@@ -144,7 +138,7 @@ export const usePsaPriceLookup = () => {
       
       // Extract HTML snippet if it exists in debug data
       const htmlSnippet = data.debug?.htmlSnippet || '';
-      const pageTitle = data.debug?.pageTitle || data.debug?.resultsTitle || '';
+      const pageTitle = data.debug?.resultsTitle || data.debug?.pageTitle || '';
       
       // Add HTML snippet and page title to the price data
       const enhancedData = {

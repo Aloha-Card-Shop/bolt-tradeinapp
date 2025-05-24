@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Bug } from 'lucide-react';
 
 interface DebugPanelProps {
   isVisible: boolean;
@@ -20,7 +21,10 @@ const DebugPanel: React.FC<DebugPanelProps> = ({ isVisible, debugInfo }) => {
   return (
     <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-500 border border-gray-200">
       <details>
-        <summary className="cursor-pointer font-medium">Debug Info</summary>
+        <summary className="cursor-pointer font-medium flex items-center">
+          <Bug className="h-3.5 w-3.5 mr-1" />
+          Debug Info
+        </summary>
         <div className="mt-1 space-y-1">
           <div><span className="font-medium">Price:</span> ${debugInfo.price?.toFixed(2)}</div>
           <div><span className="font-medium">Cash Value:</span> ${debugInfo.cashValue?.toFixed(2)}</div>

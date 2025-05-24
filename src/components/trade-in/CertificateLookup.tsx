@@ -3,7 +3,7 @@ import React from 'react';
 import { useCertificateLookup } from '../../hooks/useCertificateLookup';
 import CertificateSearchInput from './certificate/CertificateSearchInput';
 import CertificateError from './certificate/CertificateError';
-import { AlertCircle, ExternalLink, Bug, Code, FileText } from 'lucide-react';
+import { AlertCircle, ExternalLink, Bug, Code, FileText, Terminal } from 'lucide-react';
 
 interface CertificateLookupProps {
   onCertificateFound: (card: any) => void;
@@ -26,6 +26,9 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
   
   // State to toggle HTML snippet visibility
   const [showHtml, setShowHtml] = React.useState(false);
+  
+  // State to toggle process steps visibility
+  const [showProcess, setShowProcess] = React.useState(false);
 
   // Effect to add the certified card to search results when found
   React.useEffect(() => {
@@ -60,21 +63,26 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
       {/* Only show certificate lookup errors, not price lookup errors */}
       {error && <CertificateError error={error} />}
       
-      {/* Show 130point.com search link if available even when no price found */}
-      {priceData && priceData.searchUrl && (
+      {/* Show price query info if available even when no price found */}
+      {priceData && (
         <div className="mt-3 text-sm">
           <div className="flex items-center justify-between">
-            <a 
-              href={priceData.searchUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
-            >
-              <span>View prices on 130point.com</span>
-              <ExternalLink className="ml-1 h-3.5 w-3.5" />
-            </a>
+            <div className="text-gray-700">
+              <strong>Search query:</strong> "{priceData.query || 'Unknown'}"
+            </div>
             
             <div className="flex gap-2">
+              {priceData.debug?.processSteps && (
+                <button
+                  onClick={() => setShowProcess(!showProcess)}
+                  className="flex items-center text-gray-500 hover:text-gray-700 text-xs"
+                  title="Toggle process steps"
+                >
+                  <Terminal className="h-3.5 w-3.5 mr-1" />
+                  {showProcess ? 'Hide Process' : 'Show Process'}
+                </button>
+              )}
+            
               {priceData.htmlSnippet && (
                 <button
                   onClick={() => setShowHtml(!showHtml)}
@@ -99,14 +107,16 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
           
           {!priceData.filteredSalesCount && (
             <p className="text-xs text-gray-500 mt-1">
-              No recent sales found through automatic search, but you can check manually
+              No recent sales found through automatic search
             </p>
           )}
           
-          {/* Show search query used */}
-          <p className="text-xs text-gray-600 mt-1">
-            <strong>Search query:</strong> "{priceData.query || 'Unknown'}"
-          </p>
+          {/* Show search query and results statistics */}
+          {priceData.filteredSalesCount > 0 && (
+            <p className="text-xs text-green-600 mt-1">
+              <strong>Found:</strong> {priceData.filteredSalesCount} recent sales (from total {priceData.salesCount})
+            </p>
+          )}
           
           {/* Show page title if available */}
           {priceData.pageTitle && (
@@ -120,6 +130,36 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
             <p className="text-xs text-gray-600 mt-1">
               <strong>Last updated:</strong> {formatTimestamp(priceData.timestamp)}
             </p>
+          )}
+          
+          {/* Process steps section */}
+          {showProcess && priceData.debug?.processSteps && (
+            <div className="mt-3 space-y-3">
+              <h4 className="text-sm font-semibold flex items-center">
+                <Terminal className="h-4 w-4 mr-1" />
+                Process Steps
+              </h4>
+              
+              <div className="p-2 bg-gray-50 rounded text-xs font-mono overflow-auto max-h-60 whitespace-pre-wrap break-words border border-gray-200">
+                <ol className="list-decimal pl-5 space-y-1">
+                  {priceData.debug.processSteps.map((step: string, index: number) => (
+                    <li key={index}>{step}</li>
+                  ))}
+                </ol>
+              </div>
+              
+              {/* Show errors if any */}
+              {priceData.debug.errors && priceData.debug.errors.length > 0 && (
+                <div className="p-2 bg-red-50 rounded text-xs font-mono overflow-auto max-h-60 whitespace-pre-wrap break-words border border-red-200">
+                  <h5 className="font-semibold text-red-600 mb-1">Errors:</h5>
+                  <ul className="list-disc pl-5 space-y-1 text-red-600">
+                    {priceData.debug.errors.map((err: string, index: number) => (
+                      <li key={index}>{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           )}
           
           {/* HTML snippet section */}
@@ -140,30 +180,6 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
           {showDebug && priceData.debug && (
             <div className="mt-3 p-2 bg-gray-100 rounded text-xs font-mono overflow-auto max-h-60">
               <h4 className="font-bold mb-1">Debug Info:</h4>
-              
-              {/* Process steps if available */}
-              {priceData.debug.processSteps && priceData.debug.processSteps.length > 0 && (
-                <div className="mb-2">
-                  <h5 className="font-semibold">Process Steps:</h5>
-                  <ol className="list-decimal pl-5 space-y-1">
-                    {priceData.debug.processSteps.map((step: string, index: number) => (
-                      <li key={index}>{step}</li>
-                    ))}
-                  </ol>
-                </div>
-              )}
-              
-              {/* Errors if available */}
-              {priceData.debug.errors && priceData.debug.errors.length > 0 && (
-                <div className="mb-2">
-                  <h5 className="font-semibold text-red-600">Errors:</h5>
-                  <ul className="list-disc pl-5 space-y-1 text-red-600">
-                    {priceData.debug.errors.map((err: string, index: number) => (
-                      <li key={index}>{err}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
               
               {/* Full debug data */}
               <pre className="whitespace-pre-wrap break-words mt-2">
