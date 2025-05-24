@@ -190,12 +190,16 @@ async function scrapePriceWithDenoDom(
     return cachedResult.data;
   }
   
+  // The correct URL for 130point.com searches - this is the actual URL we need to submit the form to
+  const FORM_SUBMIT_URL = 'https://130point.com/cards/';
+  
   // Reference search URL (only for frontend reference, not used for scraping)
   const searchUrl = `https://130point.com/cards/?search=${encodeURIComponent(searchQuery)}&searchButton=&sortBy=date_desc`;
   
   let debugData: any = {
     searchQuery,
     searchUrl,
+    formSubmitUrl: FORM_SUBMIT_URL,
     timing: {},
     errors: [],
     processSteps: []
@@ -226,7 +230,7 @@ async function scrapePriceWithDenoDom(
     const startTime = Date.now();
     
     // First make a GET request to get any cookies and session data
-    const initialResponse = await fetch('https://130point.com/cards/', {
+    const initialResponse = await fetch(FORM_SUBMIT_URL, {
       method: 'GET',
       headers
     });
@@ -261,19 +265,6 @@ async function scrapePriceWithDenoDom(
       throw new Error(`Bot protection detected on initial page: ${initialTitle}`);
     }
     
-    // Check if search form exists
-    const searchForm = initialDoc.querySelector('form');
-    if (!searchForm) {
-      debugData.errors.push("Search form not found on initial page");
-      throw new Error("Search form not found on initial page");
-    }
-    
-    // Extract form action and method
-    const formAction = searchForm.getAttribute('action') || '';
-    const formMethod = searchForm.getAttribute('method')?.toUpperCase() || 'POST';
-    debugData.formDetails = { action: formAction, method: formMethod };
-    debugData.processSteps.push(`Found search form with action: "${formAction}" and method: "${formMethod}"`);
-    
     // Add a random delay to mimic human behavior
     await addRandomDelay();
     debugData.processSteps.push("Added random delay to mimic human behavior");
@@ -288,25 +279,21 @@ async function scrapePriceWithDenoDom(
     debugData.processSteps.push(`Submitting search form with query "${searchQuery}"`);
     const searchStartTime = Date.now();
     
-    // Now submit the search form with our query
+    // Now submit the search form with our query - ALWAYS to the FORM_SUBMIT_URL
     const formData = new URLSearchParams();
     formData.append("search", searchQuery);
     formData.append("searchButton", "");
     formData.append("sortBy", "date_desc");
     
-    // Use the form action if available, otherwise default to /cards/
-    const formUrl = formAction ? 
-      (formAction.startsWith('http') ? formAction : `https://130point.com${formAction.startsWith('/') ? formAction : '/' + formAction}`) : 
-      'https://130point.com/cards/';
+    debugData.processSteps.push(`Submitting form to URL: ${FORM_SUBMIT_URL}`);
+    debugData.formSubmissionUrl = FORM_SUBMIT_URL;
+    debugData.formData = Object.fromEntries(formData.entries());
     
-    debugData.processSteps.push(`Submitting form to URL: ${formUrl}`);
-    debugData.formSubmissionUrl = formUrl;
-    
-    // Submit the search form
-    const searchResponse = await fetch(formUrl, {
-      method: formMethod === 'GET' ? 'GET' : 'POST',
+    // Submit the search form with POST method directly to the FORM_SUBMIT_URL
+    const searchResponse = await fetch(FORM_SUBMIT_URL, {
+      method: 'POST',
       headers: updatedHeaders,
-      body: formMethod === 'GET' ? null : formData,
+      body: formData,
       redirect: 'follow'
     });
     

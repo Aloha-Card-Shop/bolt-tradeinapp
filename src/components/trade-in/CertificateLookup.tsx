@@ -117,6 +117,13 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
               <strong>Found:</strong> {priceData.filteredSalesCount} recent sales (from total {priceData.salesCount})
             </p>
           )}
+
+          {/* Show submission URL if available */}
+          {priceData.debug?.formSubmitUrl && (
+            <p className="text-xs text-gray-600 mt-1">
+              <strong>Form URL:</strong> {priceData.debug.formSubmitUrl}
+            </p>
+          )}
           
           {/* Show page title if available */}
           {priceData.pageTitle && (
