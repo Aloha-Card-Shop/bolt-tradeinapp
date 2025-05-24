@@ -522,32 +522,33 @@ export const use130PointScraper = () => {
     
     // Show a more helpful error message with specific suggestion to try manual search
     toast.custom((t) => {
-      const toastContent = (
-        <div className="flex flex-col bg-white p-4 shadow-lg rounded-lg border border-gray-200">
-          <div className="flex items-center">
-            <span className="text-xl mr-2">🔍</span>
-            <div>
-              <h3 className="font-medium">No Sales Found</h3>
-              <p className="text-sm text-gray-600">
-                No sales found through automated search. Try searching manually - results may be available!
-              </p>
+      return {
+        component: (
+          <div className="flex flex-col bg-white p-4 shadow-lg rounded-lg border border-gray-200">
+            <div className="flex items-center">
+              <span className="text-xl mr-2">🔍</span>
+              <div>
+                <h3 className="font-medium">No Sales Found</h3>
+                <p className="text-sm text-gray-600">
+                  No sales found through automated search. Try searching manually - results may be available!
+                </p>
+              </div>
             </div>
+            {directUrl && (
+              <a 
+                href={directUrl}
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="mt-2 text-sm text-blue-600 hover:underline"
+                onClick={() => toast.dismiss(t.id)}
+              >
+                Open in 130point.com
+              </a>
+            )}
           </div>
-          {directUrl && (
-            <a 
-              href={directUrl}
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="mt-2 text-sm text-blue-600 hover:underline"
-              onClick={() => toast.dismiss(t.id)}
-            >
-              Open in 130point.com
-            </a>
-          )}
-        </div>
-      );
-      return toastContent;
-    });
+        )
+      };
+    }, { duration: 8000 });
     
     return errorResult;
   }, [retryCount, searchAttempts]);
