@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { TrendingUp, AlertCircle, ArrowUpRight, Heart, Loader2, DollarSign, TrendingDown } from 'lucide-react';
+import { TrendingUp, AlertCircle, ArrowUpRight, Heart, Loader2, DollarSign, TrendingDown, ExternalLink } from 'lucide-react';
 import { PriceData, CardDetails, CardNumberObject } from '../types/card';
 
 interface PriceDisplayProps {
@@ -27,6 +27,7 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({
     );
   }
 
+  // Show error message with direct link to 130point if available
   if (priceData.error) {
     return (
       <div className="p-6">
@@ -35,6 +36,18 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({
           <div>
             <h3 className="text-sm font-medium text-red-800">Error Fetching Prices</h3>
             <p className="mt-1 text-sm text-red-700">{priceData.error}</p>
+            
+            {priceData.directUrl && (
+              <a 
+                href={priceData.directUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
+              >
+                <ExternalLink className="h-4 w-4 mr-1" />
+                Check 130point.com directly
+              </a>
+            )}
           </div>
         </div>
       </div>
@@ -128,7 +141,7 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({
         </div>
       </div>
       
-      <div className="border-t border-gray-100 pt-6">
+      <div className="border-t border-gray-100 pt-6 flex flex-wrap gap-3">
         <a 
           href={getTcgPlayerUrl()} 
           target="_blank" 
@@ -138,6 +151,18 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({
           View on TCGPlayer
           <ArrowUpRight className="h-4 w-4 ml-2" />
         </a>
+
+        {priceData.directUrl && (
+          <a 
+            href={priceData.directUrl} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition duration-200"
+          >
+            Check on 130point.com
+            <ExternalLink className="h-4 w-4 ml-2" />
+          </a>
+        )}
       </div>
     </div>
   );

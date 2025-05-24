@@ -10,11 +10,12 @@ export interface PsaPriceData {
   filteredSalesCount: number;
   searchUrl: string;
   query: string;
-  error?: string;  // Added to match the structure in ScrapeResult
-  debug?: any; // Debug data
-  htmlSnippet?: string; // HTML snippet for debugging
-  pageTitle?: string; // Page title for debugging
-  timestamp?: string; // Timestamp when the data was fetched
+  directUrl?: string; // Added for direct 130point.com link
+  error?: string;
+  debug?: any;
+  htmlSnippet?: string;
+  pageTitle?: string;
+  timestamp?: string;
   sales: Array<{
     date: string;
     title: string;
@@ -70,7 +71,26 @@ export const usePsaPriceLookup = () => {
         
         // Show a more precise error message with debugging details
         if (result.error.includes('No sales data found')) {
-          toast.error('No recent sales found for this card and grade');
+          if (result.directUrl) {
+            // Show toast with link to 130point
+            toast((t) => (
+              <div>
+                <p>No recent sales found for this card and grade.</p>
+                <a 
+                  href={result.directUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline mt-2 block"
+                  onClick={() => toast.dismiss(t.id)}
+                >
+                  Check 130point.com directly
+                </a>
+              </div>
+            ), { duration: 8000 });
+          } else {
+            toast.error('No recent sales found for this card and grade');
+          }
+          
           console.log('Search query used:', result.query || 'Unknown');
           
           // Log process steps if available
@@ -99,6 +119,22 @@ export const usePsaPriceLookup = () => {
       
       if (result.filteredSalesCount > 0) {
         toast.success(`Found ${result.filteredSalesCount} recent sales for PSA ${card.certification.grade} ${card.name}`);
+      } else if (result.directUrl) {
+        // Show toast with link to 130point
+        toast((t) => (
+          <div>
+            <p>No recent sales found. Check 130point.com directly:</p>
+            <a 
+              href={result.directUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline mt-2 block"
+              onClick={() => toast.dismiss(t.id)}
+            >
+              Open 130point.com search
+            </a>
+          </div>
+        ), { duration: 8000 });
       } else {
         toast(`No recent sales found, but you can check 130point.com for more info`);
       }

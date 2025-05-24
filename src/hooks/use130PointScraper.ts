@@ -18,12 +18,13 @@ export interface ScrapeResult {
   filteredSalesCount: number;
   searchUrl: string;
   query: string;
-  error?: string;  // Added error property
+  error?: string;
   debug?: any;
   htmlSnippet?: string;
   pageTitle?: string;
   timestamp?: string;
   sales: SaleData[];
+  directUrl?: string; // Added for direct 130point link
 }
 
 // Cache for storing price data
@@ -46,63 +47,97 @@ export const use130PointScraper = () => {
   const [debugInfo, setDebugInfo] = useState<any | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 3;
+  const [searchAttempts, setSearchAttempts] = useState<string[]>([]);
 
-  // Format search query for the specific site format
-  const formatSearchQuery = (cardName: string, setName: string, cardNumber: string, grade: string): string => {
-    // Create keyword components separately, then combine them at the end
-    let components = [];
+  // Enhanced search query formatter with multiple strategies
+  const formatSearchQuery = (cardName: string, setName: string, cardNumber: string, grade: string, strategy = 'standard'): string => {
+    // Clean up the inputs for better search results
+    const cleanCardName = cardName.trim()
+      .replace(/\//g, ' ')
+      .replace(/\./g, ' ')
+      .replace(/,/g, ' ')
+      .replace(/-/g, ' ')
+      .replace(/\s+/g, ' ');
     
-    // 1. Always add PSA and grade first (based on successful manual searches)
+    const cleanSetName = setName.trim();
+    const cleanCardNumber = cardNumber.trim().replace(/^#/, '');
     const numericGrade = grade.trim().replace(/[^\d\.]/g, '');
-    components.push(`PSA ${numericGrade || grade.trim()}`);
     
-    // 2. Add Pokemon keyword if appropriate
-    components.push("Pokemon");
-    
-    // 3. For the card name, extract only the main parts - ignoring abbreviations
-    let cleanedCardName = cardName.trim()
-      .replace(/\//g, ' ')  // Replace slashes with spaces
-      .replace(/\./g, ' ')  // Replace periods with spaces
-      .replace(/,/g, ' ')   // Replace commas with spaces
-      .replace(/-/g, ' ')   // Replace hyphens with spaces
-      .replace(/\s+/g, ' '); // Replace multiple spaces with a single space
-      
-    // If the card name contains abbreviations like "MLTRS/ZPDS/ARTCN.GX", 
-    // try to expand them based on the successful searches in the screenshot
-    if (cleanedCardName.includes("MLTRS") && cleanedCardName.includes("ZPDS") && cleanedCardName.includes("ARTCN")) {
-      components.push("Moltres Zapdos Articuno");
-      // Also add GX if present
-      if (cleanedCardName.includes("GX")) {
-        components.push("GX");
-      }
-    } else {
-      // Otherwise just use the cleaned name
-      components.push(cleanedCardName);
+    // Different search strategies
+    switch (strategy) {
+      case 'minimal':
+        // Just card name and grade, most likely to return something
+        return `PSA ${numericGrade} ${cleanCardName}`.trim();
+        
+      case 'broad':
+        // Card and grade with some additional terms
+        let broadComponents = [`PSA ${numericGrade}`, "Pokemon", cleanCardName];
+        return broadComponents.join(' ').trim();
+        
+      case 'number-focus':
+        // Emphasize card number which works well for certain cards
+        let numberComponents = [`PSA ${numericGrade}`, cleanCardName];
+        if (cleanCardNumber) numberComponents.push(cleanCardNumber);
+        return numberComponents.join(' ').trim();
+        
+      case 'set-focus':
+        // Emphasize set name which works well for certain sets
+        let setComponents = [`PSA ${numericGrade}`, cleanCardName];
+        
+        // Extract meaningful set terms (avoid common generic terms)
+        if (cleanSetName && !cleanSetName.match(/^(sm|swsh|base|black star)$/i)) {
+          // Pull out meaningful keywords from set name
+          const setKeywords = cleanSetName
+            .replace(/black star promo/i, 'promo')
+            .replace(/promotional/i, 'promo')
+            .split(/\s+/)
+            .filter(word => word.length > 2 && !['the', 'and', 'set'].includes(word.toLowerCase()));
+          
+          if (setKeywords.length > 0) {
+            setComponents.push(setKeywords.join(' '));
+          }
+        }
+        
+        return setComponents.join(' ').trim();
+        
+      case 'standard':
+      default:
+        // Our standard comprehensive search strategy
+        let components = [];
+        
+        // Always add PSA and grade first (based on successful manual searches)
+        components.push(`PSA ${numericGrade || grade.trim()}`);
+        
+        // Add Pokemon keyword
+        components.push("Pokemon");
+        
+        // Handle card name
+        if (cleanCardName.includes("MLTRS") && cleanCardName.includes("ZPDS") && cleanCardName.includes("ARTCN")) {
+          components.push("Moltres Zapdos Articuno");
+          if (cleanCardName.includes("GX")) components.push("GX");
+        } else {
+          components.push(cleanCardName);
+        }
+        
+        // Add set name keywords selectively
+        if (cleanSetName) {
+          if (cleanSetName.includes("BLACK STAR PROMO")) {
+            components.push("Black Star Promo");
+          } else if (cleanSetName.includes("SM") || cleanSetName.includes("SWSH")) {
+            // Extract the series code
+            const seriesMatch = cleanSetName.match(/(SM|SWSH)/i);
+            if (seriesMatch) components.push(seriesMatch[0]);
+          }
+        }
+        
+        // Add card number if present
+        if (cleanCardNumber) {
+          components.push(cleanCardNumber);
+        }
+        
+        // Combine and clean
+        return components.join(' ').replace(/\s+/g, ' ').trim();
     }
-    
-    // 4. Add set name keywords (extract from set name string)
-    if (setName && setName.trim() !== '') {
-      // Extract key terms from set name
-      if (setName.includes("BLACK STAR PROMO")) {
-        components.push("Black Star Promo");
-      }
-    }
-    
-    // 5. Add card number
-    if (cardNumber && cardNumber.trim() !== '') {
-      // Remove any # symbol if present
-      const cleanedNumber = cardNumber.trim().replace(/^#/, '');
-      components.push(cleanedNumber);
-    }
-    
-    // Combine all components with spaces
-    let query = components.join(' ');
-    
-    // Remove any double spaces that might have been introduced
-    query = query.replace(/\s+/g, ' ').trim();
-    
-    console.log(`Generated search query: "${query}"`);
-    return query;
   };
 
   // Get a random user agent to avoid bot detection
@@ -214,7 +249,7 @@ export const use130PointScraper = () => {
     }
   };
 
-  // Main scraping function
+  // Improved scraping function with multiple search strategies
   const scrapePrice = useCallback(async (card: CardDetails): Promise<ScrapeResult | null> => {
     if (!card.name) {
       toast.error('Card name is required for price lookup');
@@ -230,6 +265,7 @@ export const use130PointScraper = () => {
     setError(null);
     setPriceData(null);
     setDebugInfo(null);
+    setSearchAttempts([]);
 
     const cardName = card.name;
     const setName = card.set || 'SM BLACK STAR PROMO'; // Default to SM BLACK STAR PROMO for Pokemon cards
@@ -238,14 +274,14 @@ export const use130PointScraper = () => {
 
     console.log(`Looking up PSA price for ${cardName} (PSA ${grade})`);
     
-    // Generate search query
-    const searchQuery = formatSearchQuery(cardName, setName, cardNumber, grade);
+    // Define search strategies to try in order
+    const strategies = ['standard', 'number-focus', 'set-focus', 'broad', 'minimal'];
     
-    // Create cache key
-    const cacheKey = `${cardName}|${setName}|${cardNumber}|${grade}`;
+    // Create cache key for the primary search
+    const primaryCacheKey = `${cardName}|${setName}|${cardNumber}|${grade}`;
     
-    // Check cache first
-    const cachedResult = priceCache.get(cacheKey);
+    // Check cache first for primary strategy
+    const cachedResult = priceCache.get(primaryCacheKey);
     if (cachedResult && (Date.now() - cachedResult.timestamp) < CACHE_TTL) {
       console.log(`Returning cached price data for "${cardName}" (PSA ${grade})`);
       setPriceData(cachedResult.data);
@@ -253,177 +289,199 @@ export const use130PointScraper = () => {
       return cachedResult.data;
     }
     
-    // The correct URL for 130point.com searches - using sales endpoint instead of cards
-    const FORM_SUBMIT_URL = 'https://130point.com/sales/';
-    
-    // Reference search URL (only for frontend reference, not used for scraping)
-    const searchUrl = `https://130point.com/sales/?search=${encodeURIComponent(searchQuery)}&searchButton=&sortBy=date_desc`;
-    
+    // Initial debug data object
     let debugData: any = {
-      searchQuery,
-      searchUrl,
-      formSubmitUrl: FORM_SUBMIT_URL,
-      timing: {},
+      cardDetails: { cardName, setName, cardNumber, grade },
+      strategies: [],
       errors: [],
       processSteps: []
     };
     
-    try {
-      // Select a random user agent
-      const userAgent = getRandomUserAgent();
-      
-      // Set up the headers to mimic a browser request
-      const headers = {
-        "User-Agent": userAgent,
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": "https://130point.com/sales/",
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Upgrade-Insecure-Requests": "1",
-      };
-      
-      debugData.headers = { ...headers };
-      debugData.processSteps.push(`Using user agent: ${userAgent}`);
-      debugData.processSteps.push(`Making request to Supabase Edge Function for scraping`);
-      
-      // Make the fetch request to our Supabase Edge Function instead of the Next.js API
-      const response = await supabase.functions.invoke('scrape-130point', {
-        body: {
-          searchQuery,
-          userAgent
-        }
-      });
-      
-      if (response.error) {
-        throw new Error(`Edge function error: ${response.error.message}`);
-      }
-      
-      const data = response.data;
-      
-      if (!data || !data.html) {
-        throw new Error('No HTML data returned from scraper');
-      }
-      
-      // Parse the HTML response
-      const html = data.html;
-      debugData.htmlSize = html.length;
-      
-      // Extract sales data from HTML
-      const extractionResult = extractSalesFromHTML(html);
-      const sales = extractionResult.sales;
-      
-      // Add page title to debug data
-      debugData.resultsTitle = extractionResult.pageTitle;
-      debugData.htmlSnippet = extractionResult.htmlSnippet;
-      
-      if (extractionResult.error) {
-        debugData.errors.push(extractionResult.error);
-      }
-      
-      if (sales.length === 0) {
-        console.log("No valid sales data found");
+    // Try each strategy until we find sales
+    for (const strategy of strategies) {
+      try {
+        // Generate search query using current strategy
+        const searchQuery = formatSearchQuery(cardName, setName, cardNumber, grade, strategy);
         
-        // Return error with debug data
-        const errorResult: ScrapeResult = {
-          error: "No sales data found for this card",
+        // Skip if we've already tried this exact query
+        if (searchAttempts.includes(searchQuery)) {
+          continue;
+        }
+        
+        // Add to attempts
+        setSearchAttempts(prev => [...prev, searchQuery]);
+        
+        // Reference search URL (for frontend reference)
+        const searchUrl = `https://130point.com/sales/?search=${encodeURIComponent(searchQuery)}&searchButton=&sortBy=date_desc`;
+        
+        // Direct URL for users to check manually
+        const directUrl = `https://130point.com/sales/?search=${encodeURIComponent(searchQuery)}&searchButton=&sortBy=date_desc`;
+        
+        // Strategy-specific debug data
+        const strategyDebug: any = {
+          strategy,
+          searchQuery,
           searchUrl,
-          query: searchQuery,
-          debug: debugData,
-          htmlSnippet: extractionResult.htmlSnippet,
-          pageTitle: extractionResult.pageTitle,
-          averagePrice: 0,
-          salesCount: 0,
-          filteredSalesCount: 0,
-          sales: [],
-          timestamp: new Date().toISOString()
+          directUrl,
+          timing: {},
+          errors: []
         };
         
-        // Cache the error result too
-        priceCache.set(cacheKey, {
-          data: errorResult,
-          timestamp: Date.now()
-        });
+        console.log(`Trying search strategy "${strategy}" with query: "${searchQuery}"`);
+        debugData.processSteps.push(`Trying search strategy "${strategy}" with query: "${searchQuery}"`);
         
-        setPriceData(errorResult);
-        setError(errorResult.error || null);
-        setDebugInfo(debugData);
-        setIsLoading(false);
-        return errorResult;
+        // Select a random user agent
+        const userAgent = getRandomUserAgent();
+        debugData.processSteps.push(`Using user agent: ${userAgent}`);
+        
+        // Call the Supabase Edge Function
+        const startTime = Date.now();
+        const response = await supabase.functions.invoke('scrape-130point', {
+          body: {
+            searchQuery,
+            userAgent
+          }
+        });
+        strategyDebug.timing.totalTime = Date.now() - startTime;
+        
+        if (response.error) {
+          const errorMessage = `Edge function error: ${response.error.message}`;
+          strategyDebug.errors.push(errorMessage);
+          debugData.errors.push(errorMessage);
+          continue; // Try next strategy
+        }
+        
+        const data = response.data;
+        
+        if (!data || !data.html) {
+          const errorMessage = 'No HTML data returned from scraper';
+          strategyDebug.errors.push(errorMessage);
+          debugData.errors.push(errorMessage);
+          continue; // Try next strategy
+        }
+        
+        // Parse the HTML response
+        const html = data.html;
+        strategyDebug.htmlSize = html.length;
+        
+        // Extract sales data from HTML
+        const extractionResult = extractSalesFromHTML(html);
+        const sales = extractionResult.sales;
+        
+        strategyDebug.pageTitle = extractionResult.pageTitle;
+        strategyDebug.htmlSnippet = extractionResult.htmlSnippet;
+        
+        if (extractionResult.error) {
+          strategyDebug.errors.push(extractionResult.error);
+        }
+        
+        debugData.strategies.push(strategyDebug);
+        
+        // If we found sales, process them
+        if (sales.length > 0) {
+          console.log(`Found ${sales.length} sales records with strategy "${strategy}"`);
+          debugData.processSteps.push(`Found ${sales.length} sales records with strategy "${strategy}"`);
+          
+          // Calculate average price
+          const initialAverage = sales.reduce((sum, sale) => sum + sale.price, 0) / sales.length;
+          
+          // Filter out outliers (±50% from the average)
+          const filteredSales = sales.filter(sale => {
+            const lowerBound = initialAverage * 0.5;
+            const upperBound = initialAverage * 1.5;
+            return sale.price >= lowerBound && sale.price <= upperBound;
+          });
+          
+          // Calculate final average
+          const finalSales = filteredSales.length > 0 ? filteredSales : sales;
+          const averagePrice = finalSales.reduce((sum, sale) => sum + sale.price, 0) / finalSales.length;
+          
+          console.log(`Average price: $${averagePrice.toFixed(2)} (filtered from ${sales.length} to ${finalSales.length} sales)`);
+          
+          // Prepare the result
+          const result: ScrapeResult = {
+            averagePrice: parseFloat(averagePrice.toFixed(2)),
+            salesCount: sales.length,
+            filteredSalesCount: finalSales.length,
+            sales: finalSales,
+            searchUrl,
+            directUrl, // Add the direct URL
+            query: searchQuery,
+            debug: debugData,
+            htmlSnippet: extractionResult.htmlSnippet,
+            pageTitle: extractionResult.pageTitle,
+            timestamp: new Date().toISOString()
+          };
+          
+          // Cache the result using the primary cache key
+          priceCache.set(primaryCacheKey, {
+            data: result,
+            timestamp: Date.now()
+          });
+          
+          setPriceData(result);
+          setDebugInfo(debugData);
+          setIsLoading(false);
+          return result;
+        }
+        
+        console.log(`No sales found with strategy "${strategy}", trying next strategy...`);
+        debugData.processSteps.push(`No sales found with strategy "${strategy}", trying next strategy...`);
+        
+      } catch (err) {
+        console.error(`Error with strategy "${strategy}":`, err);
+        debugData.errors.push(`Error with strategy "${strategy}": ${err instanceof Error ? err.message : String(err)}`);
       }
-      
-      debugData.salesCount = sales.length;
-      console.log(`Found ${sales.length} sales records`);
-      
-      // Calculate average price
-      const initialAverage = sales.reduce((sum, sale) => sum + sale.price, 0) / sales.length;
-      
-      // Filter out outliers (±50% from the average)
-      const filteredSales = sales.filter(sale => {
-        const lowerBound = initialAverage * 0.5;
-        const upperBound = initialAverage * 1.5;
-        return sale.price >= lowerBound && sale.price <= upperBound;
-      });
-      
-      // Calculate final average
-      const finalSales = filteredSales.length > 0 ? filteredSales : sales;
-      const averagePrice = finalSales.reduce((sum, sale) => sum + sale.price, 0) / finalSales.length;
-      
-      console.log(`Average price: $${averagePrice.toFixed(2)} (filtered from ${sales.length} to ${finalSales.length} sales)`);
-      
-      // Prepare the result
-      const result: ScrapeResult = {
-        averagePrice: parseFloat(averagePrice.toFixed(2)),
-        salesCount: sales.length,
-        filteredSalesCount: finalSales.length,
-        sales: finalSales,
-        searchUrl,
-        query: searchQuery,
-        debug: debugData,
-        htmlSnippet: extractionResult.htmlSnippet,
-        pageTitle: extractionResult.pageTitle,
-        timestamp: new Date().toISOString()
-      };
-      
-      // Cache the result
-      priceCache.set(cacheKey, {
-        data: result,
-        timestamp: Date.now()
-      });
-      
-      setPriceData(result);
-      setDebugInfo(debugData);
-      setIsLoading(false);
-      return result;
-    } catch (err) {
-      console.error('PSA price lookup error:', err);
-      let errorMessage = 'An unexpected error occurred';
-      if (err instanceof Error) {
-        errorMessage += `: ${err.message}`;
-      }
-      
-      // If we still have retries left, try again
-      if (retryCount < MAX_RETRIES) {
-        const nextRetryCount = retryCount + 1;
-        setRetryCount(nextRetryCount);
-        toast.loading(`Retrying price lookup (attempt ${nextRetryCount})...`);
-        // Short delay before retry
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setIsLoading(false); // Reset loading state for recursive call
-        return await scrapePrice(card);
-      }
-      
-      setError(errorMessage);
-      toast.error('Price lookup failed after multiple attempts');
-      setIsLoading(false);
-      return null;
     }
-  }, [retryCount]);
+    
+    // If we've tried all strategies and found nothing
+    console.log("All search strategies exhausted, no sales data found");
+    
+    // Return error with debug data and direct link to 130point
+    const standardQuery = formatSearchQuery(cardName, setName, cardNumber, grade, 'standard');
+    const directUrl = `https://130point.com/sales/?search=${encodeURIComponent(standardQuery)}&searchButton=&sortBy=date_desc`;
+    
+    const errorResult: ScrapeResult = {
+      error: "No sales data found for this card with any search strategy",
+      searchUrl: `https://130point.com/sales/?search=${encodeURIComponent(standardQuery)}&searchButton=&sortBy=date_desc`,
+      directUrl,
+      query: standardQuery,
+      debug: debugData,
+      htmlSnippet: "No HTML to display",
+      pageTitle: "No page title",
+      averagePrice: 0,
+      salesCount: 0,
+      filteredSalesCount: 0,
+      sales: [],
+      timestamp: new Date().toISOString()
+    };
+    
+    // Cache the error result too
+    priceCache.set(primaryCacheKey, {
+      data: errorResult,
+      timestamp: Date.now()
+    });
+    
+    setPriceData(errorResult);
+    setError(errorResult.error || null);
+    setDebugInfo(debugData);
+    setIsLoading(false);
+    
+    // Show a more helpful error message
+    toast.error('No recent sales found. Try checking 130point.com directly.', { 
+      duration: 5000,
+      icon: '🔍'
+    });
+    
+    return errorResult;
+  }, [retryCount, searchAttempts]);
 
   const clearPriceData = useCallback(() => {
     setPriceData(null);
     setError(null);
     setDebugInfo(null);
     setRetryCount(0);
+    setSearchAttempts([]);
   }, []);
 
   return {
@@ -432,6 +490,7 @@ export const use130PointScraper = () => {
     priceData,
     debugInfo,
     lookupPrice: scrapePrice,
-    clearPriceData
+    clearPriceData,
+    searchAttempts
   };
 };
