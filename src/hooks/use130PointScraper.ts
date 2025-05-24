@@ -358,7 +358,7 @@ export const use130PointScraper = () => {
         });
         
         setPriceData(errorResult);
-        setError(errorResult.error);
+        setError(errorResult.error || null);
         setDebugInfo(debugData);
         setIsLoading(false);
         return errorResult;
