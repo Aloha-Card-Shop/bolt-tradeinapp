@@ -1,6 +1,4 @@
-
 import React, { useState } from 'react';
-import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 
 const EbayAccountDeletionTest: React.FC = () => {
