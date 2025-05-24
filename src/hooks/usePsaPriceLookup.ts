@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { CardDetails } from '../types/card';
@@ -32,10 +32,10 @@ export const usePsaPriceLookup = () => {
   const [priceData, setPriceData] = useState<PsaPriceData | null>(null);
   const [debugInfo, setDebugInfo] = useState<any | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const MAX_RETRIES = 2;
+  const MAX_RETRIES = 3;
 
   // Lookup price data for a PSA card
-  const lookupPrice = async (card: CardDetails) => {
+  const lookupPrice = useCallback(async (card: CardDetails) => {
     if (!card.name) {
       toast.error('Card name is required for price lookup');
       return null;
@@ -55,7 +55,7 @@ export const usePsaPriceLookup = () => {
       console.log(`Looking up PSA price for ${card.name} (PSA ${card.certification.grade})`);
       
       // Send detailed card information to the puppeteer-scraper function
-      const { data, error } = await supabase.functions.invoke('playwright-scraper', {
+      const { data, error: requestError } = await supabase.functions.invoke('playwright-scraper', {
         body: {
           cardName: card.name,
           setName: card.set || 'SM BLACK STAR PROMO', // Default to SM BLACK STAR PROMO for Pokemon cards
@@ -64,17 +64,21 @@ export const usePsaPriceLookup = () => {
         }
       });
 
-      if (error) {
-        console.error('PSA price lookup error:', error);
+      if (requestError) {
+        console.error('PSA price lookup error:', requestError);
         
         // If we still have retries left, try again
         if (retryCount < MAX_RETRIES) {
-          setRetryCount(prevCount => prevCount + 1);
-          toast.loading(`Retrying price lookup (attempt ${retryCount + 1})...`);
+          const nextRetryCount = retryCount + 1;
+          setRetryCount(nextRetryCount);
+          toast.loading(`Retrying price lookup (attempt ${nextRetryCount})...`);
+          // Short delay before retry
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          setIsLoading(false); // Reset loading state for recursive call
           return await lookupPrice(card);
         }
         
-        setError(error.message || 'Failed to look up price data');
+        setError(requestError.message || 'Failed to look up price data');
         toast.error('Price lookup failed after multiple attempts');
         return null;
       }
@@ -151,10 +155,12 @@ export const usePsaPriceLookup = () => {
       
       // If we still have retries left, try again
       if (retryCount < MAX_RETRIES) {
-        setRetryCount(prevCount => prevCount + 1);
-        toast.loading(`Retrying price lookup (attempt ${retryCount + 1})...`);
+        const nextRetryCount = retryCount + 1;
+        setRetryCount(nextRetryCount);
+        toast.loading(`Retrying price lookup (attempt ${nextRetryCount})...`);
         // Short delay before retry
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        setIsLoading(false); // Reset loading state for recursive call
         return await lookupPrice(card);
       }
       
@@ -164,14 +170,14 @@ export const usePsaPriceLookup = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [retryCount]);
 
-  const clearPriceData = () => {
+  const clearPriceData = useCallback(() => {
     setPriceData(null);
     setError(null);
     setDebugInfo(null);
     setRetryCount(0);
-  };
+  }, []);
 
   return {
     isLoading,

@@ -1,8 +1,7 @@
 
-// Import required libraries
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// Import required libraries for Deno environment
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Puppeteer } from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
+import * as chromium from "https://deno.land/x/puppeteer@16.2.0/vendor/puppeteer-core/puppeteer/puppeteer-core.js";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,7 +53,7 @@ async function scrapePriceWithPuppeteer(
   cardNumber: string, 
   grade: string
 ): Promise<any> {
-  console.log(`Starting Puppeteer scrape for: ${cardName} (Set: ${setName}, Number: ${cardNumber}, Grade: PSA ${grade})`);
+  console.log(`Starting price scrape for: ${cardName} (Set: ${setName}, Number: ${cardNumber}, Grade: PSA ${grade})`);
   
   // Generate search query
   const searchQuery = formatSearchQuery(cardName, setName, cardNumber, grade);
@@ -82,14 +81,11 @@ async function scrapePriceWithPuppeteer(
   };
   
   try {
-    console.log("Launching headless browser...");
+    console.log("Launching chromium browser...");
     const startLaunchTime = Date.now();
     
-    // Initialize Puppeteer with more robust options
-    const puppeteer = new Puppeteer();
-    
-    // Launch browser with appropriate options for serverless environment
-    browser = await puppeteer.launch({
+    // Launch browser with appropriate options for Deno environment
+    browser = await chromium.launch({
       headless: true,
       args: [
         '--disable-gpu',
@@ -98,10 +94,8 @@ async function scrapePriceWithPuppeteer(
         '--no-first-run',
         '--no-sandbox',
         '--no-zygote',
-        '--single-process',
-        '--disable-extensions'
-      ],
-      timeout: 60000 // Increase timeout to 60 seconds
+        '--single-process'
+      ]
     });
     
     debugData.timing.browserLaunch = Date.now() - startLaunchTime;
@@ -110,7 +104,6 @@ async function scrapePriceWithPuppeteer(
     // Create new page with longer timeout
     const page = await browser.newPage();
     await page.setDefaultNavigationTimeout(90000); // 90 seconds timeout for navigation
-    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36");
     await page.setViewport({ width: 1280, height: 720 });
     
     // Navigate to 130point.com with retry mechanism
@@ -123,7 +116,7 @@ async function scrapePriceWithPuppeteer(
       try {
         const startNavTime = Date.now();
         await page.goto('https://130point.com/cards/', { 
-          waitUntil: 'networkidle0',
+          waitUntil: 'networkidle2',
           timeout: 60000 // 60 second timeout
         });
         debugData.timing.initialNavigation = Date.now() - startNavTime;
@@ -144,11 +137,8 @@ async function scrapePriceWithPuppeteer(
     
     // Take screenshot of the initial page
     try {
-      debugData.screenshots.initialPage = await page.screenshot({ 
-        encoding: "base64", 
-        type: "jpeg", 
-        quality: 80 
-      });
+      const screenshot = await page.screenshot({ type: "jpeg", quality: 60 });
+      debugData.screenshots.initialPage = btoa(String.fromCharCode(...new Uint8Array(screenshot)));
     } catch (screenshotError) {
       console.error("Failed to take initial page screenshot:", screenshotError);
       debugData.errors.push(`Screenshot error: ${screenshotError.message}`);
@@ -174,11 +164,8 @@ async function scrapePriceWithPuppeteer(
     
     // Take screenshot of filled form
     try {
-      debugData.screenshots.filledForm = await page.screenshot({ 
-        encoding: "base64", 
-        type: "jpeg", 
-        quality: 80 
-      });
+      const screenshot = await page.screenshot({ type: "jpeg", quality: 60 });
+      debugData.screenshots.filledForm = btoa(String.fromCharCode(...new Uint8Array(screenshot)));
     } catch (screenshotError) {
       console.error("Failed to take filled form screenshot:", screenshotError);
       debugData.errors.push(`Screenshot error: ${screenshotError.message}`);
@@ -191,7 +178,7 @@ async function scrapePriceWithPuppeteer(
     try {
       // Click the search button and wait for navigation
       await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 60000 }),
+        page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 }),
         page.click('input[name="searchButton"]')
       ]);
       
@@ -206,11 +193,8 @@ async function scrapePriceWithPuppeteer(
     
     // Take screenshot of results page
     try {
-      debugData.screenshots.resultsPage = await page.screenshot({ 
-        encoding: "base64", 
-        type: "jpeg", 
-        quality: 80 
-      });
+      const screenshot = await page.screenshot({ type: "jpeg", quality: 60 });
+      debugData.screenshots.resultsPage = btoa(String.fromCharCode(...new Uint8Array(screenshot)));
     } catch (screenshotError) {
       console.error("Failed to take results page screenshot:", screenshotError);
       debugData.errors.push(`Screenshot error: ${screenshotError.message}`);
@@ -336,7 +320,7 @@ async function scrapePriceWithPuppeteer(
     return result;
     
   } catch (error) {
-    console.error(`Error during Puppeteer scraping: ${error.message}`);
+    console.error(`Error during price scraping: ${error.message}`);
     
     // Add error to debug data
     debugData.errors.push(error.message);
