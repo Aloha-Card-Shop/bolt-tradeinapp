@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, ReactNode } from 'react';
 import { toast } from 'react-hot-toast';
 import { CardDetails } from '../types/card';
 import { use130PointScraper } from './use130PointScraper';
