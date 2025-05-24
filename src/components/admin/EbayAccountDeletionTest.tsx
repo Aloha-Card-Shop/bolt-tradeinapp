@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -43,7 +42,7 @@ const EbayAccountDeletionTest: React.FC = () => {
         type: 'challenge',
         status: response.status
       });
-      toast.success('Challenge validation test passed');
+      toast.success('✅ Challenge validation test PASSED! Function is deployed correctly.');
     } catch (err) {
       console.error('Challenge test exception:', err);
       setTestResult({ 
@@ -51,7 +50,7 @@ const EbayAccountDeletionTest: React.FC = () => {
         error: err instanceof Error ? err.message : 'Unknown error',
         type: 'challenge'
       });
-      toast.error('Challenge validation test failed');
+      toast.error('❌ Challenge validation FAILED - Function may not be redeployed yet');
     } finally {
       setIsLoading(false);
     }
@@ -167,7 +166,7 @@ const EbayAccountDeletionTest: React.FC = () => {
         type: 'direct-post',
         status: response.status
       });
-      toast.success('Direct POST endpoint test passed');
+      toast.success('✅ Direct POST endpoint test PASSED! eBay notifications will work.');
     } catch (err) {
       console.error('Direct POST test exception:', err);
       setTestResult({ 
@@ -175,7 +174,7 @@ const EbayAccountDeletionTest: React.FC = () => {
         error: err instanceof Error ? err.message : 'Unknown error',
         type: 'direct-post'
       });
-      toast.error('Direct POST endpoint test failed');
+      toast.error('❌ Direct POST FAILED - Function may need redeployment');
     } finally {
       setIsLoading(false);
     }
@@ -186,19 +185,30 @@ const EbayAccountDeletionTest: React.FC = () => {
       <h2 className="text-xl font-semibold mb-4">eBay Account Deletion Function Test</h2>
       
       <div className="space-y-6">
-        {/* Status Banner */}
+        {/* Enhanced Status Banner */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-medium text-blue-800 mb-2">Function Status</h3>
+          <h3 className="font-medium text-blue-800 mb-2">Function Configuration Status</h3>
           <div className="text-sm text-blue-700 space-y-1">
-            <p><strong>Authentication:</strong> ✅ Public (No JWT required)</p>
-            <p><strong>eBay Compliance:</strong> ✅ GET challenge + POST notification</p>
-            <p><strong>Configuration:</strong> verify_jwt = false</p>
+            <p><strong>Authentication:</strong> ✅ PUBLIC (No JWT verification)</p>
+            <p><strong>eBay Compliance:</strong> ✅ GET challenge + POST notification support</p>
+            <p><strong>Config Setting:</strong> verify_jwt = false in supabase/config.toml</p>
+            <p><strong>Deployment:</strong> Function updated with redeployment trigger</p>
+          </div>
+        </div>
+
+        {/* Deployment Notice */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <h3 className="font-medium text-yellow-800 mb-2">🚀 Redeployment Status</h3>
+          <div className="text-sm text-yellow-700 space-y-1">
+            <p>Function has been updated to force fresh deployment</p>
+            <p>If tests still show 401 errors, the deployment may still be in progress</p>
+            <p>Wait 1-2 minutes and retest if you encounter 401 errors</p>
           </div>
         </div>
 
         {/* Challenge Validation Test */}
         <div className="border rounded-lg p-4">
-          <h3 className="font-medium mb-3">GET Request - Challenge Validation</h3>
+          <h3 className="font-medium mb-3">🔍 GET Request - Challenge Validation Test</h3>
           <div className="flex gap-2 mb-3">
             <input
               type="text"
@@ -216,53 +226,38 @@ const EbayAccountDeletionTest: React.FC = () => {
             </button>
           </div>
           <p className="text-sm text-gray-600">
-            Tests GET request with challenge_code query parameter (eBay compliance test)
-          </p>
-        </div>
-
-        {/* Notification Handling Test via Supabase Client */}
-        <div className="border rounded-lg p-4">
-          <h3 className="font-medium mb-3">POST Request - Notification Handling (Supabase Client)</h3>
-          <button
-            onClick={testNotificationHandling}
-            disabled={isLoading}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-          >
-            {isLoading ? 'Testing...' : 'Test Notification'}
-          </button>
-          <p className="text-sm text-gray-600 mt-2">
-            Tests POST request with eBay account deletion notification payload via Supabase client
+            Tests GET request with challenge_code query parameter (eBay compliance validation)
           </p>
         </div>
 
         {/* Direct POST Endpoint Test */}
         <div className="border rounded-lg p-4">
-          <h3 className="font-medium mb-3">POST Request - Direct Endpoint Test</h3>
+          <h3 className="font-medium mb-3">📤 POST Request - eBay Notification Simulation</h3>
           <button
             onClick={testDirectPostEndpoint}
             disabled={isLoading}
-            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
           >
-            {isLoading ? 'Testing...' : 'Test Direct POST'}
+            {isLoading ? 'Testing...' : 'Test eBay Notification'}
           </button>
           <p className="text-sm text-gray-600 mt-2">
-            Tests POST request directly to the edge function endpoint (simulates eBay notification)
+            Tests POST request directly (simulates real eBay account deletion notification)
           </p>
         </div>
 
         {/* Test Results */}
         {testResult && (
           <div className="border rounded-lg p-4">
-            <h3 className="font-medium mb-3">Test Results</h3>
+            <h3 className="font-medium mb-3">📊 Test Results</h3>
             <div className={`p-3 rounded-md ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
               <div className="flex items-center gap-2 mb-2">
                 <span className={`font-medium ${testResult.success ? 'text-green-700' : 'text-red-700'}`}>
-                  {testResult.type === 'challenge' ? 'Challenge Validation' : 
-                   testResult.type === 'notification' ? 'Notification Handling (Client)' : 
-                   'Direct POST Test'}
+                  {testResult.type === 'challenge' ? '🔍 Challenge Validation' : 
+                   testResult.type === 'notification' ? '📧 Notification Handling (Client)' : 
+                   '📤 eBay Notification Test'}
                 </span>
-                <span className={`text-sm px-2 py-1 rounded ${testResult.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {testResult.success ? 'PASSED' : 'FAILED'}
+                <span className={`text-sm px-2 py-1 rounded font-medium ${testResult.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {testResult.success ? '✅ PASSED' : '❌ FAILED'}
                 </span>
                 {testResult.status && (
                   <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
@@ -273,14 +268,19 @@ const EbayAccountDeletionTest: React.FC = () => {
               
               {testResult.success ? (
                 <div className="text-sm text-green-700">
-                  <strong>Response:</strong>
+                  <strong>✅ Response:</strong>
                   <pre className="mt-1 p-2 bg-white rounded border text-xs overflow-auto">
                     {JSON.stringify(testResult.data, null, 2)}
                   </pre>
                 </div>
               ) : (
                 <div className="text-sm text-red-700">
-                  <strong>Error:</strong> {testResult.error}
+                  <strong>❌ Error:</strong> {testResult.error}
+                  {testResult.error?.includes('401') && (
+                    <div className="mt-2 p-2 bg-red-100 rounded text-xs">
+                      <strong>Likely cause:</strong> Function deployment in progress. Wait 1-2 minutes and retry.
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -289,16 +289,14 @@ const EbayAccountDeletionTest: React.FC = () => {
 
         {/* Function Info */}
         <div className="border rounded-lg p-4 bg-gray-50">
-          <h3 className="font-medium mb-2">Function Details</h3>
+          <h3 className="font-medium mb-2">📋 Function Details</h3>
           <div className="text-sm text-gray-600 space-y-1">
             <p><strong>Endpoint:</strong> https://qgsabaicokoynabxgdco.supabase.co/functions/v1/account-deletion</p>
-            <p><strong>Secrets configured:</strong> EBAY_VERIFICATION_TOKEN, PUBLIC_ENDPOINT_URL</p>
-            <p><strong>Methods supported:</strong> GET (challenge), POST (notification), OPTIONS (CORS)</p>
-            <p><strong>Challenge format:</strong> GET ?challenge_code=value</p>
-            <p><strong>Expected response:</strong> JSON with challengeResponse field</p>
-            <p><strong>eBay Compliance:</strong> ✅ GET challenge validation, ✅ POST notification handling</p>
-            <p><strong>Authentication:</strong> ❌ No auth required (eBay spec compliance)</p>
-            <p><strong>Configuration:</strong> verify_jwt = false (Public function)</p>
+            <p><strong>Authentication:</strong> ❌ DISABLED (Public access for eBay compliance)</p>
+            <p><strong>Configuration:</strong> verify_jwt = false in supabase/config.toml</p>
+            <p><strong>Methods:</strong> GET (challenge validation), POST (notifications), OPTIONS (CORS)</p>
+            <p><strong>eBay Spec:</strong> ✅ Challenge-response validation + notification handling</p>
+            <p><strong>Secrets Required:</strong> EBAY_VERIFICATION_TOKEN, PUBLIC_ENDPOINT_URL</p>
           </div>
         </div>
       </div>

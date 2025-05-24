@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Force redeployment - updated timestamp: 2025-01-25
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
@@ -36,8 +37,11 @@ async function createSHA256Hash(input: string): Promise<string> {
 }
 
 serve(async (req) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} request received - PUBLIC ACCESS (No JWT required)`);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('CORS preflight request handled');
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -46,6 +50,8 @@ serve(async (req) => {
     
     // GET REQUEST - Challenge Code Validation (eBay compliance test)
     if (req.method === 'GET') {
+      console.log('Processing GET request for eBay challenge validation');
+      
       // Only read challenge_code from URL query parameters (no authentication required)
       const challengeCode = url.searchParams.get('challenge_code');
       
@@ -90,7 +96,7 @@ serve(async (req) => {
       const hashInput = challengeCode + verificationToken + endpointUrl;
       const challengeResponse = await createSHA256Hash(hashInput);
 
-      console.log('eBay Challenge Request processed:', {
+      console.log('eBay Challenge Request processed successfully:', {
         challengeCode,
         endpointUrl,
         challengeResponse,
@@ -109,6 +115,8 @@ serve(async (req) => {
 
     // POST REQUEST - Account Deletion Notification (no authentication required for eBay notifications)
     if (req.method === 'POST') {
+      console.log('Processing POST request for eBay account deletion notification');
+      
       let notificationData: EbayAccountDeletionNotification;
       
       // Parse the incoming JSON payload safely
@@ -159,7 +167,7 @@ serve(async (req) => {
       }
 
       // Log the account deletion notification with all required fields
-      console.log('eBay Account Deletion Notification Received:', {
+      console.log('eBay Account Deletion Notification Received and Processed:', {
         topic: notificationData.metadata?.topic || 'MARKETPLACE_ACCOUNT_DELETION',
         notificationId: notificationData.notification.notificationId,
         eventDate: notificationData.notification.eventDate,
@@ -203,6 +211,7 @@ serve(async (req) => {
       }
 
       // Return immediate acknowledgment (200 OK as per eBay spec)
+      console.log('Returning 200 OK response to eBay (compliance requirement)');
       return new Response(
         null,
         { 
@@ -213,6 +222,7 @@ serve(async (req) => {
     }
 
     // Method not allowed - return 405 for unsupported HTTP methods
+    console.log(`Method ${req.method} not allowed`);
     return new Response(
       JSON.stringify({ error: 'Method not allowed. Only GET and POST requests are supported.' }),
       { 
