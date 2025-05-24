@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { CardDetails } from '../types/card';
@@ -31,7 +30,6 @@ export interface ScrapeResult {
 // Cache for storing price data
 const priceCache = new Map<string, { data: ScrapeResult; timestamp: number }>();
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
-const MAX_RETRIES = 3;
 
 // Enhanced browser fingerprinting - more realistic user agents
 const USER_AGENTS = [
