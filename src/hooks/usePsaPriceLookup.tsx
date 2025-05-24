@@ -1,188 +1,57 @@
 
-import { useState, useCallback } from 'react';
-import { toast } from 'react-hot-toast';
+import React from 'react';
+import { useEbayPriceLookup } from './useEbayPriceLookup';
 import { CardDetails } from '../types/card';
-import { use130PointScraper } from './use130PointScraper';
 
 export interface PsaPriceData {
   averagePrice: number;
   salesCount: number;
-  filteredSalesCount: number;
   searchUrl: string;
   query: string;
-  directUrl?: string; // Added for direct 130point.com link
-  error?: string;
-  debug?: any;
-  htmlSnippet?: string;
-  pageTitle?: string;
-  timestamp?: string;
-  manualSearchSuggested?: boolean; // Added to flag when manual search might work
-  sales: Array<{
-    date: string;
+  soldItems?: Array<{
     title: string;
-    link: string;
-    auction: string;
-    bids: string;
     price: number;
+    url: string;
   }>;
 }
 
+// Adapter hook to maintain compatibility with existing components
 export const usePsaPriceLookup = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [priceData, setPriceData] = useState<PsaPriceData | null>(null);
-  const [debugInfo, setDebugInfo] = useState<any | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const MAX_RETRIES = 3;
+  const { isLoading, error, priceData, lookupPrice, clearPriceData } = useEbayPriceLookup();
 
-  // Use our direct 130point scraper hook
-  const { lookupPrice: scrapePrice } = use130PointScraper();
+  const lookupPsaPrice = async (card: CardDetails): Promise<PsaPriceData | null> => {
+    const result = await lookupPrice(card);
+    
+    if (!result) return null;
 
-  // Lookup price data for a PSA card
-  const lookupPrice = useCallback(async (card: CardDetails) => {
-    if (!card.name) {
-      toast.error('Card name is required for price lookup');
-      return null;
-    }
+    // Transform eBay result to match expected PSA price data format
+    return {
+      averagePrice: result.averagePrice,
+      salesCount: result.salesCount,
+      searchUrl: result.searchUrl,
+      query: result.query,
+      soldItems: result.soldItems
+    };
+  };
 
-    if (!card.certification?.grade) {
-      toast.error('PSA grade is required for price lookup');
-      return null;
-    }
+  const clearData = () => {
+    clearPriceData();
+  };
 
-    setIsLoading(true);
-    setError(null);
-    setPriceData(null);
-    setDebugInfo(null);
-
-    try {
-      console.log(`Looking up PSA price for ${card.name} (PSA ${card.certification.grade})`);
-      
-      // Use the direct scraper instead of the Supabase function
-      const result = await scrapePrice(card);
-      
-      if (!result) {
-        setError('No price data available');
-        toast.error('Price lookup failed');
-        return null;
-      }
-
-      if (result.error) {
-        setError(result.error);
-        
-        // Show a more precise error message with debugging details
-        if (result.error.includes('No sales data found')) {
-          if (result.directUrl) {
-            // Show toast with link to 130point
-            toast((t) => (
-              <div>
-                <p>No recent sales found for this card and grade.</p>
-                {result.manualSearchSuggested && (
-                  <p className="text-sm text-amber-600 mt-1">Manual search might show results!</p>
-                )}
-                <a 
-                  href={result.directUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline mt-2 block"
-                  onClick={() => toast.dismiss(t.id)}
-                >
-                  Check 130point.com directly
-                </a>
-              </div>
-            ), { duration: 8000 });
-          } else {
-            toast.error('No recent sales found for this card and grade');
-          }
-          
-          console.log('Search query used:', result.query || 'Unknown');
-          
-          // Log process steps if available
-          if (result.debug?.processSteps) {
-            console.log('Process steps:', result.debug.processSteps);
-          }
-          
-          // Log errors if available
-          if (result.debug?.errors && result.debug.errors.length > 0) {
-            console.log('Errors encountered:', result.debug.errors);
-          }
-        } else {
-          toast.error(result.error);
-        }
-        
-        // Still return the debug data even if no prices were found
-        setPriceData(result);
-        setDebugInfo(result.debug);
-        return result;
-      }
-
-      console.log('Retrieved PSA price data:', result);
-      
-      setPriceData(result);
-      setDebugInfo(result.debug);
-      
-      if (result.filteredSalesCount > 0) {
-        toast.success(`Found ${result.filteredSalesCount} recent sales for PSA ${card.certification.grade} ${card.name}`);
-      } else if (result.directUrl) {
-        // Show toast with link to 130point
-        toast((t) => (
-          <div>
-            <p>No recent sales found. Check 130point.com directly:</p>
-            <a 
-              href={result.directUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline mt-2 block"
-              onClick={() => toast.dismiss(t.id)}
-            >
-              Open 130point.com search
-            </a>
-          </div>
-        ), { duration: 8000 });
-      } else {
-        toast(`No recent sales found, but you can check 130point.com for more info`);
-      }
-      
-      return result;
-    } catch (err: unknown) {
-      console.error('PSA price lookup error:', err);
-      let errorMessage = 'An unexpected error occurred';
-      if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
-        errorMessage += `: ${err.message}`;
-      }
-      
-      // If we still have retries left, try again
-      if (retryCount < MAX_RETRIES) {
-        const nextRetryCount = retryCount + 1;
-        setRetryCount(nextRetryCount);
-        toast.loading(`Retrying price lookup (attempt ${nextRetryCount})...`);
-        // Short delay before retry
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setIsLoading(false); // Reset loading state for recursive call
-        return await lookupPrice(card);
-      }
-      
-      setError(errorMessage);
-      toast.error('Price lookup failed after multiple attempts');
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [retryCount, scrapePrice]);
-
-  const clearPriceData = useCallback(() => {
-    setPriceData(null);
-    setError(null);
-    setDebugInfo(null);
-    setRetryCount(0);
-  }, []);
+  // Transform priceData for compatibility
+  const transformedPriceData = priceData ? {
+    averagePrice: priceData.averagePrice,
+    salesCount: priceData.salesCount,
+    searchUrl: priceData.searchUrl,
+    query: priceData.query,
+    soldItems: priceData.soldItems
+  } : null;
 
   return {
     isLoading,
     error,
-    priceData,
-    debugInfo,
-    lookupPrice,
-    clearPriceData
+    priceData: transformedPriceData,
+    lookupPsaPrice,
+    clearData
   };
 };
