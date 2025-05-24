@@ -1,7 +1,8 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Browser, chromium } from "https://deno.land/x/playwright@v1.27.2/mod.ts";
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import { Puppeteer } from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -47,13 +48,13 @@ setInterval(() => {
 }, 30 * 60 * 1000); // Check every 30 minutes
 
 // Main scraping function
-async function scrapePriceWithPlaywright(
+async function scrapePriceWithPuppeteer(
   cardName: string, 
   setName: string, 
   cardNumber: string, 
   grade: string
 ): Promise<any> {
-  console.log(`Starting Playwright scrape for: ${cardName} (Set: ${setName}, Number: ${cardNumber}, Grade: PSA ${grade})`);
+  console.log(`Starting Puppeteer scrape for: ${cardName} (Set: ${setName}, Number: ${cardNumber}, Grade: PSA ${grade})`);
   
   // Generate search query
   const searchQuery = formatSearchQuery(cardName, setName, cardNumber, grade);
@@ -71,7 +72,7 @@ async function scrapePriceWithPlaywright(
   // Search URL for reference (not used directly but returned to frontend)
   const searchUrl = `https://130point.com/cards/?search=${encodeURIComponent(searchQuery)}&searchButton=&sortBy=date_desc`;
   
-  let browser: Browser | null = null;
+  let browser = null;
   let debugData: any = {
     searchQuery,
     searchUrl,
@@ -84,8 +85,11 @@ async function scrapePriceWithPlaywright(
     console.log("Launching headless browser...");
     const startLaunchTime = Date.now();
     
+    // Initialize Puppeteer
+    const puppeteer = new Puppeteer();
+    
     // Launch browser with appropriate options for serverless environment
-    browser = await chromium.launch({
+    browser = await puppeteer.launch({
       headless: true,
       args: [
         '--disable-gpu',
@@ -101,40 +105,36 @@ async function scrapePriceWithPlaywright(
     debugData.timing.browserLaunch = Date.now() - startLaunchTime;
     console.log(`Browser launched in ${debugData.timing.browserLaunch}ms`);
     
-    // Create context and page
-    const context = await browser.newContext({
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
-      viewport: { width: 1280, height: 720 },
-      deviceScaleFactor: 1,
-    });
-    
-    const page = await context.newPage();
+    // Create new page
+    const page = await browser.newPage();
+    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36");
+    await page.setViewport({ width: 1280, height: 720 });
     
     // Navigate to 130point.com
     console.log("Navigating to 130point.com/cards...");
     const startNavTime = Date.now();
     await page.goto('https://130point.com/cards/', { 
-      waitUntil: 'networkidle',
+      waitUntil: 'networkidle0',
       timeout: 30000 
     });
     debugData.timing.initialNavigation = Date.now() - startNavTime;
     
     // Take screenshot of the initial page
     debugData.screenshots.initialPage = await page.screenshot({ 
-      type: 'jpeg', 
-      quality: 80,
-      encoding: 'base64'
+      encoding: "base64", 
+      type: "jpeg", 
+      quality: 80 
     });
     
     // Fill the search form
     console.log(`Filling search form with query: "${searchQuery}"`);
-    await page.fill('input[name="search"]', searchQuery);
+    await page.type('input[name="search"]', searchQuery);
     
     // Take screenshot of filled form
     debugData.screenshots.filledForm = await page.screenshot({ 
-      type: 'jpeg', 
-      quality: 80,
-      encoding: 'base64'
+      encoding: "base64", 
+      type: "jpeg", 
+      quality: 80 
     });
     
     // Submit the search form
@@ -143,7 +143,7 @@ async function scrapePriceWithPlaywright(
     
     // Click the search button and wait for navigation
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 }),
+      page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 30000 }),
       page.click('input[name="searchButton"]')
     ]);
     
@@ -152,13 +152,15 @@ async function scrapePriceWithPlaywright(
     
     // Take screenshot of results page
     debugData.screenshots.resultsPage = await page.screenshot({ 
-      type: 'jpeg', 
-      quality: 80,
-      encoding: 'base64'
+      encoding: "base64", 
+      type: "jpeg", 
+      quality: 80 
     });
     
     // Check if results table exists
-    const hasResultsTable = await page.locator('table.sales-table').count() > 0;
+    const hasResultsTable = await page.evaluate(() => {
+      return document.querySelector('table.sales-table') !== null;
+    });
     
     if (!hasResultsTable) {
       console.log("No results table found on the page");
@@ -275,7 +277,7 @@ async function scrapePriceWithPlaywright(
     return result;
     
   } catch (error) {
-    console.error(`Error during Playwright scraping: ${error.message}`);
+    console.error(`Error during Puppeteer scraping: ${error.message}`);
     
     // Add error to debug data
     debugData.errors.push(error.message);
@@ -316,10 +318,10 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Playwright scraper called for: ${cardName} #${cardNumber || 'N/A'} (PSA ${grade || 'N/A'}) from ${setName || 'N/A'}`);
+    console.log(`Price scraper called for: ${cardName} #${cardNumber || 'N/A'} (PSA ${grade || 'N/A'}) from ${setName || 'N/A'}`);
     
     // Run the scraping operation
-    const result = await scrapePriceWithPlaywright(
+    const result = await scrapePriceWithPuppeteer(
       cardName,
       setName || '',
       cardNumber || '',
@@ -333,7 +335,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error in playwright-scraper function:', error);
+    console.error('Error in price-scraper function:', error);
     return new Response(
       JSON.stringify({ 
         error: error.message || 'An unexpected error occurred',

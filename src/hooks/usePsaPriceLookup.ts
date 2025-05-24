@@ -52,7 +52,7 @@ export const usePsaPriceLookup = () => {
     try {
       console.log(`Looking up PSA price for ${card.name} (PSA ${card.certification.grade})`);
       
-      // Send detailed card information to the playwright-scraper function
+      // Send detailed card information to the puppeteer-scraper function
       const { data, error } = await supabase.functions.invoke('playwright-scraper', {
         body: {
           cardName: card.name,
