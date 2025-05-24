@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { CardDetails } from '../types/card';
@@ -25,6 +26,7 @@ export interface ScrapeResult {
   timestamp?: string;
   sales: SaleData[];
   directUrl?: string; // Added for direct 130point link
+  manualSearchSuggested?: boolean; // Flag for suggesting manual search
 }
 
 // Cache for storing price data
@@ -504,7 +506,8 @@ export const use130PointScraper = () => {
       salesCount: 0,
       filteredSalesCount: 0,
       sales: [],
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      manualSearchSuggested: true // Indicate that manual search might work
     };
     
     // Cache the error result too
@@ -518,9 +521,22 @@ export const use130PointScraper = () => {
     setDebugInfo(debugData);
     setIsLoading(false);
     
-    // Show a more helpful error message
-    toast.error('No recent sales found. Try checking 130point.com directly.', { 
-      duration: 5000,
+    // Show a more helpful error message with specific suggestion to try manual search
+    toast((t) => (
+      <div className="space-y-2">
+        <p>No sales found through automated search.</p>
+        <p className="text-sm text-amber-600">Try searching manually - results may be available!</p>
+        <a 
+          href={directUrl} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="flex items-center justify-center mt-2 px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        >
+          Open in 130point.com
+        </a>
+      </div>
+    ), { 
+      duration: 8000,
       icon: '🔍'
     });
     

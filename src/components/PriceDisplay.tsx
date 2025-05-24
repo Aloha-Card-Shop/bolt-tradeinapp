@@ -38,15 +38,22 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({
             <p className="mt-1 text-sm text-red-700">{priceData.error}</p>
             
             {priceData.directUrl && (
-              <a 
-                href={priceData.directUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
-              >
-                <ExternalLink className="h-4 w-4 mr-1" />
-                Check 130point.com directly
-              </a>
+              <div className="mt-3">
+                {priceData.manualSearchSuggested && (
+                  <p className="text-sm text-amber-600 mb-2">
+                    <strong>Try searching manually</strong> - Results may be available when searched directly!
+                  </p>
+                )}
+                <a 
+                  href={priceData.directUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Search on 130point.com
+                </a>
+              </div>
             )}
           </div>
         </div>

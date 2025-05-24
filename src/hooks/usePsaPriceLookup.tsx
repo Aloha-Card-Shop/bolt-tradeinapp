@@ -16,6 +16,7 @@ export interface PsaPriceData {
   htmlSnippet?: string;
   pageTitle?: string;
   timestamp?: string;
+  manualSearchSuggested?: boolean; // Added to flag when manual search might work
   sales: Array<{
     date: string;
     title: string;
@@ -76,6 +77,9 @@ export const usePsaPriceLookup = () => {
             toast((t) => (
               <div>
                 <p>No recent sales found for this card and grade.</p>
+                {result.manualSearchSuggested && (
+                  <p className="text-sm text-amber-600 mt-1">Manual search might show results!</p>
+                )}
                 <a 
                   href={result.directUrl} 
                   target="_blank" 
