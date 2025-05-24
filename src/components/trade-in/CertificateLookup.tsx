@@ -112,7 +112,7 @@ const CertificateLookup: React.FC<CertificateLookupProps> = ({ onCertificateFoun
           )}
           
           {/* Show search query and results statistics */}
-          {priceData.filteredSalesCount > 0 && (
+          {priceData.filteredSalesCount && priceData.filteredSalesCount > 0 && (
             <p className="text-xs text-green-600 mt-1">
               <strong>Found:</strong> {priceData.filteredSalesCount} recent sales (from total {priceData.salesCount})
             </p>
