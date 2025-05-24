@@ -46,7 +46,18 @@ serve(async (req) => {
     
     // GET REQUEST - Challenge Code Validation
     if (req.method === 'GET') {
-      const challengeCode = url.searchParams.get('challenge_code');
+      let challengeCode = url.searchParams.get('challenge_code');
+      
+      // If not in URL params, try to get from body (for Supabase client requests)
+      if (!challengeCode && req.body) {
+        try {
+          const body = await req.json();
+          challengeCode = body.challenge_code;
+        } catch (e) {
+          // Ignore JSON parsing errors for GET requests without body
+          console.log('No JSON body found in GET request, using URL params only');
+        }
+      }
       
       if (!challengeCode) {
         console.error('Missing challenge_code parameter in GET request');
