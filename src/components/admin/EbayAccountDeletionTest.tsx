@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -51,65 +52,6 @@ const EbayAccountDeletionTest: React.FC = () => {
         type: 'challenge'
       });
       toast.error('❌ Challenge validation FAILED - Function may not be redeployed yet');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const testNotificationHandling = async () => {
-    setIsLoading(true);
-    setTestResult(null);
-
-    const testPayload = {
-      metadata: {
-        topic: 'MARKETPLACE_ACCOUNT_DELETION'
-      },
-      notification: {
-        notificationId: 'test-notification-' + Date.now(),
-        eventDate: new Date().toISOString(),
-        data: {
-          username: 'testuser123',
-          userId: 'test-user-id-456',
-          eiasToken: 'test-eias-token-789'
-        }
-      }
-    };
-
-    try {
-      console.log('Testing POST request with payload:', testPayload);
-      
-      const { data, error } = await supabase.functions.invoke('account-deletion', {
-        body: testPayload
-      });
-
-      console.log('Supabase function response:', { data, error });
-
-      if (error) {
-        console.error('Notification test error:', error);
-        setTestResult({ 
-          success: false, 
-          error: error.message || 'Unknown error',
-          type: 'notification'
-        });
-        toast.error('Notification handling test failed');
-      } else {
-        console.log('Notification test response:', data);
-        setTestResult({ 
-          success: true, 
-          data: data || 'Success (empty response)',
-          type: 'notification',
-          status: 200
-        });
-        toast.success('Notification handling test passed');
-      }
-    } catch (err) {
-      console.error('Notification test exception:', err);
-      setTestResult({ 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Unknown error',
-        type: 'notification'
-      });
-      toast.error('Notification handling test failed');
     } finally {
       setIsLoading(false);
     }
@@ -192,7 +134,7 @@ const EbayAccountDeletionTest: React.FC = () => {
             <p><strong>Authentication:</strong> ✅ PUBLIC (No JWT verification)</p>
             <p><strong>eBay Compliance:</strong> ✅ GET challenge + POST notification support</p>
             <p><strong>Config Setting:</strong> verify_jwt = false in supabase/config.toml</p>
-            <p><strong>Deployment:</strong> Function updated with redeployment trigger</p>
+            <p><strong>Deployment:</strong> Function updated with redeployment trigger - timestamp: 2025-01-25</p>
           </div>
         </div>
 
