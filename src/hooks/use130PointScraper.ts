@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { CardDetails } from '../types/card';
+import { supabase } from '../lib/supabase';
 
 export interface SaleData {
   date: string;
@@ -283,38 +284,24 @@ export const use130PointScraper = () => {
       
       debugData.headers = { ...headers };
       debugData.processSteps.push(`Using user agent: ${userAgent}`);
-      debugData.processSteps.push(`Making initial request to 130point.com/sales to get cookies and session`);
+      debugData.processSteps.push(`Making request to Supabase Edge Function for scraping`);
       
-      // Use the fetch API directly in the browser to make the request
-      // Create form data
-      const formData = new URLSearchParams();
-      formData.append("search", searchQuery);
-      formData.append("searchButton", "");
-      formData.append("sortBy", "date_desc");
-      
-      debugData.processSteps.push(`Submitting form with query "${searchQuery}"`);
-      debugData.formData = Object.fromEntries(formData.entries());
-      
-      // Make the fetch request - we will use a proxy API endpoint we'll create next
-      const response = await fetch('/api/scrape-130point', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      // Make the fetch request to our Supabase Edge Function instead of the Next.js API
+      const response = await supabase.functions.invoke('scrape-130point', {
+        body: {
           searchQuery,
           userAgent
-        })
+        }
       });
       
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
+      if (response.error) {
+        throw new Error(`Edge function error: ${response.error.message}`);
       }
       
-      const data = await response.json();
+      const data = response.data;
       
-      if (data.error) {
-        throw new Error(data.error);
+      if (!data || !data.html) {
+        throw new Error('No HTML data returned from scraper');
       }
       
       // Parse the HTML response
