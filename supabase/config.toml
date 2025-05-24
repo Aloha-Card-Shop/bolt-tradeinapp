@@ -73,9 +73,11 @@ redirect_uri = ""
 # or any other third-party OIDC providers.
 url = ""
 
-[functions]
 [functions.scrape-130point]
 verify_jwt = false
 
 [functions.account-deletion]
+verify_jwt = false
+
+[functions.get-ebay-token]
 verify_jwt = false
