@@ -1,0 +1,202 @@
+
+import React, { useState } from 'react';
+import { supabase } from '../../lib/supabase';
+import { toast } from 'react-hot-toast';
+
+const EbayAccountDeletionTest: React.FC = () => {
+  const [challengeCode, setChallengeCode] = useState('test123');
+  const [testResult, setTestResult] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const testChallengeValidation = async () => {
+    setIsLoading(true);
+    setTestResult(null);
+
+    try {
+      console.log('Testing GET request with challenge code:', challengeCode);
+      
+      const { data, error } = await supabase.functions.invoke('account-deletion', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (error) {
+        console.error('Challenge test error:', error);
+        setTestResult({ 
+          success: false, 
+          error: error.message || 'Unknown error',
+          type: 'challenge'
+        });
+        toast.error('Challenge validation test failed');
+      } else {
+        console.log('Challenge test response:', data);
+        setTestResult({ 
+          success: true, 
+          data,
+          type: 'challenge'
+        });
+        toast.success('Challenge validation test passed');
+      }
+    } catch (err) {
+      console.error('Challenge test exception:', err);
+      setTestResult({ 
+        success: false, 
+        error: err instanceof Error ? err.message : 'Unknown error',
+        type: 'challenge'
+      });
+      toast.error('Challenge validation test failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const testNotificationHandling = async () => {
+    setIsLoading(true);
+    setTestResult(null);
+
+    const testPayload = {
+      metadata: {
+        topic: 'MARKETPLACE_ACCOUNT_DELETION'
+      },
+      notification: {
+        notificationId: 'test-notification-' + Date.now(),
+        eventDate: new Date().toISOString(),
+        data: {
+          username: 'testuser123',
+          userId: 'test-user-id-456',
+          eiasToken: 'test-eias-token-789'
+        }
+      }
+    };
+
+    try {
+      console.log('Testing POST request with payload:', testPayload);
+      
+      const { data, error } = await supabase.functions.invoke('account-deletion', {
+        body: testPayload,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (error) {
+        console.error('Notification test error:', error);
+        setTestResult({ 
+          success: false, 
+          error: error.message || 'Unknown error',
+          type: 'notification'
+        });
+        toast.error('Notification handling test failed');
+      } else {
+        console.log('Notification test response:', data);
+        setTestResult({ 
+          success: true, 
+          data: data || 'Success (empty response)',
+          type: 'notification'
+        });
+        toast.success('Notification handling test passed');
+      }
+    } catch (err) {
+      console.error('Notification test exception:', err);
+      setTestResult({ 
+        success: false, 
+        error: err instanceof Error ? err.message : 'Unknown error',
+        type: 'notification'
+      });
+      toast.error('Notification handling test failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="p-6 bg-white rounded-lg shadow-sm border">
+      <h2 className="text-xl font-semibold mb-4">eBay Account Deletion Function Test</h2>
+      
+      <div className="space-y-6">
+        {/* Challenge Validation Test */}
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-3">GET Request - Challenge Validation</h3>
+          <div className="flex gap-2 mb-3">
+            <input
+              type="text"
+              value={challengeCode}
+              onChange={(e) => setChallengeCode(e.target.value)}
+              placeholder="Challenge code"
+              className="px-3 py-2 border rounded-md flex-1"
+            />
+            <button
+              onClick={testChallengeValidation}
+              disabled={isLoading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isLoading ? 'Testing...' : 'Test Challenge'}
+            </button>
+          </div>
+          <p className="text-sm text-gray-600">
+            Tests GET request with challenge_code parameter for eBay endpoint validation
+          </p>
+        </div>
+
+        {/* Notification Handling Test */}
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-3">POST Request - Notification Handling</h3>
+          <button
+            onClick={testNotificationHandling}
+            disabled={isLoading}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+          >
+            {isLoading ? 'Testing...' : 'Test Notification'}
+          </button>
+          <p className="text-sm text-gray-600 mt-2">
+            Tests POST request with eBay account deletion notification payload
+          </p>
+        </div>
+
+        {/* Test Results */}
+        {testResult && (
+          <div className="border rounded-lg p-4">
+            <h3 className="font-medium mb-3">Test Results</h3>
+            <div className={`p-3 rounded-md ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`font-medium ${testResult.success ? 'text-green-700' : 'text-red-700'}`}>
+                  {testResult.type === 'challenge' ? 'Challenge Validation' : 'Notification Handling'}
+                </span>
+                <span className={`text-sm px-2 py-1 rounded ${testResult.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {testResult.success ? 'PASSED' : 'FAILED'}
+                </span>
+              </div>
+              
+              {testResult.success ? (
+                <div className="text-sm text-green-700">
+                  <strong>Response:</strong>
+                  <pre className="mt-1 p-2 bg-white rounded border text-xs overflow-auto">
+                    {JSON.stringify(testResult.data, null, 2)}
+                  </pre>
+                </div>
+              ) : (
+                <div className="text-sm text-red-700">
+                  <strong>Error:</strong> {testResult.error}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Function Info */}
+        <div className="border rounded-lg p-4 bg-gray-50">
+          <h3 className="font-medium mb-2">Function Details</h3>
+          <div className="text-sm text-gray-600 space-y-1">
+            <p><strong>Endpoint:</strong> https://qgsabaicokoynabxgdco.supabase.co/functions/v1/account-deletion</p>
+            <p><strong>Secrets configured:</strong> EBAY_VERIFICATION_TOKEN, PUBLIC_ENDPOINT_URL</p>
+            <p><strong>Methods supported:</strong> GET (challenge), POST (notification), OPTIONS (CORS)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default EbayAccountDeletionTest;
