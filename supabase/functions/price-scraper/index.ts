@@ -157,6 +157,9 @@ const scrapePrice = async (
   let cookies = '';
   let searchUrl = '';
   
+  // Create the parser outside the try-catch blocks so it's available throughout the function
+  const parser = new DOMParser();
+  
   // Get the initial page to get cookies and form structure
   console.log("Fetching initial page to prepare for form submission...");
   try {
@@ -171,7 +174,6 @@ const scrapePrice = async (
     const initialHtml = await initialResponse.text();
     
     // Parse the HTML to get form details
-    const parser = new DOMParser();
     const document = parser.parseFromString(initialHtml, 'text/html');
     if (!document) {
       throw new Error("Failed to parse initial HTML");
