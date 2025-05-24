@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { CardDetails } from '../types/card';
 import { fetchCardPrices } from '../utils/scraper';
@@ -27,7 +26,7 @@ export interface TradeInItem {
 
 export const useTradeInList = () => {
   const [items, setItems] = useState<TradeInItem[]>([]);
-  const { lookupPrice } = usePsaPriceLookup();
+  const { lookupPsaPrice } = usePsaPriceLookup();
 
   const addItem = useCallback(async (card: CardDetails, price: number) => {
     // Generate a unique ID for the card if it doesn't have one
@@ -39,28 +38,28 @@ export const useTradeInList = () => {
     // Check if it's a certified card
     const isCertified = card.isCertified || false;
 
-    // Use 130point.com for certified cards if no price is provided
+    // Use eBay for certified cards if no price is provided
     let finalPrice = price || 0;
     let priceSource = card.priceSource;
 
     if (isCertified && !price && card.certification?.grade) {
       try {
-        console.log("Certified card detected - looking up price from 130point.com");
-        const priceData = await lookupPrice(card);
+        console.log("Certified card detected - looking up price from eBay");
+        const priceData = await lookupPsaPrice(card);
         
         if (priceData && priceData.averagePrice) {
           finalPrice = priceData.averagePrice;
           priceSource = {
-            name: '130point.com',
+            name: 'eBay',
             url: priceData.searchUrl,
-            salesCount: priceData.filteredSalesCount,
+            salesCount: priceData.salesCount,
             foundSales: true
           };
-          console.log(`Found average price: $${finalPrice} from ${priceData.filteredSalesCount} sales`);
+          console.log(`Found average price: $${finalPrice} from ${priceData.salesCount} sales`);
         } else if (priceData && priceData.searchUrl) {
           // We have a search URL but no price data
           priceSource = {
-            name: '130point.com',
+            name: 'eBay',
             url: priceData.searchUrl,
             salesCount: 0,
             foundSales: false
@@ -100,7 +99,7 @@ export const useTradeInList = () => {
       const gradeMessage = finalPrice > 0 ? ` (Average sale: $${finalPrice})` : '';
       toast.success(`Added PSA grade ${card.certification?.grade} ${card.name} to trade-in list${gradeMessage}`);
     }
-  }, [lookupPrice]);
+  }, [lookupPsaPrice]);
 
   const removeItem = useCallback((index: number) => {
     setItems(prev => prev.filter((_, i) => i !== index));
@@ -144,14 +143,14 @@ export const useTradeInList = () => {
     
     // Check if this is a certified card
     if (item.card.isCertified) {
-      // For certified cards, we'll try to use 130point.com
+      // For certified cards, we'll try to use eBay
       updateItemAttribute(index, 'isLoadingPrice', true);
       updateItemAttribute(index, 'error', undefined);
       updateItemAttribute(index, 'isPriceUnavailable', false);
       
       try {
-        console.log("Fetching certified card price from 130point.com");
-        const priceData = await lookupPrice(item.card);
+        console.log("Fetching certified card price from eBay");
+        const priceData = await lookupPsaPrice(item.card);
         
         if (priceData && priceData.averagePrice) {
           updateItemAttribute(index, 'price', priceData.averagePrice);
@@ -161,15 +160,15 @@ export const useTradeInList = () => {
           const updatedCard = {
             ...item.card,
             priceSource: {
-              name: '130point.com',
+              name: 'eBay',
               url: priceData.searchUrl,
-              salesCount: priceData.filteredSalesCount,
+              salesCount: priceData.salesCount,
               foundSales: true
             }
           };
           updateItemAttribute(index, 'card', updatedCard);
           
-          console.log(`Found average price: $${priceData.averagePrice} from ${priceData.filteredSalesCount} sales`);
+          console.log(`Found average price: $${priceData.averagePrice} from ${priceData.salesCount} sales`);
         } else {
           updateItemAttribute(index, 'price', 0);
           updateItemAttribute(index, 'isPriceUnavailable', true);
@@ -179,7 +178,7 @@ export const useTradeInList = () => {
             const updatedCard = {
               ...item.card,
               priceSource: {
-                name: '130point.com',
+                name: 'eBay',
                 url: priceData.searchUrl,
                 salesCount: 0,
                 foundSales: false
@@ -226,7 +225,7 @@ export const useTradeInList = () => {
     } finally {
       updateItemAttribute(index, 'isLoadingPrice', false);
     }
-  }, [items, updateItemAttribute, lookupPrice]);
+  }, [items, updateItemAttribute, lookupPsaPrice]);
 
   const clearList = useCallback(() => {
     setItems([]);

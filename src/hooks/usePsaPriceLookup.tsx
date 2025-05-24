@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { useEbayPriceLookup } from './useEbayPriceLookup';
 import { CardDetails } from '../types/card';
 
@@ -52,6 +51,7 @@ export const usePsaPriceLookup = () => {
     error,
     priceData: transformedPriceData,
     lookupPsaPrice,
-    clearData
+    clearData,
+    lookupPrice // Add this for compatibility
   };
 };

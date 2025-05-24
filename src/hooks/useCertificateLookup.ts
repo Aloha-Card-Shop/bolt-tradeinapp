@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -23,7 +22,7 @@ export const useCertificateLookup = () => {
   const [result, setResult] = useState<CertificateData | null>(null);
   
   // Get the price lookup hook
-  const { lookupPrice, priceData, isLoading: isPriceLoading, error: priceError } = usePsaPriceLookup();
+  const { lookupPsaPrice, priceData, isLoading: isPriceLoading, error: priceError } = usePsaPriceLookup();
 
   // Keep track of the card with pricing information
   const [certifiedCardWithPrice, setCertifiedCardWithPrice] = useState<CardDetails | null>(null);
@@ -102,8 +101,8 @@ export const useCertificateLookup = () => {
       // Convert to card details and look up the price automatically
       const cardDetails = convertToCardDetails(data.data);
       if (cardDetails) {
-        // Look up price from 130point.com
-        await lookupPrice(cardDetails);
+        // Look up price from eBay
+        await lookupPsaPrice(cardDetails);
       }
     } catch (err: unknown) {
       console.error('Certificate lookup error:', err);
@@ -166,9 +165,9 @@ export const useCertificateLookup = () => {
         if (priceData) {
           card.lastPrice = priceData.averagePrice;
           card.priceSource = {
-            name: '130point.com',
+            name: 'eBay',
             url: priceData.searchUrl,
-            salesCount: priceData.filteredSalesCount,
+            salesCount: priceData.salesCount,
             foundSales: priceData.salesCount > 0
           };
         }
