@@ -9,7 +9,7 @@ export interface EbaySoldItem {
   price: number;
   url: string;
   currency?: string;
-  endDate?: string;
+  isOutlier?: boolean;
 }
 
 export interface EbayPriceResult {

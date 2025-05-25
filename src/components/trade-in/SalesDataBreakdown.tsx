@@ -1,13 +1,13 @@
 
 import React from 'react';
-import { ExternalLink, ChevronUp, ChevronDown, Info, TrendingUp } from 'lucide-react';
+import { ExternalLink, ChevronUp, ChevronDown, Info, TrendingUp, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
 interface SoldItem {
   title: string;
   price: number;
   url: string;
-  endDate?: string;
+  isOutlier?: boolean;
 }
 
 interface SalesDataBreakdownProps {
@@ -35,10 +35,15 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
   isExpanded,
   onToggle
 }) => {
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Unknown date';
-    return new Date(dateString).toLocaleDateString();
-  };
+  // Sort items to show non-outliers first, then outliers
+  const sortedItems = [...soldItems].sort((a, b) => {
+    if (a.isOutlier && !b.isOutlier) return 1;
+    if (!a.isOutlier && b.isOutlier) return -1;
+    return 0;
+  });
+
+  const nonOutlierItems = soldItems.filter(item => !item.isOutlier);
+  const outlierItems = soldItems.filter(item => item.isOutlier);
 
   return (
     <div className="mt-3 border-t border-gray-200 pt-3">
@@ -48,7 +53,7 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
       >
         <span className="flex items-center">
           <TrendingUp className="h-4 w-4 mr-1" />
-          View pricing details ({salesCount} recent sales)
+          View pricing details ({salesCount} used for average{outliersRemoved > 0 && `, ${outliersRemoved} outliers`})
         </span>
         {isExpanded ? (
           <ChevronUp className="h-4 w-4" />
@@ -75,7 +80,7 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
             {outliersRemoved > 0 && (
               <div className="mt-2 flex items-center text-xs text-blue-600">
                 <Info className="h-3 w-3 mr-1" />
-                {outliersRemoved} outlier(s) removed for better accuracy
+                {salesCount} items used for average, {outliersRemoved} outlier(s) excluded for accuracy
               </div>
             )}
           </div>
@@ -83,21 +88,39 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
           {/* Individual Sales */}
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-gray-700">Recent Sales Data:</h4>
-            {soldItems.length > 0 ? (
+            {sortedItems.length > 0 ? (
               <div className="space-y-2">
-                {soldItems.map((item, index) => (
-                  <div key={index} className="bg-gray-50 rounded-lg p-3 text-sm">
+                {sortedItems.map((item, index) => (
+                  <div 
+                    key={index} 
+                    className={`rounded-lg p-3 text-sm ${
+                      item.isOutlier 
+                        ? 'bg-red-50 border border-red-200 opacity-75' 
+                        : 'bg-gray-50'
+                    }`}
+                  >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 mr-3">
-                        <p className="font-medium text-gray-900 line-clamp-2 mb-1">
-                          {item.title}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Sold: {formatDate(item.endDate)}
-                        </p>
+                        <div className="flex items-start gap-2">
+                          <p className={`font-medium line-clamp-2 mb-1 ${
+                            item.isOutlier ? 'text-gray-600' : 'text-gray-900'
+                          }`}>
+                            {item.title}
+                          </p>
+                          {item.isOutlier && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 flex-shrink-0">
+                              <AlertTriangle className="h-3 w-3 mr-0.5" />
+                              Outlier
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="font-bold text-green-600">${formatCurrency(item.price)}</p>
+                        <p className={`font-bold ${
+                          item.isOutlier ? 'text-gray-600' : 'text-green-600'
+                        }`}>
+                          ${formatCurrency(item.price)}
+                        </p>
                         {item.url && (
                           <a
                             href={item.url}
@@ -117,6 +140,22 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
               <p className="text-sm text-gray-500 italic">No recent sales data available</p>
             )}
           </div>
+
+          {/* Outlier Explanation */}
+          {outliersRemoved > 0 && (
+            <div className="bg-amber-50 rounded-lg p-3 text-xs text-amber-700">
+              <div className="flex items-start">
+                <Info className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium">About outlier removal:</p>
+                  <p className="mt-1">
+                    Items marked as outliers were excluded from the average calculation to provide more accurate pricing. 
+                    These represent extreme high or low prices that may not reflect typical market value.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Search Information */}
           <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
