@@ -6,6 +6,7 @@ import CustomerSelectPage from './pages/trade-in/CustomerSelectPage';
 import Dashboard from './pages/admin/Dashboard';
 import MyTradeIns from './pages/my-trade-ins';
 import LoginPage from './pages/LoginPage';
+import Login from './pages/login';
 import ShopifySettingsPage from './pages/admin/shopify-settings';
 import ShopifyMappingsPage from './pages/admin/shopify-mappings';
 import AppHeader from './components/layout/AppHeader';
@@ -30,6 +31,7 @@ function App() {
         <AppHeader />
         <div className={`${isMobile ? 'pb-16' : ''}`}>
           <Routes>
+            <Route path="/login" element={<Login />} />
             <Route path="/" element={<LoginPage />} />
             <Route path="/app" element={<MainApp />} />
             <Route path="/trade-in/review" element={<TradeInReviewPage />} />

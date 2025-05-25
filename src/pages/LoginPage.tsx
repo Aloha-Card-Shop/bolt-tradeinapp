@@ -6,8 +6,8 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Auto-redirect to app as authentication is not fully implemented yet
-    navigate('/app');
+    // Redirect to the actual login page
+    navigate('/login');
   }, [navigate]);
 
   return (
@@ -17,7 +17,7 @@ const LoginPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Aloha Card Shop</h1>
           <p className="mt-2 text-gray-600">Trade-In System</p>
         </div>
-        <p className="text-center text-sm text-gray-500">Redirecting to application...</p>
+        <p className="text-center text-sm text-gray-500">Redirecting to login...</p>
       </div>
     </div>
   );

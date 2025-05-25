@@ -61,7 +61,8 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   const signOut = () => {
     console.log('Signing out...');
     setSession(null);
-    window.location.href = '/';
+    // Redirect to login page instead of root
+    window.location.href = '/login';
   };
 
   const contextValue = {

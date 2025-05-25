@@ -24,15 +24,15 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, allowedRoles }) => {
   }
   
   // If at login page and user is authenticated, redirect to dashboard
-  if (location.pathname === '/' && user) {
+  if (location.pathname === '/login' && user) {
     console.log('Redirecting authenticated user from login to dashboard');
     return <Navigate to="/dashboard" replace />;
   }
   
   // If not at login page and user is not authenticated, redirect to login
-  if (location.pathname !== '/' && !user) {
+  if (location.pathname !== '/login' && !user) {
     console.log('Redirecting unauthenticated user to login');
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
   
   // If roles are specified, check if user has the required role
