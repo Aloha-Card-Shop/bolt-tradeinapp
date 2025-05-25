@@ -19,6 +19,9 @@ export const useCardSearch = () => {
     categoryId: GAME_OPTIONS[0].categoryId
   });
   
+  // Add card type state for graded vs raw search mode
+  const [cardType, setCardType] = useState<'raw' | 'graded'>('raw');
+  
   // Always keep suggestions hidden - we're disabling the dropdown
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -324,6 +327,8 @@ export const useCardSearch = () => {
 
   return {
     cardDetails,
+    cardType,
+    setCardType,
     searchResults,
     setOptions: filteredSetOptions,
     isLoadingSets,
