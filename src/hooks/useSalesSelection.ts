@@ -10,12 +10,18 @@ interface SoldItem {
 
 export const useSalesSelection = (soldItems: SoldItem[]) => {
   // Track which items are manually excluded by their index
-  const [excludedItems, setExcludedItems] = useState<Set<number>>(new Set());
+  // Initialize with outliers excluded by default
+  const [excludedItems, setExcludedItems] = useState<Set<number>>(() => {
+    const outlierIndices = soldItems
+      .map((item, index) => item.isOutlier ? index : -1)
+      .filter(index => index !== -1);
+    return new Set(outlierIndices);
+  });
 
   // Calculate adjusted average based on user selections
   const adjustedCalculation = useMemo(() => {
-    const itemsToInclude = soldItems.filter((item, index) => {
-      // Exclude manually excluded items, but include outliers if they're not excluded
+    const itemsToInclude = soldItems.filter((_, index) => {
+      // Exclude manually excluded items
       return !excludedItems.has(index);
     });
 
@@ -93,7 +99,6 @@ export const useSalesSelection = (soldItems: SoldItem[]) => {
   };
 
   return {
-    excludedItems,
     adjustedCalculation,
     toggleItemInclusion,
     includeAllItems,

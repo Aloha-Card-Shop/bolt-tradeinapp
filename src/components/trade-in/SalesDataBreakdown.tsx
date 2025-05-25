@@ -29,7 +29,6 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
   soldItems,
   averagePrice,
   priceRange,
-  outliersRemoved,
   calculationMethod,
   searchUrl,
   query,
@@ -39,7 +38,6 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
   onAdjustedPriceChange
 }) => {
   const {
-    excludedItems,
     adjustedCalculation,
     toggleItemInclusion,
     includeAllItems,
@@ -267,10 +265,10 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
               <div>
                 <p className="font-medium">About sales selection:</p>
                 <p className="mt-1">
-                  You have full control over which sales are included in the average calculation. 
-                  Exclude sales that seem unusual (damaged cards, special circumstances, etc.) 
-                  or include outliers you believe represent valid comparable sales. The average 
-                  updates automatically to reflect your selections.
+                  Outliers are automatically excluded by default. You have full control over which sales 
+                  are included in the average calculation. Exclude sales that seem unusual (damaged cards, 
+                  special circumstances, etc.) or include outliers you believe represent valid comparable sales. 
+                  The average updates automatically to reflect your selections.
                 </p>
               </div>
             </div>
