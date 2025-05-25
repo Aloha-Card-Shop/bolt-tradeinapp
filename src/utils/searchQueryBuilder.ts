@@ -1,9 +1,13 @@
+
 import { CardDetails } from '../types/card';
 import { createCardNumberFilters } from './cardSearchUtils';
 
 // Constants
 export const DEBUG_MODE = true;
 export const RESULTS_PER_PAGE = 12;
+
+// Valid game types that we support
+const SUPPORTED_GAME_TYPES = ['pokemon', 'japanese-pokemon'] as const;
 
 // This function builds the GraphQL query for card search
 export const buildSearchQuery = (
@@ -21,22 +25,17 @@ export const buildSearchQuery = (
   // Build filter array
   const filters: string[] = [];
 
-  // Game type filtering - only include if game is provided
-  if (cardDetails.game) {
+  // Game type filtering - only include if game is provided and supported
+  if (cardDetails.game && SUPPORTED_GAME_TYPES.includes(cardDetails.game as any)) {
     if (cardDetails.game === 'pokemon') {
       filters.push("game.eq.pokemon");
-    } else if (cardDetails.game === 'magic') {
-      filters.push("game.eq.mtg");
-    } else if (cardDetails.game === 'yugioh') {
-      filters.push("game.eq.yugioh");
-    } else if (cardDetails.game === 'sports') {
-      filters.push("game.eq.sports");
-    } else if (cardDetails.game === 'other') {
-      filters.push("game.neq.mtg");
-      filters.push("game.neq.pokemon");
-      filters.push("game.neq.yugioh");
-      filters.push("game.neq.sports");
+    } else if (cardDetails.game === 'japanese-pokemon') {
+      filters.push("game.eq.pokemon"); // Japanese pokemon is still pokemon in the database
     }
+  } else if (cardDetails.game) {
+    // Log warning for unsupported game types but continue with default
+    console.warn(`Unsupported game type: ${cardDetails.game}, defaulting to pokemon`);
+    filters.push("game.eq.pokemon");
   }
 
   // Name search - enhance name match with product_name
@@ -149,11 +148,16 @@ export const formatResultsToCardDetails = (
     }
 
     // Extract the game type from item and convert to our GameType enum
-    let gameType = item.game || searchCriteria?.game || 'other';
+    let gameType = item.game || searchCriteria?.game || 'pokemon';
     
     // Map from database game types to our GameType enum
-    if (gameType === 'mtg') gameType = 'magic';
     if (gameType === 'pkmn' || gameType === 'pokemon-card') gameType = 'pokemon';
+    
+    // For any non-supported game types, default to pokemon
+    if (!SUPPORTED_GAME_TYPES.includes(gameType as any)) {
+      console.warn(`Unsupported game type in results: ${gameType}, defaulting to pokemon`);
+      gameType = 'pokemon';
+    }
     
     // Format the card details
     const cardDetails: CardDetails = {
@@ -162,7 +166,7 @@ export const formatResultsToCardDetails = (
       set: setName || item.group_name || '',
       setId: item.group_id?.toString() || undefined,
       number: cardNumber,
-      game: gameType,
+      game: gameType as any,
       imageUrl: item.image_url || null,
       rarity: item.rarity || undefined,
       releaseYear: item.release_date?.substring(0, 4) || undefined,
@@ -175,16 +179,12 @@ export const formatResultsToCardDetails = (
 
 export const getCategoryIdForGame = (gameType: string): number => {
   switch (gameType) {
-    case 'magic':
-      return 1;
     case 'pokemon':
       return 2;
-    case 'yugioh':
-      return 3;
-    case 'sports':
-      return 4;
-    case 'other':
+    case 'japanese-pokemon':
+      return 9;
     default:
-      return 8; // Default category for other games
+      console.warn(`Unsupported game type for category: ${gameType}, defaulting to pokemon`);
+      return 2; // Default to pokemon category
   }
 };

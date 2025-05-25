@@ -15,6 +15,8 @@ import { toast } from 'react-hot-toast';
 function MainApp() {
   const { 
     cardDetails, 
+    cardType,
+    setCardType,
     searchResults, 
     setOptions, 
     isLoadingSets, 
@@ -30,7 +32,8 @@ function MainApp() {
     performSearch,
     isSetFiltered,
     handleShowAllSets,
-    addCertificateToResults
+    addCertificateToResults,
+    clearSearchResults
   } = useCardSearch();
   
   const { savedCards, removeCard } = useSavedCards();
@@ -114,6 +117,9 @@ function MainApp() {
                 isFiltered={isSetFiltered}
                 onShowAllSets={handleShowAllSets}
                 onAddCertificateToResults={addCertificateToResults}
+                onClearResults={clearSearchResults}
+                cardType={cardType}
+                onCardTypeChange={setCardType}
               />
             </div>
             
