@@ -1,3 +1,4 @@
+
 import { CardDetails } from '../types/card';
 import { createCardNumberFilters } from './cardSearchUtils';
 
@@ -25,17 +26,8 @@ export const buildSearchQuery = (
   if (cardDetails.game) {
     if (cardDetails.game === 'pokemon') {
       filters.push("game.eq.pokemon");
-    } else if (cardDetails.game === 'magic') {
-      filters.push("game.eq.mtg");
-    } else if (cardDetails.game === 'yugioh') {
-      filters.push("game.eq.yugioh");
-    } else if (cardDetails.game === 'sports') {
-      filters.push("game.eq.sports");
-    } else if (cardDetails.game === 'other') {
-      filters.push("game.neq.mtg");
-      filters.push("game.neq.pokemon");
-      filters.push("game.neq.yugioh");
-      filters.push("game.neq.sports");
+    } else if (cardDetails.game === 'japanese-pokemon') {
+      filters.push("game.eq.pokemon"); // Japanese pokemon is still pokemon in the database
     }
   }
 
@@ -149,11 +141,15 @@ export const formatResultsToCardDetails = (
     }
 
     // Extract the game type from item and convert to our GameType enum
-    let gameType = item.game || searchCriteria?.game || 'other';
+    let gameType = item.game || searchCriteria?.game || 'pokemon';
     
     // Map from database game types to our GameType enum
-    if (gameType === 'mtg') gameType = 'magic';
     if (gameType === 'pkmn' || gameType === 'pokemon-card') gameType = 'pokemon';
+    
+    // For any non-supported game types, default to pokemon
+    if (!['pokemon', 'japanese-pokemon'].includes(gameType)) {
+      gameType = 'pokemon';
+    }
     
     // Format the card details
     const cardDetails: CardDetails = {
@@ -175,16 +171,11 @@ export const formatResultsToCardDetails = (
 
 export const getCategoryIdForGame = (gameType: string): number => {
   switch (gameType) {
-    case 'magic':
-      return 1;
     case 'pokemon':
       return 2;
-    case 'yugioh':
-      return 3;
-    case 'sports':
-      return 4;
-    case 'other':
+    case 'japanese-pokemon':
+      return 9;
     default:
-      return 8; // Default category for other games
+      return 2; // Default to pokemon category
   }
 };

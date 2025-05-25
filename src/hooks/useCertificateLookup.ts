@@ -27,7 +27,7 @@ export const useCertificateLookup = () => {
   // Keep track of the card with pricing information
   const [certifiedCardWithPrice, setCertifiedCardWithPrice] = useState<CardDetails | null>(null);
 
-  // Detect game type based on certificate data
+  // Detect game type based on certificate data - now only supports Pokemon games
   const detectGameType = (certData: CertificateData): GameType => {
     // Default to Pokémon if we can't determine
     if (!certData) return 'pokemon';
@@ -35,17 +35,14 @@ export const useCertificateLookup = () => {
     const name = certData.cardName.toLowerCase();
     const set = (certData.set || '').toLowerCase();
     
-    if (name.includes('magic') || set.includes('magic') || 
-        name.includes('mtg') || set.includes('mtg')) {
-      return 'magic';
+    // Look for Japanese Pokémon-specific terms
+    if (name.includes('japanese') || set.includes('japanese') ||
+        name.includes('japan') || set.includes('japan') ||
+        set.includes('jp') || name.includes('jp')) {
+      return 'japanese-pokemon';
     }
     
-    if (name.includes('yugioh') || set.includes('yugioh') || 
-        name.includes('yu-gi-oh') || set.includes('yu-gi-oh')) {
-      return 'yugioh';
-    }
-    
-    // Look for Pokémon-specific terms
+    // Look for Pokémon-specific terms - covers most cases including magic, yugioh, sports
     if (name.includes('pokemon') || set.includes('pokemon') ||
         name.includes('pikachu') || name.includes('charizard') ||
         set.includes('base set') || set.includes('black star') ||
@@ -54,14 +51,7 @@ export const useCertificateLookup = () => {
       return 'pokemon';
     }
     
-    // Look for sports card indicators
-    if (name.includes('topps') || name.includes('upper deck') ||
-        name.includes('panini') || name.includes('bowman') ||
-        name.includes('fleer')) {
-      return 'sports';
-    }
-    
-    // Default to Pokémon as the most common type
+    // Default to regular Pokémon for all other card types (magic, yugioh, sports, etc.)
     return 'pokemon';
   };
 
