@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CardDetails, GameType, GAME_OPTIONS } from '../types/card';
 import { useSetOptions } from './useSetOptions';
@@ -33,7 +34,7 @@ export const useCardSearch = () => {
   // Track if sets are filtered
   const [isSetFiltered, setIsSetFiltered] = useState(false);
   
-  const { setOptions, filteredSetOptions, isLoadingSets, filterSetOptions, showAllSets, isFiltered } = useSetOptions();
+  const { setOptions, filteredSetOptions, isLoadingSets, filterSetOptions, showAllSets, isFiltered, loadSetsByGame } = useSetOptions();
   
   const { 
     searchResults, 
@@ -60,6 +61,11 @@ export const useCardSearch = () => {
   
   // Cache for recent search results to avoid redundant DB queries
   const searchCacheRef = useRef<Map<string, any>>(new Map());
+
+  // Load sets when game type changes
+  useEffect(() => {
+    loadSetsByGame(cardDetails.game);
+  }, [cardDetails.game, loadSetsByGame]);
 
   // Create a memoized search signature to prevent unnecessary re-renders
   const createSearchSignature = useCallback((details: CardDetails) => {

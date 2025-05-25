@@ -75,8 +75,8 @@ export interface SavedCard extends CardDetails {
 }
 
 export const GAME_OPTIONS = [
-  { label: 'Pokémon', value: 'pokemon', categoryId: 2 },
-  { label: 'Japanese Pokémon', value: 'japanese-pokemon', categoryId: 9 }
+  { label: 'Pokémon', value: 'pokemon', categoryId: 3 }, // Updated to correct category ID
+  { label: 'Japanese Pokémon', value: 'japanese-pokemon', categoryId: 85 } // Updated to correct category ID
 ];
 
 export const CONDITION_OPTIONS = [

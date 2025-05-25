@@ -33,11 +33,11 @@ export const useCardSearchQuery = () => {
         .order('name', { ascending: true })
         .limit(12);
       
-      // Filter by category based on game type
+      // Filter by category based on game type - using correct category IDs
       if (cardDetails.game === 'pokemon') {
-        query = query.eq('category_id', 2);
+        query = query.eq('category_id', 3); // Correct Pokemon category ID
       } else if (cardDetails.game === 'japanese-pokemon') {
-        query = query.eq('category_id', 9);
+        query = query.eq('category_id', 85); // Correct Japanese Pokemon category ID
       }
       
       // Add name search filter
@@ -62,7 +62,7 @@ export const useCardSearchQuery = () => {
       if (cardDetails.set && cardDetails.set.trim()) {
         // Find the group_id from setOptions if available
         const selectedSet = setOptions.find(setOpt => 
-          setOpt.label === cardDetails.set || setOpt.value === cardDetails.set
+          setOpt.name === cardDetails.set || setOpt.value === cardDetails.set
         );
         
         if (selectedSet && selectedSet.id) {
@@ -77,7 +77,8 @@ export const useCardSearchQuery = () => {
         name: cardDetails.name,
         number: cardDetails.number,
         set: cardDetails.set,
-        game: cardDetails.game
+        game: cardDetails.game,
+        categoryId: cardDetails.game === 'pokemon' ? 3 : 85
       });
       
       const { data, error, count } = await query;
@@ -103,7 +104,7 @@ export const useCardSearchQuery = () => {
             cardNumber = attributes?.Number || attributes?.card_number || '';
           }
           
-          // Find set name from setOptions
+          // Find set name from setOptions using group_id
           const setName = setOptions.find(s => s.id === item.group_id)?.name || '';
           
           // Extract set IDs for filtering

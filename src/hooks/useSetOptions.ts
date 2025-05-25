@@ -1,5 +1,7 @@
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { GameType } from '../types/card';
 
 export interface SetOption {
   id: number;
@@ -14,8 +16,46 @@ export const useSetOptions = () => {
   const [isLoadingSets, setIsLoadingSets] = useState(false);
   const [isFiltered, setIsFiltered] = useState(false);
 
+  // Load sets from database based on game type
+  const loadSetsByGame = useCallback(async (gameType: GameType) => {
+    setIsLoadingSets(true);
+    
+    try {
+      // Map game type to category ID
+      const categoryId = gameType === 'pokemon' ? 3 : 85;
+      
+      console.log('Loading sets for game type:', gameType, 'category:', categoryId);
+      
+      const { data, error } = await supabase
+        .from('groups')
+        .select('groupid, name, categoryid')
+        .eq('categoryid', categoryId)
+        .order('name', { ascending: true });
+      
+      if (error) {
+        console.error('Error loading sets:', error);
+        return;
+      }
+      
+      console.log('Loaded sets:', data?.length);
+      
+      const formattedSets: SetOption[] = data?.map(set => ({
+        id: set.groupid,
+        name: set.name,
+        gameId: set.categoryid
+      })) || [];
+      
+      setSetOptions(formattedSets);
+      setFilteredSetOptions(formattedSets);
+    } catch (err) {
+      console.error('Error loading sets:', err);
+    } finally {
+      setIsLoadingSets(false);
+    }
+  }, []);
+
   // This function now accepts a Set<number> of set IDs for filtering
-  const filterSetOptions = (
+  const filterSetOptions = useCallback((
     searchTerms: string[],
     foundSetIds: Set<number> = new Set<number>()
   ) => {
@@ -42,19 +82,19 @@ export const useSetOptions = () => {
     
     setFilteredSetOptions(filtered);
     setIsFiltered(filtered.length < setOptions.length);
-  };
+  }, [setOptions]);
 
-  const showAllSets = () => {
+  const showAllSets = useCallback(() => {
     setFilteredSetOptions(setOptions);
     setIsFiltered(false);
-  };
+  }, [setOptions]);
 
   // Add function to update set options
-  const updateSetOptions = (options: SetOption[], isLoading: boolean = false) => {
+  const updateSetOptions = useCallback((options: SetOption[], isLoading: boolean = false) => {
     setSetOptions(options);
     setFilteredSetOptions(options);
     setIsLoadingSets(isLoading);
-  };
+  }, []);
 
   return {
     setOptions,
@@ -63,6 +103,7 @@ export const useSetOptions = () => {
     isFiltered,
     filterSetOptions,
     showAllSets,
-    updateSetOptions
+    updateSetOptions,
+    loadSetsByGame
   };
 };
