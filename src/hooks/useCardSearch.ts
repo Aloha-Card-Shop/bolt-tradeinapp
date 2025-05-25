@@ -155,7 +155,7 @@ export const useCardSearch = () => {
     }
   }, [searchCards, setOptions, filterSetOptions, isFiltered, createSearchSignature, setSearchResults]);
 
-  // Handle input changes with better validation
+  // Handle input changes with better validation and proper typing
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
@@ -171,17 +171,19 @@ export const useCardSearch = () => {
         newDetails.game = gameType;
         newDetails.categoryId = gameOption?.categoryId || GAME_OPTIONS[0].categoryId;
         newDetails.set = ''; // Reset set when game changes
-      } else {
-        newDetails[name as keyof CardDetails] = value;
+      } else if (name === 'name') {
+        newDetails.name = value;
         
         // Check if input might be a card number for name field
-        if (name === 'name') {
-          if (isLikelyCardNumber(value) && !newDetails.number) {
-            setPotentialCardNumber(value.trim());
-          } else {
-            setPotentialCardNumber(null);
-          }
+        if (isLikelyCardNumber(value) && !newDetails.number) {
+          setPotentialCardNumber(value.trim());
+        } else {
+          setPotentialCardNumber(null);
         }
+      } else if (name === 'set') {
+        newDetails.set = value;
+      } else if (name === 'number') {
+        newDetails.number = value;
       }
       
       return newDetails;
