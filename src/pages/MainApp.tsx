@@ -5,13 +5,12 @@ import CardSearch from '../components/CardSearch';
 import CardResults from '../components/CardResults';
 import GradedCardResults from '../components/GradedCardResults';
 import SavedCards from '../components/SavedCards';
-import TradeInList from '../components/trade-in/TradeInList';
+import TradeInListWithCustomer from '../components/trade-in/TradeInListWithCustomer';
 import { useCardSearch } from '../hooks/useCardSearch';
 import { useGradedCardSearch } from '../hooks/useGradedCardSearch';
 import { useSavedCards } from '../hooks/useSavedCards';
 import { useTradeInListWithCustomer } from '../hooks/useTradeInListWithCustomer';
 import { useCustomers } from '../hooks/useCustomers';
-import TradeInListWithCustomer from '../components/trade-in/TradeInListWithCustomer';
 import { CardDetails, SavedCard } from '../types/card';
 import { toast } from 'react-hot-toast';
 
@@ -50,6 +49,11 @@ function MainApp() {
   const { savedCards, removeCard } = useSavedCards();
   const { items, selectedCustomer, addItem, removeItem, updateItem, clearList, selectCustomer } = useTradeInListWithCustomer();
   const { customers, isLoading: isLoadingCustomers, createCustomer } = useCustomers();
+
+  // Wrapper function to handle the return type mismatch
+  const handleCustomerCreate = async (firstName: string, lastName: string, email?: string, phone?: string): Promise<void> => {
+    await createCustomer(firstName, lastName, email, phone);
+  };
 
   const handleCheckSavedCard = (card: SavedCard) => {
     const event = {
@@ -187,7 +191,7 @@ function MainApp() {
                 onRemoveItem={removeItem}
                 onUpdateItem={updateItem}
                 onCustomerSelect={selectCustomer}
-                onCustomerCreate={createCustomer}
+                onCustomerCreate={handleCustomerCreate}
                 clearList={clearList}
               />
             </div>
