@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ExternalLink, ChevronUp, ChevronDown, Info, TrendingUp, AlertTriangle, RefreshCw, Check } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
@@ -44,7 +43,7 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
     toggleOutlierInclusion,
     resetToOriginal,
     isAdjusted
-  } = useOutlierSelection(soldItems, averagePrice);
+  } = useOutlierSelection(soldItems);
 
   // Notify parent component of price changes
   React.useEffect(() => {

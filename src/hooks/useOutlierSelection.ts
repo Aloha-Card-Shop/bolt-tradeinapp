@@ -8,7 +8,7 @@ interface SoldItem {
   isOutlier?: boolean;
 }
 
-export const useOutlierSelection = (soldItems: SoldItem[], originalAverage: number) => {
+export const useOutlierSelection = (soldItems: SoldItem[]) => {
   // Track which outliers are manually included by their index
   const [includedOutliers, setIncludedOutliers] = useState<Set<number>>(new Set());
 
