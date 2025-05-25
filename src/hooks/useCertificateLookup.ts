@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -42,7 +43,7 @@ export const useCertificateLookup = () => {
       return 'japanese-pokemon';
     }
     
-    // Look for Pokémon-specific terms - covers most cases including magic, yugioh, sports
+    // Look for Pokémon-specific terms - covers most cases
     if (name.includes('pokemon') || set.includes('pokemon') ||
         name.includes('pikachu') || name.includes('charizard') ||
         set.includes('base set') || set.includes('black star') ||
@@ -51,7 +52,9 @@ export const useCertificateLookup = () => {
       return 'pokemon';
     }
     
-    // Default to regular Pokémon for all other card types (magic, yugioh, sports, etc.)
+    // For any other card types (previously magic, yugioh, sports, etc.)
+    // we now default to pokemon since we only support Pokemon games
+    console.log(`Certificate appears to be non-Pokemon card: ${name}, defaulting to pokemon game type`);
     return 'pokemon';
   };
 
