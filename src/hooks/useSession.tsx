@@ -25,7 +25,6 @@ interface SessionProviderProps {
 export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     console.log('SessionProvider initializing...');
@@ -35,13 +34,13 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
                           window.location.hostname.includes('lovableproject.com');
     
     if (isDevelopment) {
-      // Mock session for development
-      const mockSession = {
+      // Mock session for development - properly typed
+      const mockSession: Session = {
         user: {
           id: '1',
           email: 'admin@alohacardshop.com',
           user_metadata: {
-            role: 'admin'
+            role: 'admin' as const
           }
         }
       };
@@ -68,7 +67,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   const contextValue = {
     user: session?.user || null, 
     loading, 
-    error,
+    error: null,
     signOut
   };
 
