@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CardDetails, GameType, GAME_OPTIONS } from '../types/card';
 import { useSetOptions } from './useSetOptions';
@@ -43,7 +42,8 @@ export const useCardSearch = () => {
     searchCards, 
     hasMoreResults, 
     loadMoreResults,
-    totalResults
+    totalResults,
+    addCertificateToResults
   } = useCardSearchQuery();
   
   const { 
@@ -73,7 +73,9 @@ export const useCardSearch = () => {
   }, []);
 
   // New function to add certificate results to search results
-  const addCertificateToResults = useCallback((certificateCard: CardDetails) => {
+  const handleAddCertificateToResults = useCallback((certificateCard: CardDetails) => {
+    console.log("Handling certificate addition to results:", certificateCard);
+    
     // Make sure the certificate card has required fields
     if (!certificateCard) {
       console.error("Invalid certificate card:", certificateCard);
@@ -85,28 +87,9 @@ export const useCardSearch = () => {
       certificateCard.productId = certificateCard.certification.certNumber;
     }
 
-    console.log("Adding certificate to results:", certificateCard);
-
-    // Add the certificate to the beginning of the results array
-    setSearchResults(prevResults => {
-      // Check if this certificate is already in the results
-      const existingIndex = prevResults.findIndex(
-        card => card.isCertified && 
-               card.certification?.certNumber === certificateCard.certification?.certNumber
-      );
-      
-      if (existingIndex >= 0) {
-        // Replace the existing entry if it exists
-        const newResults = [...prevResults];
-        newResults[existingIndex] = certificateCard;
-        return newResults;
-      }
-      
-      // Otherwise add to the beginning
-      toast.success(`Found certificate: ${certificateCard.name} (PSA ${certificateCard.certification?.grade || '?'})`);
-      return [certificateCard, ...prevResults];
-    });
-  }, [setSearchResults]);
+    // Use the addCertificateToResults function from the query hook
+    addCertificateToResults(certificateCard);
+  }, [addCertificateToResults]);
 
   // Perform search function with improved caching and duplicate prevention
   const performActualSearch = useCallback(async (details: CardDetails) => {
@@ -325,7 +308,7 @@ export const useCardSearch = () => {
     performSearch,
     handleShowAllSets,
     isSetFiltered,
-    addCertificateToResults,
+    addCertificateToResults: handleAddCertificateToResults,
     clearSearchResults
   };
 };

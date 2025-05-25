@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -164,14 +163,44 @@ export const useCardSearchQuery = () => {
       setIsSearching(false);
     }
   }, [hasMoreResults, isSearching, lastPage]);
+
+  // Add certificate card to search results - this is the key function
+  const addCertificateToResults = useCallback((certificateCard: CardDetails) => {
+    console.log('Adding certificate card to search results:', certificateCard);
+    
+    setSearchResults(prevResults => {
+      // Check if this certificate is already in the results
+      const existingIndex = prevResults.findIndex(
+        card => card.isCertified && 
+               card.certification?.certNumber === certificateCard.certification?.certNumber
+      );
+      
+      if (existingIndex >= 0) {
+        // Replace the existing entry if it exists
+        const newResults = [...prevResults];
+        newResults[existingIndex] = certificateCard;
+        console.log('Updated existing certificate in results');
+        return newResults;
+      }
+      
+      // Otherwise add to the beginning
+      console.log('Added new certificate to beginning of results');
+      toast.success(`Found certificate: ${certificateCard.name} (PSA ${certificateCard.certification?.grade || '?'})`);
+      return [certificateCard, ...prevResults];
+    });
+    
+    // Update total results count
+    setTotalResults(prev => prev + 1);
+  }, []);
   
   return {
     searchResults,
-    setSearchResults, // Expose the setter to add manual results like certificates
+    setSearchResults, // Keep this for manual result management
     isSearching,
     searchCards,
     hasMoreResults,
     loadMoreResults,
-    totalResults
+    totalResults,
+    addCertificateToResults // Make sure this is exposed
   };
 };

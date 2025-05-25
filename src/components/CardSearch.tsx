@@ -107,7 +107,9 @@ const CardSearch: React.FC<CardSearchProps> = ({
       
       {/* Graded Card Mode - Show Certificate Lookup */}
       {cardType === 'graded' && onAddCertificateToResults && (
-        <CertificateLookup onCertificateFound={onAddCertificateToResults} />
+        <div className="mb-6">
+          <CertificateLookup onCertificateFound={onAddCertificateToResults} />
+        </div>
       )}
       
       {/* Raw Card Mode - Show Traditional Search Fields */}
