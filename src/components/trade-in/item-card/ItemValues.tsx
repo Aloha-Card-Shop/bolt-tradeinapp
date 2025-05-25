@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { RefreshCw, ExternalLink, ChevronUp, ChevronDown } from 'lucide-react';
 import ValueDisplay from '../shared/ValueDisplay';
 import PriceInput from '../shared/PriceInput';
 import SalesDataBreakdown from '../SalesDataBreakdown';
@@ -41,12 +40,17 @@ const ItemValues: React.FC<ItemValuesProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const getValueLabel = () => {
+    if (!paymentType) return "Trade-In Value";
+    return paymentType === 'cash' ? "Cash Value" : "Trade Credit Value";
+  };
+
   return (
     <div className="mt-4 space-y-3">
       <PriceInput
         price={price}
         onChange={onPriceChange}
-        onRefresh={onRefreshPrice}
+        onRefreshPrice={onRefreshPrice}
         isLoading={isLoadingPrice}
         isPriceUnavailable={isPriceUnavailable}
         usedFallback={usedFallback}
@@ -54,11 +58,14 @@ const ItemValues: React.FC<ItemValuesProps> = ({
       />
       
       <ValueDisplay
+        label={getValueLabel()}
         value={displayValue}
-        paymentType={paymentType}
         isLoading={isLoading}
         error={error}
-        onValueAdjustment={onValueAdjustment}
+        onValueChange={onValueAdjustment}
+        editable={!!onValueAdjustment}
+        usedFallback={usedFallback}
+        fallbackReason={fallbackReason}
       />
 
       {/* Show sales data breakdown for certified cards with price source */}
