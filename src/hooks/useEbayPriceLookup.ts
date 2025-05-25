@@ -26,6 +26,19 @@ export interface EbayPriceResult {
   };
   outliersRemoved: number;
   calculationMethod: string;
+  // Add missing properties for compatibility with CertificateLookup
+  debug?: {
+    searchQuery?: string;
+    filterCriteria?: string;
+    pageTitle?: string;
+    filteredSalesCount?: number;
+    processSteps?: string[];
+    errors?: string[];
+    formSubmitUrl?: string;
+  };
+  htmlSnippet?: string;
+  pageTitle?: string;
+  filteredSalesCount?: number;
 }
 
 // Cache for storing price data
@@ -102,7 +115,17 @@ export const useEbayPriceLookup = () => {
         timestamp: new Date().toISOString(),
         priceRange: data.price_range || { min: 0, max: 0 },
         outliersRemoved: data.outliers_removed || 0,
-        calculationMethod: data.calculation_method || 'unknown'
+        calculationMethod: data.calculation_method || 'unknown',
+        // Add compatibility fields
+        filteredSalesCount: data.sales_count,
+        debug: {
+          searchQuery: data.query,
+          filteredSalesCount: data.sales_count,
+          processSteps: [],
+          errors: []
+        },
+        pageTitle: undefined,
+        htmlSnippet: undefined
       };
 
       // Cache the result

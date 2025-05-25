@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { Loader2, ImageOff, PlusCircle, Search, AlertCircle, Info, Award, DollarSign } from 'lucide-react';
 import { CardDetails, SavedCard, CardNumberObject } from '../types/card';
@@ -229,7 +230,7 @@ const CardResults: React.FC<CardResultsProps> = ({
                                 <DollarSign className="h-4 w-4 mr-1 flex-shrink-0" />
                                 <div>
                                   <p className="font-medium">Average price: ${formatCurrency(card.lastPrice)}</p>
-                                  <p className="text-xs">Based on {card.priceSource.salesCount} recent sales</p>
+                                  <p className="text-xs">Based on {card.priceSource.salesCount || 0} recent sales</p>
                                 </div>
                               </div>
                             ) : card.priceSource.url && (
@@ -265,9 +266,9 @@ const CardResults: React.FC<CardResultsProps> = ({
                               isExpanded={isExpanded}
                               onToggle={() => toggleSalesData(cardId)}
                             />
-                          ) : card.priceSource.salesCount > 0 && (
+                          ) : (card.priceSource.salesCount || 0) > 0 && (
                             <div className="mt-3 text-sm text-gray-600">
-                              <p>Found {card.priceSource.salesCount} sales but detailed data unavailable</p>
+                              <p>Found {card.priceSource.salesCount || 0} sales but detailed data unavailable</p>
                               <a 
                                 href={card.priceSource.url} 
                                 target="_blank" 
