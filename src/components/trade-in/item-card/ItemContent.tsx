@@ -31,6 +31,7 @@ interface ItemContentProps {
     initialCalculation: string;
     error?: string;
   };
+  hideDetailedPricing?: boolean;
 }
 
 const ItemContent: React.FC<ItemContentProps> = ({
@@ -48,7 +49,8 @@ const ItemContent: React.FC<ItemContentProps> = ({
   refreshPrice,
   onValueAdjustment,
   isDebugMode,
-  debugInfo
+  debugInfo,
+  hideDetailedPricing = false
 }) => {
   // Check if the card is certified (PSA card)
   const isCertified = item.card.isCertified;
@@ -102,6 +104,7 @@ const ItemContent: React.FC<ItemContentProps> = ({
         fallbackReason={item.fallbackReason}
         isCertified={isCertified}
         priceSource={priceSource}
+        hideDetailedPricing={hideDetailedPricing}
       />
       
       <WarningMessages 
@@ -109,10 +112,13 @@ const ItemContent: React.FC<ItemContentProps> = ({
         price={item.price}
       />
       
-      <DebugPanel 
-        isVisible={isDebugMode}
-        debugInfo={debugInfo}
-      />
+      {/* Only show debug panel if explicitly enabled and not hiding detailed pricing */}
+      {!hideDetailedPricing && (
+        <DebugPanel 
+          isVisible={isDebugMode}
+          debugInfo={debugInfo}
+        />
+      )}
     </>
   );
 };

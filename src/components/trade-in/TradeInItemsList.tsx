@@ -9,13 +9,15 @@ interface TradeInItemsListProps {
   onRemoveItem: (index: number) => void;
   onUpdateItem: (index: number, item: TradeInItemType) => void;
   onValueChange: (itemId: string, values: { tradeValue: number; cashValue: number }) => void;
+  hideDetailedPricing?: boolean;
 }
 
 const TradeInItemsList: React.FC<TradeInItemsListProps> = ({
   items,
   onRemoveItem,
   onUpdateItem,
-  onValueChange
+  onValueChange,
+  hideDetailedPricing = false
 }) => {
   const handleConditionChange = async (i: number, cond: string) => {
     const item = items[i];
@@ -85,6 +87,7 @@ const TradeInItemsList: React.FC<TradeInItemsListProps> = ({
           onUpdate={onUpdateItem}
           onConditionChange={(cond) => handleConditionChange(idx, cond)}
           onValueChange={(values) => onValueChange(item.card.id || `item-${idx}`, values)}
+          hideDetailedPricing={hideDetailedPricing}
         />
       ))}
     </div>

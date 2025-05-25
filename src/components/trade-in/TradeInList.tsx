@@ -63,6 +63,7 @@ const TradeInList: React.FC<TradeInListProps> = ({
             onRemoveItem={onRemoveItem}
             onUpdateItem={onUpdateItem}
             onValueChange={() => {}} // Add this empty function to satisfy the prop type
+            hideDetailedPricing={true}
           />
           
           <div className="p-5 border-t border-gray-200">
@@ -78,7 +79,7 @@ const TradeInList: React.FC<TradeInListProps> = ({
             {items.length > 0 && (
               <div className="mt-4">
                 <button className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg">
-                  Proceed to Checkout
+                  Send to manager for approval
                 </button>
               </div>
             )}

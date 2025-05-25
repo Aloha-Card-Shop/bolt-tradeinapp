@@ -15,6 +15,7 @@ interface TradeInItemProps {
   onConditionChange: (condition: string) => void;
   onValueChange: (values: { tradeValue: number; cashValue: number }) => void;
   onValueAdjustment?: (value: number) => void;
+  hideDetailedPricing?: boolean;
 }
 
 const TradeInItem: React.FC<TradeInItemProps> = ({ 
@@ -24,7 +25,8 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   onUpdate,
   onConditionChange,
   onValueChange,
-  onValueAdjustment
+  onValueAdjustment,
+  hideDetailedPricing = false
 }) => {
   // Use the logger hook
   const { instanceId } = useComponentLogger('TradeInItem', item, index);
@@ -93,6 +95,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
         onValueAdjustment={handleValueAdjustment}
         isDebugMode={isDebugMode}
         debugInfo={debugInfo}
+        hideDetailedPricing={hideDetailedPricing}
       />
     </div>
   );

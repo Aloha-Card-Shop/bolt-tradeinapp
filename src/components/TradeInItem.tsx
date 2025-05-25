@@ -73,6 +73,7 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
       onConditionChange={onConditionChange}
       onValueChange={onValueChange}
       onValueAdjustment={handleValueAdjustment}
+      hideDetailedPricing={false} // Show detailed pricing in wrapper context
     />
   );
 };

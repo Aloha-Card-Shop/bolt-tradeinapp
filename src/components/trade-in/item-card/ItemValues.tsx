@@ -20,6 +20,7 @@ interface ItemValuesProps {
   fallbackReason?: string;
   isCertified?: boolean;
   priceSource?: PriceSource;
+  hideDetailedPricing?: boolean;
 }
 
 const ItemValues: React.FC<ItemValuesProps> = ({
@@ -36,7 +37,8 @@ const ItemValues: React.FC<ItemValuesProps> = ({
   usedFallback,
   fallbackReason,
   isCertified,
-  priceSource
+  priceSource,
+  hideDetailedPricing = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -66,8 +68,8 @@ const ItemValues: React.FC<ItemValuesProps> = ({
         fallbackReason={fallbackReason}
       />
 
-      {/* Show sales data breakdown for certified cards with price source */}
-      {isCertified && priceSource && priceSource.soldItems && priceSource.soldItems.length > 0 && (
+      {/* Only show sales data breakdown for certified cards if detailed pricing is not hidden */}
+      {!hideDetailedPricing && isCertified && priceSource && priceSource.soldItems && priceSource.soldItems.length > 0 && (
         <SalesDataBreakdown
           soldItems={priceSource.soldItems}
           averagePrice={price}
