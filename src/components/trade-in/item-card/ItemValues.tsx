@@ -53,8 +53,6 @@ const ItemValues: React.FC<ItemValuesProps> = ({
         onRefreshPrice={onRefreshPrice}
         isLoading={isLoadingPrice}
         isPriceUnavailable={isPriceUnavailable}
-        usedFallback={usedFallback}
-        fallbackReason={fallbackReason}
       />
       
       <ValueDisplay
