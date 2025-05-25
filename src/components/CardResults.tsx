@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { Loader2, ImageOff, PlusCircle, Search, AlertCircle, Info, Award, DollarSign } from 'lucide-react';
 import { CardDetails, SavedCard, CardNumberObject } from '../types/card';
@@ -69,7 +68,7 @@ const CardResults: React.FC<CardResultsProps> = ({
     });
   };
 
-  // Handle adjusted price changes from outlier selection
+  // Handle adjusted price changes from sales selection
   const handleAdjustedPriceChange = (cardId: string, newPrice: number) => {
     setAdjustedPrices(prev => {
       const newMap = new Map(prev);

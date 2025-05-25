@@ -1,7 +1,8 @@
+
 import React from 'react';
-import { ExternalLink, ChevronUp, ChevronDown, Info, TrendingUp, AlertTriangle, RefreshCw, Check } from 'lucide-react';
+import { ExternalLink, ChevronUp, ChevronDown, Info, TrendingUp, AlertTriangle, RefreshCw, Check, X, CheckSquare, Square } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
-import { useOutlierSelection } from '../../hooks/useOutlierSelection';
+import { useSalesSelection } from '../../hooks/useSalesSelection';
 
 interface SoldItem {
   title: string;
@@ -38,12 +39,15 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
   onAdjustedPriceChange
 }) => {
   const {
-    includedOutliers,
+    excludedItems,
     adjustedCalculation,
-    toggleOutlierInclusion,
+    toggleItemInclusion,
+    includeAllItems,
+    excludeAllItems,
     resetToOriginal,
-    isAdjusted
-  } = useOutlierSelection(soldItems);
+    isAdjusted,
+    isItemIncluded
+  } = useSalesSelection(soldItems);
 
   // Notify parent component of price changes
   React.useEffect(() => {
@@ -54,8 +58,17 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
     }
   }, [adjustedCalculation.averagePrice, isAdjusted, onAdjustedPriceChange, averagePrice]);
 
-  // Sort items to show non-outliers first, then outliers
+  // Sort items to show included first, then excluded
   const sortedItems = [...soldItems].sort((a, b) => {
+    const aIndex = soldItems.findIndex(item => item === a);
+    const bIndex = soldItems.findIndex(item => item === b);
+    const aIncluded = isItemIncluded(aIndex);
+    const bIncluded = isItemIncluded(bIndex);
+    
+    if (aIncluded && !bIncluded) return -1;
+    if (!aIncluded && bIncluded) return 1;
+    
+    // Within included/excluded groups, show outliers last
     if (a.isOutlier && !b.isOutlier) return 1;
     if (!a.isOutlier && b.isOutlier) return -1;
     return 0;
@@ -72,7 +85,7 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
       >
         <span className="flex items-center">
           <TrendingUp className="h-4 w-4 mr-1" />
-          View pricing details ({displayedCount} used for average{outliersRemoved > 0 && `, ${outliersRemoved} outliers`})
+          View pricing details ({displayedCount} of {soldItems.length} used for average)
           {isAdjusted && <span className="ml-1 text-orange-600">(adjusted)</span>}
         </span>
         {isExpanded ? (
@@ -105,23 +118,14 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
                 <p className={isAdjusted ? 'text-orange-900' : 'text-blue-900'}>
                   ${formatCurrency(priceRange.min)} - ${formatCurrency(priceRange.max)}
                 </p>
-                {isAdjusted && (
-                  <p className="text-xs text-gray-600 mt-1">
-                    {adjustedCalculation.includedCount} of {soldItems.length} items included
-                  </p>
-                )}
+                <p className="text-xs text-gray-600 mt-1">
+                  {adjustedCalculation.includedCount} included, {adjustedCalculation.excludedCount} excluded
+                </p>
               </div>
             </div>
             
-            {outliersRemoved > 0 && !isAdjusted && (
-              <div className="mt-2 flex items-center text-xs text-blue-600">
-                <Info className="h-3 w-3 mr-1" />
-                {salesCount} items used for average, {outliersRemoved} outlier(s) excluded for accuracy
-              </div>
-            )}
-
             {isAdjusted && (
-              <div className="mt-2 flex items-center justify-between">
+              <div className="mt-3 flex items-center justify-between">
                 <div className="flex items-center text-xs text-orange-600">
                   <Info className="h-3 w-3 mr-1" />
                   You've manually adjusted which sales to include
@@ -137,6 +141,25 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
             )}
           </div>
 
+          {/* Bulk Actions */}
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-gray-600">Bulk actions:</span>
+            <button
+              onClick={includeAllItems}
+              className="flex items-center px-2 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors"
+            >
+              <CheckSquare className="h-3 w-3 mr-1" />
+              Include All
+            </button>
+            <button
+              onClick={excludeAllItems}
+              className="flex items-center px-2 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded-md transition-colors"
+            >
+              <Square className="h-3 w-3 mr-1" />
+              Exclude All
+            </button>
+          </div>
+
           {/* Individual Sales */}
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-gray-700">Recent Sales Data:</h4>
@@ -146,24 +169,24 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
                   const originalIndex = soldItems.findIndex(original => 
                     original.title === item.title && original.price === item.price && original.url === item.url
                   );
-                  const isIncluded = !item.isOutlier || includedOutliers.has(originalIndex);
+                  const isIncluded = isItemIncluded(originalIndex);
                   
                   return (
                     <div 
                       key={`${item.title}-${item.price}-${index}`}
-                      className={`rounded-lg p-3 text-sm transition-all ${
-                        item.isOutlier 
-                          ? isIncluded
-                            ? 'bg-orange-50 border border-orange-200'
-                            : 'bg-red-50 border border-red-200 opacity-75'
-                          : 'bg-gray-50'
+                      className={`rounded-lg p-3 text-sm transition-all border ${
+                        isIncluded
+                          ? item.isOutlier
+                            ? 'bg-orange-50 border-orange-200'
+                            : 'bg-green-50 border-green-200'
+                          : 'bg-red-50 border-red-200 opacity-75'
                       }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1 mr-3">
                           <div className="flex items-start gap-2">
                             <p className={`font-medium line-clamp-2 mb-1 ${
-                              item.isOutlier && !isIncluded ? 'text-gray-600' : 'text-gray-900'
+                              !isIncluded ? 'text-gray-600' : 'text-gray-900'
                             }`}>
                               {item.title}
                             </p>
@@ -178,32 +201,41 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
                                   Outlier
                                 </span>
                               )}
-                              {isIncluded && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  <Check className="h-3 w-3 mr-0.5" />
-                                  Included
-                                </span>
-                              )}
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                                isIncluded
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {isIncluded ? (
+                                  <>
+                                    <Check className="h-3 w-3 mr-0.5" />
+                                    Included
+                                  </>
+                                ) : (
+                                  <>
+                                    <X className="h-3 w-3 mr-0.5" />
+                                    Excluded
+                                  </>
+                                )}
+                              </span>
                             </div>
                           </div>
-                          {item.isOutlier && (
-                            <div className="mt-1">
-                              <button
-                                onClick={() => toggleOutlierInclusion(originalIndex)}
-                                className={`text-xs px-2 py-1 rounded-md transition-colors ${
-                                  isIncluded
-                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                }`}
-                              >
-                                {isIncluded ? 'Exclude from calculation' : 'Include in calculation'}
-                              </button>
-                            </div>
-                          )}
+                          <div className="mt-1">
+                            <button
+                              onClick={() => toggleItemInclusion(originalIndex)}
+                              className={`text-xs px-2 py-1 rounded-md transition-colors ${
+                                isIncluded
+                                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                  : 'bg-green-100 text-green-700 hover:bg-green-200'
+                              }`}
+                            >
+                              {isIncluded ? 'Exclude from calculation' : 'Include in calculation'}
+                            </button>
+                          </div>
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className={`font-bold ${
-                            item.isOutlier && !isIncluded ? 'text-gray-600' : 'text-green-600'
+                            !isIncluded ? 'text-gray-600' : 'text-green-600'
                           }`}>
                             ${formatCurrency(item.price)}
                           </p>
@@ -228,22 +260,21 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
             )}
           </div>
 
-          {/* Outlier Explanation */}
-          {outliersRemoved > 0 && (
-            <div className="bg-amber-50 rounded-lg p-3 text-xs text-amber-700">
-              <div className="flex items-start">
-                <Info className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium">About outlier detection and manual selection:</p>
-                  <p className="mt-1">
-                    Items marked as outliers were initially excluded from the average calculation to provide more accurate pricing. 
-                    However, you can manually include any outlier you believe represents a valid comparable sale by clicking 
-                    "Include in calculation" on that item. The average will update automatically to reflect your selections.
-                  </p>
-                </div>
+          {/* User Control Explanation */}
+          <div className="bg-amber-50 rounded-lg p-3 text-xs text-amber-700">
+            <div className="flex items-start">
+              <Info className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium">About sales selection:</p>
+                <p className="mt-1">
+                  You have full control over which sales are included in the average calculation. 
+                  Exclude sales that seem unusual (damaged cards, special circumstances, etc.) 
+                  or include outliers you believe represent valid comparable sales. The average 
+                  updates automatically to reflect your selections.
+                </p>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Search Information */}
           <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
