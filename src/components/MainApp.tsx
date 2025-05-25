@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { DatabaseIcon, Sparkles, Menu } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import CardSearch from './CardSearch';
@@ -16,6 +16,8 @@ import { toast } from 'react-hot-toast';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 
 function MainApp() {
+  console.log('MainApp rendering...');
+  
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [activeSection, setActiveSection] = React.useState<'search' | 'results' | 'tradein'>('search');
   
@@ -55,11 +57,16 @@ function MainApp() {
   const { customers, isLoading: isLoadingCustomers, createCustomer } = useCustomers();
 
   // Wrapper function to handle the return type mismatch
-  const handleCustomerCreate = async (firstName: string, lastName: string, email?: string, phone?: string): Promise<void> => {
-    await createCustomer(firstName, lastName, email, phone);
-  };
+  const handleCustomerCreate = useCallback(async (firstName: string, lastName: string, email?: string, phone?: string): Promise<void> => {
+    try {
+      await createCustomer(firstName, lastName, email, phone);
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      toast.error('Failed to create customer');
+    }
+  }, [createCustomer]);
 
-  const handleCheckSavedCard = (card: SavedCard) => {
+  const handleCheckSavedCard = useCallback((card: SavedCard) => {
     const event = {
       target: { name: 'name', value: card.name }
     } as React.ChangeEvent<HTMLInputElement>;
@@ -72,9 +79,9 @@ function MainApp() {
     if (isMobile) {
       setActiveSection('results');
     }
-  };
+  }, [handleInputChange, performSearch, isMobile]);
 
-  const handleAddToList = (card: CardDetails | SavedCard, price: number) => {
+  const handleAddToList = useCallback((card: CardDetails | SavedCard, price: number) => {
     // Enhanced productId validation
     if (!card.productId) {
       console.error(`Cannot add ${card.name} - Card has no productId`, card);
@@ -104,19 +111,19 @@ function MainApp() {
     if (isMobile) {
       setActiveSection('tradein');
     }
-  };
+  }, [addItem, resetSearch, isMobile]);
 
   // Determine which clear function to use based on card type
-  const handleClearResults = () => {
+  const handleClearResults = useCallback(() => {
     if (cardType === 'graded') {
       clearGradedResults();
     } else {
       clearSearchResults();
     }
-  };
+  }, [cardType, clearGradedResults, clearSearchResults]);
 
   // Mobile navigation tabs
-  const renderMobileNavigation = () => {
+  const renderMobileNavigation = useCallback(() => {
     return (
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex z-30">
         <button 
@@ -147,7 +154,7 @@ function MainApp() {
         </button>
       </div>
     );
-  };
+  }, [activeSection, items.length]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pb-16 md:pb-0">
@@ -210,7 +217,6 @@ function MainApp() {
           
           <div className="md:col-span-5">
             <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-              {/* Conditionally render results based on card type */}
               {cardType === 'raw' ? (
                 <CardResults 
                   results={searchResults}
@@ -285,7 +291,6 @@ function MainApp() {
           
           {activeSection === 'results' && (
             <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-              {/* Conditionally render results based on card type */}
               {cardType === 'raw' ? (
                 <CardResults 
                   results={searchResults}

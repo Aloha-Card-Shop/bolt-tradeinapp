@@ -3,7 +3,7 @@ import React, { createContext, useContext, ReactNode, useState, useEffect } from
 import { Session } from '../types/auth';
 
 interface SessionContextType {
-  user: any | null;  // Using 'any' for now for compatibility with existing code
+  user: any | null;
   loading: boolean;
   error: Error | null;
   signOut: () => void;
@@ -28,37 +28,54 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // Mock session for development purposes
-    const mockSession = {
-      user: {
-        id: '1',
-        email: 'user@example.com',
-        user_metadata: {
-          role: 'admin'
+    console.log('SessionProvider initializing...');
+    
+    // Check if we're in development mode
+    const isDevelopment = window.location.hostname === 'localhost' || 
+                          window.location.hostname.includes('lovableproject.com');
+    
+    if (isDevelopment) {
+      // Mock session for development
+      const mockSession = {
+        user: {
+          id: '1',
+          email: 'admin@alohacardshop.com',
+          user_metadata: {
+            role: 'admin'
+          }
         }
-      }
-    };
+      };
 
-    setTimeout(() => {
-      setSession(mockSession);
+      console.log('Setting mock session for development:', mockSession);
+      
+      setTimeout(() => {
+        setSession(mockSession);
+        setLoading(false);
+      }, 100);
+    } else {
+      // In production, you would check real authentication here
+      console.log('Production mode - would check real auth');
       setLoading(false);
-    }, 500);
+    }
   }, []);
 
   const signOut = () => {
+    console.log('Signing out...');
     setSession(null);
-    // In a real app, you would call the auth service to sign out
-    // For now, we'll just redirect to login
     window.location.href = '/';
   };
 
+  const contextValue = {
+    user: session?.user || null, 
+    loading, 
+    error,
+    signOut
+  };
+
+  console.log('SessionProvider context value:', contextValue);
+
   return (
-    <SessionContext.Provider value={{ 
-      user: session?.user || null, 
-      loading, 
-      error,
-      signOut
-    }}>
+    <SessionContext.Provider value={contextValue}>
       {children}
     </SessionContext.Provider>
   );
