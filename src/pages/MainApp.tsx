@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DatabaseIcon, Sparkles } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
@@ -10,7 +9,9 @@ import TradeInList from '../components/trade-in/TradeInList';
 import { useCardSearch } from '../hooks/useCardSearch';
 import { useGradedCardSearch } from '../hooks/useGradedCardSearch';
 import { useSavedCards } from '../hooks/useSavedCards';
-import { useTradeInList } from '../hooks/useTradeInList';
+import { useTradeInListWithCustomer } from '../hooks/useTradeInListWithCustomer';
+import { useCustomers } from '../hooks/useCustomers';
+import TradeInListWithCustomer from '../components/trade-in/TradeInListWithCustomer';
 import { CardDetails, SavedCard } from '../types/card';
 import { toast } from 'react-hot-toast';
 
@@ -47,7 +48,8 @@ function MainApp() {
   } = useGradedCardSearch();
   
   const { savedCards, removeCard } = useSavedCards();
-  const { items, addItem, removeItem, updateItem, clearList } = useTradeInList();
+  const { items, selectedCustomer, addItem, removeItem, updateItem, clearList, selectCustomer } = useTradeInListWithCustomer();
+  const { customers, isLoading: isLoadingCustomers, createCustomer } = useCustomers();
 
   const handleCheckSavedCard = (card: SavedCard) => {
     const event = {
@@ -177,10 +179,15 @@ function MainApp() {
 
           <div className="lg:col-span-4">
             <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden sticky top-8">
-              <TradeInList 
+              <TradeInListWithCustomer 
                 items={items}
+                selectedCustomer={selectedCustomer}
+                customers={customers}
+                isLoadingCustomers={isLoadingCustomers}
                 onRemoveItem={removeItem}
                 onUpdateItem={updateItem}
+                onCustomerSelect={selectCustomer}
+                onCustomerCreate={createCustomer}
                 clearList={clearList}
               />
             </div>
