@@ -42,9 +42,6 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
     return 0;
   });
 
-  const nonOutlierItems = soldItems.filter(item => !item.isOutlier);
-  const outlierItems = soldItems.filter(item => item.isOutlier);
-
   return (
     <div className="mt-3 border-t border-gray-200 pt-3">
       <button
