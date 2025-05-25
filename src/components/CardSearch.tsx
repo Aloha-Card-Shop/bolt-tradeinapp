@@ -26,10 +26,10 @@ interface CardSearchProps {
   performSearch?: () => void;
   isFiltered?: boolean;
   onShowAllSets?: () => void;
-  onAddCertificateToResults?: (card: CardDetails) => void;
   onClearResults?: () => void;
   cardType?: 'raw' | 'graded';
   onCardTypeChange?: (type: 'raw' | 'graded') => void;
+  onAddCertificateToResults?: (card: CardDetails) => void;
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
@@ -44,10 +44,10 @@ const CardSearch: React.FC<CardSearchProps> = ({
   performSearch = () => {},
   isFiltered = false,
   onShowAllSets,
-  onAddCertificateToResults,
   onClearResults,
   cardType = 'raw',
-  onCardTypeChange = () => {}
+  onCardTypeChange = () => {},
+  onAddCertificateToResults
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -76,7 +76,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
     }
   };
 
-  // Determine if clear button should be enabled
+  // Determine if clear button should be enabled for raw mode
   const hasSearchCriteria = Boolean(
     cardDetails.name || cardDetails.number || cardDetails.set
   );
@@ -91,7 +91,8 @@ const CardSearch: React.FC<CardSearchProps> = ({
           <h2 className="ml-3 text-xl font-semibold text-gray-800">Find Cards</h2>
         </div>
         
-        {onClearResults && (
+        {/* Show clear button only for raw mode and when there are criteria */}
+        {onClearResults && cardType === 'raw' && (
           <ClearSearchButton 
             onClear={onClearResults} 
             isDisabled={!hasSearchCriteria && !isSearching}

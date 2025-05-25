@@ -1,11 +1,14 @@
+
 import React from 'react';
 import { DatabaseIcon, Sparkles, Menu } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import CardSearch from './CardSearch';
 import CardResults from './CardResults';
+import GradedCardResults from './GradedCardResults';
 import SavedCards from './SavedCards';
 import TradeInList from './trade-in/TradeInList';
 import { useCardSearch } from '../hooks/useCardSearch';
+import { useGradedCardSearch } from '../hooks/useGradedCardSearch';
 import { useSavedCards } from '../hooks/useSavedCards';
 import { useTradeInList } from '../hooks/useTradeInList';
 import { CardDetails, SavedCard } from '../types/card';
@@ -16,8 +19,11 @@ function MainApp() {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [activeSection, setActiveSection] = React.useState<'search' | 'results' | 'tradein'>('search');
   
+  // Raw card search hook
   const { 
     cardDetails, 
+    cardType,
+    setCardType,
     searchResults, 
     setOptions, 
     isLoadingSets, 
@@ -33,9 +39,16 @@ function MainApp() {
     performSearch,
     isSetFiltered,
     handleShowAllSets,
-    addCertificateToResults,
     clearSearchResults
   } = useCardSearch();
+
+  // Graded card search hook
+  const {
+    gradedResults,
+    isSearching: isGradedSearching,
+    addCertificateToResults,
+    clearGradedResults
+  } = useGradedCardSearch();
   
   const { savedCards, removeCard } = useSavedCards();
   const { items, addItem, removeItem, updateItem, clearList } = useTradeInList();
@@ -84,6 +97,15 @@ function MainApp() {
     // On mobile, switch to trade-in view after adding card
     if (isMobile) {
       setActiveSection('tradein');
+    }
+  };
+
+  // Determine which clear function to use based on card type
+  const handleClearResults = () => {
+    if (cardType === 'graded') {
+      clearGradedResults();
+    } else {
+      clearSearchResults();
     }
   };
 
@@ -163,7 +185,9 @@ function MainApp() {
                 isFiltered={isSetFiltered}
                 onShowAllSets={handleShowAllSets}
                 onAddCertificateToResults={addCertificateToResults}
-                onClearResults={clearSearchResults}
+                onClearResults={handleClearResults}
+                cardType={cardType}
+                onCardTypeChange={setCardType}
               />
             </div>
             
@@ -180,14 +204,23 @@ function MainApp() {
           
           <div className="md:col-span-5">
             <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-              <CardResults 
-                results={searchResults}
-                isLoading={isSearching}
-                onAddToList={handleAddToList}
-                hasMoreResults={hasMoreResults}
-                loadMoreResults={loadMoreResults}
-                totalResults={totalResults}
-              />
+              {/* Conditionally render results based on card type */}
+              {cardType === 'raw' ? (
+                <CardResults 
+                  results={searchResults}
+                  isLoading={isSearching}
+                  onAddToList={handleAddToList}
+                  hasMoreResults={hasMoreResults}
+                  loadMoreResults={loadMoreResults}
+                  totalResults={totalResults}
+                />
+              ) : (
+                <GradedCardResults 
+                  results={gradedResults}
+                  isLoading={isGradedSearching}
+                  onAddToList={handleAddToList}
+                />
+              )}
             </div>
           </div>
 
@@ -221,7 +254,9 @@ function MainApp() {
                   isFiltered={isSetFiltered}
                   onShowAllSets={handleShowAllSets}
                   onAddCertificateToResults={addCertificateToResults}
-                  onClearResults={clearSearchResults}
+                  onClearResults={handleClearResults}
+                  cardType={cardType}
+                  onCardTypeChange={setCardType}
                 />
               </div>
               
@@ -239,14 +274,23 @@ function MainApp() {
           
           {activeSection === 'results' && (
             <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-              <CardResults 
-                results={searchResults}
-                isLoading={isSearching}
-                onAddToList={handleAddToList}
-                hasMoreResults={hasMoreResults}
-                loadMoreResults={loadMoreResults}
-                totalResults={totalResults}
-              />
+              {/* Conditionally render results based on card type */}
+              {cardType === 'raw' ? (
+                <CardResults 
+                  results={searchResults}
+                  isLoading={isSearching}
+                  onAddToList={handleAddToList}
+                  hasMoreResults={hasMoreResults}
+                  loadMoreResults={loadMoreResults}
+                  totalResults={totalResults}
+                />
+              ) : (
+                <GradedCardResults 
+                  results={gradedResults}
+                  isLoading={isGradedSearching}
+                  onAddToList={handleAddToList}
+                />
+              )}
             </div>
           )}
           

@@ -4,15 +4,18 @@ import { DatabaseIcon, Sparkles } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import CardSearch from '../components/CardSearch';
 import CardResults from '../components/CardResults';
+import GradedCardResults from '../components/GradedCardResults';
 import SavedCards from '../components/SavedCards';
 import TradeInList from '../components/trade-in/TradeInList';
 import { useCardSearch } from '../hooks/useCardSearch';
+import { useGradedCardSearch } from '../hooks/useGradedCardSearch';
 import { useSavedCards } from '../hooks/useSavedCards';
 import { useTradeInList } from '../hooks/useTradeInList';
 import { CardDetails, SavedCard } from '../types/card';
 import { toast } from 'react-hot-toast';
 
 function MainApp() {
+  // Raw card search hook
   const { 
     cardDetails, 
     cardType,
@@ -32,9 +35,16 @@ function MainApp() {
     performSearch,
     isSetFiltered,
     handleShowAllSets,
-    addCertificateToResults,
     clearSearchResults
   } = useCardSearch();
+
+  // Graded card search hook
+  const {
+    gradedResults,
+    isSearching: isGradedSearching,
+    addCertificateToResults,
+    clearGradedResults
+  } = useGradedCardSearch();
   
   const { savedCards, removeCard } = useSavedCards();
   const { items, addItem, removeItem, updateItem, clearList } = useTradeInList();
@@ -74,6 +84,15 @@ function MainApp() {
     addItem(cardToAdd, price);
     resetSearch(); // Reset search after adding card
     toast.success(`Added ${card.name} to trade-in list`);
+  };
+
+  // Determine which clear function to use based on card type
+  const handleClearResults = () => {
+    if (cardType === 'graded') {
+      clearGradedResults();
+    } else {
+      clearSearchResults();
+    }
   };
 
   return (
@@ -117,7 +136,7 @@ function MainApp() {
                 isFiltered={isSetFiltered}
                 onShowAllSets={handleShowAllSets}
                 onAddCertificateToResults={addCertificateToResults}
-                onClearResults={clearSearchResults}
+                onClearResults={handleClearResults}
                 cardType={cardType}
                 onCardTypeChange={setCardType}
               />
@@ -136,14 +155,23 @@ function MainApp() {
           
           <div className="lg:col-span-5">
             <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-              <CardResults 
-                results={searchResults}
-                isLoading={isSearching}
-                onAddToList={handleAddToList}
-                hasMoreResults={hasMoreResults}
-                loadMoreResults={loadMoreResults}
-                totalResults={totalResults}
-              />
+              {/* Conditionally render results based on card type */}
+              {cardType === 'raw' ? (
+                <CardResults 
+                  results={searchResults}
+                  isLoading={isSearching}
+                  onAddToList={handleAddToList}
+                  hasMoreResults={hasMoreResults}
+                  loadMoreResults={loadMoreResults}
+                  totalResults={totalResults}
+                />
+              ) : (
+                <GradedCardResults 
+                  results={gradedResults}
+                  isLoading={isGradedSearching}
+                  onAddToList={handleAddToList}
+                />
+              )}
             </div>
           </div>
 

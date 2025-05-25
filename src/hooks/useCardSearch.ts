@@ -42,8 +42,7 @@ export const useCardSearch = () => {
     searchCards, 
     hasMoreResults, 
     loadMoreResults,
-    totalResults,
-    addCertificateToResults
+    totalResults
   } = useCardSearchQuery();
   
   const { 
@@ -71,25 +70,6 @@ export const useCardSearch = () => {
   const createSearchSignature = useCallback((details: CardDetails) => {
     return `${details.name || ''}|${details.number || ''}|${details.set || ''}|${details.game}`;
   }, []);
-
-  // New function to add certificate results to search results
-  const handleAddCertificateToResults = useCallback((certificateCard: CardDetails) => {
-    console.log("Handling certificate addition to results:", certificateCard);
-    
-    // Make sure the certificate card has required fields
-    if (!certificateCard) {
-      console.error("Invalid certificate card:", certificateCard);
-      return;
-    }
-
-    // Ensure the certificate has an ID to use as productId if not present
-    if (!certificateCard.productId && certificateCard.certification?.certNumber) {
-      certificateCard.productId = certificateCard.certification.certNumber;
-    }
-
-    // Use the addCertificateToResults function from the query hook
-    addCertificateToResults(certificateCard);
-  }, [addCertificateToResults]);
 
   // Perform search function with improved caching and duplicate prevention
   const performActualSearch = useCallback(async (details: CardDetails) => {
@@ -181,6 +161,11 @@ export const useCardSearch = () => {
 
   // Debounced search effect with better dependency management
   useEffect(() => {
+    // Only perform raw card searches when in raw mode
+    if (cardType !== 'raw') {
+      return;
+    }
+
     // Clear previous timers
     if (searchDebounceRef.current) {
       clearTimeout(searchDebounceRef.current);
@@ -229,7 +214,7 @@ export const useCardSearch = () => {
         clearTimeout(searchDebounceRef.current);
       }
     };
-  }, [cardDetails.name, cardDetails.number, cardDetails.set, cardDetails.game, cardDetails.categoryId, fetchSuggestions, filterSetOptions, performActualSearch, setSearchResults]);
+  }, [cardDetails.name, cardDetails.number, cardDetails.set, cardDetails.game, cardDetails.categoryId, cardType, fetchSuggestions, filterSetOptions, performActualSearch, setSearchResults]);
 
   // Improved use potential card number function
   const handleUseAsCardNumber = useCallback(() => {
@@ -308,7 +293,6 @@ export const useCardSearch = () => {
     performSearch,
     handleShowAllSets,
     isSetFiltered,
-    addCertificateToResults: handleAddCertificateToResults,
     clearSearchResults
   };
 };
