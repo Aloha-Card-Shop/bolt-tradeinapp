@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -25,66 +26,109 @@ export const useCardSearchQuery = () => {
         return foundSetIds;
       }
       
-      // Build query parameters
-      const params: any = {
-        game: cardDetails.game || 'pokemon'
-      };
+      // Build the query for unified_products table
+      let query = supabase
+        .from('unified_products')
+        .select('*', { count: 'exact' })
+        .order('name', { ascending: true })
+        .limit(12);
       
-      if (cardDetails.categoryId) {
-        params.categoryId = cardDetails.categoryId;
+      // Filter by category based on game type
+      if (cardDetails.game === 'pokemon') {
+        query = query.eq('category_id', 2);
+      } else if (cardDetails.game === 'japanese-pokemon') {
+        query = query.eq('category_id', 9);
       }
       
-      if (cardDetails.name) {
-        params.name = cardDetails.name;
+      // Add name search filter
+      if (cardDetails.name && cardDetails.name.trim()) {
+        const searchName = cardDetails.name.trim();
+        query = query.ilike('name', `%${searchName}%`);
       }
       
+      // Add card number search filter
       if (cardDetails.number) {
-        params.number = cardDetails.number;
+        const searchNumber = typeof cardDetails.number === 'string' 
+          ? cardDetails.number.trim() 
+          : cardDetails.number.value || cardDetails.number.formatted || cardDetails.number.raw || '';
+          
+        if (searchNumber) {
+          // Search in both card_number column and attributes->Number field
+          query = query.or(`card_number.ilike.%${searchNumber}%,attributes->>'Number'.ilike.%${searchNumber}%`);
+        }
       }
       
-      if (cardDetails.set) {
-        // Find the setId from the name
+      // Add set search filter
+      if (cardDetails.set && cardDetails.set.trim()) {
+        // Find the group_id from setOptions if available
         const selectedSet = setOptions.find(setOpt => 
           setOpt.label === cardDetails.set || setOpt.value === cardDetails.set
         );
         
-        if (selectedSet) {
-          params.setId = selectedSet.value;
+        if (selectedSet && selectedSet.id) {
+          query = query.eq('group_id', selectedSet.id);
         } else {
-          // If no exact match, try to search by set name
-          params.setName = cardDetails.set;
+          // Fallback to searching by name pattern in attributes
+          query = query.ilike('attributes->>"Set Name"', `%${cardDetails.set.trim()}%`);
         }
       }
       
-      console.log('Searching cards with params:', params);
-      
-      // Call the API
-      const { data, error } = await supabase.functions.invoke('card-search', {
-        body: params
+      console.log('Executing unified_products query with params:', {
+        name: cardDetails.name,
+        number: cardDetails.number,
+        set: cardDetails.set,
+        game: cardDetails.game
       });
       
+      const { data, error, count } = await query;
+      
       if (error) {
-        console.error('Search error:', error);
+        console.error('Database search error:', error);
         toast.error('Error searching cards');
         setIsSearching(false);
         return foundSetIds;
       }
       
-      console.log('Search results:', data);
+      console.log('Database search results:', { count, resultsLength: data?.length });
       
-      // Process results
-      if (data && Array.isArray(data.cards)) {
-        setSearchResults(data.cards);
-        setTotalResults(data.total || data.cards.length);
-        setHasMoreResults(data.hasMore || false);
-        setLastPage(1);
-        
-        // Extract set IDs from results for set filtering
-        data.cards.forEach((card: CardDetails) => {
-          if (card.setId) {
-            foundSetIds.push(card.setId);
+      // Process and format results
+      if (data && Array.isArray(data)) {
+        const formattedResults: CardDetails[] = data.map(item => {
+          // Extract card number from attributes or card_number column
+          let cardNumber = item.card_number || '';
+          if (!cardNumber && item.attributes) {
+            const attributes = typeof item.attributes === 'string'
+              ? JSON.parse(item.attributes)
+              : item.attributes;
+            cardNumber = attributes?.Number || attributes?.card_number || '';
           }
+          
+          // Find set name from setOptions
+          const setName = setOptions.find(s => s.id === item.group_id)?.name || '';
+          
+          // Extract set IDs for filtering
+          if (item.group_id) {
+            foundSetIds.push(item.group_id.toString());
+          }
+          
+          return {
+            id: item.id?.toString() || `unified-${Math.random().toString(36).substring(2, 11)}`,
+            name: item.name || '',
+            set: setName,
+            setId: item.group_id?.toString() || undefined,
+            number: cardNumber,
+            game: cardDetails.game || 'pokemon',
+            imageUrl: item.image_url || null,
+            productId: item.product_id?.toString() || item.tcgplayer_product_id || null,
+            releaseYear: item.released_on?.substring(0, 4) || undefined,
+            categoryId: item.category_id
+          };
         });
+        
+        setSearchResults(formattedResults);
+        setTotalResults(count || data.length);
+        setHasMoreResults((count || 0) > 12);
+        setLastPage(1);
       } else {
         setSearchResults([]);
         setHasMoreResults(false);
@@ -110,11 +154,8 @@ export const useCardSearchQuery = () => {
     
     try {
       // Implementation for pagination would go here
-      // ... in a real app, you would call the API with the next page parameter
-      
+      // For now, just set hasMore to false since we're not implementing pagination yet
       setLastPage(nextPage);
-      
-      // For now, just set hasMore to false since we're not implementing pagination
       setHasMoreResults(false);
     } catch (err) {
       console.error('Load more error:', err);
