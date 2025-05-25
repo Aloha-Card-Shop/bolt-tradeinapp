@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { Loader2, ImageOff, PlusCircle, Search, AlertCircle, Info, Award, DollarSign } from 'lucide-react';
 import { CardDetails, SavedCard, CardNumberObject } from '../types/card';
@@ -163,6 +162,15 @@ const CardResults: React.FC<CardResultsProps> = ({
             const isCertified = Boolean(card.isCertified);
             const cardId = `${card.name}-${card.productId || index}`;
             const isExpanded = expandedSalesData.has(cardId);
+            
+            // Debug logging for pricing data
+            if (isCertified && card.priceSource) {
+              console.log(`Card ${card.name} pricing data:`, {
+                lastPrice: card.lastPrice,
+                priceSource: card.priceSource,
+                soldItems: card.priceSource.soldItems
+              });
+            }
               
             return (
               <div 
@@ -216,7 +224,7 @@ const CardResults: React.FC<CardResultsProps> = ({
                         {/* Price information with conditional display for certified cards */}
                         {isCertified && card.priceSource && (
                           <div className="mt-2">
-                            {card.lastPrice ? (
+                            {card.lastPrice && card.lastPrice > 0 ? (
                               <div className="mt-1 p-2 bg-green-50 border border-green-200 rounded-md text-green-700 flex items-center">
                                 <DollarSign className="h-4 w-4 mr-1 flex-shrink-0" />
                                 <div>
@@ -242,20 +250,34 @@ const CardResults: React.FC<CardResultsProps> = ({
                           </div>
                         )}
 
-                        {/* Sales Data Breakdown for PSA cards with price data */}
-                        {isCertified && card.priceSource && card.priceSource.soldItems && (
-                          <SalesDataBreakdown
-                            soldItems={card.priceSource.soldItems}
-                            averagePrice={card.lastPrice || 0}
-                            priceRange={card.priceSource.priceRange || { min: 0, max: 0 }}
-                            outliersRemoved={card.priceSource.outliersRemoved || 0}
-                            calculationMethod={card.priceSource.calculationMethod || 'unknown'}
-                            searchUrl={card.priceSource.url || ''}
-                            query={card.priceSource.query || ''}
-                            salesCount={card.priceSource.salesCount || 0}
-                            isExpanded={isExpanded}
-                            onToggle={() => toggleSalesData(cardId)}
-                          />
+                        {/* Sales Data Breakdown for PSA cards - improved conditions */}
+                        {isCertified && card.priceSource && (
+                          card.priceSource.soldItems && card.priceSource.soldItems.length > 0 ? (
+                            <SalesDataBreakdown
+                              soldItems={card.priceSource.soldItems}
+                              averagePrice={card.lastPrice || 0}
+                              priceRange={card.priceSource.priceRange || { min: 0, max: 0 }}
+                              outliersRemoved={card.priceSource.outliersRemoved || 0}
+                              calculationMethod={card.priceSource.calculationMethod || 'unknown'}
+                              searchUrl={card.priceSource.url || ''}
+                              query={card.priceSource.query || ''}
+                              salesCount={card.priceSource.salesCount || 0}
+                              isExpanded={isExpanded}
+                              onToggle={() => toggleSalesData(cardId)}
+                            />
+                          ) : card.priceSource.salesCount > 0 && (
+                            <div className="mt-3 text-sm text-gray-600">
+                              <p>Found {card.priceSource.salesCount} sales but detailed data unavailable</p>
+                              <a 
+                                href={card.priceSource.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline"
+                              >
+                                View full search results
+                              </a>
+                            </div>
+                          )
                         )}
                         
                         {card.productId ? (

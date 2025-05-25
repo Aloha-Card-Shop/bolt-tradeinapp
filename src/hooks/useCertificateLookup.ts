@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { CardDetails, GameType } from '../types/card';
-import { usePsaPriceLookup } from './usePsaPriceLookup';
+import { useEbayPriceLookup } from './useEbayPriceLookup';
 
 export interface CertificateData {
   certNumber: string;
@@ -21,8 +21,8 @@ export const useCertificateLookup = () => {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CertificateData | null>(null);
   
-  // Get the price lookup hook
-  const { lookupPsaPrice, priceData, isLoading: isPriceLoading, error: priceError } = usePsaPriceLookup();
+  // Get the eBay price lookup hook
+  const { lookupPrice, priceData, isLoading: isPriceLoading, error: priceError } = useEbayPriceLookup();
 
   // Keep track of the card with pricing information
   const [certifiedCardWithPrice, setCertifiedCardWithPrice] = useState<CardDetails | null>(null);
@@ -102,7 +102,7 @@ export const useCertificateLookup = () => {
       const cardDetails = convertToCardDetails(data.data);
       if (cardDetails) {
         // Look up price from eBay
-        await lookupPsaPrice(cardDetails);
+        await lookupPrice(cardDetails);
       }
     } catch (err: unknown) {
       console.error('Certificate lookup error:', err);
@@ -161,6 +161,8 @@ export const useCertificateLookup = () => {
     if (result) {
       const card = convertToCardDetails(result);
       if (card) {
+        console.log('eBay price data:', priceData);
+        
         // Add price data if available
         if (priceData) {
           card.lastPrice = priceData.averagePrice;
@@ -168,8 +170,15 @@ export const useCertificateLookup = () => {
             name: 'eBay',
             url: priceData.searchUrl,
             salesCount: priceData.salesCount,
-            foundSales: priceData.salesCount > 0
+            foundSales: priceData.salesCount > 0,
+            soldItems: priceData.soldItems || [], // Ensure soldItems is included
+            priceRange: priceData.priceRange,
+            outliersRemoved: priceData.outliersRemoved,
+            calculationMethod: priceData.calculationMethod,
+            query: priceData.query
           };
+          
+          console.log('Card with pricing data:', card);
         }
         setCertifiedCardWithPrice(card);
       }
