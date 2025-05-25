@@ -1,5 +1,4 @@
-
-export type GameType = 'pokemon' | 'japanese-pokemon';
+export type GameType = 'pokemon' | 'magic' | 'yugioh' | 'sports' | 'other' | 'japanese-pokemon';
 
 export type CardNumberObject = {
   raw: string;
@@ -76,6 +75,10 @@ export interface SavedCard extends CardDetails {
 
 export const GAME_OPTIONS = [
   { label: 'Pokémon', value: 'pokemon', categoryId: 2 },
+  { label: 'Magic: The Gathering', value: 'magic', categoryId: 1 },
+  { label: 'Yu-Gi-Oh!', value: 'yugioh', categoryId: 3 },
+  { label: 'Sports Cards', value: 'sports', categoryId: 4 },
+  { label: 'Other Cards', value: 'other', categoryId: 8 },
   { label: 'Japanese Pokémon', value: 'japanese-pokemon', categoryId: 9 }
 ];
 

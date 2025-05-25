@@ -12,7 +12,6 @@ import CardNumberSuggestion from './card-search/CardNumberSuggestion';
 import SearchSetSelect from './card-search/SearchSetSelect';
 import CardNumberInput from './card-search/CardNumberInput';
 import ClearSearchButton from './card-search/ClearSearchButton';
-import CardTypeSelector from './card-search/CardTypeSelector';
 
 interface CardSearchProps {
   cardDetails: CardDetails;
@@ -28,8 +27,6 @@ interface CardSearchProps {
   onShowAllSets?: () => void;
   onAddCertificateToResults?: (card: CardDetails) => void;
   onClearResults?: () => void;
-  cardType?: 'raw' | 'graded';
-  onCardTypeChange?: (type: 'raw' | 'graded') => void;
 }
 
 const CardSearch: React.FC<CardSearchProps> = ({ 
@@ -45,9 +42,7 @@ const CardSearch: React.FC<CardSearchProps> = ({
   isFiltered = false,
   onShowAllSets,
   onAddCertificateToResults,
-  onClearResults,
-  cardType = 'raw',
-  onCardTypeChange = () => {}
+  onClearResults
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -98,66 +93,59 @@ const CardSearch: React.FC<CardSearchProps> = ({
           />
         )}
       </div>
-
-      {/* Card Type Selector */}
-      <CardTypeSelector 
-        cardType={cardType} 
-        onCardTypeChange={onCardTypeChange} 
-      />
       
-      {/* Graded Card Mode - Show Certificate Lookup */}
-      {cardType === 'graded' && onAddCertificateToResults && (
-        <CertificateLookup onCertificateFound={onAddCertificateToResults} />
-      )}
-      
-      {/* Raw Card Mode - Show Traditional Search Fields */}
-      {cardType === 'raw' && (
-        <div className="space-y-4">
-          {/* Game Selection */}
-          <SearchGameSelect 
-            selectedGame={cardDetails.game} 
-            onChange={onInputChange} 
-          />
-
-          {/* Card Name Input - Auto-searches as user types */}
-          <div className="relative">
-            <SearchNameInput 
-              value={searchTerm}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              inputRef={searchInputRef}
-              isSearching={isSearching}
-            />
-            
-            {/* Card number suggestion - now with enhanced detection */}
-            {potentialCardNumber && (
-              <CardNumberSuggestion 
-                potentialCardNumber={potentialCardNumber}
-                onUseAsCardNumber={onUseAsCardNumber}
-                isDetecting={isSearching}
-              />
-            )}
-          </div>
-          
-          {/* Set Selection */}
-          <SearchSetSelect 
-            selectedSet={cardDetails.set || ''}
-            setOptions={setOptions}
-            isLoading={isLoadingSets}
-            onChange={onInputChange}
-            isFiltered={isFiltered}
-            onShowAllSets={onShowAllSets}
-          />
-
-          {/* Card Number Input - with improved placeholder and help text */}
-          <CardNumberInput 
-            cardNumber={cardDetails.number} 
-            onChange={onInputChange}
-            onKeyDown={handleKeyDown}
-            isSearching={isSearching}
-          />
+      {/* Certificate Lookup - now adds to search results */}
+      {onAddCertificateToResults && (
+        <div className="mb-6">
+          <CertificateLookup onCertificateFound={onAddCertificateToResults} />
         </div>
       )}
+      
+      <div className="space-y-4">
+        {/* Game Selection */}
+        <SearchGameSelect 
+          selectedGame={cardDetails.game} 
+          onChange={onInputChange} 
+        />
+
+        {/* Card Name Input - Auto-searches as user types */}
+        <div className="relative">
+          <SearchNameInput 
+            value={searchTerm}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            inputRef={searchInputRef}
+            isSearching={isSearching}
+          />
+          
+          {/* Card number suggestion - now with enhanced detection */}
+          {potentialCardNumber && (
+            <CardNumberSuggestion 
+              potentialCardNumber={potentialCardNumber}
+              onUseAsCardNumber={onUseAsCardNumber}
+              isDetecting={isSearching}
+            />
+          )}
+        </div>
+        
+        {/* Set Selection */}
+        <SearchSetSelect 
+          selectedSet={cardDetails.set || ''}
+          setOptions={setOptions}
+          isLoading={isLoadingSets}
+          onChange={onInputChange}
+          isFiltered={isFiltered}
+          onShowAllSets={onShowAllSets}
+        />
+
+        {/* Card Number Input - with improved placeholder and help text */}
+        <CardNumberInput 
+          cardNumber={cardDetails.number} 
+          onChange={onInputChange}
+          onKeyDown={handleKeyDown}
+          isSearching={isSearching}
+        />
+      </div>
     </div>
   );
 };
