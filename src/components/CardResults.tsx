@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { Loader2, ImageOff, PlusCircle, Search, AlertCircle, Info, Award, DollarSign } from 'lucide-react';
 import { CardDetails, SavedCard, CardNumberObject } from '../types/card';
@@ -27,6 +28,13 @@ const CardResults: React.FC<CardResultsProps> = ({
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const [expandedSalesData, setExpandedSalesData] = useState<Set<string>>(new Set());
   const [adjustedPrices, setAdjustedPrices] = useState<Map<string, number>>(new Map());
+  
+  // Debug logging for results
+  useEffect(() => {
+    console.log('CardResults received results:', results);
+    console.log('Number of results:', results.length);
+    console.log('Certified cards in results:', results.filter(card => card.isCertified));
+  }, [results]);
   
   // Setup intersection observer for infinite scrolling
   const lastCardElementRef = useCallback(

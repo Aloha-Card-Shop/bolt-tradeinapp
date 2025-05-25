@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -168,29 +169,49 @@ export const useCardSearchQuery = () => {
   const addCertificateToResults = useCallback((certificateCard: CardDetails) => {
     console.log('Adding certificate card to search results:', certificateCard);
     
+    // Ensure the certificate card has all required fields for display
+    const formattedCertificateCard = {
+      ...certificateCard,
+      id: certificateCard.id || certificateCard.certification?.certNumber || `cert-${Date.now()}`,
+      productId: certificateCard.productId || certificateCard.certification?.certNumber,
+      isCertified: true,
+      // Ensure we have a valid game type
+      game: certificateCard.game || 'pokemon'
+    };
+    
+    console.log('Formatted certificate card:', formattedCertificateCard);
+    
     setSearchResults(prevResults => {
+      console.log('Current search results before adding certificate:', prevResults);
+      
       // Check if this certificate is already in the results
       const existingIndex = prevResults.findIndex(
         card => card.isCertified && 
-               card.certification?.certNumber === certificateCard.certification?.certNumber
+               card.certification?.certNumber === formattedCertificateCard.certification?.certNumber
       );
       
       if (existingIndex >= 0) {
         // Replace the existing entry if it exists
         const newResults = [...prevResults];
-        newResults[existingIndex] = certificateCard;
+        newResults[existingIndex] = formattedCertificateCard;
         console.log('Updated existing certificate in results');
         return newResults;
       }
       
       // Otherwise add to the beginning
       console.log('Added new certificate to beginning of results');
-      toast.success(`Found certificate: ${certificateCard.name} (PSA ${certificateCard.certification?.grade || '?'})`);
-      return [certificateCard, ...prevResults];
+      const newResults = [formattedCertificateCard, ...prevResults];
+      console.log('New search results after adding certificate:', newResults);
+      toast.success(`Found certificate: ${formattedCertificateCard.name} (PSA ${formattedCertificateCard.certification?.grade || '?'})`);
+      return newResults;
     });
     
     // Update total results count
-    setTotalResults(prev => prev + 1);
+    setTotalResults(prev => {
+      const newTotal = prev + 1;
+      console.log('Updated total results:', newTotal);
+      return newTotal;
+    });
   }, []);
   
   return {
