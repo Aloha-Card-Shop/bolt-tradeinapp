@@ -9,6 +9,7 @@ export interface EbaySoldItem {
   price: number;
   url: string;
   currency?: string;
+  endDate?: string;
 }
 
 export interface EbayPriceResult {
@@ -19,6 +20,12 @@ export interface EbayPriceResult {
   error?: string;
   soldItems: EbaySoldItem[];
   timestamp?: string;
+  priceRange: {
+    min: number;
+    max: number;
+  };
+  outliersRemoved: number;
+  calculationMethod: string;
 }
 
 // Cache for storing price data
@@ -50,7 +57,7 @@ export const useEbayPriceLookup = () => {
     const cardNumber = typeof card.number === 'object' ? card.number.raw : (card.number || '');
     const grade = card.certification.grade;
 
-    console.log(`Looking up eBay PSA price for ${cardName} (PSA ${grade})`);
+    console.log(`Looking up eBay PSA price for ${cardName} (PSA ${grade}) - Last 5 sales`);
     
     // Create cache key
     const cacheKey = `${setName}|${cardName}|${cardNumber}|${grade}`;
@@ -85,14 +92,17 @@ export const useEbayPriceLookup = () => {
         throw new Error(data.error);
       }
 
-      // Prepare the result
+      // Prepare the result with enhanced data
       const result: EbayPriceResult = {
         averagePrice: data.average_price,
         salesCount: data.sales_count,
         searchUrl: data.search_url,
         query: data.query,
         soldItems: data.sold_items || [],
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        priceRange: data.price_range || { min: 0, max: 0 },
+        outliersRemoved: data.outliers_removed || 0,
+        calculationMethod: data.calculation_method || 'unknown'
       };
 
       // Cache the result
@@ -105,7 +115,7 @@ export const useEbayPriceLookup = () => {
       setIsLoading(false);
 
       if (result.salesCount > 0) {
-        toast.success(`Found ${result.salesCount} sold items on eBay`);
+        toast.success(`Found ${result.salesCount} recent sold items on eBay`);
       } else {
         toast(`No sold items found on eBay. Try the search link for manual checking.`, {
           duration: 6000,

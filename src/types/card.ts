@@ -1,4 +1,3 @@
-
 export type GameType = 'pokemon' | 'magic' | 'yugioh' | 'sports' | 'other' | 'japanese-pokemon';
 
 export type CardNumberObject = {
@@ -21,9 +20,21 @@ export interface CardCertification {
 export interface PriceSource {
   name: string;
   url: string;
-  salesCount: number;
-  foundSales: boolean;
-  lastUpdated?: string;
+  salesCount?: number;
+  foundSales?: boolean;
+  soldItems?: Array<{
+    title: string;
+    price: number;
+    url: string;
+    endDate?: string;
+  }>;
+  priceRange?: {
+    min: number;
+    max: number;
+  };
+  outliersRemoved?: number;
+  calculationMethod?: string;
+  query?: string;
 }
 
 export interface CardDetails {

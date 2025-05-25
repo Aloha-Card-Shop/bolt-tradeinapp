@@ -1,9 +1,11 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { Loader2, ImageOff, PlusCircle, Search, AlertCircle, Info, Award, DollarSign } from 'lucide-react';
 import { CardDetails, SavedCard, CardNumberObject } from '../types/card';
 import { extractNumberBeforeSlash, getCardNumberString } from '../utils/cardSearchUtils';
 import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../utils/formatters';
+import SalesDataBreakdown from './trade-in/SalesDataBreakdown';
 
 interface CardResultsProps {
   results: CardDetails[];
@@ -24,6 +26,7 @@ const CardResults: React.FC<CardResultsProps> = ({
 }) => {
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const [expandedSalesData, setExpandedSalesData] = useState<Set<string>>(new Set());
   
   // Setup intersection observer for infinite scrolling
   const lastCardElementRef = useCallback(
@@ -51,6 +54,19 @@ const CardResults: React.FC<CardResultsProps> = ({
       }
     };
   }, []);
+
+  // Toggle sales data expansion
+  const toggleSalesData = (cardId: string) => {
+    setExpandedSalesData(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(cardId)) {
+        newSet.delete(cardId);
+      } else {
+        newSet.add(cardId);
+      }
+      return newSet;
+    });
+  };
 
   // Helper function to display card number with pre-slash highlight
   const renderCardNumber = (cardNumber: string | CardNumberObject | undefined) => {
@@ -145,10 +161,12 @@ const CardResults: React.FC<CardResultsProps> = ({
             const isLastElement = index === results.length - 1;
             const hasProductId = Boolean(card.productId);
             const isCertified = Boolean(card.isCertified);
+            const cardId = `${card.name}-${card.productId || index}`;
+            const isExpanded = expandedSalesData.has(cardId);
               
             return (
               <div 
-                key={`${card.name}-${card.productId || index}`}
+                key={cardId}
                 className={`bg-white rounded-xl border ${isCertified ? 'border-blue-200' : hasProductId ? 'border-gray-200' : 'border-red-200'} p-4 hover:border-blue-200 hover:shadow-md transition duration-200`}
                 ref={isLastElement ? lastCardElementRef : null}
               >
@@ -172,7 +190,7 @@ const CardResults: React.FC<CardResultsProps> = ({
                   
                   <div className="flex-1">
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="flex-1">
                         <h3 className="font-medium text-gray-900">
                           {card.name}
                           {card.number && (
@@ -222,6 +240,22 @@ const CardResults: React.FC<CardResultsProps> = ({
                               </div>
                             )}
                           </div>
+                        )}
+
+                        {/* Sales Data Breakdown for PSA cards with price data */}
+                        {isCertified && card.priceSource && card.priceSource.soldItems && (
+                          <SalesDataBreakdown
+                            soldItems={card.priceSource.soldItems}
+                            averagePrice={card.lastPrice || 0}
+                            priceRange={card.priceSource.priceRange || { min: 0, max: 0 }}
+                            outliersRemoved={card.priceSource.outliersRemoved || 0}
+                            calculationMethod={card.priceSource.calculationMethod || 'unknown'}
+                            searchUrl={card.priceSource.url || ''}
+                            query={card.priceSource.query || ''}
+                            salesCount={card.priceSource.salesCount || 0}
+                            isExpanded={isExpanded}
+                            onToggle={() => toggleSalesData(cardId)}
+                          />
                         )}
                         
                         {card.productId ? (

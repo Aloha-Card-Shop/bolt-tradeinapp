@@ -19,6 +19,7 @@ interface EbaySoldItem {
   price: number;
   url: string;
   currency?: string;
+  endDate?: string;
 }
 
 interface EbayPriceResponse {
@@ -27,21 +28,36 @@ interface EbayPriceResponse {
   sold_items: EbaySoldItem[];
   query: string;
   sales_count: number;
+  price_range: {
+    min: number;
+    max: number;
+  };
+  outliers_removed: number;
+  calculation_method: string;
   error?: string;
 }
 
 // Helper function to compute clean average by trimming outliers
-function computeCleanAverage(prices: number[]): number {
-  if (prices.length === 0) return 0;
-  if (prices.length <= 2) return prices.reduce((a, b) => a + b, 0) / prices.length;
+function computeCleanAverage(prices: number[]): { average: number; outliersRemoved: number } {
+  if (prices.length === 0) return { average: 0, outliersRemoved: 0 };
+  if (prices.length <= 2) return { 
+    average: prices.reduce((a, b) => a + b, 0) / prices.length,
+    outliersRemoved: 0
+  };
   
   const sorted = prices.sort((a, b) => a - b);
   const trim = Math.floor(prices.length * 0.3);
   const trimmed = sorted.slice(trim, prices.length - trim);
   
-  if (trimmed.length === 0) return sorted.reduce((a, b) => a + b, 0) / sorted.length;
+  if (trimmed.length === 0) return { 
+    average: +(sorted.reduce((a, b) => a + b, 0) / sorted.length).toFixed(2),
+    outliersRemoved: 0
+  };
   
-  return +(trimmed.reduce((a, b) => a + b, 0) / trimmed.length).toFixed(2);
+  const outliersRemoved = prices.length - trimmed.length;
+  const average = +(trimmed.reduce((a, b) => a + b, 0) / trimmed.length).toFixed(2);
+  
+  return { average, outliersRemoved };
 }
 
 // Get eBay OAuth2 token using the centralized token service
@@ -82,14 +98,14 @@ function buildSearchQuery(game: string, cardName: string, cardNumber: string, ps
   return components.join(' ').trim();
 }
 
-// Search eBay for sold PSA cards
+// Search eBay for sold PSA cards (limited to 5 most recent)
 async function searchEbaySoldListings(query: string, token: string): Promise<EbaySoldItem[]> {
   const searchUrl = "https://api.ebay.com/buy/browse/v1/item_summary/search";
   
   const params = new URLSearchParams({
     q: query,
     filter: "buyingOptions:{AUCTION|FIXED_PRICE},soldItemsOnly:true,conditions:{1000}",
-    limit: "50",
+    limit: "5", // Changed from 50 to 5 for recent sales only
     sort: "endTimeNewest"
   });
   
@@ -117,7 +133,8 @@ async function searchEbaySoldListings(query: string, token: string): Promise<Eba
       title: item.title || "Unknown Title",
       price: parseFloat(item.price.value),
       url: item.itemWebUrl || "",
-      currency: item.price.currency || "USD"
+      currency: item.price.currency || "USD",
+      endDate: item.saleEndDate || null
     }))
     .filter((item: EbaySoldItem) => item.price > 0 && item.currency === "USD");
 }
@@ -150,7 +167,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Searching eBay for: ${game} ${card_name} ${card_number} PSA ${psa_grade}`);
+    console.log(`Searching eBay for last 5 recent sales: ${game} ${card_name} ${card_number} PSA ${psa_grade}`);
 
     // Get eBay access token using centralized service
     const token = await getEbayToken();
@@ -158,23 +175,32 @@ serve(async (req) => {
     // Build search query
     const query = buildSearchQuery(game, card_name, card_number, psa_grade);
     
-    // Search eBay for sold listings
+    // Search eBay for sold listings (limited to 5 most recent)
     const soldItems = await searchEbaySoldListings(query, token);
 
     // Extract prices and calculate clean average
     const prices = soldItems.map(item => item.price);
-    const averagePrice = computeCleanAverage(prices);
+    const { average: averagePrice, outliersRemoved } = computeCleanAverage(prices);
+    
+    // Calculate price range
+    const priceRange = prices.length > 0 ? {
+      min: Math.min(...prices),
+      max: Math.max(...prices)
+    } : { min: 0, max: 0 };
 
     // Build eBay search URL for user reference
     const searchUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&LH_Complete=1&LH_Sold=1`;
 
-    // Prepare response
+    // Prepare response with enhanced data
     const response: EbayPriceResponse = {
       average_price: averagePrice,
       search_url: searchUrl,
       sold_items: soldItems,
       query: query,
-      sales_count: soldItems.length
+      sales_count: soldItems.length,
+      price_range: priceRange,
+      outliers_removed: outliersRemoved,
+      calculation_method: soldItems.length <= 2 ? "simple_average" : "outlier_trimmed_average"
     };
 
     // Optional: Log search to Supabase (if table exists)
@@ -193,6 +219,7 @@ serve(async (req) => {
             card_number,
             psa_grade,
             average_price: averagePrice,
+            sales_count: soldItems.length,
             created_at: new Date().toISOString()
           });
       }
@@ -217,7 +244,10 @@ serve(async (req) => {
       search_url: "",
       sold_items: [],
       query: "",
-      sales_count: 0
+      sales_count: 0,
+      price_range: { min: 0, max: 0 },
+      outliers_removed: 0,
+      calculation_method: "error"
     };
 
     return new Response(
