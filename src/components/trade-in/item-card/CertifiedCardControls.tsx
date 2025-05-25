@@ -3,6 +3,7 @@ import React from 'react';
 import QuantityInput from '../shared/QuantityInput';
 import PaymentTypeSelector from '../shared/PaymentTypeSelector';
 import { ExternalLink } from 'lucide-react';
+import { PriceSource } from '../../../types/card';
 
 interface CertifiedCardControlsProps {
   quantity: number;
@@ -11,12 +12,7 @@ interface CertifiedCardControlsProps {
   onQuantityChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onPaymentTypeChange: (type: 'cash' | 'trade') => void;
   grade?: string;
-  priceSource?: {
-    name: string;
-    url: string;
-    salesCount: number;
-    foundSales: boolean;
-  };
+  priceSource?: PriceSource;
 }
 
 const CertifiedCardControls: React.FC<CertifiedCardControlsProps> = ({
@@ -51,7 +47,7 @@ const CertifiedCardControls: React.FC<CertifiedCardControlsProps> = ({
             >
               <span>
                 {priceSource.foundSales 
-                  ? `Based on ${priceSource.salesCount} sales from ${priceSource.name}`
+                  ? `Based on ${priceSource.salesCount || 0} sales from ${priceSource.name}`
                   : `View on ${priceSource.name}`
                 }
               </span>
