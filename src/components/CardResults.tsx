@@ -27,6 +27,7 @@ const CardResults: React.FC<CardResultsProps> = ({
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const [expandedSalesData, setExpandedSalesData] = useState<Set<string>>(new Set());
+  const [adjustedPrices, setAdjustedPrices] = useState<Map<string, number>>(new Map());
   
   // Setup intersection observer for infinite scrolling
   const lastCardElementRef = useCallback(
@@ -68,6 +69,15 @@ const CardResults: React.FC<CardResultsProps> = ({
     });
   };
 
+  // Handle adjusted price changes from outlier selection
+  const handleAdjustedPriceChange = (cardId: string, newPrice: number) => {
+    setAdjustedPrices(prev => {
+      const newMap = new Map(prev);
+      newMap.set(cardId, newPrice);
+      return newMap;
+    });
+  };
+
   // Helper function to display card number with pre-slash highlight
   const renderCardNumber = (cardNumber: string | CardNumberObject | undefined) => {
     if (!cardNumber) return null;
@@ -100,22 +110,29 @@ const CardResults: React.FC<CardResultsProps> = ({
     
     console.log("Adding card with productId:", card.productId, card);
     
-    // For certified cards, use grade-based pricing
+    // For certified cards, use adjusted price if available, otherwise use grade-based pricing
     if (card.isCertified && card.certification?.grade) {
-      const gradeValue = parseFloat(card.certification.grade || '0');
-      let defaultPrice = 0;
+      const cardId = `${card.name}-${card.productId || card.certification.certNumber}`;
+      const adjustedPrice = adjustedPrices.get(cardId);
       
-      if (gradeValue >= 9.5) {
-        defaultPrice = 100; // Gem Mint estimate
-      } else if (gradeValue >= 9) {
-        defaultPrice = 50;  // Mint estimate
-      } else if (gradeValue >= 8) {
-        defaultPrice = 25;  // Near Mint estimate
+      if (adjustedPrice && adjustedPrice > 0) {
+        onAddToList(card, adjustedPrice);
       } else {
-        defaultPrice = 10;  // Lower grades estimate
+        const gradeValue = parseFloat(card.certification.grade || '0');
+        let defaultPrice = 0;
+        
+        if (gradeValue >= 9.5) {
+          defaultPrice = 100; // Gem Mint estimate
+        } else if (gradeValue >= 9) {
+          defaultPrice = 50;  // Mint estimate
+        } else if (gradeValue >= 8) {
+          defaultPrice = 25;  // Near Mint estimate
+        } else {
+          defaultPrice = 10;  // Lower grades estimate
+        }
+        
+        onAddToList(card, defaultPrice);
       }
-      
-      onAddToList(card, defaultPrice);
     } else {
       onAddToList(card, 0);
     }
@@ -163,11 +180,15 @@ const CardResults: React.FC<CardResultsProps> = ({
             const isCertified = Boolean(card.isCertified);
             const cardId = `${card.name}-${card.productId || index}`;
             const isExpanded = expandedSalesData.has(cardId);
+            const adjustedPrice = adjustedPrices.get(cardId);
+            const displayPrice = adjustedPrice || card.lastPrice;
             
             // Debug logging for pricing data
             if (isCertified && card.priceSource) {
               console.log(`Card ${card.name} pricing data:`, {
                 lastPrice: card.lastPrice,
+                adjustedPrice,
+                displayPrice,
                 priceSource: card.priceSource,
                 soldItems: card.priceSource.soldItems
               });
@@ -225,11 +246,18 @@ const CardResults: React.FC<CardResultsProps> = ({
                         {/* Price information with conditional display for certified cards */}
                         {isCertified && card.priceSource && (
                           <div className="mt-2">
-                            {card.lastPrice && card.lastPrice > 0 ? (
-                              <div className="mt-1 p-2 bg-green-50 border border-green-200 rounded-md text-green-700 flex items-center">
+                            {displayPrice && displayPrice > 0 ? (
+                              <div className={`mt-1 p-2 border rounded-md flex items-center ${
+                                adjustedPrice ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-green-50 border-green-200 text-green-700'
+                              }`}>
                                 <DollarSign className="h-4 w-4 mr-1 flex-shrink-0" />
                                 <div>
-                                  <p className="font-medium">Average price: ${formatCurrency(card.lastPrice)}</p>
+                                  <p className="font-medium">
+                                    {adjustedPrice ? 'Adjusted average' : 'Average price'}: ${formatCurrency(displayPrice)}
+                                    {adjustedPrice && (
+                                      <span className="text-xs ml-1">(was ${formatCurrency(card.lastPrice || 0)})</span>
+                                    )}
+                                  </p>
                                   <p className="text-xs">Based on {card.priceSource.salesCount || 0} recent sales</p>
                                 </div>
                               </div>
@@ -265,6 +293,7 @@ const CardResults: React.FC<CardResultsProps> = ({
                               salesCount={card.priceSource.salesCount || 0}
                               isExpanded={isExpanded}
                               onToggle={() => toggleSalesData(cardId)}
+                              onAdjustedPriceChange={(newPrice) => handleAdjustedPriceChange(cardId, newPrice)}
                             />
                           ) : (card.priceSource.salesCount || 0) > 0 && (
                             <div className="mt-3 text-sm text-gray-600">
