@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Barcode, ArrowLeft, Plus, Settings as SettingsIcon, History } from 'lucide-react';
+import { Barcode, ArrowLeft, Plus, Settings as SettingsIcon, History, TestTube } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import AuthGuard from '../../components/AuthGuard';
 import { BarcodeTemplate, BarcodeSetting, PrintLog } from '../../types/barcode';
@@ -10,6 +10,7 @@ import TemplateForm from '../../components/barcode/TemplateForm';
 import TemplatePreview from '../../components/barcode/TemplatePreview';
 import SettingsForm from '../../components/barcode/SettingsForm';
 import PrintLogsTable from '../../components/barcode/PrintLogsTable';
+import { usePrinters } from '../../hooks/usePrinters';
 
 const BarcodesAdmin: React.FC = () => {
   const navigate = useNavigate();
@@ -32,6 +33,12 @@ const BarcodesAdmin: React.FC = () => {
   
   // State for active tab
   const [activeTab, setActiveTab] = useState<'templates' | 'settings' | 'logs'>('templates');
+  
+  // State for test print modal
+  const [showTestPrint, setShowTestPrint] = useState(false);
+  
+  // Import the usePrinters hook
+  const { printers, isLoading: isLoadingPrinters } = require('../../hooks/usePrinters').usePrinters();
 
   // Create card template if it doesn't exist
   const ensureCardTemplateExists = async () => {
@@ -205,6 +212,13 @@ const BarcodesAdmin: React.FC = () => {
               </div>
               <h1 className="text-2xl font-bold text-gray-900">Barcode Management</h1>
             </div>
+            <button
+              onClick={() => setShowTestPrint(true)}
+              className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
+              <TestTube className="h-4 w-4 mr-2" />
+              Test Print
+            </button>
           </div>
 
           {/* Tabs */}
@@ -395,6 +409,15 @@ const BarcodesAdmin: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Test Print Modal */}
+      {showTestPrint && (
+        <TestPrintModal
+          printers={printers}
+          isLoading={isLoadingPrinters}
+          onClose={() => setShowTestPrint(false)}
+        />
+      )}
     </AuthGuard>
   );
 };
