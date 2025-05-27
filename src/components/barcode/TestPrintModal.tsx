@@ -24,9 +24,18 @@ const TestPrintModal: React.FC<TestPrintModalProps> = ({
   const [testType, setTestType] = useState<'standard' | 'card'>('standard');
   const [isPrinting, setIsPrinting] = useState(false);
 
-  // Mock trade-in data for testing
+  // Generate a proper UUID for the mock trade-in
+  const generateMockUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
+  // Mock trade-in data for testing with proper UUID
   const mockTradeIn: TradeIn = {
-    id: 'TEST-' + Date.now(),
+    id: generateMockUUID(),
     trade_in_date: new Date().toISOString(),
     total_value: 125.50,
     cash_value: 100.40,
@@ -54,9 +63,7 @@ const TestPrintModal: React.FC<TestPrintModalProps> = ({
     },
     tcgplayer_url: 'https://www.tcgplayer.com/product/88/pokemon-base-set-charizard',
     image_url: '',
-    trade_in_id: mockTradeIn.id,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    trade_in_id: mockTradeIn.id
   };
 
   const handleTestPrint = async () => {
