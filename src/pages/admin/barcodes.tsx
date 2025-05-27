@@ -10,6 +10,7 @@ import TemplateForm from '../../components/barcode/TemplateForm';
 import TemplatePreview from '../../components/barcode/TemplatePreview';
 import SettingsForm from '../../components/barcode/SettingsForm';
 import PrintLogsTable from '../../components/barcode/PrintLogsTable';
+import TestPrintModal from '../../components/barcode/TestPrintModal';
 import { usePrinters } from '../../hooks/usePrinters';
 
 const BarcodesAdmin: React.FC = () => {
@@ -37,8 +38,8 @@ const BarcodesAdmin: React.FC = () => {
   // State for test print modal
   const [showTestPrint, setShowTestPrint] = useState(false);
   
-  // Import the usePrinters hook
-  const { printers, isLoading: isLoadingPrinters } = require('../../hooks/usePrinters').usePrinters();
+  // Use the usePrinters hook
+  const { printers, isLoading: isLoadingPrinters } = usePrinters();
 
   // Create card template if it doesn't exist
   const ensureCardTemplateExists = async () => {

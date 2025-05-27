@@ -34,7 +34,7 @@ const TestPrintModal: React.FC<TestPrintModalProps> = ({
     trade_value: 125.50,
     customer_name: 'Test Customer',
     customer_id: 'test-customer-id',
-    status: 'completed',
+    status: 'accepted',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     printed: false,
