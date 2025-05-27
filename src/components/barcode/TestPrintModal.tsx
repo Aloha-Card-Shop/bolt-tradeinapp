@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Printer, TestTube } from 'lucide-react';
 import { Printer as PrinterType } from '../../types/printer';
@@ -35,8 +34,6 @@ const TestPrintModal: React.FC<TestPrintModalProps> = ({
     customer_name: 'Test Customer',
     customer_id: 'test-customer-id',
     status: 'accepted',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
     printed: false,
     print_count: 0
   };
