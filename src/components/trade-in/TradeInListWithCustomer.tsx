@@ -1,11 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ShoppingBagIcon, XCircleIcon } from 'lucide-react';
 import { TradeInItem } from '../../hooks/useTradeInListWithCustomer';
 import { Customer } from '../../hooks/useCustomers';
 import TradeInItemsList from './TradeInItemsList';
 import CustomerSection from './CustomerSection';
 import GlobalPaymentTypeSelector from './GlobalPaymentTypeSelector';
+import TradeInPriceReviewModal from './TradeInPriceReviewModal';
+import { insertTradeInAndItems } from '../../services/insertTradeInAndItems';
+import { toast } from 'react-hot-toast';
 
 interface TradeInListWithCustomerProps {
   items: TradeInItem[];
@@ -30,6 +33,9 @@ const TradeInListWithCustomer: React.FC<TradeInListWithCustomerProps> = ({
   onCustomerCreate,
   clearList,
 }) => {
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const totalItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   
   // Calculate totals for the trade-in list
@@ -63,6 +69,65 @@ const TradeInListWithCustomer: React.FC<TradeInListWithCustomerProps> = ({
 
   const handleClearAll = () => {
     clearList();
+  };
+
+  const handleOpenReview = () => {
+    // Validate that all items have payment types selected
+    const itemsWithoutPaymentType = items.filter(item => !item.paymentType);
+    if (itemsWithoutPaymentType.length > 0) {
+      toast.error('Please select payment type for all items before proceeding');
+      return;
+    }
+
+    // Validate that all items have valid prices
+    const itemsWithoutPrice = items.filter(item => !item.price || item.price <= 0);
+    if (itemsWithoutPrice.length > 0) {
+      toast.error('All items must have a valid market price');
+      return;
+    }
+
+    setShowReviewModal(true);
+  };
+
+  const handleSubmitTradeIn = async (reviewedItems: TradeInItem[], notes?: string) => {
+    if (!selectedCustomer) {
+      toast.error('Please select a customer');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      const tradeInData = {
+        customer_id: selectedCustomer.id,
+        trade_in_date: new Date().toISOString(),
+        total_value: cashTotalValue + tradeTotalValue,
+        cash_value: cashTotalValue,
+        trade_value: tradeTotalValue,
+        notes: notes || null,
+        status: 'pending' as const,
+        payment_type: cashTotalValue > 0 && tradeTotalValue > 0 ? 'mixed' as const : 
+                     tradeTotalValue > 0 ? 'trade' as const : 'cash' as const
+      };
+
+      await insertTradeInAndItems(tradeInData, reviewedItems);
+      
+      toast.success('Trade-in submitted successfully!');
+      clearList();
+      setShowReviewModal(false);
+    } catch (error) {
+      console.error('Error submitting trade-in:', error);
+      toast.error('Failed to submit trade-in. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateItems = (updatedItems: TradeInItem[]) => {
+    // Update all items in the parent component
+    updatedItems.forEach((item, index) => {
+      onUpdateItem(index, item);
+    });
   };
   
   return (
@@ -130,7 +195,8 @@ const TradeInListWithCustomer: React.FC<TradeInListWithCustomerProps> = ({
               {items.length > 0 && (
                 <div className="mt-4">
                   <button 
-                    className={`w-full py-2 px-4 font-medium rounded-lg transition-colors ${
+                    onClick={handleOpenReview}
+                    className={`w-full py-3 px-4 font-medium rounded-lg transition-colors ${
                       selectedCustomer 
                         ? 'bg-blue-600 hover:bg-blue-700 text-white' 
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -138,7 +204,7 @@ const TradeInListWithCustomer: React.FC<TradeInListWithCustomerProps> = ({
                     disabled={!selectedCustomer}
                     title={!selectedCustomer ? 'Please select a customer first' : ''}
                   >
-                    Send to manager for approval
+                    Review & Send to Manager
                   </button>
                 </div>
               )}
@@ -156,6 +222,17 @@ const TradeInListWithCustomer: React.FC<TradeInListWithCustomerProps> = ({
           </p>
         </div>
       )}
+
+      {/* Price Review Modal */}
+      <TradeInPriceReviewModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        items={items}
+        selectedCustomer={selectedCustomer}
+        onSubmit={handleSubmitTradeIn}
+        onUpdateItems={handleUpdateItems}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 };
