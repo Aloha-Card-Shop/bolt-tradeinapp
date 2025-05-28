@@ -22,11 +22,10 @@ interface PrintRequest {
   isTest?: boolean;
 }
 
-// ZPL to Image conversion function
-const convertZplToImageBase64 = (zpl: string): string => {
-  // This is a simplified server-side version of ZPL to image conversion
-  // In a real implementation, you might want to use a proper ZPL rendering library
-  // For now, we'll create a basic text representation that can be converted to image
+// Convert ZPL to image and then to PDF for RAW printers
+const convertZplToPdfBase64 = async (zpl: string): Promise<string> => {
+  // Create a simple PDF with the ZPL rendered content
+  // This is a basic implementation - in production you might want to use a proper PDF library
   
   const lines = zpl.split('\n');
   const elements: Array<{type: string, x: number, y: number, content: string, fontSize?: number}> = [];
@@ -72,29 +71,80 @@ const convertZplToImageBase64 = (zpl: string): string => {
     }
   });
   
-  // Create a simple HTML representation that can be converted to image
-  // In production, you'd want to use a proper image generation library
-  const htmlContent = `
-    <div style="width: 384px; height: 288px; background: white; position: relative; font-family: monospace;">
-      ${elements.map(el => {
-        if (el.type === 'text') {
-          return `<div style="position: absolute; left: ${el.x}px; top: ${el.y}px; font-size: ${el.fontSize}px; color: black;">${el.content}</div>`;
-        } else if (el.type === 'barcode') {
-          return `
-            <div style="position: absolute; left: ${el.x}px; top: ${el.y}px;">
-              <div style="width: 200px; height: 50px; background: repeating-linear-gradient(90deg, black 0px, black 2px, white 2px, white 4px);"></div>
-              <div style="text-align: center; font-size: 10px; margin-top: 2px;">${el.content}</div>
-            </div>
-          `;
-        }
-        return '';
-      }).join('')}
-    </div>
-  `;
-  
-  // For now, return a placeholder base64 image (1x1 white pixel)
-  // In production, convert the HTML to an actual image
-  return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';
+  // Create a minimal PDF structure with text content
+  // This is a very basic PDF - for production use a proper PDF library
+  const pdfContent = `%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+/Resources <<
+/Font <<
+/F1 5 0 R
+>>
+>>
+>>
+endobj
+
+4 0 obj
+<<
+/Length 200
+>>
+stream
+BT
+/F1 12 Tf
+50 700 Td
+${elements.filter(el => el.type === 'text').map(el => `(${el.content}) Tj 0 -20 Td`).join(' ')}
+ET
+endstream
+endobj
+
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000284 00000 n 
+0000000523 00000 n 
+trailer
+<<
+/Size 6
+/Root 1 0 R
+>>
+startxref
+600
+%%EOF`;
+
+  // Convert to base64
+  const encoder = new TextEncoder();
+  const data = encoder.encode(pdfContent);
+  return btoa(String.fromCharCode(...data));
 };
 
 serve(async (req) => {
@@ -153,10 +203,10 @@ serve(async (req) => {
       let contentType: string;
       
       if (printer.printer_type === 'RAW') {
-        // For RAW printers, use image format
+        // For RAW printers, convert ZPL to PDF
         const testZpl = `^XA^FO100,100^A0N,100,100^FDTEST^FS^FO100,250^A0N,50,50^FDPRINT OK^FS^XZ`;
-        content = convertZplToImageBase64(testZpl);
-        contentType = 'png_base64';
+        content = await convertZplToPdfBase64(testZpl);
+        contentType = 'pdf_base64';
       } else {
         // For ZPL printers, use ZPL format
         const simpleTestZPL = `^XA^FO100,100^A0N,100,100^FDTEST^FS^FO100,250^A0N,50,50^FDPRINT OK^FS^XZ`;
@@ -467,10 +517,10 @@ ${skuDisplay ? `^FO20,90^A0N,25,25^FD${skuDisplay}^FS` : ''}
     let printTitle: string;
     
     if (printer.printer_type === 'RAW') {
-      // Convert ZPL to image for RAW printers
-      content = convertZplToImageBase64(zpl);
-      contentType = 'png_base64';
-      printTitle = card ? `Card Label (Image) ${card.card_name}` : `Trade-In Label (Image) ${tradeIn.id}`;
+      // Convert ZPL to PDF for RAW printers
+      content = await convertZplToPdfBase64(zpl);
+      contentType = 'pdf_base64';
+      printTitle = card ? `Card Label (PDF) ${card.card_name}` : `Trade-In Label (PDF) ${tradeIn.id}`;
     } else {
       // Use ZPL directly for ZPL printers
       content = btoa(zpl);
