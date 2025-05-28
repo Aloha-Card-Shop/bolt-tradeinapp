@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 
 interface CacheEntry {
@@ -33,36 +32,30 @@ export const buildTcgPlayerUrl = (
     throw new Error('Product ID is required');
   }
 
-  const formattedCondition = condition 
-    ? condition.split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ')
-    : 'Near Mint';
-
-  // Build base URL with condition and language
-  let url = `https://www.tcgplayer.com/product/${productId}?page=1&Language=${language}&Condition=${formattedCondition}`;
+  // Build base URL following the correct format
+  let url = `https://www.tcgplayer.com/product/${productId}?Language=${language}&page=1`;
   
-  // Add printing parameter (First Edition or Unlimited)
-  if (isFirstEdition) {
+  // Add printing parameter for special editions
+  if (isFirstEdition && isHolo) {
+    url += '&Printing=1st+Edition+Holofoil';
+  } else if (isFirstEdition && isReverseHolo) {
+    url += '&Printing=1st+Edition+Reverse+Holofoil';
+  } else if (isFirstEdition) {
     url += '&Printing=1st+Edition';
+  } else if (isHolo) {
+    url += '&Printing=Holofoil';
+  } else if (isReverseHolo) {
+    url += '&Printing=Reverse+Holofoil';
   }
   
-  // Add treatment parameter for holo cards
-  if (isHolo) {
-    url += '&Treatment=Holofoil';
-    
-    // Special case for 1st Edition Holo (needs different format than just appending both params)
-    if (isFirstEdition) {
-      // Fix: Replace the existing printing parameter with combined version
-      url = url.replace('&Printing=1st+Edition', '&Printing=1st+Edition+Holofoil');
-    }
-  } else if (isReverseHolo) {
-    // Handle reverse holo (which is mutually exclusive with regular holo)
-    if (isFirstEdition) {
-      url = url.replace('&Printing=1st+Edition', '&Printing=1st+Edition+Reverse+Holofoil');
-    } else {
-      url += '&Printing=Reverse+Holofoil';
-    }
+  // Add condition if specified
+  if (condition) {
+    const formattedCondition = condition 
+      ? condition.split('_')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join('+')
+      : 'Near+Mint';
+    url += `&Condition=${formattedCondition}`;
   }
   
   // Add debugging to help diagnose URL construction
