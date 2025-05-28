@@ -54,8 +54,8 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     instanceId
   });
 
-  // Get debug information
-  const { isDebugMode, debugInfo } = useDebugInfo(item, cashValue, tradeValue, error);
+  // Get debug information - ensure we have valid values
+  const { isDebugMode, debugInfo } = useDebugInfo(item, cashValue || 0, tradeValue || 0, error);
 
   // Handle condition changes, passing through to the parent
   const handleConditionChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {

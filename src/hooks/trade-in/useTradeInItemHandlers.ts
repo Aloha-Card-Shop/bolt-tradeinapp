@@ -15,7 +15,7 @@ interface UseTradeInItemHandlersProps {
 }
 
 interface UseTradeInItemHandlersReturn {
-  displayValue: string | undefined;
+  displayValue: number;
   isCalculating: boolean;
   refreshPrice: () => void;
   cashValue: number | undefined;
@@ -26,7 +26,7 @@ interface UseTradeInItemHandlersReturn {
   toggleHolo: () => void;
   toggleReverseHolo: () => void;
   updatePaymentType: (type: 'cash' | 'trade') => void;
-  updateQuantity: (quantity: number) => void;
+  updateQuantity: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handlePriceChangeWrapper: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
@@ -85,7 +85,7 @@ export const useTradeInItemHandlers = ({
     toggleHolo,
     toggleReverseHolo,
     updatePaymentType,
-    updateQuantity
+    updateQuantity: updateQuantityFromAttributes
   } = useCardAttributes({
     item,
     onUpdate: handleUpdate
@@ -105,6 +105,14 @@ export const useTradeInItemHandlers = ({
     prevPriceRef
   });
 
+  // Wrapper for quantity updates to match expected signature
+  const updateQuantity = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const quantity = parseInt(e.target.value);
+    if (!isNaN(quantity) && quantity > 0) {
+      updateQuantityFromAttributes(quantity);
+    }
+  }, [updateQuantityFromAttributes]);
+
   // Fix: Make the handlePriceChange function accept the event format expected by ItemValues
   const handlePriceChangeWrapper = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newPrice = parseFloat(e.target.value);
@@ -114,7 +122,7 @@ export const useTradeInItemHandlers = ({
   }, [handlePriceChange]);
 
   return {
-    displayValue,
+    displayValue: displayValue || 0, // Ensure we always return a number
     isCalculating,
     refreshPrice,
     cashValue,
