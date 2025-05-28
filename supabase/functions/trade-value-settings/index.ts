@@ -59,7 +59,36 @@ Deno.serve(async (req) => {
     
     if (req.method === 'POST') {
       const body = await req.json();
-      const { settings, game } = body;
+      
+      // Handle both old format and new format
+      let settings, game;
+      if (body.action === 'get') {
+        // Handle GET-like request through POST
+        game = body.game || 'pokemon';
+        console.log(`[EDGE FUNCTION] Fetching settings via POST for game: ${game}`);
+        
+        const { data: settingsData, error } = await supabase
+          .from('trade_value_settings')
+          .select('*')
+          .eq('game', game.toLowerCase());
+          
+        if (error) {
+          console.error('[EDGE FUNCTION] Database error:', error);
+          throw error;
+        }
+        
+        return new Response(
+          JSON.stringify(settingsData || []),
+          { 
+            status: 200, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      } else {
+        // Handle save request
+        settings = body.settings;
+        game = body.game;
+      }
       
       if (!settings || !Array.isArray(settings)) {
         return new Response(

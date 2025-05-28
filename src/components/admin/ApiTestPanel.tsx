@@ -15,8 +15,7 @@ const ApiTestPanel: React.FC = () => {
       setTestResult(prev => prev + 'Calling edge function: trade-value-settings\n');
       
       const { data, error } = await supabase.functions.invoke('trade-value-settings', {
-        method: 'GET',
-        body: { game: 'pokemon' }
+        body: { action: 'get', game: 'pokemon' }
       });
       
       if (error) {

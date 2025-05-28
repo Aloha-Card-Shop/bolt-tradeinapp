@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../integrations/supabase/client';
@@ -30,8 +29,7 @@ const TradeValuesPage: React.FC = () => {
         console.log(`[FRONTEND] Fetching settings for game: ${selectedGame}`);
         
         const { data, error } = await supabase.functions.invoke('trade-value-settings', {
-          method: 'GET',
-          body: { game: selectedGame }
+          body: { action: 'get', game: selectedGame }
         });
         
         if (error) {
