@@ -1,10 +1,10 @@
 
 import { useCallback } from 'react';
-import { TradeInItem } from '../useTradeInList';
-import { useItemPrice } from './useItemPrice';
-import { useCardAttributes } from './useCardAttributes';
-import { useTradeInItemState } from './handlers/useTradeInItemState';
-import { useTradeInItemEffects } from './handlers/useTradeInItemEffects';
+import { TradeInItem } from '../../useTradeInList';
+import { useItemPrice } from '../useItemPrice';
+import { useCardAttributes } from '../useCardAttributes';
+import { useTradeInItemState } from './useTradeInItemState';
+import { useTradeInItemEffects } from './useTradeInItemEffects';
 
 interface UseTradeInItemHandlersProps {
   item: TradeInItem;
