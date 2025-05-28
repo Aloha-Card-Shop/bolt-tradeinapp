@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CardDetails, GameType, GAME_OPTIONS } from '../types/card';
 import { useSetOptions } from './useSetOptions';
@@ -9,6 +10,30 @@ import { toast } from 'react-hot-toast';
 // Increased debounce timeouts to reduce race conditions
 const SEARCH_DEBOUNCE_MS = 300; // Increased from 200ms
 const SUGGESTION_DEBOUNCE_MS = 300; // Increased from 200ms
+
+// Helper function to detect if card name has changed significantly
+const hasSignificantNameChange = (oldName: string, newName: string): boolean => {
+  if (!oldName || !newName) return false;
+  
+  // If the new name is significantly shorter, consider it a new search
+  if (newName.length < oldName.length * 0.5) return true;
+  
+  // Split into words and check if they're completely different
+  const oldWords = oldName.toLowerCase().split(/\s+/).filter(Boolean);
+  const newWords = newName.toLowerCase().split(/\s+/).filter(Boolean);
+  
+  // If no words overlap, it's a significant change
+  if (newWords.length > 0 && oldWords.length > 0) {
+    const hasOverlap = newWords.some(newWord => 
+      oldWords.some(oldWord => 
+        oldWord.includes(newWord) || newWord.includes(oldWord)
+      )
+    );
+    return !hasOverlap;
+  }
+  
+  return false;
+};
 
 export const useCardSearch = () => {
   const [cardDetails, setCardDetails] = useState<CardDetails>({
@@ -29,6 +54,9 @@ export const useCardSearch = () => {
   // Ref to store debounce timer IDs
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const suggestionDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Track previous card name for detecting significant changes
+  const previousCardNameRef = useRef<string>('');
   
   // Track if sets are filtered
   const [isSetFiltered, setIsSetFiltered] = useState(false);
@@ -141,7 +169,27 @@ export const useCardSearch = () => {
         newDetails.categoryId = gameOption?.categoryId || GAME_OPTIONS[0].categoryId;
         newDetails.set = ''; // Reset set when game changes
       } else if (name === 'name') {
+        // Check if this is a significant name change
+        const previousName = previousCardNameRef.current;
+        const isSignificantChange = hasSignificantNameChange(previousName, value);
+        
+        console.log('Name change detected:', {
+          previous: previousName,
+          new: value,
+          isSignificant: isSignificantChange
+        });
+        
         newDetails.name = value;
+        
+        // Auto-reset set selection on significant name changes
+        if (isSignificantChange && newDetails.set) {
+          console.log('Auto-resetting set selection due to significant name change');
+          newDetails.set = '';
+          toast.success('Set filter cleared for new search');
+        }
+        
+        // Update the previous name reference
+        previousCardNameRef.current = value;
         
         // Check if input might be a card number for name field
         if (isLikelyCardNumber(value) && !newDetails.number) {
@@ -260,6 +308,8 @@ export const useCardSearch = () => {
     setIsSetFiltered(false);
     lastSearchRef.current = '';
     searchCacheRef.current.clear();
+    // Reset the previous name reference
+    previousCardNameRef.current = '';
   }, []);
 
   // Add a new function to completely clear search results
