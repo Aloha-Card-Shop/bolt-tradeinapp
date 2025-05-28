@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { useTradeValueCache } from '../../hooks/useTradeValueCache';
 
 interface TradeValueSettings {
   game: string;
@@ -22,8 +21,6 @@ const TradeValuesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   
-  const { clearSettingsCache } = useTradeValueCache();
-  
   useEffect(() => {
     const fetchSettings = async () => {
       setIsLoading(true);
@@ -31,36 +28,33 @@ const TradeValuesPage: React.FC = () => {
       
       try {
         console.log(`[Frontend] Fetching settings for game: ${selectedGame}`);
-        const response = await fetch(`/api/trade-value-settings?game=${selectedGame}`);
         
-        console.log(`[Frontend] Response status: ${response.status}, headers:`, response.headers);
+        // Add cache busting parameter to ensure fresh data
+        const cacheBuster = Date.now();
+        const response = await fetch(`/api/trade-value-settings?game=${selectedGame}&_=${cacheBuster}`);
+        
+        console.log(`[Frontend] Response status: ${response.status}`);
+        console.log(`[Frontend] Response headers:`, Object.fromEntries(response.headers.entries()));
         
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`[Frontend] API error response:`, errorText);
-          throw new Error(`Failed to fetch settings: ${response.status} ${response.statusText}`);
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
-        const responseText = await response.text();
-        console.log(`[Frontend] Raw response:`, responseText);
-        
-        let data;
-        try {
-          data = JSON.parse(responseText);
-        } catch (parseError) {
-          console.error(`[Frontend] JSON parse error:`, parseError);
-          throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const responseText = await response.text();
+          console.error(`[Frontend] Non-JSON response:`, responseText.substring(0, 200));
+          throw new Error(`Expected JSON response but got ${contentType}. Response: ${responseText.substring(0, 100)}...`);
         }
         
+        const data = await response.json();
         console.log(`[Frontend] Parsed data:`, data);
         
         if (Array.isArray(data)) {
           setCurrentSettings(data);
           console.log(`[Frontend] Successfully loaded ${data.length} settings`);
-        } else if (data.error) {
-          throw new Error(data.error);
         } else {
-          console.warn(`[Frontend] Unexpected data format:`, data);
+          console.warn(`[Frontend] Expected array but got:`, typeof data, data);
           setCurrentSettings([]);
         }
       } catch (err: any) {
@@ -162,14 +156,11 @@ const TradeValuesPage: React.FC = () => {
         return;
       }
       
-      // Clear the cache for the updated game
-      await clearSettingsCache(selectedGame);
-      
       toast.success('Settings saved successfully');
       setIsModified(false);
       
-      // Refresh the current route using navigate
-      navigate(0);
+      // Refresh the page to get updated data
+      window.location.reload();
       
     } catch (error) {
       console.error('[Frontend] Error saving settings:', error);
