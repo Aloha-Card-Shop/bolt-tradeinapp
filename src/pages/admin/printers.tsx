@@ -1,14 +1,39 @@
 import React, { useState } from 'react';
-import { PlusCircle, Trash, Save, Edit, Printer } from 'lucide-react';
+import { PlusCircle, Trash, Save, Edit, Printer, Info } from 'lucide-react';
 import { usePrinters } from '../../hooks/usePrinters';
 import AuthGuard from '../../components/AuthGuard';
 
 const PrintersAdminPage: React.FC = () => {
-  const { printers, locations, isLoading, addPrinter, updatePrinter, deletePrinter, addLocation, updateLocation, deleteLocation } = usePrinters();
-  const [newPrinter, setNewPrinter] = useState({ name: '', printer_id: '', location_id: '', is_default: false });
+  const { printers, locations, printerModels, isLoading, addPrinter, updatePrinter, deletePrinter, addLocation, updateLocation, deleteLocation } = usePrinters();
+  const [newPrinter, setNewPrinter] = useState({ 
+    name: '', 
+    printer_id: '', 
+    location_id: '', 
+    is_default: false, 
+    printer_type: 'ZPL' as 'ZPL' | 'RAW' 
+  });
   const [newLocation, setNewLocation] = useState({ name: '', address: '' });
-  const [editingPrinter, setEditingPrinter] = useState<{ id: string; name: string; printer_id: string; location_id: string; is_default: boolean } | null>(null);
+  const [editingPrinter, setEditingPrinter] = useState<{ 
+    id: string; 
+    name: string; 
+    printer_id: string; 
+    location_id: string; 
+    is_default: boolean;
+    printer_type: 'ZPL' | 'RAW';
+  } | null>(null);
   const [editingLocation, setEditingLocation] = useState<{ id: string; name: string; address: string } | null>(null);
+
+  // Get suggested printer type based on printer name
+  const getSuggestedPrinterType = (printerName: string): 'ZPL' | 'RAW' => {
+    const name = printerName.toLowerCase();
+    if (name.includes('rollo') || name.includes('brother') || name.includes('dymo')) {
+      return 'RAW';
+    }
+    if (name.includes('zebra')) {
+      return 'ZPL';
+    }
+    return 'ZPL'; // Default to ZPL
+  };
 
   // Handle printer form submission
   const handlePrinterSubmit = async (e: React.FormEvent) => {
@@ -19,7 +44,8 @@ const PrintersAdminPage: React.FC = () => {
           name: editingPrinter.name,
           printer_id: editingPrinter.printer_id,
           location_id: editingPrinter.location_id,
-          is_default: editingPrinter.is_default
+          is_default: editingPrinter.is_default,
+          printer_type: editingPrinter.printer_type
         });
         setEditingPrinter(null);
       } else {
@@ -27,7 +53,13 @@ const PrintersAdminPage: React.FC = () => {
           newPrinter.location_id = locations[0].id;
         }
         await addPrinter(newPrinter);
-        setNewPrinter({ name: '', printer_id: '', location_id: newPrinter.location_id, is_default: false });
+        setNewPrinter({ 
+          name: '', 
+          printer_id: '', 
+          location_id: newPrinter.location_id, 
+          is_default: false, 
+          printer_type: 'ZPL' 
+        });
       }
     } catch (error) {
       console.error('Error submitting printer:', error);
@@ -212,6 +244,7 @@ const PrintersAdminPage: React.FC = () => {
                     <thead>
                       <tr className="bg-gray-50">
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Printer ID</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Default</th>
@@ -222,6 +255,15 @@ const PrintersAdminPage: React.FC = () => {
                       {printers.map((printer) => (
                         <tr key={printer.id} className="border-t border-gray-200">
                           <td className="px-4 py-2">{printer.name}</td>
+                          <td className="px-4 py-2">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              printer.printer_type === 'ZPL' 
+                                ? 'bg-blue-100 text-blue-800' 
+                                : 'bg-orange-100 text-orange-800'
+                            }`}>
+                              {printer.printer_type}
+                            </span>
+                          </td>
                           <td className="px-4 py-2">{printer.printer_id}</td>
                           <td className="px-4 py-2">{printer.location?.name || '-'}</td>
                           <td className="px-4 py-2">
@@ -239,7 +281,8 @@ const PrintersAdminPage: React.FC = () => {
                                   name: printer.name,
                                   printer_id: printer.printer_id,
                                   location_id: printer.location_id,
-                                  is_default: printer.is_default
+                                  is_default: printer.is_default,
+                                  printer_type: printer.printer_type
                                 })}
                                 className="p-1 text-blue-600 hover:text-blue-800"
                                 title="Edit Printer"
@@ -278,12 +321,49 @@ const PrintersAdminPage: React.FC = () => {
                   type="text"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   value={editingPrinter ? editingPrinter.name : newPrinter.name}
-                  onChange={(e) => editingPrinter
-                    ? setEditingPrinter({ ...editingPrinter, name: e.target.value })
-                    : setNewPrinter({ ...newPrinter, name: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (editingPrinter) {
+                      setEditingPrinter({ ...editingPrinter, name: value });
+                    } else {
+                      const suggestedType = getSuggestedPrinterType(value);
+                      setNewPrinter({ ...newPrinter, name: value, printer_type: suggestedType });
+                    }
+                  }}
                   required
                 />
+              </div>
+              
+              <div className="mb-3">
+                <label htmlFor="printer-type" className="block text-sm font-medium text-gray-700 mb-1">
+                  Printer Type *
+                </label>
+                <select
+                  id="printer-type"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  value={editingPrinter ? editingPrinter.printer_type : newPrinter.printer_type}
+                  onChange={(e) => editingPrinter
+                    ? setEditingPrinter({ ...editingPrinter, printer_type: e.target.value as 'ZPL' | 'RAW' })
+                    : setNewPrinter({ ...newPrinter, printer_type: e.target.value as 'ZPL' | 'RAW' })
+                  }
+                  required
+                >
+                  <option value="ZPL">ZPL (Zebra printers)</option>
+                  <option value="RAW">RAW (Rollo, Brother, DYMO printers)</option>
+                </select>
+                <div className="mt-1 text-xs text-gray-600">
+                  {(editingPrinter ? editingPrinter.printer_type : newPrinter.printer_type) === 'ZPL' ? (
+                    <span className="flex items-center">
+                      <Info className="h-3 w-3 mr-1" />
+                      ZPL: Direct ZPL code printing (Zebra printers)
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <Info className="h-3 w-3 mr-1" />
+                      RAW: Image-based printing (Rollo, Brother, DYMO printers)
+                    </span>
+                  )}
+                </div>
               </div>
               
               <div className="mb-3">
@@ -370,6 +450,7 @@ const PrintersAdminPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Enhanced Info Section */}
         <div className="mt-8 bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -379,21 +460,28 @@ const PrintersAdminPage: React.FC = () => {
             </div>
             <div className="ml-3">
               <h3 className="text-sm leading-5 font-medium text-blue-800">
-                PrintNode Integration
+                Printer Type Guide
               </h3>
               <div className="mt-2 text-sm leading-5 text-blue-700">
-                <p>
-                  To use PrintNode for barcode printing, you need to:
-                </p>
-                <ol className="list-decimal list-inside mt-1 ml-2">
-                  <li>Create a PrintNode account</li>
-                  <li>Install PrintNode client on the computers with printers</li>
-                  <li>Get the Printer IDs from PrintNode dashboard</li>
-                  <li>Add those IDs here with corresponding locations</li>
-                </ol>
-                <p className="mt-2">
-                  For more information, visit the <a href="https://www.printnode.com/en" target="_blank" rel="noopener noreferrer" className="text-blue-800 underline">PrintNode website</a>.
-                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="font-medium">ZPL Printers:</p>
+                    <ul className="list-disc list-inside mt-1 ml-2">
+                      <li>Zebra (ZD220, ZD420, GK420d, etc.)</li>
+                      <li>Accept ZPL code directly</li>
+                      <li>Faster printing</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-medium">RAW Printers:</p>
+                    <ul className="list-disc list-inside mt-1 ml-2">
+                      <li>Rollo (X1038, X1040, Wireless)</li>
+                      <li>Brother (QL-800, QL-820NWB)</li>
+                      <li>DYMO (LabelWriter series)</li>
+                      <li>Require image conversion</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

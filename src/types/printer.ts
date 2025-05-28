@@ -12,6 +12,15 @@ export interface Printer {
   printer_id: string;
   location_id: string;
   is_default: boolean;
+  printer_type: 'ZPL' | 'RAW';
   created_at: string;
   location?: Location;
+}
+
+export interface PrinterModel {
+  id: string;
+  brand: string;
+  model: string;
+  printer_type: 'ZPL' | 'RAW';
+  created_at: string;
 }

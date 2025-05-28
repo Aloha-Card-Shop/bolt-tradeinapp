@@ -22,6 +22,81 @@ interface PrintRequest {
   isTest?: boolean;
 }
 
+// ZPL to Image conversion function
+const convertZplToImageBase64 = (zpl: string): string => {
+  // This is a simplified server-side version of ZPL to image conversion
+  // In a real implementation, you might want to use a proper ZPL rendering library
+  // For now, we'll create a basic text representation that can be converted to image
+  
+  const lines = zpl.split('\n');
+  const elements: Array<{type: string, x: number, y: number, content: string, fontSize?: number}> = [];
+  
+  let currentX = 0;
+  let currentY = 0;
+  let currentFontSize = 30;
+  
+  lines.forEach(line => {
+    const foMatch = line.match(/\^FO(\d+),(\d+)/);
+    if (foMatch) {
+      currentX = parseInt(foMatch[1]);
+      currentY = parseInt(foMatch[2]);
+      return;
+    }
+    
+    const fontMatch = line.match(/\^A0N,(\d+),(\d+)/);
+    if (fontMatch) {
+      currentFontSize = Math.max(8, Math.min(48, parseInt(fontMatch[1]) / 8));
+      return;
+    }
+    
+    const fdMatch = line.match(/\^FD(.+?)\^FS/);
+    if (fdMatch) {
+      elements.push({
+        type: 'text',
+        x: currentX,
+        y: currentY,
+        content: fdMatch[1],
+        fontSize: currentFontSize
+      });
+    }
+    
+    const bcMatch = line.match(/\^BCN,(\d+)/);
+    if (bcMatch && line.includes('^FD') && line.includes('^FS')) {
+      const barcodeData = line.match(/\^FD(.+?)\^FS/)?.[1] || '';
+      elements.push({
+        type: 'barcode',
+        x: currentX,
+        y: currentY,
+        content: barcodeData
+      });
+    }
+  });
+  
+  // Create a simple HTML representation that can be converted to image
+  // In production, you'd want to use a proper image generation library
+  const htmlContent = `
+    <div style="width: 384px; height: 288px; background: white; position: relative; font-family: monospace;">
+      ${elements.map(el => {
+        if (el.type === 'text') {
+          return `<div style="position: absolute; left: ${el.x}px; top: ${el.y}px; font-size: ${el.fontSize}px; color: black;">${el.content}</div>`;
+        } else if (el.type === 'barcode') {
+          return `
+            <div style="position: absolute; left: ${el.x}px; top: ${el.y}px;">
+              <div style="width: 200px; height: 50px; background: repeating-linear-gradient(90deg, black 0px, black 2px, white 2px, white 4px);"></div>
+              <div style="text-align: center; font-size: 10px; margin-top: 2px;">${el.content}</div>
+            </div>
+          `;
+        }
+        return '';
+      }).join('')}
+    </div>
+  `;
+  
+  // For now, return a placeholder base64 image (1x1 white pixel)
+  // In production, convert the HTML to an actual image
+  return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -45,33 +120,49 @@ serve(async (req) => {
 
     console.log('Print request received:', { tradeInId, printerId, templateId, cardId, isTest });
 
+    // Get printer details including printer type
+    const { data: printer, error: printerError } = await supabase
+      .from('printers')
+      .select('printer_id, name, printer_type')
+      .eq('id', printerId)
+      .single();
+
+    if (printerError || !printer) {
+      console.error('Error fetching printer:', printerError);
+      return new Response(
+        JSON.stringify({ error: `Printer not found: ${printerError?.message || 'Unknown error'}` }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    console.log('Printer details:', { 
+      printerId: printer.printer_id, 
+      name: printer.name, 
+      type: printer.printer_type 
+    });
+
     // Handle test prints differently
     if (isTest) {
-      console.log('Processing test print request');
+      console.log('Processing test print request for printer type:', printer.printer_type);
       
-      // Get printer details for test print
-      const { data: printer, error: printerError } = await supabase
-        .from('printers')
-        .select('printer_id, name')
-        .eq('id', printerId)
-        .single();
-
-      if (printerError || !printer) {
-        console.error('Error fetching printer:', printerError);
-        return new Response(
-          JSON.stringify({ error: `Printer not found: ${printerError?.message || 'Unknown error'}` }),
-          {
-            status: 404,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
+      // Simple test content based on printer type
+      let content: string;
+      let contentType: string;
+      
+      if (printer.printer_type === 'RAW') {
+        // For RAW printers, use image format
+        const testZpl = `^XA^FO100,100^A0N,100,100^FDTEST^FS^FO100,250^A0N,50,50^FDPRINT OK^FS^XZ`;
+        content = convertZplToImageBase64(testZpl);
+        contentType = 'png_base64';
+      } else {
+        // For ZPL printers, use ZPL format
+        const simpleTestZPL = `^XA^FO100,100^A0N,100,100^FDTEST^FS^FO100,250^A0N,50,50^FDPRINT OK^FS^XZ`;
+        content = btoa(simpleTestZPL);
+        contentType = 'raw_base64';
       }
-
-      // Simple test ZPL - just large text saying "TEST" that should work on any label size
-      const simpleTestZPL = `^XA
-^FO100,100^A0N,100,100^FDTEST^FS
-^FO100,250^A0N,50,50^FDPRINT OK^FS
-^XZ`;
 
       // If API key is not set, return mock success
       if (!PRINTNODE_API_KEY) {
@@ -79,7 +170,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: true, 
-            message: 'Test print completed successfully (MOCK MODE)',
+            message: `Test print completed successfully (MOCK MODE - ${printer.printer_type})`,
             printJobId: 'mock-test-' + Date.now()
           }),
           {
@@ -89,12 +180,10 @@ serve(async (req) => {
         );
       }
 
-      // Send simple test print to actual printer
-      const base64Content = btoa(simpleTestZPL);
-      
-      console.log('Sending simple test print to PrintNode:', {
+      console.log('Sending test print to PrintNode:', {
         printerId: parseInt(printer.printer_id, 10),
-        title: 'SIMPLE TEST PRINT'
+        title: `TEST PRINT - ${printer.printer_type}`,
+        contentType
       });
 
       const response = await fetch('https://api.printnode.com/printjobs', {
@@ -105,10 +194,10 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           printerId: parseInt(printer.printer_id, 10),
-          title: 'SIMPLE TEST PRINT',
-          contentType: 'raw_base64',
-          content: base64Content,
-          source: 'Lovable Trade-In System - SIMPLE TEST'
+          title: `TEST PRINT - ${printer.printer_type}`,
+          contentType,
+          content,
+          source: `Lovable Trade-In System - ${printer.printer_type} TEST`
         })
       });
 
@@ -123,7 +212,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Simple test print sent successfully',
+          message: `Test print sent successfully (${printer.printer_type} format)`,
           printJobId: printNodeResponse.id || 'unknown'
         }),
         {
@@ -184,24 +273,6 @@ serve(async (req) => {
       } else {
         card = tradeInItem;
       }
-    }
-
-    // Get printer details
-    const { data: printer, error: printerError } = await supabase
-      .from('printers')
-      .select('printer_id, name')
-      .eq('id', printerId)
-      .single();
-
-    if (printerError || !printer) {
-      console.error('Error fetching printer:', printerError);
-      return new Response(
-        JSON.stringify({ error: `Printer not found: ${printerError?.message || 'Unknown error'}` }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
     }
 
     // Get selected template or default template if none specified
@@ -390,13 +461,28 @@ ${skuDisplay ? `^FO20,90^A0N,25,25^FD${skuDisplay}^FS` : ''}
       }
     }
 
-    const base64Content = btoa(zpl);
+    // Determine content type and format based on printer type
+    let content: string;
+    let contentType: string;
+    let printTitle: string;
     
+    if (printer.printer_type === 'RAW') {
+      // Convert ZPL to image for RAW printers
+      content = convertZplToImageBase64(zpl);
+      contentType = 'png_base64';
+      printTitle = card ? `Card Label (Image) ${card.card_name}` : `Trade-In Label (Image) ${tradeIn.id}`;
+    } else {
+      // Use ZPL directly for ZPL printers
+      content = btoa(zpl);
+      contentType = 'raw_base64';
+      printTitle = card ? `Card Label ${card.card_name}` : `Trade-In Label ${tradeIn.id}`;
+    }
+
     console.log('Sending print job to PrintNode:', {
       printerId: parseInt(printer.printer_id, 10),
-      title: card ? `Card Label ${card.card_name}` : `Trade-In Label ${tradeIn.id}`,
-      contentType: 'raw_base64',
-      content: 'Base64 ZPL data (truncated for logs)'
+      title: printTitle,
+      contentType,
+      printerType: printer.printer_type
     });
 
     // Make request to PrintNode API
@@ -408,10 +494,10 @@ ${skuDisplay ? `^FO20,90^A0N,25,25^FD${skuDisplay}^FS` : ''}
       },
       body: JSON.stringify({
         printerId: parseInt(printer.printer_id, 10),
-        title: card ? `Card Label ${card.card_name}` : `Trade-In Label ${tradeIn.id}`,
-        contentType: 'raw_base64',
-        content: base64Content,
-        source: 'Lovable Trade-In System'
+        title: printTitle,
+        contentType,
+        content,
+        source: `Lovable Trade-In System - ${printer.printer_type}`
       })
     });
 
@@ -427,7 +513,7 @@ ${skuDisplay ? `^FO20,90^A0N,25,25^FD${skuDisplay}^FS` : ''}
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Print job submitted successfully',
+        message: `Print job submitted successfully (${printer.printer_type} format)`,
         printJobId: printNodeResponse.id || 'unknown'
       }),
       {

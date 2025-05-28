@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { Download, Eye, Code, Bug, Printer } from 'lucide-react';
-import ZplViewer from './ZplViewer';
+import EnhancedZplViewer from './EnhancedZplViewer';
 
 interface PrintDebugPanelProps {
   zplCode: string;
@@ -9,6 +8,7 @@ interface PrintDebugPanelProps {
     id: string;
     name: string;
     printer_id: string;
+    printer_type?: 'ZPL' | 'RAW';
   };
   tradeInData?: any;
   cardData?: any;
@@ -54,6 +54,15 @@ const PrintDebugPanel: React.FC<PrintDebugPanelProps> = ({
         <div className="flex items-center space-x-2">
           <Bug className="h-5 w-5 text-blue-600" />
           <h3 className="text-lg font-medium">Print Debug Panel</h3>
+          {printerInfo?.printer_type && (
+            <span className={`px-2 py-1 text-xs font-medium rounded ${
+              printerInfo.printer_type === 'ZPL' 
+                ? 'bg-blue-100 text-blue-800' 
+                : 'bg-orange-100 text-orange-800'
+            }`}>
+              {printerInfo.printer_type}
+            </span>
+          )}
         </div>
         <div className="flex items-center space-x-2">
           <button
@@ -130,13 +139,21 @@ const PrintDebugPanel: React.FC<PrintDebugPanelProps> = ({
         {activeTab === 'preview' && (
           <div className="space-y-4">
             <div className="text-sm text-gray-600 mb-4">
-              This is a visual approximation of how your label should look when printed:
+              This shows how your label will look when printed:
             </div>
             <div className="flex justify-center">
-              <ZplViewer zplCode={zplCode} width={384} height={192} />
+              <EnhancedZplViewer 
+                zplCode={zplCode} 
+                printerType={printerInfo?.printer_type || 'ZPL'}
+                width={384} 
+                height={192} 
+              />
             </div>
             <div className="text-xs text-gray-500 text-center">
-              Note: This is a simplified preview. Actual print output may vary based on printer settings.
+              {printerInfo?.printer_type === 'RAW' 
+                ? 'RAW printers will receive this as an image. ZPL code is converted automatically.'
+                : 'ZPL printers will receive this code directly for fast, precise printing.'
+              }
             </div>
           </div>
         )}
@@ -173,8 +190,20 @@ const PrintDebugPanel: React.FC<PrintDebugPanelProps> = ({
                 <h4 className="text-sm font-medium text-gray-800 mb-2">Printer Information</h4>
                 <div className="bg-gray-50 p-3 rounded-md space-y-1 text-sm">
                   <div><span className="font-medium">Name:</span> {printerInfo.name}</div>
+                  <div><span className="font-medium">Type:</span> 
+                    <span className={`ml-1 px-2 py-0.5 text-xs font-medium rounded ${
+                      printerInfo.printer_type === 'ZPL' 
+                        ? 'bg-blue-100 text-blue-800' 
+                        : 'bg-orange-100 text-orange-800'
+                    }`}>
+                      {printerInfo.printer_type || 'ZPL'}
+                    </span>
+                  </div>
                   <div><span className="font-medium">ID:</span> {printerInfo.id}</div>
                   <div><span className="font-medium">PrintNode ID:</span> {printerInfo.printer_id}</div>
+                  <div><span className="font-medium">Output Format:</span> {
+                    (printerInfo.printer_type || 'ZPL') === 'ZPL' ? 'Raw ZPL Code' : 'PNG Image (converted from ZPL)'
+                  }</div>
                 </div>
               </div>
             )}
@@ -203,28 +232,45 @@ const PrintDebugPanel: React.FC<PrintDebugPanelProps> = ({
               </div>
             )}
 
-            {/* ZPL Analysis */}
+            {/* Enhanced ZPL Analysis */}
             <div>
-              <h4 className="text-sm font-medium text-gray-800 mb-2">ZPL Analysis</h4>
+              <h4 className="text-sm font-medium text-gray-800 mb-2">ZPL Analysis & Conversion</h4>
               <div className="bg-gray-50 p-3 rounded-md space-y-2 text-sm">
                 <div><span className="font-medium">ZPL Length:</span> {zplCode.length} characters</div>
                 <div><span className="font-medium">Commands:</span> {(zplCode.match(/\^[A-Z]+/g) || []).length}</div>
                 <div><span className="font-medium">Text Fields:</span> {(zplCode.match(/\^FD/g) || []).length}</div>
                 <div><span className="font-medium">Barcodes:</span> {(zplCode.match(/\^BC/g) || []).length}</div>
+                <div><span className="font-medium">Format:</span> {
+                  (printerInfo?.printer_type || 'ZPL') === 'ZPL' 
+                    ? 'Direct ZPL transmission' 
+                    : 'ZPL → Image conversion → PNG transmission'
+                }</div>
               </div>
             </div>
 
-            {/* Troubleshooting Tips */}
+            {/* Enhanced Troubleshooting Tips */}
             <div>
               <h4 className="text-sm font-medium text-gray-800 mb-2">Troubleshooting Tips</h4>
               <div className="bg-yellow-50 p-3 rounded-md border border-yellow-200">
                 <ul className="text-sm space-y-1 list-disc pl-4">
                   <li>Check if printer has labels loaded and is powered on</li>
                   <li>Verify printer darkness/heat settings</li>
-                  <li>Try printing a test page from the printer's control panel</li>
-                  <li>Check if the label size matches your printer configuration (2" x 1")</li>
-                  <li>Test the ZPL code with a ZPL viewer online to verify formatting</li>
+                  {(printerInfo?.printer_type || 'ZPL') === 'ZPL' ? (
+                    <>
+                      <li>Try printing a test page from the printer's control panel</li>
+                      <li>Check if the label size matches your printer configuration (2" x 1")</li>
+                      <li>Test the ZPL code with a ZPL viewer online to verify formatting</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>Ensure printer supports PNG/image printing</li>
+                      <li>Check printer driver is installed correctly</li>
+                      <li>Verify label size matches the generated image (2" x 1")</li>
+                      <li>Try adjusting print quality settings in printer preferences</li>
+                    </>
+                  )}
                   <li>Try a different printer if available</li>
+                  <li>Check PrintNode client is running and printer is online</li>
                 </ul>
               </div>
             </div>

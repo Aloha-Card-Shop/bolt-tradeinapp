@@ -348,6 +348,30 @@ export type Database = {
           },
         ]
       }
+      printer_models: {
+        Row: {
+          brand: string
+          created_at: string
+          id: string
+          model: string
+          printer_type: string
+        }
+        Insert: {
+          brand: string
+          created_at?: string
+          id?: string
+          model: string
+          printer_type?: string
+        }
+        Update: {
+          brand?: string
+          created_at?: string
+          id?: string
+          model?: string
+          printer_type?: string
+        }
+        Relationships: []
+      }
       printers: {
         Row: {
           created_at: string
@@ -356,6 +380,7 @@ export type Database = {
           location_id: string
           name: string
           printer_id: string
+          printer_type: string
         }
         Insert: {
           created_at?: string
@@ -364,6 +389,7 @@ export type Database = {
           location_id: string
           name: string
           printer_id: string
+          printer_type?: string
         }
         Update: {
           created_at?: string
@@ -372,6 +398,7 @@ export type Database = {
           location_id?: string
           name?: string
           printer_id?: string
+          printer_type?: string
         }
         Relationships: [
           {

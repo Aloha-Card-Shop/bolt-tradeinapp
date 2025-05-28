@@ -1,14 +1,30 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Printer, Location } from '../types/printer';
+import { Printer, Location, PrinterModel } from '../types/printer';
 import { toast } from 'react-hot-toast';
 
 export const usePrinters = (locationId?: string) => {
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [printerModels, setPrinterModels] = useState<PrinterModel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch printer models
+  const fetchPrinterModels = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('printer_models')
+        .select('*')
+        .order('brand', { ascending: true })
+        .order('model', { ascending: true });
+      
+      if (error) throw error;
+      setPrinterModels(data || []);
+    } catch (err) {
+      console.error('Error fetching printer models:', err);
+    }
+  };
 
   // Fetch all locations
   const fetchLocations = async () => {
@@ -52,6 +68,7 @@ export const usePrinters = (locationId?: string) => {
         printer_id: printer.printer_id,
         location_id: printer.location_id,
         is_default: printer.is_default,
+        printer_type: printer.printer_type || 'ZPL',
         created_at: printer.created_at,
         location: printer.locations as unknown as Location
       }));
@@ -218,15 +235,18 @@ export const usePrinters = (locationId?: string) => {
   useEffect(() => {
     fetchPrinters();
     fetchLocations();
+    fetchPrinterModels();
   }, [locationId]);
 
   return {
     printers,
     locations,
+    printerModels,
     isLoading,
     error,
     fetchPrinters,
     fetchLocations,
+    fetchPrinterModels,
     addPrinter,
     updatePrinter,
     deletePrinter,
