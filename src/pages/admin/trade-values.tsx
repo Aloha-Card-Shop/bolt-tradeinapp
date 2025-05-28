@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { useRouter } from 'next/router';
+import { useNavigate } from 'react-router-dom';
 import { useTradeValueCache } from '../../hooks/useTradeValueCache';
 
 interface TradeValueSettings {
@@ -19,7 +19,7 @@ const TradeValuesPage: React.FC = () => {
   const [isModified, setIsModified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+  const navigate = useNavigate();
   
   const { clearSettingsCache } = useTradeValueCache();
   
@@ -136,8 +136,8 @@ const TradeValuesPage: React.FC = () => {
       toast.success('Settings saved successfully');
       setIsModified(false);
       
-      // Optionally refresh the data
-      router.replace(router.asPath);
+      // Refresh the current route using navigate
+      navigate(0);
       
     } catch (error) {
       console.error('Error saving settings:', error);
