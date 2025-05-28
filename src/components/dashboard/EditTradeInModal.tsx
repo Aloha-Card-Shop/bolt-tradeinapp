@@ -6,6 +6,7 @@ import { useTradeInItemUpdate } from '../../hooks/useTradeInItemUpdate';
 import EditableTradeInItemRow from './EditableTradeInItemRow';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
+import { useUserRole } from '../../hooks/useUserRole';
 
 interface EditTradeInModalProps {
   tradeIn: TradeIn;
@@ -18,6 +19,7 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
   const [loadingItems, setLoadingItems] = useState(false);
   const [items, setItems] = useState<TradeInItem[]>(tradeIn.items || []);
   const { updateTradeInItem, updateStaffNotes, updatingItemId } = useTradeInItemUpdate();
+  const { canAdjustValues, role } = useUserRole();
   
   // Fetch items if they're not already loaded
   useEffect(() => {
@@ -181,9 +183,14 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b p-4">
-          <h2 className="text-xl font-semibold">
-            Edit Trade-In
-          </h2>
+          <div>
+            <h2 className="text-xl font-semibold">Edit Trade-In</h2>
+            {canAdjustValues && (
+              <p className="text-sm text-blue-600 mt-1">
+                You can adjust individual item values as a {role}
+              </p>
+            )}
+          </div>
           <button 
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
@@ -228,7 +235,9 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
                         <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Condition</th>
                         <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Qty</th>
                         <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Market</th>
-                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Value</th>
+                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">
+                          Value {canAdjustValues && <span className="text-blue-600">(Adjustable)</span>}
+                        </th>
                         <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Type</th>
                         <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Total</th>
                       </tr>

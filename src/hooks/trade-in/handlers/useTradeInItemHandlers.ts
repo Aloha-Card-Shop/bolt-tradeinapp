@@ -105,7 +105,7 @@ export const useTradeInItemHandlers = ({
     prevPriceRef
   });
 
-  // Wrapper for quantity updates to match expected signature
+  // Fix: Wrapper for quantity updates to match expected signature
   const updateQuantity = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const quantity = parseInt(e.target.value);
     if (!isNaN(quantity) && quantity > 0) {
