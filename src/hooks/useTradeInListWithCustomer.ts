@@ -88,11 +88,23 @@ export const useTradeInListWithCustomer = () => {
         isReverseHolo: isCertified ? false : false,
         price: finalPrice,
         paymentType: null, 
+        // Explicitly set values as undefined to force calculation
+        cashValue: undefined,
+        tradeValue: undefined,
         isLoadingPrice: false,
         error: undefined,
         isPriceUnavailable: false,
-        initialCalculation: true
+        initialCalculation: true // Always mark new items for initial calculation
       };
+      
+      console.log(`addItem: Creating new item with initial state:`, {
+        cardName: newItem.card.name,
+        price: newItem.price,
+        cashValue: newItem.cashValue,
+        tradeValue: newItem.tradeValue,
+        initialCalculation: newItem.initialCalculation
+      });
+      
       return [...prev, newItem];
     });
     
@@ -104,6 +116,7 @@ export const useTradeInListWithCustomer = () => {
   }, [lookupPsaPrice]);
 
   const removeItem = useCallback((index: number) => {
+    console.log(`removeItem: Removing item at index ${index}`);
     setItems(prev => prev.filter((_, i) => i !== index));
   }, []);
 
@@ -111,11 +124,23 @@ export const useTradeInListWithCustomer = () => {
     setItems(prev => {
       // If index is equal to length, this is an add operation
       if (index === prev.length) {
+        console.log(`updateItem: Adding new item at index ${index}:`, {
+          cardName: item.card.name,
+          cashValue: item.cashValue,
+          tradeValue: item.tradeValue
+        });
         return [...prev, item];
       }
       
       // Otherwise it's an update operation
       const newItems = [...prev];
+      console.log(`updateItem: Updating item at index ${index}:`, {
+        cardName: item.card.name,
+        oldCashValue: newItems[index]?.cashValue,
+        newCashValue: item.cashValue,
+        oldTradeValue: newItems[index]?.tradeValue,
+        newTradeValue: item.tradeValue
+      });
       newItems[index] = item;
       return newItems;
     });

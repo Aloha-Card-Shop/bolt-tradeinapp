@@ -81,14 +81,20 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   
   // Calculate the display value and update item values when needed
   useEffect(() => {
-    import('./utils/valueCalculation').then(({ calculateDisplayValue, createValueUpdates }) => {
-      const shouldCalculate = !isLoading && 
-                            item.price > 0 && 
-                            (initialCalculationState || 
-                             item.initialCalculation ||
-                             item.cashValue === undefined || 
-                             item.tradeValue === undefined ||
-                             (item.paymentType === 'cash' && valuesChanged()));
+    import('./utils/valueCalculation').then(({ calculateDisplayValue, createValueUpdates, shouldRecalculate }) => {
+      // Improved calculation trigger logic - always calculate for undefined values or initial state
+      const shouldCalculate = shouldRecalculate({
+        isLoading,
+        price: item.price,
+        cashValue: item.cashValue,
+        tradeValue: item.tradeValue,
+        paymentType: item.paymentType,
+        initialCalculationState,
+        itemInitialCalculation: item.initialCalculation,
+        valuesChanged: valuesChanged(),
+        calculatedCashValue,
+        calculatedTradeValue
+      });
       
       logger.logCalculationDecision({
         cashValue,
