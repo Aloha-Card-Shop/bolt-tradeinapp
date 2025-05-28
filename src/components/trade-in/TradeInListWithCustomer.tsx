@@ -72,9 +72,18 @@ const TradeInListWithCustomer: React.FC<TradeInListWithCustomerProps> = ({
   };
 
   const handleOpenReview = () => {
+    console.log('handleOpenReview called', { items, selectedCustomer });
+    
+    // Validate that we have items
+    if (items.length === 0) {
+      toast.error('No items in trade-in list');
+      return;
+    }
+    
     // Validate that all items have payment types selected
     const itemsWithoutPaymentType = items.filter(item => !item.paymentType);
     if (itemsWithoutPaymentType.length > 0) {
+      console.log('Items without payment type:', itemsWithoutPaymentType);
       toast.error('Please select payment type for all items before proceeding');
       return;
     }
@@ -82,10 +91,18 @@ const TradeInListWithCustomer: React.FC<TradeInListWithCustomerProps> = ({
     // Validate that all items have valid prices
     const itemsWithoutPrice = items.filter(item => !item.price || item.price <= 0);
     if (itemsWithoutPrice.length > 0) {
+      console.log('Items without valid price:', itemsWithoutPrice);
       toast.error('All items must have a valid market price');
       return;
     }
 
+    // Validate customer selection
+    if (!selectedCustomer) {
+      toast.error('Please select a customer before proceeding');
+      return;
+    }
+
+    console.log('All validations passed, opening review modal');
     setShowReviewModal(true);
   };
 

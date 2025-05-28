@@ -20,7 +20,7 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
           price,
           condition,
           attributes,
-          cards:card_id(name, tcgplayer_url, image_url)
+          cards:card_id(name, tcgplayer_url, image_url, set_name, card_number)
         `)
         .eq('trade_in_id', tradeInId);
 
@@ -37,6 +37,8 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
         const cardName = cardData?.name || 'Unknown Card';
         const tcgplayer_url = cardData?.tcgplayer_url || null;
         const image_url = cardData?.image_url || null;
+        const set_name = cardData?.set_name || null;
+        const card_number = cardData?.card_number || null;
         
         // Log the raw attributes to help debug the issue
         console.log(`Item ${item.id} attributes:`, item.attributes);
@@ -90,7 +92,9 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
             ...attributes, 
             cashValue, 
             tradeValue,
-            paymentType: attributes.paymentType || 'cash'
+            paymentType: attributes.paymentType || 'cash',
+            setName: set_name,
+            cardNumber: card_number
           };
         } catch (err) {
           console.error(`Error processing attributes for item ${item.id}:`, err);
@@ -99,7 +103,9 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
             isHolo: false,
             paymentType: 'cash',
             cashValue: item.price,
-            tradeValue: item.price * 1.3
+            tradeValue: item.price * 1.3,
+            setName: set_name,
+            cardNumber: card_number
           };
         }
         
@@ -107,6 +113,7 @@ export const useTradeInItems = (setTradeIns: React.Dispatch<React.SetStateAction
           id: item.id,
           card_id: item.card_id,
           card_name: cardName,
+          set_name: set_name,
           quantity: item.quantity,
           price: item.price,
           condition: item.condition,
