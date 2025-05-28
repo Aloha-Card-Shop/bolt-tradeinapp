@@ -132,7 +132,7 @@ const TradeInPriceReviewModal: React.FC<TradeInPriceReviewModalProps> = ({
             <h3 className="font-medium text-blue-900 mb-2">Customer Information</h3>
             {selectedCustomer ? (
               <p className="text-blue-700">
-                {selectedCustomer.first_name} {selectedCustomer.last_name}
+                {selectedCustomer.firstName} {selectedCustomer.lastName}
                 {selectedCustomer.email && ` (${selectedCustomer.email})`}
               </p>
             ) : (

@@ -90,7 +90,7 @@ const TradeInListWithCustomer: React.FC<TradeInListWithCustomerProps> = ({
   };
 
   const handleSubmitTradeIn = async (reviewedItems: TradeInItem[], notes?: string) => {
-    if (!selectedCustomer) {
+    if (!selectedCustomer || !selectedCustomer.id) {
       toast.error('Please select a customer');
       return;
     }
