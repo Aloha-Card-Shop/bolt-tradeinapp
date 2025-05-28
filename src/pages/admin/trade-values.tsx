@@ -1,5 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { supabase } from '../../integrations/supabase/client';
 import ApiTestPanel from '../../components/admin/ApiTestPanel';
 
 interface TradeValueSettings {
@@ -25,47 +27,19 @@ const TradeValuesPage: React.FC = () => {
       setError(null);
       
       try {
-        console.log(`[FRONTEND] Starting fetch for game: ${selectedGame}`);
+        console.log(`[FRONTEND] Fetching settings for game: ${selectedGame}`);
         
-        // Create the full URL with debugging
-        const baseUrl = window.location.origin;
-        const apiUrl = `${baseUrl}/api/trade-value-settings?game=${selectedGame}&_=${Date.now()}`;
-        
-        console.log(`[FRONTEND] Fetching from URL: ${apiUrl}`);
-        
-        const response = await fetch(apiUrl, {
+        const { data, error } = await supabase.functions.invoke('trade-value-settings', {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
+          body: { game: selectedGame }
         });
         
-        console.log(`[FRONTEND] Response received:`, {
-          status: response.status,
-          statusText: response.statusText,
-          url: response.url,
-          headers: Object.fromEntries(response.headers.entries())
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`[FRONTEND] Non-OK response:`, errorText.substring(0, 500));
-          throw new Error(`HTTP ${response.status}: ${response.statusText}\nResponse: ${errorText.substring(0, 200)}`);
+        if (error) {
+          console.error(`[FRONTEND] Edge function error:`, error);
+          throw error;
         }
         
-        // Check content type before parsing
-        const contentType = response.headers.get('content-type');
-        console.log(`[FRONTEND] Content-Type: ${contentType}`);
-        
-        if (!contentType || !contentType.includes('application/json')) {
-          const responseText = await response.text();
-          console.error(`[FRONTEND] Non-JSON response received:`, responseText.substring(0, 500));
-          throw new Error(`Expected JSON but received ${contentType}. Response preview: ${responseText.substring(0, 200)}...`);
-        }
-        
-        const data = await response.json();
-        console.log(`[FRONTEND] Successfully parsed JSON:`, data);
+        console.log(`[FRONTEND] Successfully received data:`, data);
         
         if (Array.isArray(data)) {
           setCurrentSettings(data);
@@ -160,16 +134,13 @@ const TradeValuesPage: React.FC = () => {
     try {
       console.log(`[FRONTEND] Saving ${currentSettings.length} settings for game: ${selectedGame}`, currentSettings);
       
-      const response = await fetch('/api/trade-value-settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings: currentSettings, game: selectedGame })
+      const { error } = await supabase.functions.invoke('trade-value-settings', {
+        body: { settings: currentSettings, game: selectedGame }
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error(`[FRONTEND] Save error:`, errorData);
-        toast.error(`Failed to save settings: ${errorData.error || response.statusText}`);
+      if (error) {
+        console.error(`[FRONTEND] Save error:`, error);
+        toast.error(`Failed to save settings: ${error.message || 'Unknown error'}`);
         return;
       }
       
@@ -218,7 +189,7 @@ const TradeValuesPage: React.FC = () => {
           <div>Loading: <code>{isLoading.toString()}</code></div>
           <div>Settings Count: <code>{currentSettings.length}</code></div>
           <div>Error: <code>{error || 'None'}</code></div>
-          <div>API URL: <code>{window.location.origin}/api/trade-value-settings?game={selectedGame}</code></div>
+          <div>Edge Function URL: <code>supabase.functions.invoke('trade-value-settings')</code></div>
         </div>
       </div>
       

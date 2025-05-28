@@ -1,49 +1,36 @@
 
 import React, { useState } from 'react';
+import { supabase } from '../../integrations/supabase/client';
 
 const ApiTestPanel: React.FC = () => {
   const [testResult, setTestResult] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const testApiEndpoint = async () => {
+  const testEdgeFunction = async () => {
     setIsLoading(true);
-    setTestResult('Testing API endpoint...\n');
+    setTestResult('Testing Edge Function...\n');
     
     try {
-      const baseUrl = window.location.origin;
-      const testUrl = `${baseUrl}/api/trade-value-settings?game=pokemon&test=1`;
+      console.log('[EDGE FUNCTION TEST] Starting test');
+      setTestResult(prev => prev + 'Calling edge function: trade-value-settings\n');
       
-      console.log('[API TEST] Testing URL:', testUrl);
-      setTestResult(prev => prev + `Testing URL: ${testUrl}\n`);
-      
-      const response = await fetch(testUrl, {
+      const { data, error } = await supabase.functions.invoke('trade-value-settings', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
+        body: { game: 'pokemon' }
       });
       
-      setTestResult(prev => prev + `Response status: ${response.status} ${response.statusText}\n`);
-      setTestResult(prev => prev + `Response headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}\n`);
-      
-      const responseText = await response.text();
-      setTestResult(prev => prev + `Raw response: ${responseText.substring(0, 1000)}\n`);
-      
-      if (response.headers.get('content-type')?.includes('application/json')) {
-        try {
-          const jsonData = JSON.parse(responseText);
-          setTestResult(prev => prev + `Parsed JSON: ${JSON.stringify(jsonData, null, 2)}\n`);
-        } catch (parseError) {
-          setTestResult(prev => prev + `JSON parse error: ${parseError}\n`);
-        }
+      if (error) {
+        setTestResult(prev => prev + `Error: ${JSON.stringify(error, null, 2)}\n`);
+        console.error('[EDGE FUNCTION TEST] Error:', error);
       } else {
-        setTestResult(prev => prev + 'Response is not JSON\n');
+        setTestResult(prev => prev + `Success!\n`);
+        setTestResult(prev => prev + `Response data: ${JSON.stringify(data, null, 2)}\n`);
+        console.log('[EDGE FUNCTION TEST] Success:', data);
       }
       
     } catch (error: any) {
       setTestResult(prev => prev + `Fetch error: ${error.message}\n`);
-      console.error('[API TEST] Error:', error);
+      console.error('[EDGE FUNCTION TEST] Error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -51,13 +38,13 @@ const ApiTestPanel: React.FC = () => {
 
   return (
     <div className="bg-yellow-50 border border-yellow-200 rounded p-4 mb-4">
-      <h3 className="font-medium mb-2">API Endpoint Test</h3>
+      <h3 className="font-medium mb-2">Edge Function Test</h3>
       <button
-        onClick={testApiEndpoint}
+        onClick={testEdgeFunction}
         disabled={isLoading}
         className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
       >
-        {isLoading ? 'Testing...' : 'Test API Endpoint'}
+        {isLoading ? 'Testing...' : 'Test Edge Function'}
       </button>
       
       {testResult && (
