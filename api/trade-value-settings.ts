@@ -59,7 +59,7 @@ async function getGameSettings(game: string): Promise<any[]> {
   return settings || [];
 }
 
-// Main API handler function
+// Export as default function for API route
 export default async function handler(req: Request): Promise<Response> {
   console.log(`[API HANDLER] Starting request processing - Method: ${req.method}, URL: ${req.url}`);
   
