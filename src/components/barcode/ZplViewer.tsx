@@ -16,8 +16,6 @@ const ZplViewer: React.FC<ZplViewerProps> = ({ zplCode, width = 384, height = 19
     lines.forEach((line, index) => {
       // Parse ^FO commands (Field Origin - positioning)
       const foMatch = line.match(/\^FO(\d+),(\d+)/);
-      // Parse ^A commands (Font selection)
-      const fontMatch = line.match(/\^A0N,(\d+),(\d+)/);
       // Parse ^FD commands (Field Data - text content)
       const fdMatch = line.match(/\^FD(.+?)\^FS/);
       // Parse ^BC commands (Barcode)
