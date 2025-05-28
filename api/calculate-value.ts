@@ -3,7 +3,6 @@ import { normalizeGameType } from './utils/gameUtils';
 import { calculateValues } from './utils/calculateValues';
 import { createErrorResponse } from './utils/errorResponse';
 import { logFallbackEvent } from './utils/fallbackLogger';
-import { clearSettingsCache } from './utils/settingsCache';
 
 // Standard API handler
 export default async function handler(req: Request): Promise<Response> {
@@ -109,6 +108,3 @@ export default async function handler(req: Request): Promise<Response> {
     );
   }
 }
-
-// Export clearSettingsCache for other modules to use
-export { clearSettingsCache };

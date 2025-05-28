@@ -57,11 +57,6 @@ vi.mock('../../../../api/utils/errorResponse', () => ({
   )
 }));
 
-vi.mock('../../../../api/utils/settingsCache', () => ({
-  clearSettingsCache: vi.fn(),
-  getGameSettings: vi.fn().mockResolvedValue([])
-}));
-
 vi.mock('../../../../api/utils/fallbackLogger', () => ({
   logFallbackEvent: vi.fn().mockResolvedValue(undefined)
 }));

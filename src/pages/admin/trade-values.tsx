@@ -1,7 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
 
 interface TradeValueSettings {
   game: string;
@@ -19,7 +17,6 @@ const TradeValuesPage: React.FC = () => {
   const [isModified, setIsModified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
   
   useEffect(() => {
     const fetchSettings = async () => {

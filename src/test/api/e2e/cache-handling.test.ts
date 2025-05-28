@@ -2,7 +2,6 @@
 import { describe, it, expect } from 'vitest';
 import handler from '../../../../api/calculate-value';
 import { createRequest } from './setup';
-import { clearSettingsCache } from '../../../../api/utils/settingsCache';
 
 describe('Cache Handling E2E Tests', () => {
   it('should use cache for subsequent requests with the same game', async () => {
@@ -19,10 +18,5 @@ describe('Cache Handling E2E Tests', () => {
     expect(result).toBeDefined();
     expect(result.cashValue).toBeCloseTo(2.4);  // 30% of 8
     expect(result.tradeValue).toBeCloseTo(3.6); // 45% of 8
-  });
-  
-  it('should export clearSettingsCache function', () => {
-    expect(clearSettingsCache).toBeDefined();
-    expect(typeof clearSettingsCache).toBe('function');
   });
 });

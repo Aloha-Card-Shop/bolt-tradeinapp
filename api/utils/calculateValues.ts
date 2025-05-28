@@ -1,8 +1,17 @@
 
-import { getGameSettings } from './settingsCache';
+import { createClient } from '@supabase/supabase-js';
 import { logFallbackEvent } from './fallbackLogger';
 import { createErrorResponse } from './errorResponse';
 import { DEFAULT_FALLBACK_CASH_PERCENTAGE, DEFAULT_FALLBACK_TRADE_PERCENTAGE } from '../../src/constants/fallbackValues';
+
+const supabaseUrl = 'https://qgsabaicokoynabxgdco.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseKey) {
+  throw new Error('Missing Supabase key');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export interface CalculationOptions {
   game: string;
@@ -18,6 +27,29 @@ export interface CalculationResult {
   error?: string;
 }
 
+interface TradeValueSetting {
+  min_value: number;
+  max_value: number;
+  cash_percentage: number;
+  trade_percentage: number;
+  fixed_cash_value: number | null;
+  fixed_trade_value: number | null;
+}
+
+async function getGameSettings(game: string): Promise<TradeValueSetting[]> {
+  const { data: settings, error } = await supabase
+    .from('trade_value_settings')
+    .select('*')
+    .eq('game', game.toLowerCase());
+    
+  if (error) {
+    console.error('[DATABASE ERROR]:', error);
+    throw error;
+  }
+  
+  return settings || [];
+}
+
 // Core calculation logic
 export async function calculateValues({
   game,
@@ -29,7 +61,7 @@ export async function calculateValues({
   }
 
   try {
-    // Get settings from cache or database using the helper function
+    // Get settings from database
     const settings = await getGameSettings(game);
 
     // Default fallback values
@@ -44,7 +76,7 @@ export async function calculateValues({
       
       // Check for fixed values first
       const fixedSetting = settings.find(
-        s => s.fixed_cash_value !== null && s.fixed_trade_value !== null
+        (s: TradeValueSetting) => s.fixed_cash_value !== null && s.fixed_trade_value !== null
       );
       
       if (fixedSetting) {
@@ -55,7 +87,7 @@ export async function calculateValues({
       } else {
         // Find percentage-based range match
         const rangeSetting = settings.find(
-          s => baseValue >= s.min_value && baseValue <= s.max_value
+          (s: TradeValueSetting) => baseValue >= s.min_value && baseValue <= s.max_value
         );
         
         if (rangeSetting) {
