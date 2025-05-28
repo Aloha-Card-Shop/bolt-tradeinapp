@@ -1,11 +1,10 @@
-
 import React, { useCallback } from 'react';
 import { TradeInItem as TradeInItemType } from '../../../hooks/useTradeInList';
 import CardHeader from './CardHeader';
 import ItemContent from './ItemContent';
 import { useComponentLogger } from '../../../hooks/trade-in/useComponentLogger';
 import { useDebugInfo } from '../../../hooks/trade-in/useDebugInfo';
-import { useTradeInItemHandlers } from '../../../hooks/trade-in/useTradeInItemHandlers';
+import { useTradeInItemHandlers } from '../../../hooks/trade-in/handlers/useTradeInItemHandlers';
 
 interface TradeInItemProps {
   item: TradeInItemType;
