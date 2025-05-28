@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import ApiTestPanel from '../../components/admin/ApiTestPanel';
 
 interface TradeValueSettings {
   game: string;
@@ -24,40 +25,59 @@ const TradeValuesPage: React.FC = () => {
       setError(null);
       
       try {
-        console.log(`[Frontend] Fetching settings for game: ${selectedGame}`);
+        console.log(`[FRONTEND] Starting fetch for game: ${selectedGame}`);
         
-        // Add cache busting parameter to ensure fresh data
-        const cacheBuster = Date.now();
-        const response = await fetch(`/api/trade-value-settings?game=${selectedGame}&_=${cacheBuster}`);
+        // Create the full URL with debugging
+        const baseUrl = window.location.origin;
+        const apiUrl = `${baseUrl}/api/trade-value-settings?game=${selectedGame}&_=${Date.now()}`;
         
-        console.log(`[Frontend] Response status: ${response.status}`);
-        console.log(`[Frontend] Response headers:`, Object.fromEntries(response.headers.entries()));
+        console.log(`[FRONTEND] Fetching from URL: ${apiUrl}`);
+        
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        
+        console.log(`[FRONTEND] Response received:`, {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+          headers: Object.fromEntries(response.headers.entries())
+        });
         
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          const errorText = await response.text();
+          console.error(`[FRONTEND] Non-OK response:`, errorText.substring(0, 500));
+          throw new Error(`HTTP ${response.status}: ${response.statusText}\nResponse: ${errorText.substring(0, 200)}`);
         }
         
+        // Check content type before parsing
         const contentType = response.headers.get('content-type');
+        console.log(`[FRONTEND] Content-Type: ${contentType}`);
+        
         if (!contentType || !contentType.includes('application/json')) {
           const responseText = await response.text();
-          console.error(`[Frontend] Non-JSON response:`, responseText.substring(0, 200));
-          throw new Error(`Expected JSON response but got ${contentType}. Response: ${responseText.substring(0, 100)}...`);
+          console.error(`[FRONTEND] Non-JSON response received:`, responseText.substring(0, 500));
+          throw new Error(`Expected JSON but received ${contentType}. Response preview: ${responseText.substring(0, 200)}...`);
         }
         
         const data = await response.json();
-        console.log(`[Frontend] Parsed data:`, data);
+        console.log(`[FRONTEND] Successfully parsed JSON:`, data);
         
         if (Array.isArray(data)) {
           setCurrentSettings(data);
-          console.log(`[Frontend] Successfully loaded ${data.length} settings`);
+          console.log(`[FRONTEND] Set ${data.length} settings`);
         } else {
-          console.warn(`[Frontend] Expected array but got:`, typeof data, data);
+          console.warn(`[FRONTEND] Expected array but got:`, typeof data, data);
           setCurrentSettings([]);
         }
       } catch (err: any) {
-        console.error('[Frontend] Error fetching settings:', err);
+        console.error('[FRONTEND] Fetch error:', err);
         setError(err.message || 'Failed to fetch settings');
-        toast.error(err.message || 'Failed to fetch settings');
+        toast.error(`Failed to load settings: ${err.message || 'Unknown error'}`);
         setCurrentSettings([]);
       } finally {
         setIsLoading(false);
@@ -138,7 +158,7 @@ const TradeValuesPage: React.FC = () => {
     }
     
     try {
-      console.log(`[Frontend] Saving ${currentSettings.length} settings for game: ${selectedGame}`, currentSettings);
+      console.log(`[FRONTEND] Saving ${currentSettings.length} settings for game: ${selectedGame}`, currentSettings);
       
       const response = await fetch('/api/trade-value-settings', {
         method: 'POST',
@@ -148,7 +168,7 @@ const TradeValuesPage: React.FC = () => {
       
       if (!response.ok) {
         const errorData = await response.json();
-        console.error(`[Frontend] Save error:`, errorData);
+        console.error(`[FRONTEND] Save error:`, errorData);
         toast.error(`Failed to save settings: ${errorData.error || response.statusText}`);
         return;
       }
@@ -160,7 +180,7 @@ const TradeValuesPage: React.FC = () => {
       window.location.reload();
       
     } catch (error) {
-      console.error('[Frontend] Error saving settings:', error);
+      console.error('[FRONTEND] Error saving settings:', error);
       toast.error('An error occurred while saving settings');
     }
   };
@@ -169,6 +189,9 @@ const TradeValuesPage: React.FC = () => {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-semibold mb-4">Trade Value Settings</h1>
       
+      {/* Add API Test Panel */}
+      <ApiTestPanel />
+      
       <div className="mb-4">
         <label htmlFor="game" className="block text-sm font-medium text-gray-700">Select Game:</label>
         <select 
@@ -176,7 +199,7 @@ const TradeValuesPage: React.FC = () => {
           className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
           value={selectedGame}
           onChange={(e) => {
-            console.log(`[Frontend] Changing game from ${selectedGame} to ${e.target.value}`);
+            console.log(`[FRONTEND] Changing game from ${selectedGame} to ${e.target.value}`);
             setSelectedGame(e.target.value);
             setIsModified(false);
           }}
@@ -185,6 +208,18 @@ const TradeValuesPage: React.FC = () => {
           <option value="japanese-pokemon">Japanese Pokemon</option>
           <option value="magic">Magic: The Gathering</option>
         </select>
+      </div>
+      
+      {/* Debug Information */}
+      <div className="mb-4 p-4 bg-gray-100 rounded">
+        <h3 className="font-medium mb-2">Debug Information:</h3>
+        <div className="text-sm space-y-1">
+          <div>Selected Game: <code>{selectedGame}</code></div>
+          <div>Loading: <code>{isLoading.toString()}</code></div>
+          <div>Settings Count: <code>{currentSettings.length}</code></div>
+          <div>Error: <code>{error || 'None'}</code></div>
+          <div>API URL: <code>{window.location.origin}/api/trade-value-settings?game={selectedGame}</code></div>
+        </div>
       </div>
       
       {isLoading && <div className="text-gray-500">Loading settings...</div>}

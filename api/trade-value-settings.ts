@@ -25,30 +25,30 @@ async function getGameSettings(game: string): Promise<any[]> {
   const normalizedGame = game.toLowerCase();
   const now = Date.now();
   
-  console.log(`[CACHE] Checking cache for ${normalizedGame}`);
+  console.log(`[API CACHE] Checking cache for ${normalizedGame}`);
   
   // Check if we have valid cached settings
   if (
     settingsCache[normalizedGame] && 
     now - settingsCache[normalizedGame].timestamp < CACHE_TTL
   ) {
-    console.log(`[CACHE] Using cached settings for ${normalizedGame}`);
+    console.log(`[API CACHE] Using cached settings for ${normalizedGame}`);
     return settingsCache[normalizedGame].settings;
   }
   
   // Fetch from database
-  console.log(`[CACHE] Fetching from database for ${normalizedGame}`);
+  console.log(`[API CACHE] Fetching from database for ${normalizedGame}`);
   const { data: settings, error } = await supabase
     .from('trade_value_settings')
     .select('*')
     .eq('game', normalizedGame);
     
   if (error) {
-    console.error('[DATABASE ERROR]:', error);
+    console.error('[API DATABASE ERROR]:', error);
     throw error;
   }
   
-  console.log(`[DATABASE] Retrieved ${settings?.length || 0} settings:`, settings);
+  console.log(`[API DATABASE] Retrieved ${settings?.length || 0} settings:`, settings);
   
   // Update cache
   settingsCache[normalizedGame] = {
@@ -59,7 +59,10 @@ async function getGameSettings(game: string): Promise<any[]> {
   return settings || [];
 }
 
+// Main API handler function
 export default async function handler(req: Request): Promise<Response> {
+  console.log(`[API HANDLER] Starting request processing - Method: ${req.method}, URL: ${req.url}`);
+  
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -67,15 +70,16 @@ export default async function handler(req: Request): Promise<Response> {
     'Content-Type': 'application/json'
   };
 
-  console.log(`[API] ${req.method} request to trade-value-settings`);
-
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('[API HANDLER] Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
-  if (req.method === 'GET') {
-    try {
+  try {
+    if (req.method === 'GET') {
+      console.log('[API HANDLER] Processing GET request');
+      
       const url = new URL(req.url);
       const game = url.searchParams.get('game') || 'pokemon';
       
@@ -84,34 +88,26 @@ export default async function handler(req: Request): Promise<Response> {
       const settings = await getGameSettings(game);
       console.log(`[API GET] Returning ${settings?.length || 0} settings`);
       
-      return new Response(
+      const response = new Response(
         JSON.stringify(settings),
         { 
           status: 200, 
           headers: corsHeaders 
         }
       );
-    } catch (error: any) {
-      console.error('[API GET ERROR]:', error);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Failed to fetch settings', 
-          details: error.message 
-        }),
-        { 
-          status: 500, 
-          headers: corsHeaders 
-        }
-      );
+      
+      console.log('[API GET] Response created successfully');
+      return response;
     }
-  }
 
-  if (req.method === 'POST') {
-    try {
+    if (req.method === 'POST') {
+      console.log('[API HANDLER] Processing POST request');
+      
       const body = await req.json();
       const { settings, game } = body;
       
       if (!settings || !Array.isArray(settings)) {
+        console.error('[API POST] Invalid settings format:', { settings, game });
         return new Response(
           JSON.stringify({ error: 'Invalid settings format' }),
           { status: 400, headers: corsHeaders }
@@ -150,27 +146,28 @@ export default async function handler(req: Request): Promise<Response> {
       const normalizedGame = game.toLowerCase();
       if (settingsCache[normalizedGame]) {
         delete settingsCache[normalizedGame];
-        console.log(`[CACHE] Cleared cache for ${normalizedGame}`);
+        console.log(`[API CACHE] Cleared cache for ${normalizedGame}`);
       }
 
       return new Response(
         JSON.stringify({ success: true }),
         { status: 200, headers: corsHeaders }
       );
-    } catch (error: any) {
-      console.error('[API POST ERROR]:', error);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Failed to save settings', 
-          details: error.message 
-        }),
-        { status: 500, headers: corsHeaders }
-      );
     }
-  }
 
-  return new Response(
-    JSON.stringify({ error: 'Method not allowed' }),
-    { status: 405, headers: corsHeaders }
-  );
+    console.log(`[API HANDLER] Method not allowed: ${req.method}`);
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { status: 405, headers: corsHeaders }
+    );
+  } catch (error: any) {
+    console.error('[API HANDLER ERROR]:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: 'Internal server error', 
+        details: error.message 
+      }),
+      { status: 500, headers: corsHeaders }
+    );
+  }
 }
