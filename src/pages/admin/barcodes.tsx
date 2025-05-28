@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Barcode, ArrowLeft, Plus, Settings as SettingsIcon, History, TestTube } from 'lucide-react';
@@ -25,7 +26,7 @@ const BarcodesAdmin: React.FC = () => {
   const [templateType, setTemplateType] = useState<'standard' | 'card'>('standard');
   
   // State for settings
-  const [settings, setSettings] = useState<BarcodeSetting | null>(null);
+  const [settings, setSettings] = useState<BarcodeSetting[]>([]);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   
   // State for print logs
@@ -40,15 +41,6 @@ const BarcodesAdmin: React.FC = () => {
   
   // Use the usePrinters hook
   const { printers, isLoading: isLoadingPrinters } = usePrinters();
-
-  // Create card template if it doesn't exist
-  const ensureCardTemplateExists = async () => {
-    try {
-      await barcodeService.createCardTemplate();
-    } catch (error) {
-      console.error('Error ensuring card template exists:', error);
-    }
-  };
 
   // Fetch templates
   const fetchTemplates = async () => {
@@ -106,7 +98,7 @@ const BarcodesAdmin: React.FC = () => {
 
   // Initial data fetch
   useEffect(() => {
-    ensureCardTemplateExists().then(() => fetchTemplates());
+    fetchTemplates();
     fetchSettings();
     fetchLogs();
   }, []);
@@ -185,7 +177,10 @@ const BarcodesAdmin: React.FC = () => {
   // Handle settings save
   const handleSaveSettings = async (settingsData: Partial<BarcodeSetting['setting_value']>) => {
     try {
-      await barcodeService.updateSettings(settingsData);
+      // Convert the settings data to individual setting updates
+      for (const [key, value] of Object.entries(settingsData)) {
+        await barcodeService.updateSetting(key, value);
+      }
       fetchSettings();
       toast.success('Settings saved successfully');
     } catch (error) {
@@ -367,7 +362,7 @@ const BarcodesAdmin: React.FC = () => {
                 ) : (
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                      <SettingsForm settings={settings} onSave={handleSaveSettings} />
+                      <SettingsForm settings={settings[0] || null} onSave={handleSaveSettings} />
                     </div>
                     <div>
                       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">

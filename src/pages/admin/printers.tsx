@@ -3,15 +3,9 @@ import React, { useState } from 'react';
 import { Download } from 'lucide-react';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import SettingsForm from '../../components/barcode/SettingsForm';
-import { usePrinters } from '../../hooks/usePrinters';
 import TestDownloadModal from '../../components/barcode/TestDownloadModal';
 
 const PrintersPage: React.FC = () => {
-  const {
-    locations,
-    addLocation
-  } = usePrinters();
-
   const [activeTab, setActiveTab] = useState<'printers' | 'settings'>('printers');
   const [showTestModal, setShowTestModal] = useState(false);
 
