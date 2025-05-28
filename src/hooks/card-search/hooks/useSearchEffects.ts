@@ -1,7 +1,6 @@
 
-import { useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { CardDetails, GAME_OPTIONS } from '../../../types/card';
-import { isLikelyCardNumber } from '../../../utils/cardSearchUtils';
 import { SEARCH_DEBOUNCE_MS, SUGGESTION_DEBOUNCE_MS } from '../utils/searchConstants';
 
 interface UseSearchEffectsProps {

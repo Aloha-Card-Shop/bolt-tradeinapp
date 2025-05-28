@@ -8,7 +8,6 @@ interface UseSearchLogicProps {
   setOptions: SetOption[];
   filterSetOptions: (searchTerms: string[], foundSetIds: Set<number>) => void;
   isFiltered: boolean;
-  createSearchSignature: (details: CardDetails) => string;
   setSearchResults: (results: any[]) => void;
   lastSearchRef: React.MutableRefObject<string>;
   searchCacheRef: React.MutableRefObject<Map<string, any>>;
@@ -20,7 +19,6 @@ export const useSearchLogic = ({
   setOptions,
   filterSetOptions,
   isFiltered,
-  createSearchSignature,
   setSearchResults,
   lastSearchRef,
   searchCacheRef,

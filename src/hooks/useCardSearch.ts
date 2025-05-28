@@ -50,12 +50,11 @@ export const useCardSearch = () => {
   } = useCardSuggestions();
 
   // Search logic
-  const { createSearchSignature, performActualSearch } = useSearchLogic({
+  const { performActualSearch } = useSearchLogic({
     searchCards,
     setOptions,
     filterSetOptions,
     isFiltered,
-    createSearchSignature: () => '', // This will be overridden
     setSearchResults,
     lastSearchRef,
     searchCacheRef,
