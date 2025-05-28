@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { convertZplToImageBase64, renderZplToCanvas } from '../../utils/zplToImage';
+import { renderZplToCanvas } from '../../utils/zplToImage';
 
 interface EnhancedZplViewerProps {
   zplCode: string;
