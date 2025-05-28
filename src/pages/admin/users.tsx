@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, ArrowLeft, Loader2, AlertCircle, UserPlus } from 'lucide-react';
@@ -88,13 +87,12 @@ const UserManagementPage = () => {
       const supabaseUrl = getSupabaseUrl();
       const authToken = await getAuthToken();
       
-      // Ensure either email or username is provided
-      if (!newUser.email && !newUser.username) {
-        throw new Error('Either email or username is required');
-      }
-      
-      // Prepare user data
-      const userData = { ...newUser };
+      // Prepare user data - remove empty strings to make them undefined
+      const userData = {
+        ...newUser,
+        email: newUser.email?.trim() || undefined,
+        username: newUser.username?.trim() || undefined
+      };
       
       const response = await fetch(`${supabaseUrl}/functions/v1/create-user`, {
         method: 'POST',
@@ -105,9 +103,12 @@ const UserManagementPage = () => {
         body: JSON.stringify(userData)
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create user');
+        // Show the specific error message from the backend
+        const errorMessage = responseData.error || 'Failed to create user';
+        throw new Error(errorMessage);
       }
 
       toast.success('User created successfully');
@@ -118,8 +119,9 @@ const UserManagementPage = () => {
       return;
     } catch (error) {
       console.error('Error creating user:', error);
-      setError(error instanceof Error ? error.message : 'Failed to create user');
-      toast.error('Failed to create user');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+      setError(errorMessage);
+      toast.error(errorMessage);
       return;
     }
   };
@@ -274,7 +276,10 @@ const UserManagementPage = () => {
           {error && (
             <div className="mb-6 p-4 bg-red-50 rounded-lg flex items-start space-x-3">
               <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-red-700">{error}</p>
+              <div>
+                <p className="text-sm text-red-700 font-medium">Error creating user</p>
+                <p className="text-sm text-red-600 mt-1">{error}</p>
+              </div>
             </div>
           )}
 
@@ -297,6 +302,7 @@ const UserManagementPage = () => {
           onClose={() => {
             setShowCreateModal(false);
             setNewUser({ email: '', password: '', username: '', role: 'user' });
+            setError(null); // Clear error when closing modal
           }}
         />
       )}

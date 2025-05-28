@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { validateUsername, validateEmail, generateEmailFromUsername } from '../../utils/userValidation';
 
 interface NewStaffUser {
   email?: string;
@@ -23,23 +24,78 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
   onClose 
 }) => {
   const [formError, setFormError] = useState<string | null>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewEmail, setPreviewEmail] = useState<string>('');
 
-  // Validate form data when either email or username changes
+  // Validate and update preview email when username changes
+  useEffect(() => {
+    if (newUser.username && !newUser.email) {
+      const validation = validateUsername(newUser.username);
+      if (validation.isValid) {
+        setUsernameError(null);
+        setPreviewEmail(generateEmailFromUsername(newUser.username));
+      } else {
+        setUsernameError(validation.error || null);
+        setPreviewEmail('');
+      }
+    } else {
+      setUsernameError(null);
+      setPreviewEmail('');
+    }
+  }, [newUser.username, newUser.email]);
+
+  // Validate email when it changes
+  useEffect(() => {
+    if (newUser.email) {
+      const validation = validateEmail(newUser.email);
+      if (!validation.isValid) {
+        setEmailError(validation.error || null);
+      } else {
+        setEmailError(null);
+      }
+    } else {
+      setEmailError(null);
+    }
+  }, [newUser.email]);
+
+  // General form validation
   useEffect(() => {
     if (!newUser.email && !newUser.username) {
       setFormError('Either email or username is required');
+    } else if (newUser.email && emailError) {
+      setFormError('Please fix the email error');
+    } else if (newUser.username && usernameError) {
+      setFormError('Please fix the username error');
     } else {
       setFormError(null);
     }
-  }, [newUser.email, newUser.username]);
+  }, [newUser.email, newUser.username, emailError, usernameError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Final validation
     if (!newUser.email && !newUser.username) {
       setFormError('Either email or username is required');
       return;
+    }
+
+    if (newUser.email) {
+      const emailValidation = validateEmail(newUser.email);
+      if (!emailValidation.isValid) {
+        setEmailError(emailValidation.error || null);
+        return;
+      }
+    }
+
+    if (newUser.username) {
+      const usernameValidation = validateUsername(newUser.username);
+      if (!usernameValidation.isValid) {
+        setUsernameError(usernameValidation.error || null);
+        return;
+      }
     }
     
     setIsSubmitting(true);
@@ -51,6 +107,14 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleUsernameChange = (value: string) => {
+    onUserChange({ ...newUser, username: value || undefined });
+  };
+
+  const handleEmailChange = (value: string) => {
+    onUserChange({ ...newUser, email: value || undefined });
   };
 
   return (
@@ -77,11 +141,16 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
               <input
                 type="email"
                 value={newUser.email || ''}
-                onChange={(e) => onUserChange({ ...newUser, email: e.target.value || undefined })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="email@example.com (optional with username)"
+                onChange={(e) => handleEmailChange(e.target.value)}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  emailError ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="email@example.com"
                 disabled={isSubmitting}
               />
+              {emailError && (
+                <p className="mt-1 text-sm text-red-600">{emailError}</p>
+              )}
             </div>
 
             <div>
@@ -91,14 +160,28 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
               <input
                 type="text"
                 value={newUser.username || ''}
-                onChange={(e) => onUserChange({ ...newUser, username: e.target.value || undefined })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Username for login"
+                onChange={(e) => handleUsernameChange(e.target.value)}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  usernameError ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="username"
                 disabled={isSubmitting}
               />
-              <p className="mt-1 text-sm text-gray-500">
-                Either email or username is required
-              </p>
+              {usernameError && (
+                <p className="mt-1 text-sm text-red-600">{usernameError}</p>
+              )}
+              {!usernameError && newUser.username && (
+                <div className="mt-1">
+                  <p className="text-xs text-gray-500">
+                    Only letters, numbers, dots, underscores, and hyphens allowed
+                  </p>
+                  {previewEmail && (
+                    <p className="text-xs text-blue-600">
+                      Will create email: {previewEmail}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -155,9 +238,9 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
             <button
               type="submit"
               className={`px-4 py-2 text-white bg-blue-600 rounded-lg ${
-                isSubmitting ? 'opacity-75 cursor-not-allowed' : 'hover:bg-blue-700'
+                isSubmitting || formError || !newUser.password ? 'opacity-75 cursor-not-allowed' : 'hover:bg-blue-700'
               }`}
-              disabled={isSubmitting || !newUser.password || (!newUser.email && !newUser.username)}
+              disabled={isSubmitting || !!formError || !newUser.password}
             >
               {isSubmitting ? 'Creating...' : 'Create User'}
             </button>
