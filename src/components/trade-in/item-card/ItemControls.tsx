@@ -57,7 +57,7 @@ const ItemControls: React.FC<ItemControlsProps> = ({
         onToggleFirstEdition={onToggleFirstEdition}
         onToggleHolo={onToggleHolo}
         onToggleReverseHolo={onToggleReverseHolo}
-        disabled={isLoadingPrice}
+        isLoading={isLoadingPrice}
       />
       
       {paymentType && (
