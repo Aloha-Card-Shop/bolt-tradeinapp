@@ -7,7 +7,7 @@ interface UseTradeInItemStateProps {
   instanceId: string;
 }
 
-export const useTradeInItemState = ({ item, instanceId }: UseTradeInItemStateProps) => {
+export const useTradeInItemState = ({ item }: UseTradeInItemStateProps) => {
   // Add refs to track previous values and prevent unnecessary updates
   const initialRender = useRef(true);
   const valueChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);

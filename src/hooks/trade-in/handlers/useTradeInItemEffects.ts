@@ -1,5 +1,4 @@
-
-import { useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { TradeInItem } from '../../useTradeInList';
 
 interface UseTradeInItemEffectsProps {

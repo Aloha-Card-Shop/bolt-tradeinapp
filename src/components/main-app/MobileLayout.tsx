@@ -39,7 +39,7 @@ interface MobileLayoutProps {
   hasMoreResults: boolean;
   loadMoreResults: () => void;
   totalResults: number;
-  removeCardFromResults: (index: number) => void;
+  removeCardFromResults: (cardToRemove: CardDetails) => void;
   
   // Saved cards props
   savedCards: SavedCard[];
