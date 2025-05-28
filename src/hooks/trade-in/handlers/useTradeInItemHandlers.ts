@@ -105,12 +105,9 @@ export const useTradeInItemHandlers = ({
     prevPriceRef
   });
 
-  // Fix: Wrapper for quantity updates to match expected signature
+  // Fix: Wrapper for quantity updates to pass the event correctly
   const updateQuantity = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const quantity = parseInt(e.target.value);
-    if (!isNaN(quantity) && quantity > 0) {
-      updateQuantityFromAttributes(quantity); // Pass the number directly, not the event
-    }
+    updateQuantityFromAttributes(e); // Pass the event directly
   }, [updateQuantityFromAttributes]);
 
   // Fix: Make the handlePriceChange function accept the event format expected by ItemValues

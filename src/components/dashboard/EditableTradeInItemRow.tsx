@@ -259,9 +259,17 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
         onClose={() => setIsValueAdjustmentOpen(false)}
         item={{
           ...item,
-          card: { name: item.card_name, id: item.card_id || '', game: 'pokemon' as any, productId: '' },
+          card: { 
+            name: item.card_name, 
+            id: item.card_id || '', 
+            game: 'pokemon' as any, 
+            productId: '' 
+          },
           cashValue: currentCashValue,
-          tradeValue: currentTradeValue
+          tradeValue: currentTradeValue,
+          paymentType: currentPaymentType as 'cash' | 'trade',
+          isFirstEdition: false,
+          isHolo: false
         }}
         onSave={handleValueAdjustment}
         userRole={userRole}
