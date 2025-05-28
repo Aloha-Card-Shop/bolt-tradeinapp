@@ -1,12 +1,11 @@
 
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { Location, PrinterModel, Printer } from '../../types/printer';
+import { Location, Printer } from '../../types/printer';
 
 interface EditPrinterModalProps {
   printer: Printer;
   locations: Location[];
-  printerModels: PrinterModel[];
   onSave: (id: string, printer: Partial<Omit<Printer, 'id' | 'created_at'>>) => Promise<void>;
   onClose: () => void;
 }
@@ -14,7 +13,6 @@ interface EditPrinterModalProps {
 const EditPrinterModal: React.FC<EditPrinterModalProps> = ({
   printer,
   locations,
-  printerModels,
   onSave,
   onClose,
 }) => {

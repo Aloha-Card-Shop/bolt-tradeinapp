@@ -15,14 +15,11 @@ const PrintersPage: React.FC = () => {
   const {
     printers,
     locations,
-    printerModels,
     isLoading,
     addPrinter,
     updatePrinter,
     deletePrinter,
-    addLocation,
-    updateLocation,
-    deleteLocation
+    addLocation
   } = usePrinters();
 
   const [activeTab, setActiveTab] = useState<'printers' | 'settings'>('printers');
@@ -191,7 +188,6 @@ const PrintersPage: React.FC = () => {
       {showAddPrinterModal && (
         <AddPrinterModal
           locations={locations}
-          printerModels={printerModels}
           onSave={addPrinter}
           onClose={() => setShowAddPrinterModal(false)}
         />
@@ -208,7 +204,6 @@ const PrintersPage: React.FC = () => {
         <EditPrinterModal
           printer={selectedPrinter}
           locations={locations}
-          printerModels={printerModels}
           onSave={updatePrinter}
           onClose={() => {
             setShowEditPrinterModal(false);

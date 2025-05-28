@@ -1,18 +1,16 @@
 
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { Location, PrinterModel, Printer } from '../../types/printer';
+import { Location, Printer } from '../../types/printer';
 
 interface AddPrinterModalProps {
   locations: Location[];
-  printerModels: PrinterModel[];
   onSave: (printer: Omit<Printer, 'id' | 'created_at'>) => Promise<void>;
   onClose: () => void;
 }
 
 const AddPrinterModal: React.FC<AddPrinterModalProps> = ({
   locations,
-  printerModels,
   onSave,
   onClose,
 }) => {
