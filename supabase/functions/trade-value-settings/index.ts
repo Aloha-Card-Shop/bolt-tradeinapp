@@ -26,8 +26,20 @@ Deno.serve(async (req) => {
 
   try {
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('[EDGE FUNCTION] Missing environment variables');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const url = new URL(req.url);
@@ -43,7 +55,13 @@ Deno.serve(async (req) => {
         
       if (error) {
         console.error('[EDGE FUNCTION] Database error:', error);
-        throw error;
+        return new Response(
+          JSON.stringify({ error: 'Database error', details: error.message }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
       }
       
       console.log(`[EDGE FUNCTION] Retrieved ${settings?.length || 0} settings`);
@@ -74,7 +92,13 @@ Deno.serve(async (req) => {
           
         if (error) {
           console.error('[EDGE FUNCTION] Database error:', error);
-          throw error;
+          return new Response(
+            JSON.stringify({ error: 'Database error', details: error.message }),
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
         }
         
         return new Response(
@@ -110,7 +134,13 @@ Deno.serve(async (req) => {
 
       if (deleteError) {
         console.error('[EDGE FUNCTION] Delete error:', deleteError);
-        throw deleteError;
+        return new Response(
+          JSON.stringify({ error: 'Delete error', details: deleteError.message }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
       }
 
       // Insert new settings if any
@@ -124,7 +154,13 @@ Deno.serve(async (req) => {
 
         if (insertError) {
           console.error('[EDGE FUNCTION] Insert error:', insertError);
-          throw insertError;
+          return new Response(
+            JSON.stringify({ error: 'Insert error', details: insertError.message }),
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
         }
       }
 
