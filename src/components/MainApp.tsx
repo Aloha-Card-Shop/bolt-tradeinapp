@@ -49,6 +49,7 @@ function MainApp() {
     gradedResults,
     isSearching: isGradedSearching,
     addCertificateToResults,
+    removeCardFromResults,
     clearGradedResults
   } = useGradedCardSearch();
   
@@ -231,6 +232,7 @@ function MainApp() {
                   results={gradedResults}
                   isLoading={isGradedSearching}
                   onAddToList={handleAddToList}
+                  onRemoveCard={removeCardFromResults}
                 />
               )}
             </div>
@@ -305,6 +307,7 @@ function MainApp() {
                   results={gradedResults}
                   isLoading={isGradedSearching}
                   onAddToList={handleAddToList}
+                  onRemoveCard={removeCardFromResults}
                 />
               )}
             </div>

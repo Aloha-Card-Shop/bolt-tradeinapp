@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { CardDetails } from '../types/card';
 import { toast } from 'react-hot-toast';
@@ -41,6 +42,24 @@ export const useGradedCardSearch = () => {
     });
   }, []);
 
+  // Remove specific card from graded results
+  const removeCardFromResults = useCallback((cardToRemove: CardDetails) => {
+    console.log('Removing card from graded results:', cardToRemove);
+    
+    setGradedResults(prevResults => {
+      const newResults = prevResults.filter(card => {
+        // Match by certification number if available, otherwise by id
+        if (card.certification?.certNumber && cardToRemove.certification?.certNumber) {
+          return card.certification.certNumber !== cardToRemove.certification.certNumber;
+        }
+        return card.id !== cardToRemove.id;
+      });
+      
+      toast.success(`Removed ${cardToRemove.name} from graded results`);
+      return newResults;
+    });
+  }, []);
+
   // Clear graded results
   const clearGradedResults = useCallback(() => {
     setGradedResults([]);
@@ -56,6 +75,7 @@ export const useGradedCardSearch = () => {
     gradedResults,
     isSearching,
     addCertificateToResults,
+    removeCardFromResults,
     clearGradedResults,
     setGradedSearchLoading
   };

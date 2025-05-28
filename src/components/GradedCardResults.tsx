@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Loader2, Award, DollarSign, PlusCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Award, DollarSign, PlusCircle, AlertCircle, Trash2 } from 'lucide-react';
 import { CardDetails } from '../types/card';
 import { formatCurrency } from '../utils/formatters';
 import SalesDataBreakdown from './trade-in/SalesDataBreakdown';
@@ -9,12 +9,14 @@ interface GradedCardResultsProps {
   results: CardDetails[];
   isLoading: boolean;
   onAddToList: (card: CardDetails, price: number) => void;
+  onRemoveCard?: (card: CardDetails) => void;
 }
 
 const GradedCardResults: React.FC<GradedCardResultsProps> = ({ 
   results, 
   isLoading, 
-  onAddToList
+  onAddToList,
+  onRemoveCard
 }) => {
   const [expandedSalesData, setExpandedSalesData] = useState<Set<string>>(new Set());
   const [adjustedPrices, setAdjustedPrices] = useState<Map<string, number>>(new Map());
@@ -69,6 +71,13 @@ const GradedCardResults: React.FC<GradedCardResultsProps> = ({
       }
       
       onAddToList(card, defaultPrice);
+    }
+  };
+
+  // Function to handle removing card from results
+  const handleRemoveCard = (card: CardDetails) => {
+    if (onRemoveCard) {
+      onRemoveCard(card);
     }
   };
 
@@ -220,18 +229,29 @@ const GradedCardResults: React.FC<GradedCardResultsProps> = ({
                           </div>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleAddToList(card)}
-                        className={`p-2 rounded-lg transition-colors duration-200 ${
-                          hasProductId 
-                            ? 'text-gray-400 hover:text-green-500 hover:bg-green-50' 
-                            : 'text-gray-300 cursor-not-allowed'
-                        }`}
-                        disabled={!hasProductId}
-                        title={hasProductId ? "Add to trade-in list" : "Cannot add - missing product ID"}
-                      >
-                        <PlusCircle className="h-5 w-5" />
-                      </button>
+                      
+                      {/* Action buttons */}
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleRemoveCard(card)}
+                          className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-200"
+                          title="Remove from results"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => handleAddToList(card)}
+                          className={`p-2 rounded-lg transition-colors duration-200 ${
+                            hasProductId 
+                              ? 'text-gray-400 hover:text-green-500 hover:bg-green-50' 
+                              : 'text-gray-300 cursor-not-allowed'
+                          }`}
+                          disabled={!hasProductId}
+                          title={hasProductId ? "Add to trade-in list" : "Cannot add - missing product ID"}
+                        >
+                          <PlusCircle className="h-5 w-5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
