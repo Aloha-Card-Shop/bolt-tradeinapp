@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -68,57 +67,11 @@ serve(async (req) => {
         );
       }
 
-      // Mock data for test print
-      const mockTradeIn = {
-        id: tradeInId,
-        trade_in_date: new Date().toISOString(),
-        total_value: 125.50,
-        cash_value: 100.40,
-        trade_value: 125.50,
-        customers: { first_name: 'Test', last_name: 'Customer' }
-      };
-
-      const mockCard = cardId ? {
-        id: cardId,
-        card_name: 'Charizard',
-        price: 45.99,
-        condition: 'near_mint',
-        attributes: {
-          setName: 'Base Set',
-          cardNumber: '4/102',
-          isFirstEdition: false,
-          isHolo: true
-        },
-        tcgplayer_url: 'https://www.tcgplayer.com/product/88/pokemon-base-set-charizard'
-      } : null;
-
-      // Generate ZPL for test print
-      let zpl;
-      const customerName = `${mockTradeIn.customers.first_name} ${mockTradeIn.customers.last_name}`;
-      const formattedDate = new Date(mockTradeIn.trade_in_date).toLocaleDateString();
-
-      if (mockCard) {
-        // Generate test SKU
-        const sku = 'TEST-SKU-12345';
-        const cardInfo = [mockCard.card_name, mockCard.attributes?.setName, mockCard.attributes?.cardNumber]
-          .filter(Boolean).join(' • ');
-        
-        zpl = `^XA
-^FO20,30^A0N,70,70^FD$${mockCard.price.toFixed(2)} | ${mockCard.condition}^FS
-^FO20,90^A0N,25,25^FDSKU: ${sku}^FS
-^FO50,140^BY3^BCN,50,Y,N,N^FD${sku}^FS
-^FO20,180^A0N,30,30^FD${cardInfo}^FS
-^FO20,210^A0N,20,20^FD[TEST PRINT]^FS
+      // Simple test ZPL - just large text saying "TEST" that should work on any label size
+      const simpleTestZPL = `^XA
+^FO100,100^A0N,100,100^FDTEST^FS
+^FO100,250^A0N,50,50^FDPRINT OK^FS
 ^XZ`;
-      } else {
-        zpl = `^XA
-^FO50,50^A0N,30,30^FD${customerName}^FS
-^FO50,90^A0N,20,20^FD${formattedDate}^FS
-^FO50,120^A0N,20,20^FD$${mockTradeIn.total_value.toFixed(2)}^FS
-^FO50,170^BY3^BCN,100,Y,N,N^FD${mockTradeIn.id}^FS
-^FO50,280^A0N,20,20^FD[TEST PRINT]^FS
-^XZ`;
-      }
 
       // If API key is not set, return mock success
       if (!PRINTNODE_API_KEY) {
@@ -136,12 +89,12 @@ serve(async (req) => {
         );
       }
 
-      // Send test print to actual printer
-      const base64Content = btoa(zpl);
+      // Send simple test print to actual printer
+      const base64Content = btoa(simpleTestZPL);
       
-      console.log('Sending test print to PrintNode:', {
+      console.log('Sending simple test print to PrintNode:', {
         printerId: parseInt(printer.printer_id, 10),
-        title: `TEST - ${mockCard ? `Card Label ${mockCard.card_name}` : `Trade-In Label ${mockTradeIn.id}`}`
+        title: 'SIMPLE TEST PRINT'
       });
 
       const response = await fetch('https://api.printnode.com/printjobs', {
@@ -152,10 +105,10 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           printerId: parseInt(printer.printer_id, 10),
-          title: `TEST - ${mockCard ? `Card Label ${mockCard.card_name}` : `Trade-In Label ${mockTradeIn.id}`}`,
+          title: 'SIMPLE TEST PRINT',
           contentType: 'raw_base64',
           content: base64Content,
-          source: 'Lovable Trade-In System - TEST PRINT'
+          source: 'Lovable Trade-In System - SIMPLE TEST'
         })
       });
 
@@ -170,7 +123,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Test print sent successfully',
+          message: 'Simple test print sent successfully',
           printJobId: printNodeResponse.id || 'unknown'
         }),
         {
@@ -180,7 +133,6 @@ serve(async (req) => {
       );
     }
 
-    // Regular print processing (existing code for non-test prints)
     // Get trade-in data
     const { data: tradeIn, error: tradeInError } = await supabase
       .from('trade_ins')
