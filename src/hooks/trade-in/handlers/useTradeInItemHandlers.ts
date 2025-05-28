@@ -14,13 +14,29 @@ interface UseTradeInItemHandlersProps {
   instanceId: string;
 }
 
+interface UseTradeInItemHandlersReturn {
+  displayValue: number;
+  isCalculating: boolean;
+  refreshPrice: () => void;
+  cashValue: number | undefined;
+  tradeValue: number | undefined;
+  error: string | undefined;
+  handleConditionChangeWrapper: (e: React.ChangeEvent<HTMLSelectElement>) => React.ChangeEvent<HTMLSelectElement>;
+  toggleFirstEdition: () => void;
+  toggleHolo: () => void;
+  toggleReverseHolo: () => void;
+  updatePaymentType: (type: 'cash' | 'trade') => void;
+  updateQuantity: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handlePriceChangeWrapper: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
 export const useTradeInItemHandlers = ({
   item,
   index,
   onUpdate,
   onValueChange,
   instanceId
-}: UseTradeInItemHandlersProps) => {
+}: UseTradeInItemHandlersProps): UseTradeInItemHandlersReturn => {
   
   // State management
   const { initialRender, valueChangeTimeoutRef, prevPriceRef } = useTradeInItemState({ 
@@ -69,7 +85,7 @@ export const useTradeInItemHandlers = ({
     toggleHolo,
     toggleReverseHolo,
     updatePaymentType,
-    updateQuantity
+    updateQuantity: updateQuantityFromAttributes
   } = useCardAttributes({
     item,
     onUpdate: handleUpdate
@@ -89,6 +105,14 @@ export const useTradeInItemHandlers = ({
     prevPriceRef
   });
 
+  // Wrapper for quantity updates to match expected signature
+  const updateQuantity = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const quantity = parseInt(e.target.value);
+    if (!isNaN(quantity) && quantity > 0) {
+      updateQuantityFromAttributes(quantity);
+    }
+  }, [updateQuantityFromAttributes]);
+
   // Fix: Make the handlePriceChange function accept the event format expected by ItemValues
   const handlePriceChangeWrapper = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newPrice = parseFloat(e.target.value);
@@ -98,13 +122,12 @@ export const useTradeInItemHandlers = ({
   }, [handlePriceChange]);
 
   return {
-    displayValue,
+    displayValue: displayValue || 0, // Ensure we always return a number
     isCalculating,
     refreshPrice,
     cashValue,
     tradeValue,
     error,
-    handleUpdate,
     handleConditionChangeWrapper,
     toggleFirstEdition,
     toggleHolo,
