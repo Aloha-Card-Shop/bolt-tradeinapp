@@ -39,8 +39,10 @@ export const useTradeValueSettings = (selectedGame: string) => {
         console.log(`[FRONTEND] Successfully received data:`, data);
         
         if (Array.isArray(data)) {
-          setCurrentSettings(data);
-          console.log(`[FRONTEND] Set ${data.length} settings`);
+          // Sort settings by min_value in ascending order
+          const sortedSettings = data.sort((a, b) => a.min_value - b.min_value);
+          setCurrentSettings(sortedSettings);
+          console.log(`[FRONTEND] Set ${sortedSettings.length} settings (sorted by value)`);
         } else {
           console.warn(`[FRONTEND] Expected array but got:`, typeof data, data);
           setCurrentSettings([]);

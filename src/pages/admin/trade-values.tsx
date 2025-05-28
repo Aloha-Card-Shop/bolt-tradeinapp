@@ -35,7 +35,6 @@ const TradeValuesPage: React.FC = () => {
       <GameSelector 
         selectedGame={selectedGame}
         onGameChange={handleGameChange}
-        isModified={isModified}
       />
       
       <DebugInfo
@@ -50,7 +49,7 @@ const TradeValuesPage: React.FC = () => {
       
       {!isLoading && !error && (
         <div className="mb-4 text-sm text-gray-600">
-          Found {currentSettings.length} settings for {selectedGame}
+          Found {currentSettings.length} settings for {selectedGame} (ordered by value range)
         </div>
       )}
       

@@ -4,13 +4,11 @@ import React from 'react';
 interface GameSelectorProps {
   selectedGame: string;
   onGameChange: (game: string) => void;
-  isModified: boolean;
 }
 
 const GameSelector: React.FC<GameSelectorProps> = ({ 
   selectedGame, 
-  onGameChange, 
-  isModified 
+  onGameChange
 }) => {
   const handleGameChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     console.log(`[FRONTEND] Changing game from ${selectedGame} to ${e.target.value}`);
