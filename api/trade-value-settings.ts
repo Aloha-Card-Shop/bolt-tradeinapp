@@ -26,15 +26,19 @@ export default async function handler(req: Request): Promise<Response> {
       console.log(`[API] Fetching settings for game: ${game}`);
       
       const settings = await getGameSettings(game);
+      console.log(`[API] Retrieved ${settings?.length || 0} settings for ${game}:`, settings);
+      
+      // Ensure we return an array even if no settings found
+      const responseData = Array.isArray(settings) ? settings : [];
       
       return new Response(
-        JSON.stringify(settings),
+        JSON.stringify(responseData),
         { status: 200, headers: corsHeaders }
       );
     } catch (error) {
       console.error('[API] Error fetching settings:', error);
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch settings' }),
+        JSON.stringify({ error: 'Failed to fetch settings', details: error.message }),
         { status: 500, headers: corsHeaders }
       );
     }
@@ -45,13 +49,14 @@ export default async function handler(req: Request): Promise<Response> {
       const { settings, game } = await req.json();
       
       if (!settings || !Array.isArray(settings)) {
+        console.error('[API] Invalid settings format received:', { settings, game });
         return new Response(
           JSON.stringify({ error: 'Invalid settings format' }),
           { status: 400, headers: corsHeaders }
         );
       }
 
-      console.log(`[API] Saving ${settings.length} settings for game: ${game}`);
+      console.log(`[API] Saving ${settings.length} settings for game: ${game}`, settings);
 
       // Delete existing settings for this game
       const { error: deleteError } = await supabase
@@ -62,7 +67,7 @@ export default async function handler(req: Request): Promise<Response> {
       if (deleteError) {
         console.error('[API] Error deleting existing settings:', deleteError);
         return new Response(
-          JSON.stringify({ error: 'Failed to delete existing settings' }),
+          JSON.stringify({ error: 'Failed to delete existing settings', details: deleteError.message }),
           { status: 500, headers: corsHeaders }
         );
       }
@@ -79,7 +84,7 @@ export default async function handler(req: Request): Promise<Response> {
         if (insertError) {
           console.error('[API] Error inserting new settings:', insertError);
           return new Response(
-            JSON.stringify({ error: 'Failed to save settings' }),
+            JSON.stringify({ error: 'Failed to save settings', details: insertError.message }),
             { status: 500, headers: corsHeaders }
           );
         }
@@ -92,7 +97,7 @@ export default async function handler(req: Request): Promise<Response> {
     } catch (error) {
       console.error('[API] Error saving settings:', error);
       return new Response(
-        JSON.stringify({ error: 'Failed to save settings' }),
+        JSON.stringify({ error: 'Failed to save settings', details: error.message }),
         { status: 500, headers: corsHeaders }
       );
     }

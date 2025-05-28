@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
@@ -21,6 +22,8 @@ export async function getGameSettings(game: string): Promise<any[]> {
   const normalizedGame = game.toLowerCase();
   const now = Date.now();
   
+  console.log(`[CACHE] Checking cache for ${normalizedGame}, current cache keys:`, Object.keys(settingsCache));
+  
   // Check if we have valid cached settings
   if (
     settingsCache[normalizedGame] && 
@@ -38,9 +41,11 @@ export async function getGameSettings(game: string): Promise<any[]> {
     .eq('game', normalizedGame);
     
   if (error) {
-    console.error('[ERROR] Failed to fetch settings:', error);
+    console.error('[CACHE ERROR] Failed to fetch settings:', error);
     throw error;
   }
+  
+  console.log(`[CACHE] Database query result for ${normalizedGame}:`, settings);
   
   // Update cache
   settingsCache[normalizedGame] = {

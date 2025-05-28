@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -29,16 +30,44 @@ const TradeValuesPage: React.FC = () => {
       setError(null);
       
       try {
+        console.log(`[Frontend] Fetching settings for game: ${selectedGame}`);
         const response = await fetch(`/api/trade-value-settings?game=${selectedGame}`);
+        
+        console.log(`[Frontend] Response status: ${response.status}, headers:`, response.headers);
+        
         if (!response.ok) {
-          throw new Error(`Failed to fetch settings: ${response.statusText}`);
+          const errorText = await response.text();
+          console.error(`[Frontend] API error response:`, errorText);
+          throw new Error(`Failed to fetch settings: ${response.status} ${response.statusText}`);
         }
-        const data = await response.json();
-        setCurrentSettings(data);
+        
+        const responseText = await response.text();
+        console.log(`[Frontend] Raw response:`, responseText);
+        
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error(`[Frontend] JSON parse error:`, parseError);
+          throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+        }
+        
+        console.log(`[Frontend] Parsed data:`, data);
+        
+        if (Array.isArray(data)) {
+          setCurrentSettings(data);
+          console.log(`[Frontend] Successfully loaded ${data.length} settings`);
+        } else if (data.error) {
+          throw new Error(data.error);
+        } else {
+          console.warn(`[Frontend] Unexpected data format:`, data);
+          setCurrentSettings([]);
+        }
       } catch (err: any) {
-        console.error('Error fetching settings:', err);
+        console.error('[Frontend] Error fetching settings:', err);
         setError(err.message || 'Failed to fetch settings');
         toast.error(err.message || 'Failed to fetch settings');
+        setCurrentSettings([]);
       } finally {
         setIsLoading(false);
       }
@@ -118,6 +147,8 @@ const TradeValuesPage: React.FC = () => {
     }
     
     try {
+      console.log(`[Frontend] Saving ${currentSettings.length} settings for game: ${selectedGame}`, currentSettings);
+      
       const response = await fetch('/api/trade-value-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -125,8 +156,9 @@ const TradeValuesPage: React.FC = () => {
       });
       
       if (!response.ok) {
-        const error = await response.text();
-        toast.error(`Failed to save settings: ${error}`);
+        const errorData = await response.json();
+        console.error(`[Frontend] Save error:`, errorData);
+        toast.error(`Failed to save settings: ${errorData.error || response.statusText}`);
         return;
       }
       
@@ -140,7 +172,7 @@ const TradeValuesPage: React.FC = () => {
       navigate(0);
       
     } catch (error) {
-      console.error('Error saving settings:', error);
+      console.error('[Frontend] Error saving settings:', error);
       toast.error('An error occurred while saving settings');
     }
   };
@@ -156,6 +188,7 @@ const TradeValuesPage: React.FC = () => {
           className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
           value={selectedGame}
           onChange={(e) => {
+            console.log(`[Frontend] Changing game from ${selectedGame} to ${e.target.value}`);
             setSelectedGame(e.target.value);
             setIsModified(false);
           }}
@@ -167,7 +200,13 @@ const TradeValuesPage: React.FC = () => {
       </div>
       
       {isLoading && <div className="text-gray-500">Loading settings...</div>}
-      {error && <div className="text-red-500">Error: {error}</div>}
+      {error && <div className="text-red-500 bg-red-50 p-3 rounded mb-4">Error: {error}</div>}
+      
+      {!isLoading && !error && (
+        <div className="mb-4 text-sm text-gray-600">
+          Found {currentSettings.length} settings for {selectedGame}
+        </div>
+      )}
       
       <form onSubmit={handleSaveSettings}>
         <div className="mb-4">
