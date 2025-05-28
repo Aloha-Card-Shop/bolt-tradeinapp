@@ -4,13 +4,18 @@ import React from 'react';
 interface PaymentTypeSelectorProps {
   paymentType: 'cash' | 'trade';
   onSelect: (type: 'cash' | 'trade') => void;
+  isIndividual?: boolean;
 }
 
-const PaymentTypeSelector: React.FC<PaymentTypeSelectorProps> = ({ paymentType, onSelect }) => {
+const PaymentTypeSelector: React.FC<PaymentTypeSelectorProps> = ({ 
+  paymentType, 
+  onSelect, 
+  isIndividual = false 
+}) => {
   return (
     <div>
       <label className="block text-xs font-medium text-gray-700 mb-1">
-        Payment Type
+        {isIndividual ? 'Individual Payment Type' : 'Payment Type'}
       </label>
       <div className="grid grid-cols-2 gap-1">
         <button
@@ -36,6 +41,11 @@ const PaymentTypeSelector: React.FC<PaymentTypeSelectorProps> = ({ paymentType, 
           Trade
         </button>
       </div>
+      {isIndividual && (
+        <p className="text-xs text-gray-500 mt-1">
+          Override global setting
+        </p>
+      )}
     </div>
   );
 };

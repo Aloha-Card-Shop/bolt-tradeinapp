@@ -3,6 +3,7 @@ import React from 'react';
 import { ShoppingBagIcon, XCircleIcon } from 'lucide-react';
 import { TradeInItem } from '../../hooks/useTradeInList';
 import TradeInItemsList from './TradeInItemsList';
+import GlobalPaymentTypeSelector from './GlobalPaymentTypeSelector';
 
 interface TradeInListProps {
   items: TradeInItem[];
@@ -33,6 +34,20 @@ const TradeInList: React.FC<TradeInListProps> = ({
     }
     return sum;
   }, 0);
+
+  // Determine the most common payment type to show as default
+  const cashCount = items.filter(item => item.paymentType === 'cash').length;
+  const tradeCount = items.filter(item => item.paymentType === 'trade').length;
+  const globalPaymentType = cashCount >= tradeCount ? 'cash' : 'trade';
+
+  // Handle global payment type change
+  const handleGlobalPaymentTypeChange = (type: 'cash' | 'trade') => {
+    items.forEach((item, index) => {
+      if (item.paymentType !== type) {
+        onUpdateItem(index, { ...item, paymentType: type });
+      }
+    });
+  };
   
   return (
     <div className="p-6">
@@ -44,47 +59,57 @@ const TradeInList: React.FC<TradeInListProps> = ({
       </div>
 
       {items.length > 0 ? (
-        <div className="mb-6 bg-white rounded-xl border border-gray-200">
-          <div className="px-5 py-3 border-b border-gray-200 flex justify-between items-center">
-            <div className="font-medium text-gray-700">
-              {totalItemCount} {totalItemCount === 1 ? 'item' : 'items'}
-            </div>
-            <button
-              onClick={clearList}
-              className="text-sm text-red-600 hover:text-red-800 flex items-center"
-            >
-              <XCircleIcon className="h-4 w-4 mr-1" />
-              Clear all
-            </button>
-          </div>
-          
-          <TradeInItemsList 
-            items={items}
-            onRemoveItem={onRemoveItem}
-            onUpdateItem={onUpdateItem}
-            onValueChange={() => {}} // Add this empty function to satisfy the prop type
-            hideDetailedPricing={true}
+        <>
+          {/* Global Payment Type Selector */}
+          <GlobalPaymentTypeSelector
+            paymentType={globalPaymentType}
+            onSelect={handleGlobalPaymentTypeChange}
+            totalItems={totalItemCount}
           />
-          
-          <div className="p-5 border-t border-gray-200">
-            <div className="flex justify-between mb-2">
-              <span className="text-gray-700">Cash Value:</span>
-              <span className="font-semibold">${cashTotalValue.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-700">Trade Value:</span>
-              <span className="font-semibold">${tradeTotalValue.toFixed(2)}</span>
+
+          {/* Items List */}
+          <div className="mb-6 bg-white rounded-xl border border-gray-200">
+            <div className="px-5 py-3 border-b border-gray-200 flex justify-between items-center">
+              <div className="font-medium text-gray-700">
+                {totalItemCount} {totalItemCount === 1 ? 'item' : 'items'}
+              </div>
+              <button
+                onClick={clearList}
+                className="text-sm text-red-600 hover:text-red-800 flex items-center"
+              >
+                <XCircleIcon className="h-4 w-4 mr-1" />
+                Clear all
+              </button>
             </div>
             
-            {items.length > 0 && (
-              <div className="mt-4">
-                <button className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg">
-                  Send to manager for approval
-                </button>
+            <TradeInItemsList 
+              items={items}
+              onRemoveItem={onRemoveItem}
+              onUpdateItem={onUpdateItem}
+              onValueChange={() => {}} // Add this empty function to satisfy the prop type
+              hideDetailedPricing={true}
+            />
+            
+            <div className="p-5 border-t border-gray-200">
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-700">Cash Value:</span>
+                <span className="font-semibold">${cashTotalValue.toFixed(2)}</span>
               </div>
-            )}
+              <div className="flex justify-between">
+                <span className="text-gray-700">Trade Value:</span>
+                <span className="font-semibold">${tradeTotalValue.toFixed(2)}</span>
+              </div>
+              
+              {items.length > 0 && (
+                <div className="mt-4">
+                  <button className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg">
+                    Send to manager for approval
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       ) : (
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
           <div className="mx-auto h-16 w-16 flex items-center justify-center bg-gray-100 rounded-full mb-4">
