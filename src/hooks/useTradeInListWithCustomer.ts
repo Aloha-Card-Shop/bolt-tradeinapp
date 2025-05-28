@@ -1,9 +1,11 @@
-import { useState, useCallback } from 'react';
+
+import { useState, useCallback, useEffect } from 'react';
 import { CardDetails } from '../types/card';
 import { fetchCardPrices } from '../utils/scraper';
 import { toast } from 'react-hot-toast';
 import { usePsaPriceLookup } from './usePsaPriceLookup';
 import { Customer } from './useCustomers';
+import { useLocalStoragePersistence } from './useLocalStoragePersistence';
 
 export interface TradeInItem {
   card: CardDetails;
@@ -25,10 +27,35 @@ export interface TradeInItem {
   initialCalculation?: boolean;
 }
 
+const STORAGE_KEY = 'tradeInProgress';
+
 export const useTradeInListWithCustomer = () => {
   const [items, setItems] = useState<TradeInItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const { lookupPsaPrice } = usePsaPriceLookup();
+
+  // Set up persistence
+  const persistenceData = { items, selectedCustomer };
+  const { loadFromStorage, clearStorage } = useLocalStoragePersistence({
+    key: STORAGE_KEY,
+    data: persistenceData,
+    saveInterval: 500 // Save every 500ms to prevent lag
+  });
+
+  // Load saved data on mount
+  useEffect(() => {
+    const savedData = loadFromStorage();
+    if (savedData) {
+      if (savedData.items && Array.isArray(savedData.items) && savedData.items.length > 0) {
+        setItems(savedData.items);
+        console.log(`Restored ${savedData.items.length} items from localStorage`);
+      }
+      if (savedData.selectedCustomer) {
+        setSelectedCustomer(savedData.selectedCustomer);
+        console.log('Restored selected customer from localStorage');
+      }
+    }
+  }, [loadFromStorage]);
 
   const addItem = useCallback(async (card: CardDetails, price: number) => {
     // Generate a unique ID for the card if it doesn't have one
@@ -257,7 +284,8 @@ export const useTradeInListWithCustomer = () => {
   const clearList = useCallback(() => {
     setItems([]);
     setSelectedCustomer(null);
-  }, []);
+    clearStorage(); // Clear saved progress when intentionally clearing
+  }, [clearStorage]);
 
   // Customer management functions
   const selectCustomer = useCallback((customer: Customer | null) => {

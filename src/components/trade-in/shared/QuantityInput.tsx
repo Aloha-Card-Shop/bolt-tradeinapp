@@ -18,7 +18,7 @@ const QuantityInput: React.FC<QuantityInputProps> = ({
   disabled = false
 }) => {
   const handleIncrement = () => {
-    if (onIncrement) {
+    if (onIncrement && quantity < 999) {
       onIncrement();
     }
   };
@@ -27,6 +27,26 @@ const QuantityInput: React.FC<QuantityInputProps> = ({
     if (onDecrement && quantity > 1) {
       onDecrement();
     }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = parseInt(e.target.value);
+    
+    // Limit quantity to a reasonable maximum (e.g., 999)
+    if (newValue > 999) {
+      e.target.value = '999';
+      const limitedEvent = {
+        ...e,
+        target: {
+          ...e.target,
+          value: '999'
+        }
+      } as React.ChangeEvent<HTMLInputElement>;
+      onChange(limitedEvent);
+      return;
+    }
+    
+    onChange(e);
   };
 
   return (
@@ -48,8 +68,9 @@ const QuantityInput: React.FC<QuantityInputProps> = ({
         <input
           type="number"
           min="1"
+          max="999"
           value={quantity}
-          onChange={onChange}
+          onChange={handleChange}
           disabled={disabled}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -57,7 +78,7 @@ const QuantityInput: React.FC<QuantityInputProps> = ({
           <button
             type="button"
             onClick={handleIncrement}
-            disabled={disabled}
+            disabled={disabled || quantity >= 999}
             className="p-1 rounded-lg hover:bg-gray-100 disabled:opacity-50"
           >
             <PlusCircle className="h-5 w-5 text-gray-500" />
