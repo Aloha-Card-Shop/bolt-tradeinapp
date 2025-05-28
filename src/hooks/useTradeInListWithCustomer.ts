@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { CardDetails } from '../types/card';
 import { fetchCardPrices } from '../utils/scraper';
@@ -34,12 +33,12 @@ export const useTradeInListWithCustomer = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const { lookupPsaPrice } = usePsaPriceLookup();
 
-  // Set up persistence
+  // Set up persistence with immediate saving
   const persistenceData = { items, selectedCustomer };
-  const { loadFromStorage, clearStorage } = useLocalStoragePersistence({
+  const { loadFromStorage, clearStorage, saveToStorage } = useLocalStoragePersistence({
     key: STORAGE_KEY,
     data: persistenceData,
-    saveInterval: 500 // Save every 500ms to prevent lag
+    saveInterval: 100 // Save very quickly to prevent data loss
   });
 
   // Load saved data on mount
@@ -47,15 +46,22 @@ export const useTradeInListWithCustomer = () => {
     const savedData = loadFromStorage();
     if (savedData) {
       if (savedData.items && Array.isArray(savedData.items) && savedData.items.length > 0) {
+        console.log(`Restoring ${savedData.items.length} items from localStorage`);
         setItems(savedData.items);
-        console.log(`Restored ${savedData.items.length} items from localStorage`);
       }
       if (savedData.selectedCustomer) {
+        console.log('Restoring selected customer from localStorage');
         setSelectedCustomer(savedData.selectedCustomer);
-        console.log('Restored selected customer from localStorage');
       }
     }
   }, [loadFromStorage]);
+
+  // Force save whenever items or customer changes
+  useEffect(() => {
+    if (items.length > 0 || selectedCustomer) {
+      saveToStorage();
+    }
+  }, [items, selectedCustomer, saveToStorage]);
 
   const addItem = useCallback(async (card: CardDetails, price: number) => {
     // Generate a unique ID for the card if it doesn't have one

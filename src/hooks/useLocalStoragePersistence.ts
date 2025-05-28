@@ -13,7 +13,7 @@ export const useLocalStoragePersistence = ({ key, data, saveInterval = 1000 }: P
   const saveToStorage = useCallback(() => {
     try {
       localStorage.setItem(key, JSON.stringify(data));
-      console.log(`Data saved to localStorage with key: ${key}`);
+      console.log(`Data saved to localStorage with key: ${key}`, data);
     } catch (error) {
       console.error('Failed to save to localStorage:', error);
     }
@@ -24,7 +24,9 @@ export const useLocalStoragePersistence = ({ key, data, saveInterval = 1000 }: P
     try {
       const stored = localStorage.getItem(key);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        console.log(`Data loaded from localStorage with key: ${key}`, parsed);
+        return parsed;
       }
     } catch (error) {
       console.error('Failed to load from localStorage:', error);
@@ -42,11 +44,16 @@ export const useLocalStoragePersistence = ({ key, data, saveInterval = 1000 }: P
     }
   }, [key]);
 
-  // Auto-save data when it changes
+  // Auto-save data when it changes - save immediately for critical data
   useEffect(() => {
-    if (data && Object.keys(data).length > 0) {
-      const timeoutId = setTimeout(saveToStorage, saveInterval);
-      return () => clearTimeout(timeoutId);
+    if (data) {
+      // For trade-in data, save immediately to prevent loss
+      if (data.items || data.selectedCustomer) {
+        saveToStorage();
+      } else if (Object.keys(data).length > 0) {
+        const timeoutId = setTimeout(saveToStorage, saveInterval);
+        return () => clearTimeout(timeoutId);
+      }
     }
   }, [data, saveToStorage, saveInterval]);
 
