@@ -267,84 +267,125 @@ export const barcodeService = {
     }
   },
 
-  // Print a barcode with a specific template
-  printBarcodeWithTemplate: async (tradeIn: TradeIn, printerId: string, templateId: string | null = null, cardId: string | null = null): Promise<void> => {
+  // Updated method for downloading barcodes instead of printing
+  downloadBarcodeWithTemplate: async (tradeIn: TradeIn, templateId: string | null = null, cardId: string | null = null, format: 'png' | 'pdf' | 'svg' = 'png'): Promise<void> => {
     try {
-      // Use the printService to handle actual printing
-      await printService.printTradeInBarcode(tradeIn, printerId, templateId, cardId);
+      const { downloadService } = await import('./downloadService');
       
-      // Record in print logs table
-      await supabase
-        .from('print_logs')
-        .insert({
-          trade_in_id: tradeIn.id,
-          printer_id: printerId,
-          template_id: templateId,
-          printed_by: (await supabase.auth.getUser()).data.user?.id,
-          status: 'sent'
-        });
+      if (cardId) {
+        // Find the card item
+        const { data: cardItem, error } = await supabase
+          .from('trade_in_items')
+          .select('*')
+          .eq('id', cardId)
+          .eq('trade_in_id', tradeIn.id)
+          .single();
 
-      toast.success(cardId ? 'Card barcode sent to printer' : 'Barcode sent to printer');
-    } catch (err) {
-      console.error('Error printing barcode:', err);
-      
-      // Log the error
-      await supabase
-        .from('print_logs')
-        .insert({
-          trade_in_id: tradeIn.id,
-          printer_id: printerId,
-          template_id: templateId,
-          printed_by: (await supabase.auth.getUser()).data.user?.id,
-          status: 'error',
-          error_message: (err as Error).message
-        });
-
-      toast.error(`Failed to print barcode: ${(err as Error).message}`);
-      throw err;
-    }
-  },
-
-  // Print a card barcode
-  printCardBarcode: async (tradeIn: TradeIn, cardId: string, printerId: string): Promise<void> => {
-    try {
-      // Get or create a card template
-      const cardTemplate = await barcodeService.createCardTemplate();
-      
-      // Print using the card template
-      await barcodeService.printBarcodeWithTemplate(tradeIn, printerId, cardTemplate?.id || null, cardId);
-    } catch (err) {
-      console.error('Error printing card barcode:', err);
-      throw err;
-    }
-  },
-
-  // Print a test barcode (new method for test prints)
-  printTestBarcode: async (mockTradeIn: TradeIn, printerId: string, cardId?: string): Promise<void> => {
-    try {
-      // Call edge function with test flag
-      const { data, error } = await supabase.functions.invoke('print-barcode', {
-        body: {
-          tradeInId: mockTradeIn.id,
-          printerId: printerId,
-          cardId: cardId || null,
-          isTest: true // This flag tells the edge function it's a test
+        if (error || !cardItem) {
+          throw new Error('Card not found');
         }
-      });
 
-      if (error) throw error;
+        await downloadService.downloadCardBarcode(tradeIn, cardItem, { format });
+      } else {
+        await downloadService.downloadTradeInBarcode(tradeIn, { format });
+      }
+
+      // Update trade-in record to track downloads
+      const { error: updateError } = await supabase
+        .from('trade_ins')
+        .update({
+          printed: true, // Keep this field for compatibility
+          print_count: tradeIn.print_count ? tradeIn.print_count + 1 : 1,
+          last_printed_at: new Date().toISOString(),
+          printed_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .eq('id', tradeIn.id);
       
-      // Don't log test prints to database
-      toast.success('Test print sent successfully');
-      return data;
+      if (updateError) {
+        console.error('Error updating trade-in record:', updateError);
+      }
+
+      toast.success(cardId ? 'Card barcode downloaded successfully' : 'Barcode downloaded successfully');
     } catch (err) {
-      console.error('Error sending test print:', err);
-      toast.error(`Failed to send test print: ${(err as Error).message}`);
+      console.error('Error downloading barcode:', err);
+      toast.error(`Failed to download barcode: ${(err as Error).message}`);
       throw err;
     }
   },
 
-  // Helper to render ZPL template with values
+  // Download a card barcode
+  downloadCardBarcode: async (tradeIn: TradeIn, cardId: string, format: 'png' | 'pdf' = 'png'): Promise<void> => {
+    try {
+      await barcodeService.downloadBarcodeWithTemplate(tradeIn, null, cardId, format);
+    } catch (err) {
+      console.error('Error downloading card barcode:', err);
+      throw err;
+    }
+  },
+
+  // Batch download barcodes
+  downloadBatchBarcodes: async (tradeIns: TradeIn[], format: 'png' | 'pdf' = 'pdf'): Promise<void> => {
+    try {
+      const { downloadService } = await import('./downloadService');
+      await downloadService.downloadBatch(tradeIns, { format, layout: 'sheet' });
+    } catch (err) {
+      console.error('Error downloading batch barcodes:', err);
+      toast.error(`Failed to download batch: ${(err as Error).message}`);
+      throw err;
+    }
+  },
+
+  // Legacy method compatibility - now downloads instead of prints
+  printBarcodeWithTemplate: async (tradeIn: TradeIn, printerId: string, templateId: string | null = null, cardId: string | null = null): Promise<void> => {
+    console.warn('printBarcodeWithTemplate is deprecated, use downloadBarcodeWithTemplate instead');
+    return barcodeService.downloadBarcodeWithTemplate(tradeIn, templateId, cardId);
+  },
+
+  // Legacy method compatibility
+  printCardBarcode: async (tradeIn: TradeIn, cardId: string, printerId: string): Promise<void> => {
+    console.warn('printCardBarcode is deprecated, use downloadCardBarcode instead');
+    return barcodeService.downloadCardBarcode(tradeIn, cardId);
+  },
+
+  // Test download method
+  testDownload: async (mockTradeIn: TradeIn, format: 'png' | 'pdf' | 'svg' = 'png', cardId?: string): Promise<void> => {
+    try {
+      const { downloadService } = await import('./downloadService');
+      
+      if (cardId) {
+        // Create mock card item for testing
+        const mockCardItem = {
+          id: cardId,
+          card_id: 'test-card',
+          card_name: 'Test Card',
+          quantity: 1,
+          price: 10.00,
+          condition: 'near_mint' as const,
+          attributes: {
+            setName: 'Test Set',
+            cardNumber: '1/100',
+            isFirstEdition: false,
+            isHolo: true
+          },
+          tcgplayer_url: 'https://www.tcgplayer.com/product/123/test',
+          image_url: '',
+          trade_in_id: mockTradeIn.id
+        };
+        
+        await downloadService.downloadCardBarcode(mockTradeIn, mockCardItem, { format: format === 'svg' ? 'png' : format });
+      } else {
+        await downloadService.downloadTradeInBarcode(mockTradeIn, { format });
+      }
+      
+      toast.success('Test download completed successfully');
+    } catch (err) {
+      console.error('Error in test download:', err);
+      toast.error(`Test download failed: ${(err as Error).message}`);
+      throw err;
+    }
+  },
+
+  // Helper to render ZPL template with values (kept for compatibility)
   renderTemplate: (template: string, values: Record<string, any>): string => {
     return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
       return values[key] !== undefined ? String(values[key]) : '';

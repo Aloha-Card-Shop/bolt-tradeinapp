@@ -1,15 +1,13 @@
-
 import React, { useState } from 'react';
-import { TestTube, Plus, Settings, MapPin } from 'lucide-react';
+import { Download, Plus, Settings, MapPin } from 'lucide-react';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import SettingsForm from '../../components/barcode/SettingsForm';
-import TestPrintModal from '../../components/barcode/TestPrintModal';
-import PrinterCard from '../../components/printers/PrinterCard';
 import AddPrinterModal from '../../components/printers/AddPrinterModal';
 import AddLocationModal from '../../components/printers/AddLocationModal';
 import EditPrinterModal from '../../components/printers/EditPrinterModal';
 import { usePrinters } from '../../hooks/usePrinters';
 import { Printer } from '../../types/printer';
+import TestDownloadModal from '../../components/barcode/TestDownloadModal';
 
 const PrintersPage: React.FC = () => {
   const {
@@ -60,7 +58,7 @@ const PrintersPage: React.FC = () => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            Printers & Locations
+            Download Settings
           </button>
           <button
             onClick={() => setActiveTab('settings')}
@@ -70,106 +68,132 @@ const PrintersPage: React.FC = () => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            Barcode Settings
+            Barcode Templates
           </button>
         </nav>
       </div>
 
       {activeTab === 'printers' && (
         <div className="space-y-6">
-          {/* Action Buttons */}
+          {/* Download Options */}
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">Printer Management</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Download Preferences</h2>
             <div className="flex space-x-2">
               <button
-                onClick={() => setShowAddLocationModal(true)}
-                className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-              >
-                <MapPin className="h-4 w-4 mr-2" />
-                Add Location
-              </button>
-              <button
-                onClick={() => setShowAddPrinterModal(true)}
+                onClick={() => setShowTestModal(true)}
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Printer
-              </button>
-              <button
-                onClick={() => setShowTestModal(true)}
-                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-              >
-                <TestTube className="h-4 w-4 mr-2" />
-                Test Print & Debug
+                <Download className="h-4 w-4 mr-2" />
+                Test Download
               </button>
             </div>
           </div>
 
-          {/* Locations Summary */}
-          {locations.length > 0 && (
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Locations ({locations.length})</h3>
-              <div className="flex flex-wrap gap-2">
-                {locations.map((location) => (
-                  <span
-                    key={location.id}
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                  >
-                    {location.name}
-                  </span>
-                ))}
+          {/* Download Settings Card */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Default Download Settings</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Default Format
+                </label>
+                <select className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                  <option value="png">PNG (High Quality Image)</option>
+                  <option value="pdf">PDF (Print Ready)</option>
+                  <option value="svg">SVG (Vector Graphics)</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Label Size
+                </label>
+                <select className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                  <option value="2x1">2" x 1" (Standard)</option>
+                  <option value="4x2">4" x 2" (Large)</option>
+                  <option value="custom">Custom Size</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Quality
+                </label>
+                <select className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                  <option value="0.9">High (90%)</option>
+                  <option value="0.8">Medium (80%)</option>
+                  <option value="0.7">Standard (70%)</option>
+                </select>
               </div>
             </div>
-          )}
+            
+            <div className="mt-6 flex items-center space-x-4">
+              <label className="flex items-center">
+                <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                <span className="ml-2 text-sm text-gray-700">Include customer information</span>
+              </label>
+              
+              <label className="flex items-center">
+                <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <span className="ml-2 text-sm text-gray-700">Auto-download after trade-in</span>
+              </label>
+            </div>
+            
+            <div className="mt-6">
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                Save Preferences
+              </button>
+            </div>
+          </div>
 
-          {/* Printers Grid */}
-          {isLoading ? (
-            <div className="text-center py-8">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p className="mt-2 text-gray-500">Loading printers...</p>
-            </div>
-          ) : printers.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg">
-              <Settings className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No printers configured</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Get started by adding your first printer.
-              </p>
-              <div className="mt-6">
-                <button
-                  onClick={() => setShowAddPrinterModal(true)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Printer
-                </button>
+          {/* Benefits Card */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-green-800 mb-3">Benefits of Downloadable Barcodes</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center text-green-700">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                  <span className="text-sm">No internet required for printing</span>
+                </div>
+                <div className="flex items-center text-green-700">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                  <span className="text-sm">Print on any standard printer</span>
+                </div>
+                <div className="flex items-center text-green-700">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                  <span className="text-sm">Save labels for future use</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center text-green-700">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                  <span className="text-sm">Multiple format options (PNG, PDF, SVG)</span>
+                </div>
+                <div className="flex items-center text-green-700">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                  <span className="text-sm">Batch download multiple labels</span>
+                </div>
+                <div className="flex items-center text-green-700">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                  <span className="text-sm">No monthly subscription fees</span>
+                </div>
               </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {printers.map((printer) => (
-                <PrinterCard
-                  key={printer.id}
-                  printer={printer}
-                  onEdit={handleEditPrinter}
-                  onDelete={handleDeletePrinter}
-                />
-              ))}
-            </div>
-          )}
+          </div>
         </div>
       )}
 
       {activeTab === 'settings' && (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">Barcode Settings</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Barcode Templates</h2>
             <button
               onClick={() => setShowTestModal(true)}
               className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
             >
-              <TestTube className="h-4 w-4 mr-2" />
-              Test Print & Debug
+              <Download className="h-4 w-4 mr-2" />
+              Test Template
             </button>
           </div>
           <SettingsForm onSave={handleSaveSettings} />
@@ -177,14 +201,6 @@ const PrintersPage: React.FC = () => {
       )}
 
       {/* Modals */}
-      {showTestModal && (
-        <TestPrintModal
-          printers={printers}
-          isLoading={isLoading}
-          onClose={() => setShowTestModal(false)}
-        />
-      )}
-
       {showAddPrinterModal && (
         <AddPrinterModal
           locations={locations}
@@ -210,6 +226,11 @@ const PrintersPage: React.FC = () => {
             setSelectedPrinter(null);
           }}
         />
+      )}
+
+      {/* Test Modal */}
+      {showTestModal && (
+        <TestDownloadModal onClose={() => setShowTestModal(false)} />
       )}
     </div>
   );
