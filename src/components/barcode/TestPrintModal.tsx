@@ -71,16 +71,16 @@ const TestPrintModal: React.FC<TestPrintModalProps> = ({
     
     setIsPrinting(true);
     try {
-      if (testType === 'card') {
-        await barcodeService.printCardBarcode(mockTradeIn, mockCardItem.id, selectedPrinterId);
-      } else {
-        await barcodeService.printBarcodeWithTemplate(mockTradeIn, selectedPrinterId);
-      }
-      toast.success('Test print sent successfully!');
+      // Use the new test print method
+      await barcodeService.printTestBarcode(
+        mockTradeIn, 
+        selectedPrinterId, 
+        testType === 'card' ? mockCardItem.id : undefined
+      );
       onClose();
     } catch (error) {
       console.error('Error sending test print:', error);
-      toast.error('Failed to send test print');
+      // Error is already handled by barcodeService.printTestBarcode
     } finally {
       setIsPrinting(false);
     }

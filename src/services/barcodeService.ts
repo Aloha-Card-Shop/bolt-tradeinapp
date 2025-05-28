@@ -319,6 +319,31 @@ export const barcodeService = {
     }
   },
 
+  // Print a test barcode (new method for test prints)
+  printTestBarcode: async (mockTradeIn: TradeIn, printerId: string, cardId?: string): Promise<void> => {
+    try {
+      // Call edge function with test flag
+      const { data, error } = await supabase.functions.invoke('print-barcode', {
+        body: {
+          tradeInId: mockTradeIn.id,
+          printerId: printerId,
+          cardId: cardId || null,
+          isTest: true // This flag tells the edge function it's a test
+        }
+      });
+
+      if (error) throw error;
+      
+      // Don't log test prints to database
+      toast.success('Test print sent successfully');
+      return data;
+    } catch (err) {
+      console.error('Error sending test print:', err);
+      toast.error(`Failed to send test print: ${(err as Error).message}`);
+      throw err;
+    }
+  },
+
   // Helper to render ZPL template with values
   renderTemplate: (template: string, values: Record<string, any>): string => {
     return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
