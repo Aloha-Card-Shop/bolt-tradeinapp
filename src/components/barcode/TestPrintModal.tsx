@@ -5,7 +5,6 @@ import BarcodeGenerator from './BarcodeGenerator';
 import CardBarcodeGenerator from './CardBarcodeGenerator';
 import { TradeIn } from '../../types/tradeIn';
 import { barcodeService } from '../../services/barcodeService';
-import { toast } from 'react-hot-toast';
 
 interface TestPrintModalProps {
   printers: PrinterType[];
