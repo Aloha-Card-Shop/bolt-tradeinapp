@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, TestTube } from 'lucide-react';
+import { TestTube } from 'lucide-react';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import SettingsForm from '../../components/barcode/SettingsForm';
 import TestPrintModal from '../../components/barcode/TestPrintModal';
@@ -10,12 +10,14 @@ const PrintersPage: React.FC = () => {
   const { printers, isLoading } = usePrinters();
   const [showTestModal, setShowTestModal] = useState(false);
 
+  const handleSaveSettings = async (settings: any) => {
+    // TODO: Implement settings save functionality
+    console.log('Saving printer settings:', settings);
+  };
+
   return (
     <div className="space-y-6">
-      <AdminPageHeader 
-        title="Printer Management" 
-        description="Configure printers and test printing functionality"
-      />
+      <AdminPageHeader />
       
       <div className="flex justify-end space-x-2">
         <button
@@ -27,7 +29,7 @@ const PrintersPage: React.FC = () => {
         </button>
       </div>
 
-      <SettingsForm />
+      <SettingsForm onSave={handleSaveSettings} />
 
       {showTestModal && (
         <TestPrintModal
