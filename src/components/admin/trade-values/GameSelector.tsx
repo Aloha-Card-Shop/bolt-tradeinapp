@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Gamepad2 } from 'lucide-react';
 
 interface GameSelectorProps {
   selectedGame: string;
@@ -15,18 +16,31 @@ const GameSelector: React.FC<GameSelectorProps> = ({
     onGameChange(e.target.value);
   };
 
+  const gameOptions = [
+    { value: 'pokemon', label: 'Pokemon Cards', emoji: '🎮' },
+    { value: 'japanese-pokemon', label: 'Japanese Pokemon Cards', emoji: '🇯🇵' },
+    { value: 'magic', label: 'Magic: The Gathering', emoji: '🔮' }
+  ];
+
   return (
-    <div className="mb-4">
-      <label htmlFor="game" className="block text-sm font-medium text-gray-700">Select Game:</label>
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Gamepad2 className="h-4 w-4 text-gray-600" />
+        <label htmlFor="game" className="text-sm font-medium text-gray-700">
+          Select Game Type
+        </label>
+      </div>
       <select 
         id="game"
-        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+        className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm transition-colors"
         value={selectedGame}
         onChange={handleGameChange}
       >
-        <option value="pokemon">Pokemon</option>
-        <option value="japanese-pokemon">Japanese Pokemon</option>
-        <option value="magic">Magic: The Gathering</option>
+        {gameOptions.map(option => (
+          <option key={option.value} value={option.value}>
+            {option.emoji} {option.label}
+          </option>
+        ))}
       </select>
     </div>
   );
