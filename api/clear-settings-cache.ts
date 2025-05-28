@@ -1,35 +1,41 @@
 
-import { clearSettingsCache } from './calculate-value';
+import { clearSettingsCache } from './utils/settingsCache';
 
-// API handler to clear the settings cache
 export default async function handler(req: Request): Promise<Response> {
-  if (req.method !== 'POST') {
-    return new Response(
-      JSON.stringify({ error: 'Method not allowed' }),
-      { status: 405, headers: { 'Content-Type': 'application/json' } }
-    );
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Content-Type': 'application/json'
+  };
+
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const { game } = await req.json();
-    
-    // Clear either a specific game's cache or the entire cache
-    clearSettingsCache(game);
-    
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: game 
-          ? `Cache cleared for game: ${game}` 
-          : 'Entire settings cache cleared'
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
-  } catch (error) {
-    console.error('Error clearing cache:', error);
-    return new Response(
-      JSON.stringify({ error: 'Failed to clear cache' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+  if (req.method === 'POST') {
+    try {
+      const { game } = await req.json();
+      
+      console.log(`[CLEAR-CACHE API] Clearing cache for game: ${game || 'all'}`);
+      
+      clearSettingsCache(game);
+      
+      return new Response(
+        JSON.stringify({ success: true, message: `Cache cleared for ${game || 'all games'}` }),
+        { status: 200, headers: corsHeaders }
+      );
+    } catch (error) {
+      console.error('[CLEAR-CACHE API] Error clearing cache:', error);
+      return new Response(
+        JSON.stringify({ error: 'Failed to clear cache', details: error.message }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
   }
+
+  return new Response(
+    JSON.stringify({ error: 'Method not allowed' }),
+    { status: 405, headers: corsHeaders }
+  );
 }
