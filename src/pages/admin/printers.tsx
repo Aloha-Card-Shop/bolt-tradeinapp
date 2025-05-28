@@ -1,46 +1,23 @@
+
 import React, { useState } from 'react';
-import { Download, Plus, Settings, MapPin } from 'lucide-react';
+import { Download } from 'lucide-react';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import SettingsForm from '../../components/barcode/SettingsForm';
-import AddPrinterModal from '../../components/printers/AddPrinterModal';
-import AddLocationModal from '../../components/printers/AddLocationModal';
-import EditPrinterModal from '../../components/printers/EditPrinterModal';
 import { usePrinters } from '../../hooks/usePrinters';
-import { Printer } from '../../types/printer';
 import TestDownloadModal from '../../components/barcode/TestDownloadModal';
 
 const PrintersPage: React.FC = () => {
   const {
-    printers,
     locations,
-    isLoading,
-    addPrinter,
-    updatePrinter,
-    deletePrinter,
     addLocation
   } = usePrinters();
 
   const [activeTab, setActiveTab] = useState<'printers' | 'settings'>('printers');
   const [showTestModal, setShowTestModal] = useState(false);
-  const [showAddPrinterModal, setShowAddPrinterModal] = useState(false);
-  const [showAddLocationModal, setShowAddLocationModal] = useState(false);
-  const [showEditPrinterModal, setShowEditPrinterModal] = useState(false);
-  const [selectedPrinter, setSelectedPrinter] = useState<Printer | null>(null);
 
   const handleSaveSettings = async (settings: any) => {
     // TODO: Implement settings save functionality
     console.log('Saving printer settings:', settings);
-  };
-
-  const handleEditPrinter = (printer: Printer) => {
-    setSelectedPrinter(printer);
-    setShowEditPrinterModal(true);
-  };
-
-  const handleDeletePrinter = async (printerId: string) => {
-    if (window.confirm('Are you sure you want to delete this printer?')) {
-      await deletePrinter(printerId);
-    }
   };
 
   return (
@@ -198,34 +175,6 @@ const PrintersPage: React.FC = () => {
           </div>
           <SettingsForm onSave={handleSaveSettings} />
         </div>
-      )}
-
-      {/* Modals */}
-      {showAddPrinterModal && (
-        <AddPrinterModal
-          locations={locations}
-          onSave={addPrinter}
-          onClose={() => setShowAddPrinterModal(false)}
-        />
-      )}
-
-      {showAddLocationModal && (
-        <AddLocationModal
-          onSave={addLocation}
-          onClose={() => setShowAddLocationModal(false)}
-        />
-      )}
-
-      {showEditPrinterModal && selectedPrinter && (
-        <EditPrinterModal
-          printer={selectedPrinter}
-          locations={locations}
-          onSave={updatePrinter}
-          onClose={() => {
-            setShowEditPrinterModal(false);
-            setSelectedPrinter(null);
-          }}
-        />
       )}
 
       {/* Test Modal */}

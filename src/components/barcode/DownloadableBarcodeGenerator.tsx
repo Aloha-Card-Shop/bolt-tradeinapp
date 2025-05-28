@@ -1,6 +1,6 @@
 
-import React, { useRef, useEffect, useState } from 'react';
-import { Download, FileImage, FileText, Image } from 'lucide-react';
+import React, { useState } from 'react';
+import { FileImage, FileText, Image } from 'lucide-react';
 import BarcodeGenerator from './BarcodeGenerator';
 import { TradeIn } from '../../types/tradeIn';
 import { downloadService, DownloadOptions } from '../../services/downloadService';
@@ -8,14 +8,12 @@ import { downloadService, DownloadOptions } from '../../services/downloadService
 interface DownloadableBarcodeGeneratorProps {
   tradeIn: TradeIn;
   showDownloadButtons?: boolean;
-  defaultFormat?: 'png' | 'pdf' | 'svg';
   includeCustomerInfo?: boolean;
 }
 
 const DownloadableBarcodeGenerator: React.FC<DownloadableBarcodeGeneratorProps> = ({
   tradeIn,
   showDownloadButtons = true,
-  defaultFormat = 'png',
   includeCustomerInfo = true
 }) => {
   const [isDownloading, setIsDownloading] = useState<string | null>(null);

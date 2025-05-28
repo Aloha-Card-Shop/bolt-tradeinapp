@@ -38,7 +38,7 @@ export const downloadService = {
         ctx.fillStyle = 'black';
         ctx.font = 'bold 16px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(tradeIn.customer_name, width / 2, 25);
+        ctx.fillText(tradeIn.customer_name || 'Unknown Customer', width / 2, 25);
         
         ctx.font = '12px Arial';
         ctx.fillText(new Date(tradeIn.trade_in_date).toLocaleDateString(), width / 2, 45);
@@ -85,7 +85,7 @@ export const downloadService = {
             resolve();
           } else if (options.format === 'pdf') {
             // Convert to PDF
-            const pdfBlob = canvasToPdf(canvas, `Trade-In: ${tradeIn.customer_name}`);
+            const pdfBlob = canvasToPdf(canvas);
             downloadBlob(pdfBlob, `trade-in-${tradeIn.id}.pdf`);
             resolve();
           }
@@ -199,7 +199,7 @@ export const downloadService = {
               }
             }, 'image/png', options.quality || 0.9);
           } else if (options.format === 'pdf') {
-            const pdfBlob = canvasToPdf(canvas, `Card: ${item.card_name}`);
+            const pdfBlob = canvasToPdf(canvas);
             const filename = `card-${item.card_name.replace(/[^a-z0-9]/gi, '-')}.pdf`;
             downloadBlob(pdfBlob, filename);
             resolve();
@@ -234,7 +234,7 @@ export const downloadService = {
         downloadBlob(pdf, `batch-barcodes-${new Date().toISOString().split('T')[0]}.pdf`);
       } else {
         // Create a ZIP file with individual images
-        const zip = await createBatchZip(tradeIns, options);
+        const zip = await createBatchZip(tradeIns);
         downloadBlob(zip, `batch-barcodes-${new Date().toISOString().split('T')[0]}.zip`);
       }
       
@@ -270,7 +270,7 @@ function truncateText(ctx: CanvasRenderingContext2D, text: string, maxWidth: num
   return truncated + '...';
 }
 
-function canvasToPdf(canvas: HTMLCanvasElement, title: string): Blob {
+function canvasToPdf(canvas: HTMLCanvasElement): Blob {
   // Simple PDF creation - in production you might want to use a proper PDF library
   const imgData = canvas.toDataURL('image/png');
   
@@ -413,7 +413,7 @@ startxref
   return new Blob([content], { type: 'application/pdf' });
 }
 
-async function createBatchZip(tradeIns: TradeIn[], options: DownloadOptions): Promise<Blob> {
+async function createBatchZip(tradeIns: TradeIn[]): Promise<Blob> {
   // Simple ZIP implementation - in production use a proper ZIP library
   const files: Array<{ name: string; data: Blob }> = [];
   
@@ -430,7 +430,7 @@ async function createBatchZip(tradeIns: TradeIn[], options: DownloadOptions): Pr
       ctx.fillStyle = 'black';
       ctx.font = '14px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(tradeIn.customer_name, 192, 50);
+      ctx.fillText(tradeIn.customer_name || 'Unknown Customer', 192, 50);
       ctx.fillText(`$${formatCurrency(tradeIn.total_value)}`, 192, 100);
       ctx.fillText(tradeIn.id, 192, 150);
       

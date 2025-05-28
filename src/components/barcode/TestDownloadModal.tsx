@@ -1,9 +1,8 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { X, Download, FileImage, FileText, Image } from 'lucide-react';
 import DownloadableBarcodeGenerator from './DownloadableBarcodeGenerator';
 import DownloadableCardBarcodeGenerator from './DownloadableCardBarcodeGenerator';
-import PrintDebugPanel from './PrintDebugPanel';
 import { TradeIn } from '../../types/tradeIn';
 import { downloadService } from '../../services/downloadService';
 
