@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 
 interface CacheEntry {
@@ -35,18 +36,19 @@ export const buildTcgPlayerUrl = (
   // Build base URL following the correct format
   let url = `https://www.tcgplayer.com/product/${productId}?Language=${language}&page=1`;
   
-  // Add printing parameter for special editions
-  if (isFirstEdition && isHolo) {
+  // Add printing parameter for special editions - ONLY if explicitly true
+  if (isFirstEdition === true && isHolo === true) {
     url += '&Printing=1st+Edition+Holofoil';
-  } else if (isFirstEdition && isReverseHolo) {
+  } else if (isFirstEdition === true && isReverseHolo === true) {
     url += '&Printing=1st+Edition+Reverse+Holofoil';
-  } else if (isFirstEdition) {
+  } else if (isFirstEdition === true) {
     url += '&Printing=1st+Edition';
-  } else if (isHolo) {
+  } else if (isHolo === true) {
     url += '&Printing=Holofoil';
-  } else if (isReverseHolo) {
+  } else if (isReverseHolo === true) {
     url += '&Printing=Reverse+Holofoil';
   }
+  // If none of the above conditions are met, don't add any printing parameter
   
   // Add condition if specified
   if (condition) {
@@ -60,7 +62,10 @@ export const buildTcgPlayerUrl = (
   
   // Add debugging to help diagnose URL construction
   console.log('Price fetch URL:', url, {
-    productId, condition, language, isFirstEdition, isHolo, isReverseHolo
+    productId, condition, language, 
+    isFirstEdition: isFirstEdition === true, 
+    isHolo: isHolo === true, 
+    isReverseHolo: isReverseHolo === true
   });
   
   return url;
@@ -80,13 +85,19 @@ export const fetchCardPrices = async (
     }
 
     const language = game === 'japanese-pokemon' ? 'Japanese' : 'English';
+    
+    // Ensure boolean values are explicitly handled - default to false if undefined
+    const firstEdition = isFirstEdition === true;
+    const holo = isHolo === true;
+    const reverseHolo = isReverseHolo === true;
+    
     const url = buildTcgPlayerUrl(
       productId, 
       condition, 
       language, 
-      isFirstEdition, 
-      isHolo,
-      isReverseHolo
+      firstEdition, 
+      holo,
+      reverseHolo
     );
 
     // Check cache first

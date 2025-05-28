@@ -41,14 +41,19 @@ const TradeInItemsList: React.FC<TradeInItemsListProps> = ({
     });
     
     try {
-      console.log(`TradeInList: Fetching price for item ${i} with condition ${cond}`);
+      console.log(`TradeInList: Fetching price for item ${i} with condition ${cond} and attributes:`, {
+        isFirstEdition: item.isFirstEdition,
+        isHolo: item.isHolo,
+        isReverseHolo: item.isReverseHolo
+      });
+      
       const data = await fetchCardPrices(
         item.card.productId!,
         cond,
-        item.isFirstEdition,
-        item.isHolo,
+        item.isFirstEdition, // Ensure we use the actual current state
+        item.isHolo,         // Ensure we use the actual current state
         item.card.game,
-        item.isReverseHolo
+        item.isReverseHolo   // Ensure we use the actual current state
       );
       
       // Update with new values and explicitly force recalculation

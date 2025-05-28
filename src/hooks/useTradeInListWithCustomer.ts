@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import { CardDetails } from '../types/card';
 import { fetchCardPrices } from '../utils/scraper';
@@ -263,13 +264,22 @@ export const useTradeInListWithCustomer = () => {
     updateItemAttribute(index, 'isPriceUnavailable', false);
     
     try {
+      console.log('Fetching price with attributes:', {
+        productId: item.card.productId,
+        condition: item.condition,
+        isFirstEdition: item.isFirstEdition,
+        isHolo: item.isHolo,
+        isReverseHolo: item.isReverseHolo,
+        game: item.card.game
+      });
+      
       const data = await fetchCardPrices(
         item.card.productId,
         item.condition,
-        item.isFirstEdition,
-        item.isHolo,
+        item.isFirstEdition, // Explicitly pass the current state
+        item.isHolo,         // Explicitly pass the current state
         item.card.game,
-        item.isReverseHolo
+        item.isReverseHolo   // Explicitly pass the current state
       );
       
       if (data.unavailable) {
