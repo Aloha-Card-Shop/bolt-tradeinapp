@@ -109,7 +109,7 @@ export const useTradeInItemHandlers = ({
   const updateQuantity = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const quantity = parseInt(e.target.value);
     if (!isNaN(quantity) && quantity > 0) {
-      updateQuantityFromAttributes(quantity);
+      updateQuantityFromAttributes(quantity); // Pass the number directly, not the event
     }
   }, [updateQuantityFromAttributes]);
 

@@ -1,4 +1,3 @@
-
 export interface Customer {
   first_name: string;
   last_name: string;
@@ -8,6 +7,7 @@ export interface TradeInItem {
   id?: string;
   card_id?: string;
   card_name: string;
+  set_name?: string;
   quantity: number;
   price: number;
   condition: string;
@@ -19,6 +19,9 @@ export interface TradeInItem {
     tradeValue?: number;
     cardNumber?: string;
     setName?: string;
+    adjustmentNotes?: string;
+    adjustedBy?: string;
+    adjustedAt?: string;
   };
   tcgplayer_url?: string;
   image_url?: string;
@@ -27,6 +30,8 @@ export interface TradeInItem {
   shopify_inventory_item_id?: string;
   shopify_sync_status?: string;
   shopify_synced_at?: string;
+  rarity?: string;
+  trade_in_id?: string;
 }
 
 export interface TradeIn {

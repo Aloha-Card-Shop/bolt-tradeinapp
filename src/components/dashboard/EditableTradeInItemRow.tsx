@@ -26,8 +26,8 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
   const [conditionValue, setConditionValue] = useState(item.condition);
   const [quantityValue, setQuantityValue] = useState(item.quantity.toString());
   const [priceValue, setPriceValue] = useState(item.price.toString());
-  const [paymentTypeValue, setPaymentTypeValue] = useState(
-    item.attributes?.paymentType || 'cash'
+  const [paymentTypeValue, setPaymentTypeValue] = useState<'cash' | 'trade'>(
+    (item.attributes?.paymentType as 'cash' | 'trade') || 'cash'
   );
 
   const { user } = useSession();
@@ -220,7 +220,7 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
           {isEditingPaymentType ? (
             <select
               value={paymentTypeValue}
-              onChange={(e) => setPaymentTypeValue(e.target.value)}
+              onChange={(e) => setPaymentTypeValue(e.target.value as 'cash' | 'trade')}
               onBlur={() => handleSave('paymentType', paymentTypeValue)}
               onKeyDown={(e) => e.key === 'Enter' && handleSave('paymentType', paymentTypeValue)}
               className="w-full p-1 border rounded text-sm"
@@ -259,7 +259,7 @@ const EditableTradeInItemRow: React.FC<EditableTradeInItemRowProps> = ({
         onClose={() => setIsValueAdjustmentOpen(false)}
         item={{
           ...item,
-          card: { name: item.card_name, id: item.card_id, game: '', productId: '' },
+          card: { name: item.card_name, id: item.card_id || '', game: 'pokemon' as any, productId: '' },
           cashValue: currentCashValue,
           tradeValue: currentTradeValue
         }}
