@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
-import { VariantAvailability } from '../services/variantAvailabilityService';
+import { VariantAvailability } from '../../services/variantAvailabilityService';
 
 interface CardAttributesProps {
   isFirstEdition: boolean;
@@ -26,7 +26,7 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
   availability,
   isLoadingAvailability = false
 }) => {
-  const getToggleClassName = (isActive: boolean, isAvailable: boolean, isDisabled: boolean) => {
+  const getToggleClassName = (isAvailable: boolean, isDisabled: boolean) => {
     if (isDisabled) {
       return 'opacity-50 cursor-not-allowed';
     }
@@ -60,7 +60,7 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
         <div 
           onClick={isLoading || !isFirstEditionAvailable ? undefined : onToggleFirstEdition}
           className={`flex items-center justify-between p-2 ${
-            getToggleClassName(isFirstEdition, isFirstEditionAvailable, isLoading)
+            getToggleClassName(isFirstEditionAvailable, isLoading)
           } bg-gray-50 rounded-lg transition-colors duration-200`}
           title={getToggleTitle('1st Edition', isFirstEditionAvailable)}
         >
@@ -80,7 +80,7 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
         <div 
           onClick={isLoading || isReverseHolo || !isHoloAvailable ? undefined : onToggleHolo}
           className={`flex items-center justify-between p-2 ${
-            getToggleClassName(isHolo, isHoloAvailable, isReverseHolo || isLoading)
+            getToggleClassName(isHoloAvailable, isReverseHolo || isLoading)
           } bg-gray-50 rounded-lg transition-colors duration-200`}
           title={getToggleTitle('Holo', isHoloAvailable)}
         >
@@ -100,7 +100,7 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
         <div 
           onClick={isLoading || isHolo || !isReverseHoloAvailable ? undefined : onToggleReverseHolo}
           className={`flex items-center justify-between p-2 ${
-            getToggleClassName(isReverseHolo, isReverseHoloAvailable, isHolo || isLoading)
+            getToggleClassName(isReverseHoloAvailable, isHolo || isLoading)
           } bg-gray-50 rounded-lg transition-colors duration-200`}
           title={getToggleTitle('Reverse Holo', isReverseHoloAvailable)}
         >
