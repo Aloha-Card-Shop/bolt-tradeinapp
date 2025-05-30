@@ -4,6 +4,7 @@ import ConditionSelect from '../shared/ConditionSelect';
 import QuantityInput from '../shared/QuantityInput';
 import CardAttributes from '../shared/CardAttributes';
 import PaymentTypeSelector from '../PaymentTypeSelector';
+import { VariantAvailability } from '../../../services/variantAvailabilityService';
 
 interface ItemControlsProps {
   condition: string;
@@ -19,6 +20,8 @@ interface ItemControlsProps {
   onToggleHolo: () => void;
   onToggleReverseHolo: () => void;
   onPaymentTypeChange: (type: 'cash' | 'trade') => void;
+  availability?: VariantAvailability;
+  isLoadingAvailability?: boolean;
 }
 
 const ItemControls: React.FC<ItemControlsProps> = ({
@@ -35,6 +38,8 @@ const ItemControls: React.FC<ItemControlsProps> = ({
   onToggleHolo,
   onToggleReverseHolo,
   onPaymentTypeChange,
+  availability,
+  isLoadingAvailability
 }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
@@ -58,6 +63,8 @@ const ItemControls: React.FC<ItemControlsProps> = ({
         onToggleHolo={onToggleHolo}
         onToggleReverseHolo={onToggleReverseHolo}
         isLoading={isLoadingPrice}
+        availability={availability}
+        isLoadingAvailability={isLoadingAvailability}
       />
       
       {paymentType && (

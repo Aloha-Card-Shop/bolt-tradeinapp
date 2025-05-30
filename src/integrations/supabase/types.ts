@@ -747,10 +747,14 @@ export type Database = {
         Row: {
           attributes: Json | null
           card_number: string | null
+          card_number_backup: string | null
           category_id: number
           clean_name: string | null
           created_at: string | null
+          first_edition: string | null
+          first_edition_holofoil: string | null
           group_id: number
+          holofoil: string | null
           id: number
           image_count: number | null
           image_url: string | null
@@ -760,16 +764,23 @@ export type Database = {
           presale_note: string | null
           product_id: number
           released_on: string | null
+          reverse_holofoil: string | null
           tcgplayer_product_id: string | null
+          unlimited: string | null
+          unlimited_holofoil: string | null
           url: string | null
         }
         Insert: {
           attributes?: Json | null
           card_number?: string | null
+          card_number_backup?: string | null
           category_id: number
           clean_name?: string | null
           created_at?: string | null
+          first_edition?: string | null
+          first_edition_holofoil?: string | null
           group_id: number
+          holofoil?: string | null
           id?: number
           image_count?: number | null
           image_url?: string | null
@@ -779,16 +790,23 @@ export type Database = {
           presale_note?: string | null
           product_id: number
           released_on?: string | null
+          reverse_holofoil?: string | null
           tcgplayer_product_id?: string | null
+          unlimited?: string | null
+          unlimited_holofoil?: string | null
           url?: string | null
         }
         Update: {
           attributes?: Json | null
           card_number?: string | null
+          card_number_backup?: string | null
           category_id?: number
           clean_name?: string | null
           created_at?: string | null
+          first_edition?: string | null
+          first_edition_holofoil?: string | null
           group_id?: number
+          holofoil?: string | null
           id?: number
           image_count?: number | null
           image_url?: string | null
@@ -798,7 +816,10 @@ export type Database = {
           presale_note?: string | null
           product_id?: number
           released_on?: string | null
+          reverse_holofoil?: string | null
           tcgplayer_product_id?: string | null
+          unlimited?: string | null
+          unlimited_holofoil?: string | null
           url?: string | null
         }
         Relationships: [

@@ -6,6 +6,7 @@ import ItemValues from './ItemValues';
 import WarningMessages from './WarningMessages';
 import DebugPanel from './DebugPanel';
 import CertifiedCardControls from './CertifiedCardControls';
+import { VariantAvailability } from '../../../services/variantAvailabilityService';
 
 interface ItemContentProps {
   item: TradeInItem;
@@ -32,6 +33,8 @@ interface ItemContentProps {
     error?: string;
   };
   hideDetailedPricing?: boolean;
+  availability?: VariantAvailability;
+  isLoadingAvailability?: boolean;
 }
 
 const ItemContent: React.FC<ItemContentProps> = ({
@@ -50,7 +53,9 @@ const ItemContent: React.FC<ItemContentProps> = ({
   onValueAdjustment,
   isDebugMode,
   debugInfo,
-  hideDetailedPricing = false
+  hideDetailedPricing = false,
+  availability,
+  isLoadingAvailability
 }) => {
   // Check if the card is certified (PSA card)
   const isCertified = item.card.isCertified;
@@ -86,6 +91,8 @@ const ItemContent: React.FC<ItemContentProps> = ({
           onToggleHolo={toggleHolo}
           onToggleReverseHolo={toggleReverseHolo}
           onPaymentTypeChange={updatePaymentType}
+          availability={availability}
+          isLoadingAvailability={isLoadingAvailability}
         />
       )}
 
