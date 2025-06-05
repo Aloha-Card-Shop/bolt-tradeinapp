@@ -43,9 +43,19 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
     return `Toggle ${label}`;
   };
 
+  // Debug logging for availability
+  console.log('Trade-in CardAttributes: availability data received:', availability);
+  console.log('Trade-in CardAttributes: isLoadingAvailability:', isLoadingAvailability);
+
   const isFirstEditionAvailable = availability?.firstEdition || false;
   const isHoloAvailable = availability?.holo || false;
   const isReverseHoloAvailable = availability?.reverseHolo || false;
+
+  console.log('Trade-in CardAttributes: computed availability values:', {
+    isFirstEditionAvailable,
+    isHoloAvailable,
+    isReverseHoloAvailable
+  });
 
   return (
     <div>
