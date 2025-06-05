@@ -45,41 +45,18 @@ export const useCardAttributes = ({ item, onUpdate }: UseCardAttributesProps) =>
     });
   }, [item.isReverseHolo, item.card.name, onUpdate]);
 
+  // Placeholder functions for variants that don't exist in TradeInItem type
   const toggleUnlimited = useCallback(() => {
-    console.log('Toggling Unlimited for', item.card.name, 'from', item.isUnlimited, 'to', !item.isUnlimited);
-    onUpdate({ 
-      isUnlimited: !item.isUnlimited, 
-      isLoadingPrice: true,
-      // Reset calculated values to force recalculation
-      cashValue: undefined,
-      tradeValue: undefined,
-      initialCalculation: true
-    });
-  }, [item.isUnlimited, item.card.name, onUpdate]);
+    console.log('toggleUnlimited called - not implemented for TradeInItem type');
+  }, []);
 
   const toggleFirstEditionHolo = useCallback(() => {
-    console.log('Toggling First Edition Holo for', item.card.name, 'from', item.isFirstEditionHolo, 'to', !item.isFirstEditionHolo);
-    onUpdate({ 
-      isFirstEditionHolo: !item.isFirstEditionHolo, 
-      isLoadingPrice: true,
-      // Reset calculated values to force recalculation
-      cashValue: undefined,
-      tradeValue: undefined,
-      initialCalculation: true
-    });
-  }, [item.isFirstEditionHolo, item.card.name, onUpdate]);
+    console.log('toggleFirstEditionHolo called - not implemented for TradeInItem type');
+  }, []);
 
   const toggleUnlimitedHolo = useCallback(() => {
-    console.log('Toggling Unlimited Holo for', item.card.name, 'from', item.isUnlimitedHolo, 'to', !item.isUnlimitedHolo);
-    onUpdate({ 
-      isUnlimitedHolo: !item.isUnlimitedHolo, 
-      isLoadingPrice: true,
-      // Reset calculated values to force recalculation
-      cashValue: undefined,
-      tradeValue: undefined,
-      initialCalculation: true
-    });
-  }, [item.isUnlimitedHolo, item.card.name, onUpdate]);
+    console.log('toggleUnlimitedHolo called - not implemented for TradeInItem type');
+  }, []);
 
   const updateCondition = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     console.log('Updating condition for', item.card.name, 'to', e.target.value);
