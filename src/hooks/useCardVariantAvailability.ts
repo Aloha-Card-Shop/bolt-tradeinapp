@@ -20,7 +20,7 @@ export const useCardVariantAvailability = (card: CardDetails) => {
         name: card.name,
         productId: card.productId,
         set: card.set,
-        cardNumber: card.cardNumber
+        number: card.number
       });
       
       setIsLoading(true);
