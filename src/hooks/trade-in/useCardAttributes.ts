@@ -45,6 +45,42 @@ export const useCardAttributes = ({ item, onUpdate }: UseCardAttributesProps) =>
     });
   }, [item.isReverseHolo, item.card.name, onUpdate]);
 
+  const toggleUnlimited = useCallback(() => {
+    console.log('Toggling Unlimited for', item.card.name, 'from', item.isUnlimited, 'to', !item.isUnlimited);
+    onUpdate({ 
+      isUnlimited: !item.isUnlimited, 
+      isLoadingPrice: true,
+      // Reset calculated values to force recalculation
+      cashValue: undefined,
+      tradeValue: undefined,
+      initialCalculation: true
+    });
+  }, [item.isUnlimited, item.card.name, onUpdate]);
+
+  const toggleFirstEditionHolo = useCallback(() => {
+    console.log('Toggling First Edition Holo for', item.card.name, 'from', item.isFirstEditionHolo, 'to', !item.isFirstEditionHolo);
+    onUpdate({ 
+      isFirstEditionHolo: !item.isFirstEditionHolo, 
+      isLoadingPrice: true,
+      // Reset calculated values to force recalculation
+      cashValue: undefined,
+      tradeValue: undefined,
+      initialCalculation: true
+    });
+  }, [item.isFirstEditionHolo, item.card.name, onUpdate]);
+
+  const toggleUnlimitedHolo = useCallback(() => {
+    console.log('Toggling Unlimited Holo for', item.card.name, 'from', item.isUnlimitedHolo, 'to', !item.isUnlimitedHolo);
+    onUpdate({ 
+      isUnlimitedHolo: !item.isUnlimitedHolo, 
+      isLoadingPrice: true,
+      // Reset calculated values to force recalculation
+      cashValue: undefined,
+      tradeValue: undefined,
+      initialCalculation: true
+    });
+  }, [item.isUnlimitedHolo, item.card.name, onUpdate]);
+
   const updateCondition = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     console.log('Updating condition for', item.card.name, 'to', e.target.value);
     onUpdate({ 
@@ -88,6 +124,9 @@ export const useCardAttributes = ({ item, onUpdate }: UseCardAttributesProps) =>
     toggleFirstEdition,
     toggleHolo,
     toggleReverseHolo,
+    toggleUnlimited,
+    toggleFirstEditionHolo,
+    toggleUnlimitedHolo,
     updateCondition,
     updateQuantity,
     updatePaymentType

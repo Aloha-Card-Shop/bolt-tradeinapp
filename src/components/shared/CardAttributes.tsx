@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
 import { VariantAvailability } from '../../services/variantAvailabilityService';
@@ -53,6 +54,9 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
     if (isFirstEdition) onToggleFirstEdition();
     if (isHolo) onToggleHolo();
     if (isReverseHolo) onToggleReverseHolo();
+    if (isUnlimited) onToggleUnlimited();
+    if (isFirstEditionHolo) onToggleFirstEditionHolo();
+    if (isUnlimitedHolo) onToggleUnlimitedHolo();
   };
 
   // Check if current state is "normal" (no special attributes)
@@ -138,8 +142,24 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
     const targetVariant = availableVariants.find(v => v.key === targetKey);
     if (targetVariant?.isActive) return;
     
-    // Call the toggle function immediately - this will trigger price updates
-    onToggle();
+    // For non-normal variants, we need to turn off all other variants first
+    if (targetKey !== 'normal') {
+      // Turn off all current variants
+      if (isFirstEdition && targetKey !== 'firstEdition') onToggleFirstEdition();
+      if (isHolo && targetKey !== 'holo') onToggleHolo();
+      if (isReverseHolo && targetKey !== 'reverseHolo') onToggleReverseHolo();
+      if (isUnlimited && targetKey !== 'unlimited') onToggleUnlimited();
+      if (isFirstEditionHolo && targetKey !== 'firstEditionHolo') onToggleFirstEditionHolo();
+      if (isUnlimitedHolo && targetKey !== 'unlimitedHolo') onToggleUnlimitedHolo();
+      
+      // Small delay to ensure state updates, then toggle the target
+      setTimeout(() => {
+        onToggle();
+      }, 50);
+    } else {
+      // For normal, just call the toggle function which handles turning everything off
+      onToggle();
+    }
   };
 
   if (isLoadingAvailability) {
@@ -154,19 +174,6 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
             <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
             <span className="ml-2 text-sm text-gray-500">Loading variants...</span>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (availableVariants.length === 0) {
-    return (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Card Type
-        </label>
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <span className="text-sm text-gray-500">No variants available</span>
         </div>
       </div>
     );
