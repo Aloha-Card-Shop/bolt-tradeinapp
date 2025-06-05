@@ -920,6 +920,7 @@ export type Database = {
           is_presale: boolean | null
           modified_on: string | null
           name: string
+          normal: string | null
           presale_note: string | null
           product_id: number
           released_on: string | null
@@ -946,6 +947,7 @@ export type Database = {
           is_presale?: boolean | null
           modified_on?: string | null
           name: string
+          normal?: string | null
           presale_note?: string | null
           product_id: number
           released_on?: string | null
@@ -972,6 +974,7 @@ export type Database = {
           is_presale?: boolean | null
           modified_on?: string | null
           name?: string
+          normal?: string | null
           presale_note?: string | null
           product_id?: number
           released_on?: string | null
