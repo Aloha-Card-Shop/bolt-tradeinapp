@@ -13,6 +13,13 @@ interface CardAttributesProps {
   isLoading?: boolean;
   availability?: VariantAvailability;
   isLoadingAvailability?: boolean;
+  // Add new props for additional variants
+  isUnlimited?: boolean;
+  isFirstEditionHolo?: boolean;
+  isUnlimitedHolo?: boolean;
+  onToggleUnlimited?: () => void;
+  onToggleFirstEditionHolo?: () => void;
+  onToggleUnlimitedHolo?: () => void;
 }
 
 const CardAttributes: React.FC<CardAttributesProps> = ({
@@ -24,7 +31,13 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
   onToggleReverseHolo,
   isLoading = false,
   availability,
-  isLoadingAvailability = false
+  isLoadingAvailability = false,
+  isUnlimited = false,
+  isFirstEditionHolo = false,
+  isUnlimitedHolo = false,
+  onToggleUnlimited = () => {},
+  onToggleFirstEditionHolo = () => {},
+  onToggleUnlimitedHolo = () => {}
 }) => {
   const getToggleClassName = (isAvailable: boolean, isDisabled: boolean) => {
     if (isDisabled) {
@@ -50,11 +63,17 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
   const isFirstEditionAvailable = availability?.firstEdition || false;
   const isHoloAvailable = availability?.holo || false;
   const isReverseHoloAvailable = availability?.reverseHolo || false;
+  const isUnlimitedAvailable = availability?.unlimited || false;
+  const isFirstEditionHoloAvailable = availability?.firstEditionHolo || false;
+  const isUnlimitedHoloAvailable = availability?.unlimitedHolo || false;
 
   console.log('Trade-in CardAttributes: computed availability values:', {
     isFirstEditionAvailable,
     isHoloAvailable,
-    isReverseHoloAvailable
+    isReverseHoloAvailable,
+    isUnlimitedAvailable,
+    isFirstEditionHoloAvailable,
+    isUnlimitedHoloAvailable
   });
 
   return (
@@ -83,6 +102,26 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
             <ToggleRight className="h-5 w-5 text-purple-600" />
           ) : (
             <ToggleLeft className={`h-5 w-5 ${isFirstEditionAvailable ? 'text-gray-400' : 'text-gray-300'}`} />
+          )}
+        </div>
+        
+        {/* Unlimited toggle */}
+        <div 
+          onClick={isLoading || !isUnlimitedAvailable ? undefined : onToggleUnlimited}
+          className={`flex items-center justify-between p-2 ${
+            getToggleClassName(isUnlimitedAvailable, isLoading)
+          } bg-gray-50 rounded-lg transition-colors duration-200`}
+          title={getToggleTitle('Unlimited', isUnlimitedAvailable)}
+        >
+          <span className={`text-sm font-medium ${!isUnlimitedAvailable ? 'text-gray-400' : ''}`}>
+            Unlimited
+          </span>
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+          ) : isUnlimited && isUnlimitedAvailable ? (
+            <ToggleRight className="h-5 w-5 text-blue-600" />
+          ) : (
+            <ToggleLeft className={`h-5 w-5 ${isUnlimitedAvailable ? 'text-gray-400' : 'text-gray-300'}`} />
           )}
         </div>
         
@@ -123,6 +162,46 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
             <ToggleRight className="h-5 w-5 text-yellow-600" />
           ) : (
             <ToggleLeft className={`h-5 w-5 ${isReverseHoloAvailable ? 'text-gray-400' : 'text-gray-300'}`} />
+          )}
+        </div>
+
+        {/* First Edition Holo toggle */}
+        <div 
+          onClick={isLoading || !isFirstEditionHoloAvailable ? undefined : onToggleFirstEditionHolo}
+          className={`flex items-center justify-between p-2 ${
+            getToggleClassName(isFirstEditionHoloAvailable, isLoading)
+          } bg-gray-50 rounded-lg transition-colors duration-200`}
+          title={getToggleTitle('1st Edition Holo', isFirstEditionHoloAvailable)}
+        >
+          <span className={`text-sm font-medium ${!isFirstEditionHoloAvailable ? 'text-gray-400' : ''}`}>
+            1st Edition Holo
+          </span>
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+          ) : isFirstEditionHolo && isFirstEditionHoloAvailable ? (
+            <ToggleRight className="h-5 w-5 text-pink-600" />
+          ) : (
+            <ToggleLeft className={`h-5 w-5 ${isFirstEditionHoloAvailable ? 'text-gray-400' : 'text-gray-300'}`} />
+          )}
+        </div>
+
+        {/* Unlimited Holo toggle */}
+        <div 
+          onClick={isLoading || !isUnlimitedHoloAvailable ? undefined : onToggleUnlimitedHolo}
+          className={`flex items-center justify-between p-2 ${
+            getToggleClassName(isUnlimitedHoloAvailable, isLoading)
+          } bg-gray-50 rounded-lg transition-colors duration-200`}
+          title={getToggleTitle('Unlimited Holo', isUnlimitedHoloAvailable)}
+        >
+          <span className={`text-sm font-medium ${!isUnlimitedHoloAvailable ? 'text-gray-400' : ''}`}>
+            Unlimited Holo
+          </span>
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+          ) : isUnlimitedHolo && isUnlimitedHoloAvailable ? (
+            <ToggleRight className="h-5 w-5 text-green-600" />
+          ) : (
+            <ToggleLeft className={`h-5 w-5 ${isUnlimitedHoloAvailable ? 'text-gray-400' : 'text-gray-300'}`} />
           )}
         </div>
       </div>
