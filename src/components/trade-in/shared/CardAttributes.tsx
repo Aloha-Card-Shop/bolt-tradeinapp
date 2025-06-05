@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
 import { VariantAvailability } from '../../../services/variantAvailabilityService';
@@ -47,8 +48,28 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
   onToggleFirstEditionHolo = () => {},
   onToggleUnlimitedHolo = () => {}
 }) => {
+  // Create a function to handle "Normal" variant selection
+  const handleNormalToggle = () => {
+    // Set all variants to false to make it "normal"
+    if (isFirstEdition) onToggleFirstEdition();
+    if (isHolo) onToggleHolo();
+    if (isReverseHolo) onToggleReverseHolo();
+  };
+
+  // Check if current state is "normal" (no special attributes)
+  const isNormal = !isFirstEdition && !isHolo && !isReverseHolo && !isUnlimited && !isFirstEditionHolo && !isUnlimitedHolo;
+
   // Only show variants that are available - with proper typing
   const availableVariants: VariantOption[] = [];
+  
+  // Always add "Normal" variant as the first option
+  availableVariants.push({
+    key: 'normal',
+    label: 'Normal',
+    isActive: isNormal,
+    onToggle: handleNormalToggle,
+    color: 'gray-600'
+  });
   
   if (availability?.firstEdition) {
     availableVariants.push({
@@ -134,19 +155,6 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
             <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
             <span className="ml-2 text-sm text-gray-500">Loading variants...</span>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (availableVariants.length === 0) {
-    return (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Card Type
-        </label>
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <span className="text-sm text-gray-500">No variants available</span>
         </div>
       </div>
     );

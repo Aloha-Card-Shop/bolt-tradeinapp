@@ -47,8 +47,28 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
   onToggleFirstEditionHolo = () => {},
   onToggleUnlimitedHolo = () => {}
 }) => {
+  // Create a function to handle "Normal" variant selection
+  const handleNormalToggle = () => {
+    // Set all variants to false to make it "normal"
+    if (isFirstEdition) onToggleFirstEdition();
+    if (isHolo) onToggleHolo();
+    if (isReverseHolo) onToggleReverseHolo();
+  };
+
+  // Check if current state is "normal" (no special attributes)
+  const isNormal = !isFirstEdition && !isHolo && !isReverseHolo && !isUnlimited && !isFirstEditionHolo && !isUnlimitedHolo;
+
   // Only show variants that are available - with proper typing
   const availableVariants: VariantOption[] = [];
+  
+  // Always add "Normal" variant as the first option
+  availableVariants.push({
+    key: 'normal',
+    label: 'Normal',
+    isActive: isNormal,
+    onToggle: handleNormalToggle,
+    color: 'gray-600'
+  });
   
   if (availability?.firstEdition) {
     availableVariants.push({
