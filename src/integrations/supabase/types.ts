@@ -204,6 +204,54 @@ export type Database = {
         }
         Relationships: []
       }
+      condensed_cards_by_condition_with_number: {
+        Row: {
+          card_number: string | null
+          created_at: string | null
+          damaged_price: number | null
+          heavily_played_price: number | null
+          id: string
+          image_url: string | null
+          lightly_played_price: number | null
+          moderately_played_price: number | null
+          name: string | null
+          near_mint_price: number | null
+          rarity: string | null
+          set_name: string | null
+          tcgplayer_url: string | null
+        }
+        Insert: {
+          card_number?: string | null
+          created_at?: string | null
+          damaged_price?: number | null
+          heavily_played_price?: number | null
+          id?: string
+          image_url?: string | null
+          lightly_played_price?: number | null
+          moderately_played_price?: number | null
+          name?: string | null
+          near_mint_price?: number | null
+          rarity?: string | null
+          set_name?: string | null
+          tcgplayer_url?: string | null
+        }
+        Update: {
+          card_number?: string | null
+          created_at?: string | null
+          damaged_price?: number | null
+          heavily_played_price?: number | null
+          id?: string
+          image_url?: string | null
+          lightly_played_price?: number | null
+          moderately_played_price?: number | null
+          name?: string | null
+          near_mint_price?: number | null
+          rarity?: string | null
+          set_name?: string | null
+          tcgplayer_url?: string | null
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           created_at: string | null
@@ -287,6 +335,84 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      master_cards: {
+        Row: {
+          attributes: Json | null
+          card_number: string | null
+          cards_table_match_id: string | null
+          created_at: string
+          damaged_price: number | null
+          data_sources: string[] | null
+          game: Database["public"]["Enums"]["game_type"] | null
+          heavily_played_price: number | null
+          high_price: number | null
+          id: string
+          image_url: string | null
+          lightly_played_price: number | null
+          low_price: number | null
+          market_price: number | null
+          match_confidence: number | null
+          mid_price: number | null
+          moderately_played_price: number | null
+          name: string | null
+          near_mint_price: number | null
+          rarity: string | null
+          set_name: string | null
+          tcgplayer_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          attributes?: Json | null
+          card_number?: string | null
+          cards_table_match_id?: string | null
+          created_at?: string
+          damaged_price?: number | null
+          data_sources?: string[] | null
+          game?: Database["public"]["Enums"]["game_type"] | null
+          heavily_played_price?: number | null
+          high_price?: number | null
+          id?: string
+          image_url?: string | null
+          lightly_played_price?: number | null
+          low_price?: number | null
+          market_price?: number | null
+          match_confidence?: number | null
+          mid_price?: number | null
+          moderately_played_price?: number | null
+          name?: string | null
+          near_mint_price?: number | null
+          rarity?: string | null
+          set_name?: string | null
+          tcgplayer_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attributes?: Json | null
+          card_number?: string | null
+          cards_table_match_id?: string | null
+          created_at?: string
+          damaged_price?: number | null
+          data_sources?: string[] | null
+          game?: Database["public"]["Enums"]["game_type"] | null
+          heavily_played_price?: number | null
+          high_price?: number | null
+          id?: string
+          image_url?: string | null
+          lightly_played_price?: number | null
+          low_price?: number | null
+          market_price?: number | null
+          match_confidence?: number | null
+          mid_price?: number | null
+          moderately_played_price?: number | null
+          name?: string | null
+          near_mint_price?: number | null
+          rarity?: string | null
+          set_name?: string | null
+          tcgplayer_url?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -553,6 +679,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tcgcsv: {
+        Row: {
+          data_type: string
+          id: string
+          imported_at: string
+          imported_by: string | null
+          raw_data: Json
+          record_count: number
+          source_endpoint: string
+          source_name: string
+        }
+        Insert: {
+          data_type: string
+          id?: string
+          imported_at?: string
+          imported_by?: string | null
+          raw_data: Json
+          record_count?: number
+          source_endpoint: string
+          source_name: string
+        }
+        Update: {
+          data_type?: string
+          id?: string
+          imported_at?: string
+          imported_by?: string | null
+          raw_data?: Json
+          record_count?: number
+          source_endpoint?: string
+          source_name?: string
+        }
+        Relationships: []
       }
       trade_in_items: {
         Row: {

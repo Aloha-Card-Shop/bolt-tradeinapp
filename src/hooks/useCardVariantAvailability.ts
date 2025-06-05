@@ -16,6 +16,13 @@ export const useCardVariantAvailability = (card: CardDetails) => {
 
   useEffect(() => {
     const fetchAvailability = async () => {
+      console.log('useCardVariantAvailability: fetching for card:', {
+        name: card.name,
+        productId: card.productId,
+        set: card.set,
+        cardNumber: card.cardNumber
+      });
+      
       setIsLoading(true);
       try {
         const variantData = await getCardVariantAvailability(
@@ -23,6 +30,7 @@ export const useCardVariantAvailability = (card: CardDetails) => {
           card.name,
           card.set
         );
+        console.log('useCardVariantAvailability: received data:', variantData);
         setAvailability(variantData);
       } catch (error) {
         console.error('Error fetching variant availability:', error);
