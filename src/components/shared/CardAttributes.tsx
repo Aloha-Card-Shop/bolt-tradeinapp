@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
 import { VariantAvailability } from '../../services/variantAvailabilityService';
@@ -21,6 +22,15 @@ interface CardAttributesProps {
   onToggleUnlimitedHolo?: () => void;
 }
 
+// Define the variant type
+interface VariantOption {
+  key: string;
+  label: string;
+  isActive: boolean;
+  onToggle: () => void;
+  color: string;
+}
+
 const CardAttributes: React.FC<CardAttributesProps> = ({
   isFirstEdition,
   isHolo,
@@ -38,8 +48,8 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
   onToggleFirstEditionHolo = () => {},
   onToggleUnlimitedHolo = () => {}
 }) => {
-  // Only show variants that are available
-  const availableVariants = [];
+  // Only show variants that are available - with proper typing
+  const availableVariants: VariantOption[] = [];
   
   if (availability?.firstEdition) {
     availableVariants.push({
