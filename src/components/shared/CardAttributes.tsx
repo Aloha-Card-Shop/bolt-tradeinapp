@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
 import { VariantAvailability } from '../../services/variantAvailabilityService';
@@ -39,171 +38,149 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
   onToggleFirstEditionHolo = () => {},
   onToggleUnlimitedHolo = () => {}
 }) => {
-  const getToggleClassName = (isAvailable: boolean, isDisabled: boolean) => {
-    if (isDisabled) {
-      return 'opacity-50 cursor-not-allowed';
-    }
-    if (!isAvailable) {
-      return 'opacity-30 cursor-not-allowed bg-gray-100';
-    }
-    return 'hover:bg-gray-100 cursor-pointer';
+  // Only show variants that are available
+  const availableVariants = [];
+  
+  if (availability?.firstEdition) {
+    availableVariants.push({
+      key: 'firstEdition',
+      label: '1st Edition',
+      isActive: isFirstEdition,
+      onToggle: onToggleFirstEdition,
+      color: 'purple-600'
+    });
+  }
+  
+  if (availability?.unlimited) {
+    availableVariants.push({
+      key: 'unlimited',
+      label: 'Unlimited',
+      isActive: isUnlimited,
+      onToggle: onToggleUnlimited,
+      color: 'blue-600'
+    });
+  }
+  
+  if (availability?.holo) {
+    availableVariants.push({
+      key: 'holo',
+      label: 'Holo',
+      isActive: isHolo,
+      onToggle: onToggleHolo,
+      color: 'purple-600'
+    });
+  }
+  
+  if (availability?.reverseHolo) {
+    availableVariants.push({
+      key: 'reverseHolo',
+      label: 'Reverse Holo',
+      isActive: isReverseHolo,
+      onToggle: onToggleReverseHolo,
+      color: 'yellow-600'
+    });
+  }
+  
+  if (availability?.firstEditionHolo) {
+    availableVariants.push({
+      key: 'firstEditionHolo',
+      label: '1st Edition Holo',
+      isActive: isFirstEditionHolo,
+      onToggle: onToggleFirstEditionHolo,
+      color: 'pink-600'
+    });
+  }
+  
+  if (availability?.unlimitedHolo) {
+    availableVariants.push({
+      key: 'unlimitedHolo',
+      label: 'Unlimited Holo',
+      isActive: isUnlimitedHolo,
+      onToggle: onToggleUnlimitedHolo,
+      color: 'green-600'
+    });
+  }
+
+  // Handle variant selection - only one can be active at a time
+  const handleVariantToggle = (targetKey: string, onToggle: () => void) => {
+    if (isLoading) return;
+    
+    // If this variant is already active, don't do anything (keep it selected)
+    const targetVariant = availableVariants.find(v => v.key === targetKey);
+    if (targetVariant?.isActive) return;
+    
+    // Turn off all other variants first, then turn on the selected one
+    availableVariants.forEach(variant => {
+      if (variant.key !== targetKey && variant.isActive) {
+        variant.onToggle();
+      }
+    });
+    
+    // Then toggle the selected variant on
+    setTimeout(onToggle, 50); // Small delay to ensure other toggles are processed first
   };
 
-  const getToggleTitle = (label: string, isAvailable: boolean) => {
-    if (!isAvailable) {
-      return `${label} variant not available for this card`;
-    }
-    return `Toggle ${label}`;
-  };
+  if (isLoadingAvailability) {
+    return (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Card Type
+          <Loader2 className="inline h-3 w-3 animate-spin ml-1 text-blue-600" />
+        </label>
+        <div className="p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+            <span className="ml-2 text-sm text-gray-500">Loading variants...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  // Debug logging for availability
-  console.log('CardAttributes: availability data received:', availability);
-  console.log('CardAttributes: isLoadingAvailability:', isLoadingAvailability);
-
-  const isFirstEditionAvailable = availability?.firstEdition || false;
-  const isHoloAvailable = availability?.holo || false;
-  const isReverseHoloAvailable = availability?.reverseHolo || false;
-  const isUnlimitedAvailable = availability?.unlimited || false;
-  const isFirstEditionHoloAvailable = availability?.firstEditionHolo || false;
-  const isUnlimitedHoloAvailable = availability?.unlimitedHolo || false;
-
-  console.log('CardAttributes: computed availability values:', {
-    isFirstEditionAvailable,
-    isHoloAvailable,
-    isReverseHoloAvailable,
-    isUnlimitedAvailable,
-    isFirstEditionHoloAvailable,
-    isUnlimitedHoloAvailable
-  });
+  if (availableVariants.length === 0) {
+    return (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Card Type
+        </label>
+        <div className="p-4 bg-gray-50 rounded-lg">
+          <span className="text-sm text-gray-500">No variants available</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
         Card Type
-        {isLoadingAvailability && (
-          <Loader2 className="inline h-3 w-3 animate-spin ml-1 text-blue-600" />
-        )}
       </label>
       <div className="space-y-2">
-        {/* First Edition toggle */}
-        <div 
-          onClick={isLoading || !isFirstEditionAvailable ? undefined : onToggleFirstEdition}
-          className={`flex items-center justify-between p-2 ${
-            getToggleClassName(isFirstEditionAvailable, isLoading)
-          } bg-gray-50 rounded-lg transition-colors duration-200`}
-          title={getToggleTitle('1st Edition', isFirstEditionAvailable)}
-        >
-          <span className={`text-sm font-medium ${!isFirstEditionAvailable ? 'text-gray-400' : ''}`}>
-            1st Edition
-          </span>
-          {isLoading ? (
-            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
-          ) : isFirstEdition && isFirstEditionAvailable ? (
-            <ToggleRight className="h-5 w-5 text-purple-600" />
-          ) : (
-            <ToggleLeft className={`h-5 w-5 ${isFirstEditionAvailable ? 'text-gray-400' : 'text-gray-300'}`} />
-          )}
-        </div>
-        
-        {/* Unlimited toggle */}
-        <div 
-          onClick={isLoading || !isUnlimitedAvailable ? undefined : onToggleUnlimited}
-          className={`flex items-center justify-between p-2 ${
-            getToggleClassName(isUnlimitedAvailable, isLoading)
-          } bg-gray-50 rounded-lg transition-colors duration-200`}
-          title={getToggleTitle('Unlimited', isUnlimitedAvailable)}
-        >
-          <span className={`text-sm font-medium ${!isUnlimitedAvailable ? 'text-gray-400' : ''}`}>
-            Unlimited
-          </span>
-          {isLoading ? (
-            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
-          ) : isUnlimited && isUnlimitedAvailable ? (
-            <ToggleRight className="h-5 w-5 text-blue-600" />
-          ) : (
-            <ToggleLeft className={`h-5 w-5 ${isUnlimitedAvailable ? 'text-gray-400' : 'text-gray-300'}`} />
-          )}
-        </div>
-        
-        {/* Holo toggle */}
-        <div 
-          onClick={isLoading || !isHoloAvailable ? undefined : onToggleHolo}
-          className={`flex items-center justify-between p-2 ${
-            getToggleClassName(isHoloAvailable, isLoading)
-          } bg-gray-50 rounded-lg transition-colors duration-200`}
-          title={getToggleTitle('Holo', isHoloAvailable)}
-        >
-          <span className={`text-sm font-medium ${!isHoloAvailable ? 'text-gray-400' : ''}`}>
-            Holo
-          </span>
-          {isLoading ? (
-            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
-          ) : isHolo && isHoloAvailable ? (
-            <ToggleRight className="h-5 w-5 text-purple-600" />
-          ) : (
-            <ToggleLeft className={`h-5 w-5 ${isHoloAvailable ? 'text-gray-400' : 'text-gray-300'}`} />
-          )}
-        </div>
-        
-        {/* Reverse Holo toggle */}
-        <div 
-          onClick={isLoading || !isReverseHoloAvailable ? undefined : onToggleReverseHolo}
-          className={`flex items-center justify-between p-2 ${
-            getToggleClassName(isReverseHoloAvailable, isLoading)
-          } bg-gray-50 rounded-lg transition-colors duration-200`}
-          title={getToggleTitle('Reverse Holo', isReverseHoloAvailable)}
-        >
-          <span className={`text-sm font-medium ${!isReverseHoloAvailable ? 'text-gray-400' : ''}`}>
-            Reverse Holo
-          </span>
-          {isLoading ? (
-            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
-          ) : isReverseHolo && isReverseHoloAvailable ? (
-            <ToggleRight className="h-5 w-5 text-yellow-600" />
-          ) : (
-            <ToggleLeft className={`h-5 w-5 ${isReverseHoloAvailable ? 'text-gray-400' : 'text-gray-300'}`} />
-          )}
-        </div>
-
-        {/* First Edition Holo toggle */}
-        <div 
-          onClick={isLoading || !isFirstEditionHoloAvailable ? undefined : onToggleFirstEditionHolo}
-          className={`flex items-center justify-between p-2 ${
-            getToggleClassName(isFirstEditionHoloAvailable, isLoading)
-          } bg-gray-50 rounded-lg transition-colors duration-200`}
-          title={getToggleTitle('1st Edition Holo', isFirstEditionHoloAvailable)}
-        >
-          <span className={`text-sm font-medium ${!isFirstEditionHoloAvailable ? 'text-gray-400' : ''}`}>
-            1st Edition Holo
-          </span>
-          {isLoading ? (
-            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
-          ) : isFirstEditionHolo && isFirstEditionHoloAvailable ? (
-            <ToggleRight className="h-5 w-5 text-pink-600" />
-          ) : (
-            <ToggleLeft className={`h-5 w-5 ${isFirstEditionHoloAvailable ? 'text-gray-400' : 'text-gray-300'}`} />
-          )}
-        </div>
-
-        {/* Unlimited Holo toggle */}
-        <div 
-          onClick={isLoading || !isUnlimitedHoloAvailable ? undefined : onToggleUnlimitedHolo}
-          className={`flex items-center justify-between p-2 ${
-            getToggleClassName(isUnlimitedHoloAvailable, isLoading)
-          } bg-gray-50 rounded-lg transition-colors duration-200`}
-          title={getToggleTitle('Unlimited Holo', isUnlimitedHoloAvailable)}
-        >
-          <span className={`text-sm font-medium ${!isUnlimitedHoloAvailable ? 'text-gray-400' : ''}`}>
-            Unlimited Holo
-          </span>
-          {isLoading ? (
-            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
-          ) : isUnlimitedHolo && isUnlimitedHoloAvailable ? (
-            <ToggleRight className="h-5 w-5 text-green-600" />
-          ) : (
-            <ToggleLeft className={`h-5 w-5 ${isUnlimitedHoloAvailable ? 'text-gray-400' : 'text-gray-300'}`} />
-          )}
-        </div>
+        {availableVariants.map((variant) => (
+          <div 
+            key={variant.key}
+            onClick={() => handleVariantToggle(variant.key, variant.onToggle)}
+            className={`flex items-center justify-between p-2 rounded-lg transition-all duration-200 cursor-pointer ${
+              variant.isActive 
+                ? 'bg-blue-50 border-2 border-blue-200' 
+                : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
+            } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={`Select ${variant.label}`}
+          >
+            <span className={`text-sm font-medium ${
+              variant.isActive ? 'text-blue-700' : 'text-gray-700'
+            }`}>
+              {variant.label}
+            </span>
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+            ) : variant.isActive ? (
+              <ToggleRight className={`h-5 w-5 text-${variant.color}`} />
+            ) : (
+              <ToggleLeft className="h-5 w-5 text-gray-400" />
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
