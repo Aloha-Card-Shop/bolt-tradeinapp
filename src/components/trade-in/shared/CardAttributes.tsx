@@ -88,9 +88,9 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
         
         {/* Holo toggle */}
         <div 
-          onClick={isLoading || isReverseHolo || !isHoloAvailable ? undefined : onToggleHolo}
+          onClick={isLoading || !isHoloAvailable ? undefined : onToggleHolo}
           className={`flex items-center justify-between p-2 ${
-            getToggleClassName(isHoloAvailable, isReverseHolo || isLoading)
+            getToggleClassName(isHoloAvailable, isLoading)
           } bg-gray-50 rounded-lg transition-colors duration-200`}
           title={getToggleTitle('Holo', isHoloAvailable)}
         >
@@ -99,18 +99,18 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
           </span>
           {isLoading ? (
             <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
-          ) : isHolo && !isReverseHolo && isHoloAvailable ? (
+          ) : isHolo && isHoloAvailable ? (
             <ToggleRight className="h-5 w-5 text-purple-600" />
           ) : (
-            <ToggleLeft className={`h-5 w-5 ${isHoloAvailable && !isReverseHolo ? 'text-gray-400' : 'text-gray-300'}`} />
+            <ToggleLeft className={`h-5 w-5 ${isHoloAvailable ? 'text-gray-400' : 'text-gray-300'}`} />
           )}
         </div>
         
         {/* Reverse Holo toggle */}
         <div 
-          onClick={isLoading || isHolo || !isReverseHoloAvailable ? undefined : onToggleReverseHolo}
+          onClick={isLoading || !isReverseHoloAvailable ? undefined : onToggleReverseHolo}
           className={`flex items-center justify-between p-2 ${
-            getToggleClassName(isReverseHoloAvailable, isHolo || isLoading)
+            getToggleClassName(isReverseHoloAvailable, isLoading)
           } bg-gray-50 rounded-lg transition-colors duration-200`}
           title={getToggleTitle('Reverse Holo', isReverseHoloAvailable)}
         >
@@ -122,7 +122,7 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
           ) : isReverseHolo && isReverseHoloAvailable ? (
             <ToggleRight className="h-5 w-5 text-yellow-600" />
           ) : (
-            <ToggleLeft className={`h-5 w-5 ${isReverseHoloAvailable && !isHolo ? 'text-gray-400' : 'text-gray-300'}`} />
+            <ToggleLeft className={`h-5 w-5 ${isReverseHoloAvailable ? 'text-gray-400' : 'text-gray-300'}`} />
           )}
         </div>
       </div>
