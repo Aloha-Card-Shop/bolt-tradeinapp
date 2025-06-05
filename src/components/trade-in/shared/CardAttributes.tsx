@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
 import { VariantAvailability } from '../../../services/variantAvailabilityService';
@@ -119,15 +118,8 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
     const targetVariant = availableVariants.find(v => v.key === targetKey);
     if (targetVariant?.isActive) return;
     
-    // Turn off all other variants first, then turn on the selected one
-    availableVariants.forEach(variant => {
-      if (variant.key !== targetKey && variant.isActive) {
-        variant.onToggle();
-      }
-    });
-    
-    // Then toggle the selected variant on
-    setTimeout(onToggle, 50); // Small delay to ensure other toggles are processed first
+    // Call the toggle function immediately - this will trigger price updates
+    onToggle();
   };
 
   if (isLoadingAvailability) {

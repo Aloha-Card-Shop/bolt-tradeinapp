@@ -10,27 +10,60 @@ interface UseCardAttributesProps {
 
 export const useCardAttributes = ({ item, onUpdate }: UseCardAttributesProps) => {
   const toggleFirstEdition = useCallback(() => {
-    onUpdate({ isFirstEdition: !item.isFirstEdition, isLoadingPrice: true });
-  }, [item.isFirstEdition, onUpdate]);
+    console.log('Toggling First Edition for', item.card.name, 'from', item.isFirstEdition, 'to', !item.isFirstEdition);
+    onUpdate({ 
+      isFirstEdition: !item.isFirstEdition, 
+      isLoadingPrice: true,
+      // Reset calculated values to force recalculation
+      cashValue: undefined,
+      tradeValue: undefined,
+      initialCalculation: true
+    });
+  }, [item.isFirstEdition, item.card.name, onUpdate]);
 
   const toggleHolo = useCallback(() => {
-    onUpdate({ isHolo: !item.isHolo, isLoadingPrice: true });
-  }, [item.isHolo, onUpdate]);
+    console.log('Toggling Holo for', item.card.name, 'from', item.isHolo, 'to', !item.isHolo);
+    onUpdate({ 
+      isHolo: !item.isHolo, 
+      isLoadingPrice: true,
+      // Reset calculated values to force recalculation
+      cashValue: undefined,
+      tradeValue: undefined,
+      initialCalculation: true
+    });
+  }, [item.isHolo, item.card.name, onUpdate]);
 
   const toggleReverseHolo = useCallback(() => {
-    onUpdate({ isReverseHolo: !item.isReverseHolo, isLoadingPrice: true });
-  }, [item.isReverseHolo, onUpdate]);
+    console.log('Toggling Reverse Holo for', item.card.name, 'from', item.isReverseHolo, 'to', !item.isReverseHolo);
+    onUpdate({ 
+      isReverseHolo: !item.isReverseHolo, 
+      isLoadingPrice: true,
+      // Reset calculated values to force recalculation
+      cashValue: undefined,
+      tradeValue: undefined,
+      initialCalculation: true
+    });
+  }, [item.isReverseHolo, item.card.name, onUpdate]);
 
   const updateCondition = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    onUpdate({ condition: e.target.value as any, isLoadingPrice: true });
-  }, [onUpdate]);
+    console.log('Updating condition for', item.card.name, 'to', e.target.value);
+    onUpdate({ 
+      condition: e.target.value as any, 
+      isLoadingPrice: true,
+      // Reset calculated values to force recalculation
+      cashValue: undefined,
+      tradeValue: undefined,
+      initialCalculation: true
+    });
+  }, [item.card.name, onUpdate]);
 
   const updateQuantity = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const qty = parseInt(e.target.value);
     if (!isNaN(qty) && qty > 0) {
+      console.log('Updating quantity for', item.card.name, 'to', qty);
       onUpdate({ quantity: qty });
     }
-  }, [onUpdate]);
+  }, [item.card.name, onUpdate]);
 
   const updatePaymentType = useCallback((type: 'cash' | 'trade' | null) => {
     console.log('useCardAttributes: updatePaymentType called with type:', type);
