@@ -5,6 +5,7 @@ import { CardDetails } from '../types/card';
 
 export const useCardVariantAvailability = (card: CardDetails) => {
   const [availability, setAvailability] = useState<VariantAvailability>({
+    normal: false,
     firstEdition: false,
     holo: false,
     reverseHolo: false,

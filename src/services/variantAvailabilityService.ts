@@ -2,6 +2,7 @@
 import { supabase } from '../lib/supabase';
 
 export interface VariantAvailability {
+  normal: boolean;
   firstEdition: boolean;
   holo: boolean;
   reverseHolo: boolean;
@@ -16,6 +17,7 @@ export const getCardVariantAvailability = async (
   setName?: string
 ): Promise<VariantAvailability> => {
   const defaultAvailability: VariantAvailability = {
+    normal: false,
     firstEdition: false,
     holo: false,
     reverseHolo: false,
@@ -29,7 +31,7 @@ export const getCardVariantAvailability = async (
 
     let query = supabase
       .from('unified_products')
-      .select('product_id, name, first_edition, holofoil, reverse_holofoil, unlimited, first_edition_holofoil, unlimited_holofoil');
+      .select('product_id, name, normal, first_edition, holofoil, reverse_holofoil, unlimited, first_edition_holofoil, unlimited_holofoil');
 
     // First try to match by product_id if available
     if (productId) {
@@ -85,6 +87,7 @@ export const getCardVariantAvailability = async (
     console.log('All matches found:', data);
 
     const result = {
+      normal: firstResult.normal?.toLowerCase() === 'yes',
       firstEdition: firstResult.first_edition?.toLowerCase() === 'yes',
       holo: firstResult.holofoil?.toLowerCase() === 'yes',
       reverseHolo: firstResult.reverse_holofoil?.toLowerCase() === 'yes',
