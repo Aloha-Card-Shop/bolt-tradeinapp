@@ -1,5 +1,5 @@
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { TradeInItem as TradeInItemType } from '../../../hooks/useTradeInList';
 import CardHeader from './CardHeader';
 import ItemContent from './ItemContent';
@@ -34,6 +34,10 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   
   // Use the variant availability hook
   const { availability, isLoading: isLoadingAvailability } = useCardVariantAvailability(item.card);
+  
+  // State for collapsible functionality (only for certified cards)
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const isCertified = item.card.isCertified;
   
   // Use our new custom hook to handle all item-related logic
   const {
@@ -75,34 +79,61 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     }
   }, [item.card.name, onValueAdjustment, instanceId]);
 
+  // Toggle collapse state for certified cards
+  const handleToggleCollapse = useCallback(() => {
+    setIsCollapsed(prev => !prev);
+  }, []);
+
   return (
     <div className="border border-gray-200 rounded-xl p-5 hover:border-blue-100 transition-colors duration-200 bg-white shadow-sm">
       <CardHeader 
         card={item.card} 
         index={index}
         onRemove={onRemove}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={isCertified ? handleToggleCollapse : undefined}
       />
       
-      <ItemContent 
-        item={item}
-        displayValue={displayValue}
-        isCalculating={isCalculating}
-        error={error}
-        handleConditionChange={handleConditionChange}
-        updateQuantity={updateQuantity}
-        toggleFirstEdition={toggleFirstEdition}
-        toggleHolo={toggleHolo}
-        toggleReverseHolo={toggleReverseHolo}
-        updatePaymentType={updatePaymentType}
-        handlePriceChange={handlePriceChangeWrapper}
-        refreshPrice={refreshPrice}
-        onValueAdjustment={handleValueAdjustment}
-        isDebugMode={isDebugMode}
-        debugInfo={debugInfo}
-        hideDetailedPricing={hideDetailedPricing}
-        availability={availability}
-        isLoadingAvailability={isLoadingAvailability}
-      />
+      {/* Only show ItemContent if not collapsed or if it's not a certified card */}
+      {(!isCertified || !isCollapsed) && (
+        <div className={`${isCertified ? 'animate-accordion-down' : ''}`}>
+          <ItemContent 
+            item={item}
+            displayValue={displayValue}
+            isCalculating={isCalculating}
+            error={error}
+            handleConditionChange={handleConditionChange}
+            updateQuantity={updateQuantity}
+            toggleFirstEdition={toggleFirstEdition}
+            toggleHolo={toggleHolo}
+            toggleReverseHolo={toggleReverseHolo}
+            updatePaymentType={updatePaymentType}
+            handlePriceChange={handlePriceChangeWrapper}
+            refreshPrice={refreshPrice}
+            onValueAdjustment={handleValueAdjustment}
+            isDebugMode={isDebugMode}
+            debugInfo={debugInfo}
+            hideDetailedPricing={hideDetailedPricing}
+            availability={availability}
+            isLoadingAvailability={isLoadingAvailability}
+          />
+        </div>
+      )}
+      
+      {/* Show collapsed state message for certified cards */}
+      {isCertified && isCollapsed && (
+        <div className="mt-3 p-3 bg-gray-50 rounded-lg animate-accordion-down">
+          <div className="flex items-center justify-between text-sm text-gray-600">
+            <div className="flex items-center space-x-4">
+              <span>Quantity: <span className="font-medium">{item.quantity}</span></span>
+              <span>Payment: <span className="font-medium capitalize">{item.paymentType || 'Not selected'}</span></span>
+              {displayValue && (
+                <span>Value: <span className="font-medium">${displayValue}</span></span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
