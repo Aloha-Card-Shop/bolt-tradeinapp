@@ -98,16 +98,7 @@ serve(async (req) => {
       );
     }
 
-    // Always skip PSA API and go directly to scraper for debugging
-    console.log("Skipping PSA API and going directly to scraper for better reliability...");
-    
-    try {
-      const scraperResult = await callPsaScraper(certNumber);
-      return scraperResult;
-    } catch (error) {
-      console.error("PSA scraper failed:", error);
-      return createFallbackCertResponse(certNumber);
-    }
+    // First try PSA API with the configured token
     
     // Try to get the PSA API token from Edge Function secrets first
     let apiKey = Deno.env.get("PSA_API_TOKEN");
