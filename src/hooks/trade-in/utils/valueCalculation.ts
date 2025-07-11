@@ -80,14 +80,13 @@ export function shouldRecalculate(params: {
     return true;
   }
 
-  // Don't recalculate if values have been manually set unless it's an initial calculation
-  if (cashValueManuallySet && paymentType === 'cash') {
-    console.log('shouldRecalculate: Cash value manually set, skipping recalculation');
-    return false;
-  }
-
-  if (tradeValueManuallySet && paymentType === 'trade') {
-    console.log('shouldRecalculate: Trade value manually set, skipping recalculation');
+  // Don't recalculate if ANY values have been manually set unless it's an initial calculation
+  if (cashValueManuallySet || tradeValueManuallySet) {
+    console.log('shouldRecalculate: Values manually set, skipping recalculation', {
+      cashValueManuallySet,
+      tradeValueManuallySet,
+      paymentType
+    });
     return false;
   }
 
