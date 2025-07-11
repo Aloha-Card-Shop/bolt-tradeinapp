@@ -65,20 +65,39 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
           <DollarSign className="h-4 w-4 text-gray-400" />
         </span>
         {isEditing ? (
-          <div className="flex">
+          <div className="flex gap-2">
             <input
               type="number"
               value={editValue}
               onChange={handleChange}
-              className="w-full pl-8 pr-3 py-2 border border-blue-300 rounded-l-lg text-gray-700 focus:ring-blue-500 focus:border-blue-500"
+              className="flex-1 pl-8 pr-3 py-2 border border-blue-300 rounded-lg text-gray-700 focus:ring-blue-500 focus:border-blue-500"
               step="0.01"
               min="0"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveClick();
+                if (e.key === 'Escape') {
+                  setIsEditing(false);
+                  setEditValue(value);
+                }
+              }}
             />
             <button
               onClick={handleSaveClick}
-              className="bg-blue-600 text-white rounded-r-lg px-3 flex items-center hover:bg-blue-700 transition-colors"
+              className="bg-green-600 text-white rounded-lg px-3 py-2 flex items-center hover:bg-green-700 transition-colors"
+              title="Save"
             >
               <Check className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                setEditValue(value);
+              }}
+              className="bg-gray-500 text-white rounded-lg px-3 py-2 flex items-center hover:bg-gray-600 transition-colors"
+              title="Cancel"
+            >
+              ×
             </button>
           </div>
         ) : (
