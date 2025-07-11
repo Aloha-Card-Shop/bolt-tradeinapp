@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   public: {
     Tables: {
       api_keys: {
@@ -279,6 +284,170 @@ export type Database = {
         }
         Relationships: []
       }
+      event_category_mappings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_category: string
+          id: string
+          shopify_tag: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_category: string
+          id?: string
+          shopify_tag: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_category?: string
+          id?: string
+          shopify_tag?: string
+        }
+        Relationships: []
+      }
+      event_registrations: {
+        Row: {
+          event_id: string
+          id: string
+          registered_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          registered_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          registered_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          current_attendees: number
+          date: string
+          description: string | null
+          id: string
+          location: string
+          max_attendees: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          current_attendees?: number
+          date: string
+          description?: string | null
+          id?: string
+          location: string
+          max_attendees?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          current_attendees?: number
+          date?: string
+          description?: string | null
+          id?: string
+          location?: string
+          max_attendees?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      featured_shopify_products: {
+        Row: {
+          compare_at_price: number | null
+          created_at: string
+          description: string | null
+          display_order: number | null
+          handle: string
+          id: string
+          image_alt_text: string | null
+          image_url: string | null
+          is_featured: boolean | null
+          price: number | null
+          product_type: string | null
+          shopify_created_at: string | null
+          shopify_product_id: string
+          shopify_updated_at: string | null
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          vendor: string | null
+        }
+        Insert: {
+          compare_at_price?: number | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          handle: string
+          id?: string
+          image_alt_text?: string | null
+          image_url?: string | null
+          is_featured?: boolean | null
+          price?: number | null
+          product_type?: string | null
+          shopify_created_at?: string | null
+          shopify_product_id: string
+          shopify_updated_at?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          vendor?: string | null
+        }
+        Update: {
+          compare_at_price?: number | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          handle?: string
+          id?: string
+          image_alt_text?: string | null
+          image_url?: string | null
+          is_featured?: boolean | null
+          price?: number | null
+          product_type?: string | null
+          shopify_created_at?: string | null
+          shopify_product_id?: string
+          shopify_updated_at?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          vendor?: string | null
+        }
+        Relationships: []
+      }
       groups: {
         Row: {
           abbreviation: string | null
@@ -413,6 +582,99 @@ export type Database = {
           set_name?: string | null
           tcgplayer_url?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      pokemon_set_group: {
+        Row: {
+          poketcg_reldate: string | null
+          poketcg_sid: string | null
+          poketcg_sname: string | null
+          tcgcsv_id: Json | null
+          tcgcsv_pubdate: string | null
+          tcgcsv_sabb: Json | null
+          tcgcsv_sname: string | null
+          tcgdex_sname: string | null
+        }
+        Insert: {
+          poketcg_reldate?: string | null
+          poketcg_sid?: string | null
+          poketcg_sname?: string | null
+          tcgcsv_id?: Json | null
+          tcgcsv_pubdate?: string | null
+          tcgcsv_sabb?: Json | null
+          tcgcsv_sname?: string | null
+          tcgdex_sname?: string | null
+        }
+        Update: {
+          poketcg_reldate?: string | null
+          poketcg_sid?: string | null
+          poketcg_sname?: string | null
+          tcgcsv_id?: Json | null
+          tcgcsv_pubdate?: string | null
+          tcgcsv_sabb?: Json | null
+          tcgcsv_sname?: string | null
+          tcgdex_sname?: string | null
+        }
+        Relationships: []
+      }
+      poketcg_products: {
+        Row: {
+          dg_id: string | null
+          pg_id: string | null
+          pp_artist: string | null
+          pp_fed: number | null
+          pp_fed_hf: number | null
+          pp_hf: number | null
+          pp_id: string | null
+          pp_image: string | null
+          pp_name: string | null
+          pp_norm: number | null
+          pp_pokedex: number | null
+          pp_r_rh: number | null
+          pp_rarity: string | null
+          pp_unlim: number | null
+          pp_unlim_hf: number | null
+          pp_url: string | null
+          tg_id: number | null
+        }
+        Insert: {
+          dg_id?: string | null
+          pg_id?: string | null
+          pp_artist?: string | null
+          pp_fed?: number | null
+          pp_fed_hf?: number | null
+          pp_hf?: number | null
+          pp_id?: string | null
+          pp_image?: string | null
+          pp_name?: string | null
+          pp_norm?: number | null
+          pp_pokedex?: number | null
+          pp_r_rh?: number | null
+          pp_rarity?: string | null
+          pp_unlim?: number | null
+          pp_unlim_hf?: number | null
+          pp_url?: string | null
+          tg_id?: number | null
+        }
+        Update: {
+          dg_id?: string | null
+          pg_id?: string | null
+          pp_artist?: string | null
+          pp_fed?: number | null
+          pp_fed_hf?: number | null
+          pp_hf?: number | null
+          pp_id?: string | null
+          pp_image?: string | null
+          pp_name?: string | null
+          pp_norm?: number | null
+          pp_pokedex?: number | null
+          pp_r_rh?: number | null
+          pp_rarity?: string | null
+          pp_unlim?: number | null
+          pp_unlim_hf?: number | null
+          pp_url?: string | null
+          tg_id?: number | null
         }
         Relationships: []
       }
@@ -560,6 +822,30 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_category_mappings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          shop_category: string
+          shopify_tag: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          shop_category: string
+          shopify_tag: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          shop_category?: string
+          shopify_tag?: string
+        }
+        Relationships: []
+      }
       shopify_field_mappings: {
         Row: {
           created_at: string | null
@@ -610,6 +896,7 @@ export type Database = {
           created_at: string | null
           id: string
           shop_domain: string
+          storefront_access_token: string | null
           updated_at: string | null
           updated_by: string | null
         }
@@ -620,6 +907,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           shop_domain: string
+          storefront_access_token?: string | null
           updated_at?: string | null
           updated_by?: string | null
         }
@@ -630,6 +918,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           shop_domain?: string
+          storefront_access_token?: string | null
           updated_at?: string | null
           updated_by?: string | null
         }
@@ -710,6 +999,90 @@ export type Database = {
           record_count?: number
           source_endpoint?: string
           source_name?: string
+        }
+        Relationships: []
+      }
+      tcgcsv_products: {
+        Row: {
+          category_id: string | null
+          dg_id: string | null
+          pg_id: string | null
+          tg_id: number | null
+          tp_card_no: string | null
+          tp_id: number | null
+          tp_name: string | null
+          tp_presale: string | null
+          tp_rarity: string | null
+          tp_url: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          dg_id?: string | null
+          pg_id?: string | null
+          tg_id?: number | null
+          tp_card_no?: string | null
+          tp_id?: number | null
+          tp_name?: string | null
+          tp_presale?: string | null
+          tp_rarity?: string | null
+          tp_url?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          dg_id?: string | null
+          pg_id?: string | null
+          tg_id?: number | null
+          tp_card_no?: string | null
+          tp_id?: number | null
+          tp_name?: string | null
+          tp_presale?: string | null
+          tp_rarity?: string | null
+          tp_url?: string | null
+        }
+        Relationships: []
+      }
+      tcgdex_products: {
+        Row: {
+          dg_id: string | null
+          dp_card_no: string | null
+          dp_fed: number | null
+          dp_fed_hf: number | null
+          dp_hf: number | null
+          dp_name: string | null
+          dp_norm: number | null
+          dp_r_hf: number | null
+          dp_unlim: number | null
+          dp_unlim_hf: number | null
+          pg_id: string | null
+          tg_id: number | null
+        }
+        Insert: {
+          dg_id?: string | null
+          dp_card_no?: string | null
+          dp_fed?: number | null
+          dp_fed_hf?: number | null
+          dp_hf?: number | null
+          dp_name?: string | null
+          dp_norm?: number | null
+          dp_r_hf?: number | null
+          dp_unlim?: number | null
+          dp_unlim_hf?: number | null
+          pg_id?: string | null
+          tg_id?: number | null
+        }
+        Update: {
+          dg_id?: string | null
+          dp_card_no?: string | null
+          dp_fed?: number | null
+          dp_fed_hf?: number | null
+          dp_hf?: number | null
+          dp_name?: string | null
+          dp_norm?: number | null
+          dp_r_hf?: number | null
+          dp_unlim?: number | null
+          dp_unlim_hf?: number | null
+          pg_id?: string | null
+          tg_id?: number | null
         }
         Relationships: []
       }
@@ -1003,7 +1376,19 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      pokemon_products: {
+        Row: {
+          card_no: string | null
+          category_id: string | null
+          group_id: Json | null
+          name: Json | null
+          presale_info: Json | null
+          product_id: Json | null
+          rarity: string | null
+          url: Json | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       extract_card_number: {
@@ -1043,21 +1428,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -1075,14 +1464,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -1098,14 +1489,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -1121,14 +1514,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -1136,14 +1531,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never

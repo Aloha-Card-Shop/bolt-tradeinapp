@@ -3,14 +3,18 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import { SessionProvider } from './hooks/useSession.tsx';
+import { Toaster } from 'react-hot-toast';
+import ErrorBoundary from './components/ErrorBoundary';
 
-console.log('Application starting...');
+if (import.meta.env.DEV) {
+  console.log('Application starting...');
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <SessionProvider>
+    <ErrorBoundary>
       <App />
-    </SessionProvider>
+      <Toaster position="top-right" />
+    </ErrorBoundary>
   </StrictMode>,
 );

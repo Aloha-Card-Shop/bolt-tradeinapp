@@ -12,14 +12,38 @@ const CACHE_CLEANUP_INTERVAL = 30 * 60 * 1000; // 30 minutes
 const priceCache = new Map<string, CacheEntry>();
 
 // Clean up old cache entries periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [url, entry] of priceCache.entries()) {
-    if (now - entry.timestamp > CACHE_TTL) {
-      priceCache.delete(url);
+let cacheCleanupInterval: NodeJS.Timeout | null = null;
+
+const startCacheCleanup = () => {
+  if (cacheCleanupInterval) return;
+  
+  cacheCleanupInterval = setInterval(() => {
+    const now = Date.now();
+    for (const [url, entry] of priceCache.entries()) {
+      if (now - entry.timestamp > CACHE_TTL) {
+        priceCache.delete(url);
+      }
     }
+  }, CACHE_CLEANUP_INTERVAL);
+};
+
+const stopCacheCleanup = () => {
+  if (cacheCleanupInterval) {
+    clearInterval(cacheCleanupInterval);
+    cacheCleanupInterval = null;
   }
-}, CACHE_CLEANUP_INTERVAL);
+};
+
+// Initialize cleanup when first needed
+export const initializeScraper = () => {
+  startCacheCleanup();
+};
+
+// Export cleanup function for proper shutdown
+export const cleanupScraper = () => {
+  stopCacheCleanup();
+  priceCache.clear();
+};
 
 export const buildTcgPlayerUrl = (
   productId: string, 
@@ -61,12 +85,14 @@ export const buildTcgPlayerUrl = (
   }
   
   // Add debugging to help diagnose URL construction
-  console.log('Price fetch URL:', url, {
-    productId, condition, language, 
-    isFirstEdition: isFirstEdition === true, 
-    isHolo: isHolo === true, 
-    isReverseHolo: isReverseHolo === true
-  });
+  if (import.meta.env.DEV) {
+    console.log('Price fetch URL:', url, {
+      productId, condition, language, 
+      isFirstEdition: isFirstEdition === true, 
+      isHolo: isHolo === true, 
+      isReverseHolo: isReverseHolo === true
+    });
+  }
   
   return url;
 };
@@ -83,6 +109,9 @@ export const fetchCardPrices = async (
     if (!productId) {
       throw new Error('Product ID is required');
     }
+
+    // Initialize cache cleanup on first use
+    initializeScraper();
 
     const language = game === 'japanese-pokemon' ? 'Japanese' : 'English';
     
@@ -106,7 +135,9 @@ export const fetchCardPrices = async (
       return { price: cachedEntry.price.toFixed(2) };
     }
 
-    console.log('Fetching price from:', url);
+    if (import.meta.env.DEV) {
+      console.log('Fetching price from:', url);
+    }
     
     const response = await fetch(SCRAPER_URL, {
       method: 'POST',
@@ -121,7 +152,9 @@ export const fetchCardPrices = async (
     }
 
     const data = await response.json();
-    console.log('Price data received:', data);
+    if (import.meta.env.DEV) {
+      console.log('Price data received:', data);
+    }
     
     if (data.error) {
       throw new Error(data.error);
@@ -129,7 +162,9 @@ export const fetchCardPrices = async (
     
     // Handle case where price is not available
     if (!data.price && data.price !== 0) {
-      console.log('Price not found for this item configuration');
+      if (import.meta.env.DEV) {
+        console.log('Price not found for this item configuration');
+      }
       return { price: "0.00", unavailable: true };
     }
 
@@ -140,7 +175,9 @@ export const fetchCardPrices = async (
          data.price === '$-' || 
          data.price === '$0.00' ||
          data.price.includes('unavailable'))) {
-      console.log('Price not available for this item');
+      if (import.meta.env.DEV) {
+        console.log('Price not available for this item');
+      }
       return { price: "0.00", unavailable: true };
     }
 

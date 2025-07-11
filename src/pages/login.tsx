@@ -17,7 +17,9 @@ const Login = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (!loading && user) {
-      console.log("User already logged in, redirecting to dashboard");
+      if (import.meta.env.DEV) {
+        console.log("User already logged in, redirecting to dashboard");
+      }
       navigate('/dashboard');
     }
   }, [user, loading, navigate]);
@@ -28,17 +30,23 @@ const Login = () => {
     setError(null);
 
     try {
-      console.log("Login process initiated");
+      if (import.meta.env.DEV) {
+        console.log("Login process initiated");
+      }
       
       // Clean up existing auth state to prevent conflicts
       cleanupAuthState();
       
       // Attempt global sign out first (in case there's any existing session)
       try {
-        console.log("Attempting global sign out before login");
+        if (import.meta.env.DEV) {
+          console.log("Attempting global sign out before login");
+        }
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
-        console.warn("Pre-login signout failed (this is usually fine):", err);
+        if (import.meta.env.DEV) {
+          console.warn("Pre-login signout failed (this is usually fine):", err);
+        }
         // Continue even if this fails
       }
 
@@ -48,14 +56,18 @@ const Login = () => {
       
       if (isEmail) {
         // Login with email and password
-        console.log("Attempting login with email");
+        if (import.meta.env.DEV) {
+          console.log("Attempting login with email");
+        }
         result = await supabase.auth.signInWithPassword({
           email: identifier,
           password
         });
       } else {
         // Login with username
-        console.log("Attempting login with username:", identifier);
+        if (import.meta.env.DEV) {
+          console.log("Attempting login with username:", identifier);
+        }
         // First get email associated with this username from profiles table
         const { data: userData, error: fetchError } = await supabase
           .from('profiles')
@@ -64,16 +76,22 @@ const Login = () => {
           .maybeSingle();
         
         if (fetchError) {
-          console.error('Username lookup error:', fetchError);
+          if (import.meta.env.DEV) {
+            console.error('Username lookup error:', fetchError);
+          }
           throw new Error('Error looking up username');
         }
         
         if (!userData || !userData.email) {
-          console.error('Username not found:', identifier);
+          if (import.meta.env.DEV) {
+            console.error('Username not found:', identifier);
+          }
           throw new Error('Invalid username or password');
         }
         
-        console.log('Found email for username:', userData.email);
+        if (import.meta.env.DEV) {
+          console.log('Found email for username:', userData.email);
+        }
         
         // Now login with the retrieved email
         result = await supabase.auth.signInWithPassword({
@@ -83,18 +101,24 @@ const Login = () => {
       }
 
       if (result.error) {
-        console.error('Auth error:', result.error);
+        if (import.meta.env.DEV) {
+          console.error('Auth error:', result.error);
+        }
         throw result.error;
       }
 
       if (result.data?.session) {
-        console.log("Login successful, redirecting to dashboard");
+        if (import.meta.env.DEV) {
+          console.log("Login successful, redirecting to dashboard");
+        }
         toast.success('Logged in successfully');
         // Force page reload to ensure clean state
         window.location.href = '/dashboard';
       }
     } catch (err) {
-      console.error('Login error:', err);
+      if (import.meta.env.DEV) {
+        console.error('Login error:', err);
+      }
       setError(err instanceof Error ? err.message : 'Failed to sign in');
       toast.error('Login failed. Please check your credentials.');
     } finally {
