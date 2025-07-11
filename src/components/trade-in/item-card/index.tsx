@@ -69,43 +69,41 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     onConditionChange(wrappedEvent.target.value);
   }, [handleConditionChangeWrapper, onConditionChange]);
 
-  // Handle manual value adjustments with reverse calculation
+  // Handle manual value adjustments with reverse calculation (trade values only)
   const handleValueAdjustment = useCallback(async (valueType: 'cash' | 'trade', value: number) => {
     console.log(`TradeInItem [${instanceId}]: Manual value adjustment for ${item.card.name}: ${valueType} = ${value}`);
+    
+    // Only allow trade value adjustments - cash should be calculated from market price
+    if (valueType !== 'trade') {
+      console.warn(`TradeInItem [${instanceId}]: Cash value editing is disabled. Edit market price instead.`);
+      return;
+    }
     
     // First, call the original adjustment handler
     if (onValueAdjustment) {
       onValueAdjustment(valueType, value);
     }
     
-    // Reverse calculate the implied market price and update it
+    // Reverse calculate the implied market price for trade values
     try {
-      // We need to reverse calculate what market price would produce this value
-      // For cash: marketPrice * percentage = cashValue, so marketPrice = cashValue / percentage
-      // For trade: marketPrice * percentage = tradeValue, so marketPrice = tradeValue / percentage
-      
-      // Default percentages (these should come from settings but for now use defaults)
-      const defaultCashPercentage = 0.50; // 50%
+      // Default trade percentage (should come from settings but for now use default)
       const defaultTradePercentage = 0.65; // 65%
       
-      let impliedMarketPrice: number;
+      const impliedMarketPrice = value / defaultTradePercentage;
       
-      if (valueType === 'cash') {
-        impliedMarketPrice = value / defaultCashPercentage;
-      } else {
-        impliedMarketPrice = value / defaultTradePercentage;
-      }
+      console.log(`TradeInItem [${instanceId}]: Reverse calculated market price: ${impliedMarketPrice} for trade value: ${value}`);
       
-      console.log(`TradeInItem [${instanceId}]: Reverse calculated market price: ${impliedMarketPrice} for ${valueType} value: ${value}`);
-      
-      // Update the market price which will trigger recalculation of other values
+      // Update the market price which will trigger recalculation of cash value
       const updatedItem: TradeInItemType = {
         ...item,
         price: impliedMarketPrice,
-        // Set the manually adjusted value
-        [valueType === 'cash' ? 'cashValue' : 'tradeValue']: value,
-        [valueType === 'cash' ? 'cashValueManuallySet' : 'tradeValueManuallySet']: true,
-        // Mark as needing calculation for the other value type
+        // Set the manually adjusted trade value
+        tradeValue: value,
+        tradeValueManuallySet: true,
+        // Clear cash value to force recalculation from new market price
+        cashValue: undefined,
+        cashValueManuallySet: false,
+        // Mark as needing calculation
         initialCalculation: false
       };
       

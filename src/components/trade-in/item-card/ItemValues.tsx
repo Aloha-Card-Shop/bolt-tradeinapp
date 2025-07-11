@@ -41,7 +41,8 @@ const ItemValues: React.FC<ItemValuesProps> = ({
 
   const getValueLabel = () => {
     if (!paymentType) return "Trade-In Value";
-    return paymentType === 'cash' ? "Cash Value" : "Trade Credit Value";
+    if (paymentType === 'cash') return "Cash Value (Calculated)";
+    return "Trade Credit Value";
   };
 
   return (
@@ -61,8 +62,8 @@ const ItemValues: React.FC<ItemValuesProps> = ({
         value={displayValue}
         isLoading={isLoading}
         error={error}
-        onValueChange={onValueAdjustment}
-        editable={!!onValueAdjustment}
+        onValueChange={onValueAdjustment && paymentType === 'trade' ? onValueAdjustment : undefined}
+        editable={!!onValueAdjustment && paymentType === 'trade'}
         usedFallback={usedFallback}
         fallbackReason={fallbackReason}
         valueType={paymentType || 'cash'}
