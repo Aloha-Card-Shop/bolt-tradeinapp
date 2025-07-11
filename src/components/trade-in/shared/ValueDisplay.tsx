@@ -36,23 +36,28 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
   };
 
   const handleSaveEdit = () => {
+    console.log('ValueDisplay SHARED: Save clicked with editValue:', editValue, 'onValueChange available:', !!onValueChange);
     try {
       const numValue = parseFloat(editValue);
+      console.log('ValueDisplay SHARED: Parsed value:', numValue, 'is valid:', !isNaN(numValue) && numValue >= 0);
+      
       if (!isNaN(numValue) && numValue >= 0 && onValueChange) {
+        console.log('ValueDisplay SHARED: Calling onValueChange with:', numValue);
         onValueChange(numValue);
       } else if (isNaN(numValue)) {
-        console.warn('Invalid value entered:', editValue);
+        console.warn('ValueDisplay SHARED: Invalid value entered:', editValue);
         // Reset to original value if invalid
         setEditValue(value.toString());
       }
     } catch (error) {
-      console.error('Error saving value:', error);
+      console.error('ValueDisplay SHARED: Error saving value:', error);
       setEditValue(value.toString());
     }
     setIsEditing(false);
   };
 
   const handleCancelEdit = () => {
+    console.log('ValueDisplay SHARED: Cancel clicked');
     setIsEditing(false);
     setEditValue(value.toString());
   };
