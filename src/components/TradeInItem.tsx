@@ -42,7 +42,9 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
   const handleValueAdjustment = useCallback((value: number) => {
     console.log(`TradeInItemWrapper [${instanceId}]: Manual value adjustment for ${item.card.name}:`, {
       value, 
-      paymentType: item.paymentType
+      paymentType: item.paymentType,
+      originalCashValue: item.cashValue,
+      originalTradeValue: item.tradeValue
     });
     
     if (!item.paymentType) {
@@ -54,14 +56,19 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
       ? { cashValue: value } 
       : { tradeValue: value };
       
+    console.log(`TradeInItemWrapper [${instanceId}]: About to update with:`, updates);
+      
     // Update the item
     onUpdate(index, { ...item, ...updates });
     
     // Notify parent about the value change
-    onValueChange({
+    const finalValues = {
       cashValue: updates.cashValue !== undefined ? updates.cashValue : item.cashValue || 0,
       tradeValue: updates.tradeValue !== undefined ? updates.tradeValue : item.tradeValue || 0
-    });
+    };
+    
+    console.log(`TradeInItemWrapper [${instanceId}]: Notifying parent with final values:`, finalValues);
+    onValueChange(finalValues);
   }, [item, index, onUpdate, onValueChange, instanceId]);
 
   return (
