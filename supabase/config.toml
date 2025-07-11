@@ -81,3 +81,9 @@ verify_jwt = false
 
 [functions.get-ebay-token]
 verify_jwt = false
+
+[functions.cert-lookup]
+verify_jwt = false
+
+[functions.psa-scraper]
+verify_jwt = false

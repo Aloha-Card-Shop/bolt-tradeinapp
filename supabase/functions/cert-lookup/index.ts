@@ -58,25 +58,8 @@ serve(async (req) => {
   }
 
   try {
-    // Print environment details for debugging (not exposing secrets)
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const projectRef = supabaseUrl ? supabaseUrl.split(".")[0].replace("https://", "") : "unknown";
-    const environment = Deno.env.get("ENVIRONMENT") || "unknown";
-    
-    console.log(`Certificate lookup function called - Project: ${projectRef}, Environment: ${environment}`);
+    console.log("Certificate lookup function called");
     console.log("Request method:", req.method);
-    console.log("Request headers:", Object.fromEntries(req.headers.entries()));
-    
-    // Authenticate the request - using our more permissive cert lookup auth
-    console.log("Starting authentication...");
-    const { userId, error: authError } = await authenticateForCertLookup(req);
-    if (authError) {
-      console.error("Authentication failed:", authError);
-      // Still allow the request to proceed for now to debug further
-      console.log("Proceeding without authentication for debugging...");
-    } else {
-      console.log("User authenticated successfully:", userId);
-    }
 
     // Get the cert number from the request body
     console.log("Parsing request body...");
