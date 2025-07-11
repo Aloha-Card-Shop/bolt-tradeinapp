@@ -14,8 +14,8 @@ const FallbackNotification: React.FC<FallbackNotificationProps> = ({
   baseValue,
   compact = false 
 }) => {
-  // Use the hook but disable automatic toasts
-  const { usedFallback, fallbackReason, error, cashValue, tradeValue } = useTradeValue(game, baseValue, false);
+  // Use the hook to get trade values
+  const { usedFallback, fallbackReason, error, cashValue, tradeValue } = useTradeValue(game, baseValue);
   
   if (!usedFallback) return null;
 
