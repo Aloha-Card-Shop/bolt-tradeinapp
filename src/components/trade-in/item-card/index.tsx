@@ -125,7 +125,10 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
         <div className="mt-3 p-3 bg-gray-50 rounded-lg animate-accordion-down">
           <div className="flex items-center justify-between text-sm text-gray-600">
             <div className="flex items-center space-x-4">
-              <span>Quantity: <span className="font-medium">{item.quantity}</span></span>
+              <span>
+                <span className="font-medium text-blue-700">PSA {item.card.certification?.grade}</span> - {item.card.name}
+              </span>
+              <span>Qty: <span className="font-medium">{item.quantity}</span></span>
               <span>Payment: <span className="font-medium capitalize">{item.paymentType || 'Not selected'}</span></span>
               {displayValue && (
                 <span>Value: <span className="font-medium">${displayValue}</span></span>
