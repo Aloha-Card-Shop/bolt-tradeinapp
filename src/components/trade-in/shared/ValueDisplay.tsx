@@ -36,17 +36,32 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
   };
 
   const handleSaveEdit = () => {
-    const numValue = parseFloat(editValue);
-    if (!isNaN(numValue) && onValueChange) {
-      onValueChange(numValue);
+    try {
+      const numValue = parseFloat(editValue);
+      if (!isNaN(numValue) && numValue >= 0 && onValueChange) {
+        onValueChange(numValue);
+      } else if (isNaN(numValue)) {
+        console.warn('Invalid value entered:', editValue);
+        // Reset to original value if invalid
+        setEditValue(value.toString());
+      }
+    } catch (error) {
+      console.error('Error saving value:', error);
+      setEditValue(value.toString());
     }
     setIsEditing(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSaveEdit();
-    } else if (e.key === 'Escape') {
+    try {
+      if (e.key === 'Enter') {
+        handleSaveEdit();
+      } else if (e.key === 'Escape') {
+        setIsEditing(false);
+        setEditValue(value.toString());
+      }
+    } catch (error) {
+      console.error('Error handling key down:', error);
       setIsEditing(false);
       setEditValue(value.toString());
     }

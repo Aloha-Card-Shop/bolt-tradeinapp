@@ -82,10 +82,12 @@ export function shouldRecalculate(params: {
     return true;
   }
 
-  // Calculate if we have calculated values but no stored values (fallback case)
+  // Calculate if we have calculated values but stored values are zero AND they're not manually set
+  // Only treat as "not set" if both are undefined, not if they're 0 (which could be manually set)
   if ((calculatedCashValue > 0 || calculatedTradeValue > 0) && 
-      (cashValue === 0 && tradeValue === 0)) {
-    console.log('shouldRecalculate: Have calculated values but stored values are zero');
+      (cashValue === 0 && tradeValue === 0) && 
+      (cashValue === undefined || tradeValue === undefined)) {
+    console.log('shouldRecalculate: Have calculated values but stored values are undefined/zero');
     return true;
   }
 
@@ -117,16 +119,16 @@ export function createValueUpdates(
     initialCalculation: item.initialCalculation
   });
   
-  // Always update cash value if undefined, even if calculated value is 0
-  if (item.cashValue === undefined) {
+  // Update values if undefined OR if they are 0 and we have calculated values > 0
+  // This handles the case where items have 0 values but calculations return meaningful amounts
+  if (item.cashValue === undefined || (item.cashValue === 0 && calculatedCashValue > 0)) {
     updates.cashValue = calculatedCashValue;
-    console.log(`createValueUpdates: Setting cashValue to ${calculatedCashValue}`);
+    console.log(`createValueUpdates: Setting cashValue to ${calculatedCashValue} (was ${item.cashValue})`);
   }
   
-  // Always update trade value if undefined, even if calculated value is 0
-  if (item.tradeValue === undefined) {
+  if (item.tradeValue === undefined || (item.tradeValue === 0 && calculatedTradeValue > 0)) {
     updates.tradeValue = calculatedTradeValue;
-    console.log(`createValueUpdates: Setting tradeValue to ${calculatedTradeValue}`);
+    console.log(`createValueUpdates: Setting tradeValue to ${calculatedTradeValue} (was ${item.tradeValue})`);
   }
 
   // Set payment type to cash if price is valid and no payment type selected
