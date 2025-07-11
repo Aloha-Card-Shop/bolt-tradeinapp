@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { formatCurrency } from '../../../utils/formatters';
-import { Pencil } from 'lucide-react';
+import { Pencil, Check, X } from 'lucide-react';
 import FallbackWarning from '../FallbackWarning';
 
 interface ValueDisplayProps {
@@ -52,6 +52,11 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
     setIsEditing(false);
   };
 
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditValue(value.toString());
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     try {
       if (e.key === 'Enter') {
@@ -72,19 +77,36 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
       <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
       
       {isEditing ? (
-        <div className="flex items-center">
-          <span className="text-gray-500 mr-1">$</span>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onBlur={handleSaveEdit}
-            onKeyDown={handleKeyDown}
-            className="w-full p-1 border border-blue-300 rounded focus:ring-blue-500 focus:border-blue-500"
-            autoFocus
-          />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center flex-1">
+            <span className="text-gray-500 mr-1">$</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="w-full p-1 border border-blue-300 rounded focus:ring-blue-500 focus:border-blue-500"
+              autoFocus
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleSaveEdit}
+              className="p-1 rounded bg-green-100 hover:bg-green-200 text-green-700 transition-colors"
+              title="Save (Enter)"
+            >
+              <Check className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleCancelEdit}
+              className="p-1 rounded bg-red-100 hover:bg-red-200 text-red-700 transition-colors"
+              title="Cancel (Escape)"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       ) : (
         <div 
