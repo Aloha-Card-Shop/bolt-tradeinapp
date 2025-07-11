@@ -98,16 +98,28 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
           </div>
           <div className="flex items-center gap-1">
             <button
-              onClick={handleSaveEdit}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('ValueDisplay SHARED: Save button physically clicked!');
+                handleSaveEdit();
+              }}
               className="p-1 rounded bg-green-100 hover:bg-green-200 text-green-700 transition-colors"
               title="Save (Enter)"
+              type="button"
             >
               <Check className="h-4 w-4" />
             </button>
             <button
-              onClick={handleCancelEdit}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('ValueDisplay SHARED: Cancel button physically clicked!');
+                handleCancelEdit();
+              }}
               className="p-1 rounded bg-red-100 hover:bg-red-200 text-red-700 transition-colors"
               title="Cancel (Escape)"
+              type="button"
             >
               <X className="h-4 w-4" />
             </button>
