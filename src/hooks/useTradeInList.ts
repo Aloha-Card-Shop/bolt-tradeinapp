@@ -111,7 +111,9 @@ export const useTradeInList = () => {
         isPriceUnavailable: false,
         initialCalculation: true
       };
-      return [newItem, ...prev];
+      const newList = [newItem, ...prev];
+      console.log('useTradeInList: Added new item. Updated order:', newList.map((item, idx) => ({ idx, name: item.card.name, id: item.card.id })));
+      return newList;
     });
     
     // If it's a certified card, show a different success message
