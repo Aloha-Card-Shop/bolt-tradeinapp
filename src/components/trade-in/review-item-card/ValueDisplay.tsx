@@ -30,6 +30,7 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
   };
   
   const handleSaveClick = () => {
+    console.log('ValueDisplay: Save clicked with editValue:', editValue, 'onValueChange:', !!onValueChange);
     if (onValueChange) {
       onValueChange(editValue || 0);
     }
