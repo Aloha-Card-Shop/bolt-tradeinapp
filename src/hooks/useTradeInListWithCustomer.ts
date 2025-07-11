@@ -139,7 +139,9 @@ export const useTradeInListWithCustomer = () => {
         initialCalculation: newItem.initialCalculation
       });
       
-      return [...prev, newItem];
+      const newList = [newItem, ...prev];
+      console.log('useTradeInListWithCustomer: Added new item. Updated order:', newList.map((item, idx) => ({ idx, name: item.card.name, id: item.card.id })));
+      return newList;
     });
     
     // If it's a certified card, show a different success message

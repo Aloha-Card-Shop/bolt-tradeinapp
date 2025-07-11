@@ -28,14 +28,11 @@ const TradeInItemsList: React.FC<TradeInItemsListProps> = ({
     console.log('TradeInItemsList: Items updated. Current order:', items.map((item, idx) => ({ idx, name: item.card.name, id: item.card.id })));
     
     if (items.length > 0) {
-      // Always expand the first item (newest) and optionally keep previously expanded items
-      setExpandedItems(prev => {
-        const newSet = new Set(prev);
-        newSet.add(0); // Always expand the first (newest) item
-        return newSet;
-      });
+      // Reset expansion state to only show the first (newest) item
+      setExpandedItems(new Set([0]));
+      console.log('TradeInItemsList: Set expansion state to expand only first item');
     }
-  }, [items]);
+  }, [items.length, items.map(item => item.card.id).join(',')]); // Include item IDs to detect reordering
 
   const toggleExpanded = (index: number) => {
     setExpandedItems(prev => {
