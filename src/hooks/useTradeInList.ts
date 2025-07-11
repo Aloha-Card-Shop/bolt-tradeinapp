@@ -111,7 +111,7 @@ export const useTradeInList = () => {
         isPriceUnavailable: false,
         initialCalculation: true
       };
-      return [...prev, newItem];
+      return [newItem, ...prev];
     });
     
     // If it's a certified card, show a different success message
