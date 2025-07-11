@@ -18,6 +18,7 @@ import BarcodesPage from './pages/admin/barcodes';
 import PrintersPage from './pages/admin/printers';
 import ApiSettingsPage from './pages/admin/api-settings';
 import EbayTestPage from './pages/admin/ebay-test';
+import CustomersPage from './pages/admin/customers';
 import MobileNavigation from './components/layout/MobileNavigation';
 import { useMediaQuery } from './hooks/useMediaQuery';
 
@@ -40,6 +41,7 @@ function App() {
             <Route path="/my-trade-ins" element={<MyTradeIns />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/admin/users" element={<UsersPage />} />
+            <Route path="/admin/customers" element={<CustomersPage />} />
             <Route path="/admin/trade-values" element={<TradeValuesPage />} />
             <Route path="/admin/barcodes" element={<BarcodesPage />} />
             <Route path="/admin/printers" element={<PrintersPage />} />
