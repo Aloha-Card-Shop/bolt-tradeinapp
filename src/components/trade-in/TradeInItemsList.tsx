@@ -124,8 +124,7 @@ const TradeInItemsList: React.FC<TradeInItemsListProps> = ({
                 onUpdate={onUpdateItem}
                 onConditionChange={(cond) => handleConditionChange(idx, cond)}
                 onValueChange={(values) => onValueChange(item.card.id || `item-${idx}`, values)}
-                onValueAdjustment={onValueAdjustment ? (value: number) => {
-                  const valueType = item.paymentType === 'cash' ? 'cash' : 'trade';
+                onValueAdjustment={onValueAdjustment ? (valueType: 'cash' | 'trade', value: number) => {
                   onValueAdjustment(idx, valueType, value);
                 } : undefined}
                 hideDetailedPricing={hideDetailedPricing}

@@ -15,7 +15,7 @@ interface TradeInItemProps {
   onUpdate: (index: number, item: TradeInItemType) => void;
   onConditionChange: (condition: string) => void;
   onValueChange: (values: { tradeValue: number; cashValue: number }) => void;
-  onValueAdjustment?: (value: number) => void;
+  onValueAdjustment?: (valueType: 'cash' | 'trade', value: number) => void;
   hideDetailedPricing?: boolean;
 }
 
@@ -72,10 +72,10 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   }, [handleConditionChangeWrapper, onConditionChange]);
 
   // Handle manual value adjustments if needed
-  const handleValueAdjustment = useCallback((value: number) => {
-    console.log(`TradeInItem [${instanceId}]: Manual value adjustment for ${item.card.name}: ${value}`);
+  const handleValueAdjustment = useCallback((valueType: 'cash' | 'trade', value: number) => {
+    console.log(`TradeInItem [${instanceId}]: Manual value adjustment for ${item.card.name}: ${valueType} = ${value}`);
     if (onValueAdjustment) {
-      onValueAdjustment(value);
+      onValueAdjustment(valueType, value);
     }
   }, [item.card.name, onValueAdjustment, instanceId]);
 

@@ -21,7 +21,7 @@ interface ItemContentProps {
   updatePaymentType: (type: 'cash' | 'trade') => void;
   handlePriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   refreshPrice: () => void;
-  onValueAdjustment?: (value: number) => void;
+  onValueAdjustment?: (valueType: 'cash' | 'trade', value: number) => void;
   isDebugMode: boolean;
   debugInfo: {
     price: number;

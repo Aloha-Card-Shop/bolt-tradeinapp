@@ -44,6 +44,7 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({ label, isLoading, error, va
       value={numericValue}
       isLoading={isLoading}
       error={error}
+      valueType="cash"
     />
   );
 };

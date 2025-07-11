@@ -9,10 +9,11 @@ interface ValueDisplayProps {
   value: number;
   isLoading: boolean;
   error?: string;
-  onValueChange?: (value: number) => void;
+  onValueChange?: (valueType: 'cash' | 'trade', value: number) => void;
   editable?: boolean;
   usedFallback?: boolean;
   fallbackReason?: string;
+  valueType: 'cash' | 'trade';
 }
 
 const ValueDisplay: React.FC<ValueDisplayProps> = ({
@@ -23,7 +24,8 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
   onValueChange,
   editable = false,
   usedFallback = false,
-  fallbackReason
+  fallbackReason,
+  valueType
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value.toString());
@@ -42,8 +44,8 @@ const ValueDisplay: React.FC<ValueDisplayProps> = ({
       console.log('ValueDisplay SHARED: Parsed value:', numValue, 'is valid:', !isNaN(numValue) && numValue >= 0);
       
       if (!isNaN(numValue) && numValue >= 0 && onValueChange) {
-        console.log('ValueDisplay SHARED: Calling onValueChange with:', numValue);
-        onValueChange(numValue);
+        console.log('ValueDisplay SHARED: Calling onValueChange with valueType:', valueType, 'value:', numValue);
+        onValueChange(valueType, numValue);
       } else if (isNaN(numValue)) {
         console.warn('ValueDisplay SHARED: Invalid value entered:', editValue);
         // Reset to original value if invalid

@@ -1,4 +1,3 @@
-
 import React, { useCallback } from 'react';
 import TradeInItem from './trade-in/item-card';
 import { TradeInItem as TradeInItemType } from '../hooks/useTradeInList';
@@ -41,26 +40,21 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
   });
   
   // Handle manual value adjustment
-  const handleValueAdjustment = useCallback((value: number) => {
+  const handleValueAdjustment = useCallback((valueType: 'cash' | 'trade', value: number) => {
     console.log(`TradeInItemWrapper [${instanceId}]: Manual value adjustment for ${item.card.name}:`, {
+      valueType,
       value, 
       paymentType: item.paymentType,
       originalCashValue: item.cashValue,
       originalTradeValue: item.tradeValue
     });
     
-    if (!item.paymentType) {
-      console.warn(`TradeInItemWrapper [${instanceId}]: Payment type not selected, cannot adjust value`);
-      return;
-    }
-    
     // Use the new hook function if available, otherwise fall back to old method
     if (onValueAdjustment) {
-      const valueType = item.paymentType === 'cash' ? 'cash' : 'trade';
       onValueAdjustment(index, valueType, value);
     } else {
       // Fallback to old method
-      const updates = item.paymentType === 'cash' 
+      const updates = valueType === 'cash' 
         ? { cashValue: value } 
         : { tradeValue: value };
         
@@ -72,8 +66,8 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
     
     // Notify parent about the value change
     const finalValues = {
-      cashValue: item.paymentType === 'cash' ? value : item.cashValue || 0,
-      tradeValue: item.paymentType === 'trade' ? value : item.tradeValue || 0
+      cashValue: valueType === 'cash' ? value : item.cashValue || 0,
+      tradeValue: valueType === 'trade' ? value : item.tradeValue || 0
     };
     
     console.log(`TradeInItemWrapper [${instanceId}]: Notifying parent with final values:`, finalValues);

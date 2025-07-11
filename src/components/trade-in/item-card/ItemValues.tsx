@@ -15,7 +15,7 @@ interface ItemValuesProps {
   onPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRefreshPrice: () => void;
   isPriceUnavailable?: boolean;
-  onValueAdjustment?: (value: number) => void;
+  onValueAdjustment?: (valueType: 'cash' | 'trade', value: number) => void;
   usedFallback?: boolean;
   fallbackReason?: string;
   isCertified?: boolean;
@@ -66,6 +66,7 @@ const ItemValues: React.FC<ItemValuesProps> = ({
         editable={!!onValueAdjustment}
         usedFallback={usedFallback}
         fallbackReason={fallbackReason}
+        valueType={paymentType || 'cash'}
       />
 
       {/* Only show sales data breakdown for certified cards if detailed pricing is not hidden */}
