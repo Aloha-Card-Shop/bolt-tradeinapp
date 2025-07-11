@@ -49,12 +49,19 @@ const SalesDataBreakdown: React.FC<SalesDataBreakdownProps> = ({
 
   // Notify parent component of price changes
   React.useEffect(() => {
-    if (onAdjustedPriceChange && isAdjusted) {
-      onAdjustedPriceChange(adjustedCalculation.averagePrice);
-    } else if (onAdjustedPriceChange && !isAdjusted) {
-      onAdjustedPriceChange(averagePrice);
+    if (!onAdjustedPriceChange) return;
+    
+    const currentPrice = isAdjusted ? adjustedCalculation.averagePrice : averagePrice;
+    
+    // Only call if the price has actually changed to prevent infinite loops
+    const shouldUpdate = isAdjusted 
+      ? adjustedCalculation.averagePrice !== averagePrice
+      : true;
+      
+    if (shouldUpdate) {
+      onAdjustedPriceChange(currentPrice);
     }
-  }, [adjustedCalculation.averagePrice, isAdjusted, onAdjustedPriceChange, averagePrice]);
+  }, [adjustedCalculation.averagePrice, isAdjusted, averagePrice, onAdjustedPriceChange]);
 
   // Sort items to show included first, then excluded
   const sortedItems = [...soldItems].sort((a, b) => {
