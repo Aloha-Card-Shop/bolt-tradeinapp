@@ -46,14 +46,12 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     error,
     cashValue,
     tradeValue,
-    refreshPrice,
     handleConditionChangeWrapper,
     toggleFirstEdition,
     toggleHolo,
     toggleReverseHolo,
     updatePaymentType,
-    updateQuantity,
-    handlePriceChangeWrapper
+    updateQuantity
   } = useTradeInItemHandlers({
     item,
     index,
@@ -71,13 +69,72 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     onConditionChange(wrappedEvent.target.value);
   }, [handleConditionChangeWrapper, onConditionChange]);
 
-  // Handle manual value adjustments if needed
-  const handleValueAdjustment = useCallback((valueType: 'cash' | 'trade', value: number) => {
+  // Handle manual value adjustments with reverse calculation
+  const handleValueAdjustment = useCallback(async (valueType: 'cash' | 'trade', value: number) => {
     console.log(`TradeInItem [${instanceId}]: Manual value adjustment for ${item.card.name}: ${valueType} = ${value}`);
+    
+    // First, call the original adjustment handler
     if (onValueAdjustment) {
       onValueAdjustment(valueType, value);
     }
-  }, [item.card.name, onValueAdjustment, instanceId]);
+    
+    // Reverse calculate the implied market price and update it
+    try {
+      // We need to reverse calculate what market price would produce this value
+      // For cash: marketPrice * percentage = cashValue, so marketPrice = cashValue / percentage
+      // For trade: marketPrice * percentage = tradeValue, so marketPrice = tradeValue / percentage
+      
+      // Default percentages (these should come from settings but for now use defaults)
+      const defaultCashPercentage = 0.50; // 50%
+      const defaultTradePercentage = 0.65; // 65%
+      
+      let impliedMarketPrice: number;
+      
+      if (valueType === 'cash') {
+        impliedMarketPrice = value / defaultCashPercentage;
+      } else {
+        impliedMarketPrice = value / defaultTradePercentage;
+      }
+      
+      console.log(`TradeInItem [${instanceId}]: Reverse calculated market price: ${impliedMarketPrice} for ${valueType} value: ${value}`);
+      
+      // Update the market price which will trigger recalculation of other values
+      const updatedItem: TradeInItemType = {
+        ...item,
+        price: impliedMarketPrice,
+        // Set the manually adjusted value
+        [valueType === 'cash' ? 'cashValue' : 'tradeValue']: value,
+        [valueType === 'cash' ? 'cashValueManuallySet' : 'tradeValueManuallySet']: true,
+        // Mark as needing calculation for the other value type
+        initialCalculation: false
+      };
+      
+      onUpdate(index, updatedItem);
+    } catch (error) {
+      console.error(`TradeInItem [${instanceId}]: Error reverse calculating market price:`, error);
+    }
+  }, [item, index, onUpdate, onValueAdjustment, instanceId]);
+
+  // Handle market price changes - when user edits the base market price
+  const handleMarketPriceChange = useCallback((newPrice: number) => {
+    console.log(`TradeInItem [${instanceId}]: Market price change for ${item.card.name}: ${newPrice}`);
+    
+    // Update the item with the new price and clear manual override flags
+    // This will cause the system to recalculate all values based on the new market price
+    const updatedItem: TradeInItemType = {
+      ...item,
+      price: newPrice,
+      // Clear manual overrides so values recalculate from the new base price
+      cashValueManuallySet: false,
+      tradeValueManuallySet: false,
+      cashValue: undefined,
+      tradeValue: undefined,
+      // Mark as initial calculation to force recalculation
+      initialCalculation: true
+    };
+    
+    onUpdate(index, updatedItem);
+  }, [item, index, onUpdate, instanceId]);
 
   // Toggle collapse state for certified cards
   const handleToggleCollapse = useCallback(() => {
@@ -108,9 +165,8 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
             toggleHolo={toggleHolo}
             toggleReverseHolo={toggleReverseHolo}
             updatePaymentType={updatePaymentType}
-            handlePriceChange={handlePriceChangeWrapper}
-            refreshPrice={refreshPrice}
             onValueAdjustment={handleValueAdjustment}
+            onMarketPriceChange={handleMarketPriceChange}
             isDebugMode={isDebugMode}
             debugInfo={debugInfo}
             hideDetailedPricing={hideDetailedPricing}

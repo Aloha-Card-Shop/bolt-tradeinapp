@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import ValueDisplay from '../shared/ValueDisplay';
-import PriceInput from '../shared/PriceInput';
 import SalesDataBreakdown from '../SalesDataBreakdown';
 import { PriceSource } from '../../../types/card';
 
@@ -12,10 +11,9 @@ interface ItemValuesProps {
   isLoading: boolean;
   isLoadingPrice?: boolean;
   error?: string;
-  onPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onRefreshPrice: () => void;
   isPriceUnavailable?: boolean;
   onValueAdjustment?: (valueType: 'cash' | 'trade', value: number) => void;
+  onMarketPriceChange?: (price: number) => void;
   usedFallback?: boolean;
   fallbackReason?: string;
   isCertified?: boolean;
@@ -30,10 +28,9 @@ const ItemValues: React.FC<ItemValuesProps> = ({
   isLoading,
   isLoadingPrice,
   error,
-  onPriceChange,
-  onRefreshPrice,
   isPriceUnavailable,
   onValueAdjustment,
+  onMarketPriceChange,
   usedFallback,
   fallbackReason,
   isCertified,
@@ -49,12 +46,14 @@ const ItemValues: React.FC<ItemValuesProps> = ({
 
   return (
     <div className="mt-4 space-y-3">
-      <PriceInput
-        price={price}
-        onChange={onPriceChange}
-        onRefreshPrice={onRefreshPrice}
-        isLoading={isLoadingPrice}
-        isPriceUnavailable={isPriceUnavailable}
+      <ValueDisplay
+        label="Market Price (Source)"
+        value={price}
+        isLoading={isLoadingPrice || false}
+        error={isPriceUnavailable ? "Price unavailable" : undefined}
+        onValueChange={onMarketPriceChange ? (_, value) => onMarketPriceChange(value) : undefined}
+        editable={!!onMarketPriceChange}
+        valueType="cash"
       />
       
       <ValueDisplay

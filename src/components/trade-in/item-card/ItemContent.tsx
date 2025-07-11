@@ -19,9 +19,8 @@ interface ItemContentProps {
   toggleHolo: () => void;
   toggleReverseHolo: () => void;
   updatePaymentType: (type: 'cash' | 'trade') => void;
-  handlePriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  refreshPrice: () => void;
   onValueAdjustment?: (valueType: 'cash' | 'trade', value: number) => void;
+  onMarketPriceChange?: (price: number) => void;
   isDebugMode: boolean;
   debugInfo: {
     price: number;
@@ -48,9 +47,8 @@ const ItemContent: React.FC<ItemContentProps> = ({
   toggleHolo,
   toggleReverseHolo,
   updatePaymentType,
-  handlePriceChange,
-  refreshPrice,
   onValueAdjustment,
+  onMarketPriceChange,
   isDebugMode,
   debugInfo,
   hideDetailedPricing = false,
@@ -103,10 +101,9 @@ const ItemContent: React.FC<ItemContentProps> = ({
         isLoading={isCalculating}
         isLoadingPrice={item.isLoadingPrice}
         error={error || item.error}
-        onPriceChange={handlePriceChange}
-        onRefreshPrice={refreshPrice}
         isPriceUnavailable={item.isPriceUnavailable}
         onValueAdjustment={onValueAdjustment}
+        onMarketPriceChange={onMarketPriceChange}
         usedFallback={item.usedFallback}
         fallbackReason={item.fallbackReason}
         isCertified={isCertified}
