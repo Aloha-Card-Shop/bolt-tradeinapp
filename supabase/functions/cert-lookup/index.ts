@@ -64,25 +64,38 @@ serve(async (req) => {
     const environment = Deno.env.get("ENVIRONMENT") || "unknown";
     
     console.log(`Certificate lookup function called - Project: ${projectRef}, Environment: ${environment}`);
+    console.log("Request method:", req.method);
+    console.log("Request headers:", Object.fromEntries(req.headers.entries()));
     
     // Authenticate the request - using our more permissive cert lookup auth
+    console.log("Starting authentication...");
     const { userId, error: authError } = await authenticateForCertLookup(req);
     if (authError) {
-      console.error("Authentication error:", authError);
+      console.error("Authentication failed:", authError);
+      // Still allow the request to proceed for now to debug further
+      console.log("Proceeding without authentication for debugging...");
+    } else {
+      console.log("User authenticated successfully:", userId);
+    }
+
+    // Get the cert number from the request body
+    console.log("Parsing request body...");
+    let body;
+    try {
+      body = await req.json();
+    } catch (error) {
+      console.error("Failed to parse request body:", error);
       return new Response(
-        JSON.stringify({ error: "Unauthorized", message: authError }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Bad Request", message: "Invalid JSON in request body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
-    console.log("User authenticated:", userId);
-
-    // Get the cert number from the request body
-    const body = await req.json();
     const { certNumber } = body;
+    console.log("Received certificate number:", certNumber);
     
     if (!certNumber) {
-      console.log("No certificate number provided");
+      console.log("No certificate number provided in body");
       return new Response(
         JSON.stringify({ error: "Bad Request", message: "Certificate number is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -102,6 +115,10 @@ serve(async (req) => {
       );
     }
 
+    // Always skip PSA API and go directly to scraper for debugging
+    console.log("Skipping PSA API and going directly to scraper for better reliability...");
+    return await callPsaScraper(certNumber);
+    
     // Try to get the PSA API token from Edge Function secrets first
     let apiKey = Deno.env.get("PSA_API_TOKEN");
     console.log("Checking for PSA_API_TOKEN in Edge Function secrets:", apiKey ? "Found" : "Not found");

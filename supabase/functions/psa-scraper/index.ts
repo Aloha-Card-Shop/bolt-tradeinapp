@@ -25,16 +25,33 @@ serve(async (req) => {
   }
 
   try {
-    const { certNumber } = await req.json();
+    console.log("PSA Scraper function called");
+    console.log("Request method:", req.method);
+    console.log("Request headers:", Object.fromEntries(req.headers.entries()));
+    
+    let body;
+    try {
+      body = await req.json();
+    } catch (error) {
+      console.error("Failed to parse request body:", error);
+      return new Response(
+        JSON.stringify({ error: "Bad Request", message: "Invalid JSON in request body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    const { certNumber } = body;
+    console.log("Received certificate number:", certNumber);
     
     if (!certNumber || typeof certNumber !== 'string') {
+      console.log("Invalid certificate number:", certNumber);
       return new Response(
         JSON.stringify({ error: "Bad Request", message: "Certificate number is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Scraping PSA cert data for: ${certNumber}`);
+    console.log(`Starting to scrape PSA cert data for: ${certNumber}`);
 
     // Check cache first
     const cacheResult = checkCache(certNumber);
@@ -71,51 +88,70 @@ function checkCache(certNumber: string): Response | null {
 
 // Fetch certificate data from PSA website
 async function fetchCertificateData(certNumber: string): Promise<Response> {
-  // Scrape the PSA certificate page
-  const psaUrl = `https://www.psacard.com/cert/${certNumber}`;
-  console.log(`Scraping URL: ${psaUrl}`);
-  
-  // Fetch the page content
-  const response = await fetch(psaUrl, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
-  });
-
-  if (!response.ok) {
-    if (response.status === 404) {
-      console.log(`Certificate not found: ${certNumber}`);
-      return new Response(
-        JSON.stringify({ error: "Not Found", message: "Certificate not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+  try {
+    // Scrape the PSA certificate page
+    const psaUrl = `https://www.psacard.com/cert/${certNumber}`;
+    console.log(`Attempting to scrape URL: ${psaUrl}`);
     
-    throw new Error(`Failed to fetch PSA certificate page: ${response.status} ${response.statusText}`);
+    // Fetch the page content with improved headers
+    const response = await fetch(psaUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+      }
+    });
+    
+    console.log(`Fetch response status: ${response.status} ${response.statusText}`);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log(`Certificate not found: ${certNumber}`);
+        return new Response(
+          JSON.stringify({ error: "Not Found", message: "Certificate not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      console.error(`HTTP error ${response.status}: ${response.statusText}`);
+      throw new Error(`Failed to fetch PSA certificate page: ${response.status} ${response.statusText}`);
+    }
+
+    // Get the HTML content
+    const html = await response.text();
+    console.log(`Received HTML content length: ${html.length} characters`);
+    
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    
+    if (!doc) {
+      console.error("Failed to parse HTML document");
+      throw new Error("Failed to parse HTML document");
+    }
+
+    console.log("HTML document parsed successfully");
+
+    // Extract certificate data
+    const certData = extractCertificateData(doc, certNumber);
+    console.log("Certificate data extracted:", JSON.stringify(certData, null, 2));
+    
+    // Store in cache
+    storeCertInCache(certNumber, certData);
+
+    // Clean up old cache entries
+    cleanupCache();
+
+    return new Response(
+      JSON.stringify({ data: certData }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("Error in fetchCertificateData:", error);
+    throw error;
   }
-
-  // Get the HTML content
-  const html = await response.text();
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
-  
-  if (!doc) {
-    throw new Error("Failed to parse HTML document");
-  }
-
-  // Extract certificate data
-  const certData = extractCertificateData(doc, certNumber);
-  
-  // Store in cache
-  storeCertInCache(certNumber, certData);
-
-  // Clean up old cache entries
-  cleanupCache();
-
-  return new Response(
-    JSON.stringify({ data: certData }),
-    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-  );
 }
 
 // Store certificate data in cache

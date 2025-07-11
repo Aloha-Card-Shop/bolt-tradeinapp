@@ -2,6 +2,7 @@
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ApiKeySettings from '../../components/admin/ApiKeySettings';
+import CertificateTestPanel from '../../components/admin/CertificateTestPanel';
 import AuthGuard from '../../components/AuthGuard';
 
 const ApiSettingsPage = () => {
@@ -33,8 +34,12 @@ const ApiSettingsPage = () => {
             </p>
           </div>
           
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <ApiKeySettings />
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <ApiKeySettings />
+            </div>
+            
+            <CertificateTestPanel />
           </div>
         </div>
       </div>

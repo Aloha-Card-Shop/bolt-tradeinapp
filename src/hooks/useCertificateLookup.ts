@@ -75,16 +75,39 @@ export const useCertificateLookup = () => {
         body: { certNumber: certNumber.trim() }
       });
 
+      console.log('Certificate lookup response:', { data, error });
+
       if (error) {
         console.error('Certificate lookup error:', error);
-        setError(error.message || 'Failed to look up certificate');
-        toast.error('Certificate lookup failed');
+        let errorMessage = 'Failed to look up certificate';
+        
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        }
+        
+        setError(errorMessage);
+        toast.error(errorMessage);
         return;
       }
 
       if (!data || !data.data) {
-        setError('Certificate not found or invalid response. The PSA website might be blocking our request.');
-        toast.error('Certificate not found');
+        let errorMessage = 'Certificate not found';
+        
+        // Check if we have more specific error information
+        if (data && data.error) {
+          if (data.error === 'Not Found') {
+            errorMessage = `Certificate ${certNumber.trim()} not found in PSA database`;
+          } else if (data.message) {
+            errorMessage = data.message;
+          }
+        } else {
+          errorMessage = 'Certificate not found or invalid response. Please check the certificate number.';
+        }
+        
+        setError(errorMessage);
+        toast.error(errorMessage);
         return;
       }
 
