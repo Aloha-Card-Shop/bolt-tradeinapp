@@ -17,6 +17,7 @@ interface TradeInListWithCustomerProps {
   isLoadingCustomers: boolean;
   onRemoveItem: (index: number) => void;
   onUpdateItem: (index: number, item: TradeInItem) => void;
+  onValueAdjustment?: (index: number, valueType: 'cash' | 'trade', value: number) => void;
   onCustomerSelect: (customer: Customer | null) => void;
   onCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
   clearList: () => void;
@@ -29,6 +30,7 @@ const TradeInListWithCustomer: React.FC<TradeInListWithCustomerProps> = ({
   isLoadingCustomers,
   onRemoveItem,
   onUpdateItem,
+  onValueAdjustment,
   onCustomerSelect,
   onCustomerCreate,
   clearList,
@@ -196,6 +198,7 @@ const TradeInListWithCustomer: React.FC<TradeInListWithCustomerProps> = ({
               onRemoveItem={onRemoveItem}
               onUpdateItem={onUpdateItem}
               onValueChange={() => {}} // Add this empty function to satisfy the prop type
+              onValueAdjustment={onValueAdjustment}
               hideDetailedPricing={true}
             />
             

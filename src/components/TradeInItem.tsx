@@ -10,6 +10,7 @@ interface TradeInItemProps {
   onUpdate: (index: number, item: TradeInItemType) => void;
   onConditionChange: (condition: string) => void;
   onValueChange: (values: { tradeValue: number; cashValue: number }) => void;
+  onValueAdjustment?: (index: number, valueType: 'cash' | 'trade', value: number) => void;
 }
 
 // This component passes props to the refactored implementation
@@ -19,7 +20,8 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
   onRemove, 
   onUpdate, 
   onConditionChange, 
-  onValueChange 
+  onValueChange,
+  onValueAdjustment 
 }) => {
   // Generate unique instance ID for this wrapper
   const instanceId = `wrapper-${index}-${item.card.id || 'no-id'}`;
@@ -52,24 +54,31 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
       return;
     }
     
-    const updates = item.paymentType === 'cash' 
-      ? { cashValue: value } 
-      : { tradeValue: value };
-      
-    console.log(`TradeInItemWrapper [${instanceId}]: About to update with:`, updates);
-      
-    // Update the item
-    onUpdate(index, { ...item, ...updates });
+    // Use the new hook function if available, otherwise fall back to old method
+    if (onValueAdjustment) {
+      const valueType = item.paymentType === 'cash' ? 'cash' : 'trade';
+      onValueAdjustment(index, valueType, value);
+    } else {
+      // Fallback to old method
+      const updates = item.paymentType === 'cash' 
+        ? { cashValue: value } 
+        : { tradeValue: value };
+        
+      console.log(`TradeInItemWrapper [${instanceId}]: About to update with:`, updates);
+        
+      // Update the item
+      onUpdate(index, { ...item, ...updates });
+    }
     
     // Notify parent about the value change
     const finalValues = {
-      cashValue: updates.cashValue !== undefined ? updates.cashValue : item.cashValue || 0,
-      tradeValue: updates.tradeValue !== undefined ? updates.tradeValue : item.tradeValue || 0
+      cashValue: item.paymentType === 'cash' ? value : item.cashValue || 0,
+      tradeValue: item.paymentType === 'trade' ? value : item.tradeValue || 0
     };
     
     console.log(`TradeInItemWrapper [${instanceId}]: Notifying parent with final values:`, finalValues);
     onValueChange(finalValues);
-  }, [item, index, onUpdate, onValueChange, instanceId]);
+  }, [item, index, onUpdate, onValueChange, onValueAdjustment, instanceId]);
 
   return (
     <TradeInItem 

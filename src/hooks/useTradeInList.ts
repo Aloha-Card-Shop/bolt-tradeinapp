@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { CardDetails } from '../types/card';
 import { fetchCardPrices } from '../utils/scraper';
@@ -24,6 +23,9 @@ export interface TradeInItem {
   usedFallback?: boolean;
   fallbackReason?: string;
   initialCalculation?: boolean;
+  // Manual override flags
+  cashValueManuallySet?: boolean;
+  tradeValueManuallySet?: boolean;
 }
 
 const STORAGE_KEY = 'tradeInItemsProgress';
@@ -109,7 +111,9 @@ export const useTradeInList = () => {
         isLoadingPrice: false,
         error: undefined,
         isPriceUnavailable: false,
-        initialCalculation: true
+        initialCalculation: true,
+        cashValueManuallySet: false,
+        tradeValueManuallySet: false
       };
       const newList = [newItem, ...prev];
       console.log('useTradeInList: Added new item. Updated order:', newList.map((item, idx) => ({ idx, name: item.card.name, id: item.card.id })));
@@ -146,16 +150,48 @@ export const useTradeInList = () => {
       setItems((prev) => {
         const newItems = [...prev];
         if (newItems[index]) {
-          newItems[index] = {
+          const updatedItem = {
             ...newItems[index],
             [key]: value,
           };
+
+          // Clear manual override flags when relevant attributes change
+          if (key === 'price' || key === 'condition' || key === 'paymentType' || key === 'isFirstEdition' || key === 'isHolo') {
+            updatedItem.cashValueManuallySet = false;
+            updatedItem.tradeValueManuallySet = false;
+            console.log(`updateItemAttribute: Cleared manual override flags due to ${key} change`);
+          }
+
+          newItems[index] = updatedItem;
         }
         return newItems;
       });
     },
     []
   );
+
+  // New function to handle manual value adjustments
+  const handleValueAdjustment = useCallback((index: number, valueType: 'cash' | 'trade', value: number) => {
+    setItems((prev) => {
+      const newItems = [...prev];
+      if (newItems[index]) {
+        const updatedItem = { ...newItems[index] };
+        
+        if (valueType === 'cash') {
+          updatedItem.cashValue = value;
+          updatedItem.cashValueManuallySet = true;
+          console.log(`handleValueAdjustment: Manually set cash value to ${value}`);
+        } else {
+          updatedItem.tradeValue = value;
+          updatedItem.tradeValueManuallySet = true;
+          console.log(`handleValueAdjustment: Manually set trade value to ${value}`);
+        }
+        
+        newItems[index] = updatedItem;
+      }
+      return newItems;
+    });
+  }, []);
 
   const fetchItemPrice = useCallback(async (index: number) => {
     const item = items[index];
@@ -260,6 +296,7 @@ export const useTradeInList = () => {
     removeItem,
     updateItem,
     updateItemAttribute,
+    handleValueAdjustment,
     fetchItemPrice,
     clearList
   };

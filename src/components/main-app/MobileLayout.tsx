@@ -53,6 +53,7 @@ interface MobileLayoutProps {
   isLoadingCustomers: boolean;
   removeItem: (index: number) => void;
   updateItem: (index: number, item: TradeInItem) => void;
+  handleValueAdjustment: (index: number, valueType: 'cash' | 'trade', value: number) => void;
   selectCustomer: (customer: Customer | null) => void;
   handleCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
   clearList: () => void;
@@ -93,6 +94,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
   isLoadingCustomers,
   removeItem,
   updateItem,
+  handleValueAdjustment,
   selectCustomer,
   handleCustomerCreate,
   clearList,
@@ -165,6 +167,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
             isLoadingCustomers={isLoadingCustomers}
             onRemoveItem={removeItem}
             onUpdateItem={updateItem}
+            onValueAdjustment={handleValueAdjustment}
             onCustomerSelect={selectCustomer}
             onCustomerCreate={handleCustomerCreate}
             clearList={clearList}

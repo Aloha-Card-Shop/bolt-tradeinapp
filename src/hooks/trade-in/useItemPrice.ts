@@ -93,7 +93,9 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         itemInitialCalculation: item.initialCalculation,
         valuesChanged: valuesChanged(),
         calculatedCashValue,
-        calculatedTradeValue
+        calculatedTradeValue,
+        cashValueManuallySet: item.cashValueManuallySet,
+        tradeValueManuallySet: item.tradeValueManuallySet
       });
       
       logger.logCalculationDecision({

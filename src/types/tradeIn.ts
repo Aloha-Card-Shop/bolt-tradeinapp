@@ -22,6 +22,9 @@ export interface TradeInItem {
     adjustmentNotes?: string;
     adjustedBy?: string;
     adjustedAt?: string;
+    // Manual override flags
+    cashValueManuallySet?: boolean;
+    tradeValueManuallySet?: boolean;
   };
   tcgplayer_url?: string;
   image_url?: string;

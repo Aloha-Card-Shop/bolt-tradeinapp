@@ -52,7 +52,7 @@ function MainApp() {
   } = useGradedCardSearch();
   
   const { savedCards, removeCard } = useSavedCards();
-  const { items, selectedCustomer, addItem, removeItem, updateItem, clearList, selectCustomer } = useTradeInListWithCustomer();
+  const { items, selectedCustomer, addItem, removeItem, updateItem, handleValueAdjustment, clearList, selectCustomer } = useTradeInListWithCustomer();
   const { customers, isLoading: isLoadingCustomers, createCustomer } = useCustomers();
 
   // Wrapper function to handle the return type mismatch
@@ -153,6 +153,7 @@ function MainApp() {
     isLoadingCustomers,
     removeItem,
     updateItem,
+    handleValueAdjustment,
     selectCustomer,
     handleCustomerCreate,
     clearList,

@@ -49,6 +49,7 @@ interface DesktopLayoutProps {
   isLoadingCustomers: boolean;
   removeItem: (index: number) => void;
   updateItem: (index: number, item: TradeInItem) => void;
+  handleValueAdjustment: (index: number, valueType: 'cash' | 'trade', value: number) => void;
   selectCustomer: (customer: Customer | null) => void;
   handleCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
   clearList: () => void;
@@ -87,6 +88,7 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   isLoadingCustomers,
   removeItem,
   updateItem,
+  handleValueAdjustment,
   selectCustomer,
   handleCustomerCreate,
   clearList,
@@ -157,6 +159,7 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
             isLoadingCustomers={isLoadingCustomers}
             onRemoveItem={removeItem}
             onUpdateItem={updateItem}
+            onValueAdjustment={handleValueAdjustment}
             onCustomerSelect={selectCustomer}
             onCustomerCreate={handleCustomerCreate}
             clearList={clearList}

@@ -45,6 +45,8 @@ export function shouldRecalculate(params: {
   valuesChanged: boolean;
   calculatedCashValue: number;
   calculatedTradeValue: number;
+  cashValueManuallySet?: boolean;
+  tradeValueManuallySet?: boolean;
 }): boolean {
   const {
     isLoading,
@@ -56,7 +58,9 @@ export function shouldRecalculate(params: {
     itemInitialCalculation,
     valuesChanged,
     calculatedCashValue,
-    calculatedTradeValue
+    calculatedTradeValue,
+    cashValueManuallySet,
+    tradeValueManuallySet
   } = params;
 
   // Don't calculate if still loading or no price
@@ -74,6 +78,17 @@ export function shouldRecalculate(params: {
   if (initialCalculationState || itemInitialCalculation) {
     console.log('shouldRecalculate: Initial calculation state, forcing calculation');
     return true;
+  }
+
+  // Don't recalculate if values have been manually set unless it's an initial calculation
+  if (cashValueManuallySet && paymentType === 'cash') {
+    console.log('shouldRecalculate: Cash value manually set, skipping recalculation');
+    return false;
+  }
+
+  if (tradeValueManuallySet && paymentType === 'trade') {
+    console.log('shouldRecalculate: Trade value manually set, skipping recalculation');
+    return false;
   }
 
   // Calculate if payment type is cash and values have changed
@@ -120,13 +135,13 @@ export function createValueUpdates(
   });
   
   // Update values if undefined OR if they are 0 and we have calculated values > 0
-  // This handles the case where items have 0 values but calculations return meaningful amounts
-  if (item.cashValue === undefined || (item.cashValue === 0 && calculatedCashValue > 0)) {
+  // But only if they haven't been manually set by the user
+  if (!item.cashValueManuallySet && (item.cashValue === undefined || (item.cashValue === 0 && calculatedCashValue > 0))) {
     updates.cashValue = calculatedCashValue;
     console.log(`createValueUpdates: Setting cashValue to ${calculatedCashValue} (was ${item.cashValue})`);
   }
   
-  if (item.tradeValue === undefined || (item.tradeValue === 0 && calculatedTradeValue > 0)) {
+  if (!item.tradeValueManuallySet && (item.tradeValue === undefined || (item.tradeValue === 0 && calculatedTradeValue > 0))) {
     updates.tradeValue = calculatedTradeValue;
     console.log(`createValueUpdates: Setting tradeValue to ${calculatedTradeValue} (was ${item.tradeValue})`);
   }
