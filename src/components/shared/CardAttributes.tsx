@@ -67,11 +67,11 @@ const CardAttributes: React.FC<CardAttributesProps> = ({
   }
 
   return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-foreground">
         Card Type
       </label>
-      <div className="space-y-2">
+      <div className="space-y-2 animate-fade-in">
         {availableVariants.map((variant) => (
           <VariantOption 
             key={variant.key}

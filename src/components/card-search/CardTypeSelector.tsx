@@ -11,11 +11,20 @@ const CardTypeSelector: React.FC<CardTypeSelectorProps> = ({
   cardType,
   onCardTypeChange
 }) => {
+  const getOptionClass = (type: 'raw' | 'graded') => {
+    const isSelected = cardType === type;
+    return `
+      toggle-option
+      ${isSelected ? 'toggle-option-active' : 'toggle-option-inactive'}
+      focus:ring-2 focus:ring-primary/20 focus:outline-none
+    `;
+  };
+
   return (
-    <div className="mb-6">
-      <h3 className="text-sm font-medium text-gray-700 mb-3">Search Mode</h3>
-      <div className="flex gap-4">
-        <label className="flex items-center cursor-pointer">
+    <div className="mb-6 space-y-3">
+      <h3 className="text-sm font-medium text-foreground">Search Mode</h3>
+      <div className="grid grid-cols-2 gap-3 animate-fade-in">
+        <label className="cursor-pointer">
           <input
             type="radio"
             name="cardType"
@@ -24,17 +33,33 @@ const CardTypeSelector: React.FC<CardTypeSelectorProps> = ({
             onChange={() => onCardTypeChange('raw')}
             className="sr-only"
           />
-          <div className={`flex items-center px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
-            cardType === 'raw' 
-              ? 'border-blue-500 bg-blue-50 text-blue-700' 
-              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-          }`}>
-            <Package className="h-5 w-5 mr-2" />
-            <span className="font-medium">Raw Card</span>
+          <div className={getOptionClass('raw')}>
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${
+                cardType === 'raw' ? 'bg-primary/10' : 'bg-muted'
+              }`}>
+                <Package className={`h-5 w-5 ${
+                  cardType === 'raw' ? 'text-primary' : 'text-muted-foreground'
+                }`} />
+              </div>
+              <div>
+                <span className={`font-medium ${
+                  cardType === 'raw' ? 'text-primary' : 'text-foreground'
+                }`}>
+                  Raw Card
+                </span>
+                <p className="text-xs text-muted-foreground">
+                  Ungraded cards
+                </p>
+              </div>
+            </div>
+            {cardType === 'raw' && (
+              <div className="h-2 w-2 bg-primary rounded-full animate-pulse" />
+            )}
           </div>
         </label>
         
-        <label className="flex items-center cursor-pointer">
+        <label className="cursor-pointer">
           <input
             type="radio"
             name="cardType"
@@ -43,13 +68,29 @@ const CardTypeSelector: React.FC<CardTypeSelectorProps> = ({
             onChange={() => onCardTypeChange('graded')}
             className="sr-only"
           />
-          <div className={`flex items-center px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
-            cardType === 'graded' 
-              ? 'border-blue-500 bg-blue-50 text-blue-700' 
-              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-          }`}>
-            <Award className="h-5 w-5 mr-2" />
-            <span className="font-medium">Graded Card</span>
+          <div className={getOptionClass('graded')}>
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${
+                cardType === 'graded' ? 'bg-primary/10' : 'bg-muted'
+              }`}>
+                <Award className={`h-5 w-5 ${
+                  cardType === 'graded' ? 'text-primary' : 'text-muted-foreground'
+                }`} />
+              </div>
+              <div>
+                <span className={`font-medium ${
+                  cardType === 'graded' ? 'text-primary' : 'text-foreground'
+                }`}>
+                  Graded Card
+                </span>
+                <p className="text-xs text-muted-foreground">
+                  PSA, BGS, etc.
+                </p>
+              </div>
+            </div>
+            {cardType === 'graded' && (
+              <div className="h-2 w-2 bg-primary rounded-full animate-pulse" />
+            )}
           </div>
         </label>
       </div>

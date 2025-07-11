@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { VariantOption as VariantOptionType } from './types';
 
 interface VariantOptionProps {
@@ -11,29 +11,41 @@ interface VariantOptionProps {
 
 const VariantOption: React.FC<VariantOptionProps> = ({ variant, isLoading, onToggle }) => {
   return (
-    <div 
-      key={variant.key}
-      onClick={() => onToggle(variant.key, variant.onToggle)}
-      className={`flex items-center justify-between p-2 rounded-lg transition-all duration-200 cursor-pointer ${
-        variant.isActive 
-          ? 'bg-blue-50 border-2 border-blue-200' 
-          : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
-      } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+    <button
+      type="button"
+      onClick={() => !isLoading && onToggle(variant.key, variant.onToggle)}
+      disabled={isLoading}
+      className={`
+        toggle-option w-full text-left
+        ${variant.isActive ? 'toggle-option-active' : 'toggle-option-inactive'}
+        ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md focus:ring-2 focus:ring-primary/20'}
+        focus:outline-none
+      `}
       title={`Select ${variant.label}`}
+      aria-pressed={variant.isActive}
+      role="switch"
     >
-      <span className={`text-sm font-medium ${
-        variant.isActive ? 'text-blue-700' : 'text-gray-700'
-      }`}>
-        {variant.label}
-      </span>
-      {isLoading ? (
-        <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
-      ) : variant.isActive ? (
-        <ToggleRight className={`h-5 w-5 text-${variant.color}`} />
-      ) : (
-        <ToggleLeft className="h-5 w-5 text-gray-400" />
-      )}
-    </div>
+      <div className="flex items-center justify-between w-full">
+        <span className={`text-sm font-medium transition-colors ${
+          variant.isActive ? 'text-primary' : 'text-foreground'
+        }`}>
+          {variant.label}
+        </span>
+        
+        <div className="flex items-center">
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 text-primary animate-spin" />
+          ) : variant.isActive ? (
+            <div className="flex items-center space-x-2">
+              <div className="h-2 w-2 bg-primary rounded-full animate-pulse" />
+              <Check className="h-4 w-4 text-primary" />
+            </div>
+          ) : (
+            <div className="h-2 w-2 bg-border rounded-full" />
+          )}
+        </div>
+      </div>
+    </button>
   );
 };
 
