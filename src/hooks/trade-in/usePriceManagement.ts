@@ -78,13 +78,15 @@ export const usePriceManagement = ({
       return;
     }
     
-    // Update price and reset calculated values
+    // Update price and reset calculated values - CRITICAL: Clear manual override flags
     onUpdate({
       price: newPrice,
       cashValue: undefined, // Reset to force recalculation 
       tradeValue: undefined, // Reset to force recalculation
       error: undefined,
-      initialCalculation: true // Set flag to force calculation
+      initialCalculation: true, // Set flag to force calculation
+      cashValueManuallySet: false, // Clear manual override flag
+      tradeValueManuallySet: false // Clear manual override flag
     });
     
     // Reset market price flag so we get default payment type
