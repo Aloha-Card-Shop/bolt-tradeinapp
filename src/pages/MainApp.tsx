@@ -66,7 +66,7 @@ function MainApp() {
     setTimeout(performSearch, 100);
   };
 
-  const handleAddToList = (card: CardDetails | SavedCard, price: number) => {
+  const handleAddToList = (card: CardDetails | SavedCard, condition: string, price: number) => {
     // Enhanced productId validation
     if (!card.productId) {
       console.error(`Cannot add ${card.name} - Card has no productId`, card);
@@ -82,15 +82,16 @@ function MainApp() {
       return;
     }
     
-    // Create a new card object with the validated productId
+    // Create a new card object with the validated productId and condition info
     const cardToAdd = {
       ...card,
       productId: productId,
     };
     
+    // Pass the card and price to addItem 
     addItem(cardToAdd, price);
     resetSearch(); // Reset search after adding card
-    toast.success(`Added ${card.name} to trade-in list`);
+    toast.success(`Added ${card.name} (${condition.replace('_', ' ')}) to trade-in list`);
   };
 
   // Determine which clear function to use based on card type

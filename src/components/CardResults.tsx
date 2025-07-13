@@ -6,11 +6,13 @@ import { extractNumberBeforeSlash, getCardNumberString } from '../utils/cardSear
 import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../utils/formatters';
 import SalesDataBreakdown from './trade-in/SalesDataBreakdown';
+import { fetchCardPrices } from '../utils/scraper';
+import { CONDITION_OPTIONS } from '../types/card';
 
 interface CardResultsProps {
   results: CardDetails[];
   isLoading: boolean;
-  onAddToList: (card: CardDetails | SavedCard, price: number) => void;
+  onAddToList: (card: CardDetails | SavedCard, condition: string, price: number) => void;
   hasMoreResults?: boolean;
   loadMoreResults?: () => void;
   totalResults?: number;
@@ -28,6 +30,9 @@ const CardResults: React.FC<CardResultsProps> = ({
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const [expandedSalesData, setExpandedSalesData] = useState<Set<string>>(new Set());
   const [adjustedPrices, setAdjustedPrices] = useState<Map<string, number>>(new Map());
+  const [selectedConditions, setSelectedConditions] = useState<Map<string, string>>(new Map());
+  const [fetchedPrices, setFetchedPrices] = useState<Map<string, number>>(new Map());
+  const [priceLoading, setPriceLoading] = useState<Set<string>>(new Set());
   
   // Debug logging for results
   useEffect(() => {
@@ -85,6 +90,54 @@ const CardResults: React.FC<CardResultsProps> = ({
     });
   };
 
+  // Handle condition selection and price fetching
+  const handleConditionChange = async (cardId: string, condition: string, card: CardDetails) => {
+    if (!condition || !card.productId) return;
+    
+    // Update selected condition
+    setSelectedConditions(prev => {
+      const newMap = new Map(prev);
+      newMap.set(cardId, condition);
+      return newMap;
+    });
+
+    // Skip price fetching for certified cards
+    if (card.isCertified) return;
+
+    // Set loading state
+    setPriceLoading(prev => new Set(prev).add(cardId));
+
+    try {
+      const data = await fetchCardPrices(
+        card.productId,
+        condition,
+        false, // isFirstEdition - will be selectable in trade-in list
+        false, // isHolo - will be selectable in trade-in list  
+        card.game,
+        false  // isReverseHolo - will be selectable in trade-in list
+      );
+      
+      if (!data.unavailable) {
+        setFetchedPrices(prev => {
+          const newMap = new Map(prev);
+          newMap.set(cardId, parseFloat(data.price));
+          return newMap;
+        });
+      } else {
+        toast.error("No price available for this condition");
+      }
+    } catch (error) {
+      console.error("Error fetching price:", error);
+      toast.error("Failed to fetch price");
+    } finally {
+      setPriceLoading(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(cardId);
+        return newSet;
+      });
+    }
+  };
+
   // Helper function to display card number with pre-slash highlight
   const renderCardNumber = (cardNumber: string | CardNumberObject | undefined) => {
     if (!cardNumber) return null;
@@ -114,16 +167,25 @@ const CardResults: React.FC<CardResultsProps> = ({
       toast.error(`Cannot add "${card.name}" - Missing product ID`);
       return;
     }
+
+    const cardId = `${card.name}-${card.productId}`;
+    const selectedCondition = selectedConditions.get(cardId);
     
-    console.log("Adding card with productId:", card.productId, card);
+    // Check if condition is selected for non-certified cards
+    if (!card.isCertified && !selectedCondition) {
+      toast.error("Please select a condition first");
+      return;
+    }
+    
+    console.log("Adding card with productId:", card.productId, "condition:", selectedCondition, card);
     
     // For certified cards, use adjusted price if available, otherwise use grade-based pricing
     if (card.isCertified && card.certification?.grade) {
-      const cardId = `${card.name}-${card.productId || card.certification.certNumber}`;
       const adjustedPrice = adjustedPrices.get(cardId);
+      const condition = 'certified'; // Always use 'certified' for PSA cards
       
       if (adjustedPrice && adjustedPrice > 0) {
-        onAddToList(card, adjustedPrice);
+        onAddToList(card, condition, adjustedPrice);
       } else {
         const gradeValue = parseFloat(card.certification.grade || '0');
         let defaultPrice = 0;
@@ -138,10 +200,12 @@ const CardResults: React.FC<CardResultsProps> = ({
           defaultPrice = 10;  // Lower grades estimate
         }
         
-        onAddToList(card, defaultPrice);
+        onAddToList(card, condition, defaultPrice);
       }
     } else {
-      onAddToList(card, 0);
+      // For regular cards, use the fetched price or 0
+      const fetchedPrice = fetchedPrices.get(cardId) || 0;
+      onAddToList(card, selectedCondition!, fetchedPrice);
     }
   };
 
@@ -189,6 +253,9 @@ const CardResults: React.FC<CardResultsProps> = ({
             const isExpanded = expandedSalesData.has(cardId);
             const adjustedPrice = adjustedPrices.get(cardId);
             const displayPrice = adjustedPrice || card.lastPrice;
+            const selectedCondition = selectedConditions.get(cardId);
+            const fetchedPrice = fetchedPrices.get(cardId);
+            const isLoadingPrice = priceLoading.has(cardId);
             
             // Debug logging for pricing data
             if (isCertified && card.priceSource) {
@@ -247,6 +314,52 @@ const CardResults: React.FC<CardResultsProps> = ({
                             <span className="text-xs font-medium">
                               PSA {card.certification.grade} | #{card.certification.certNumber}
                             </span>
+                          </div>
+                        )}
+
+                        {/* Condition Selector for non-certified cards */}
+                        {!isCertified && (
+                          <div className="mt-3">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Select Condition
+                            </label>
+                            <select
+                              value={selectedCondition || ''}
+                              onChange={(e) => handleConditionChange(cardId, e.target.value, card)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                              disabled={!hasProductId}
+                            >
+                              <option value="">Choose condition</option>
+                              {CONDITION_OPTIONS.map(option => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                            
+                            {/* Show fetched price for selected condition */}
+                            {selectedCondition && (
+                              <div className="mt-2">
+                                {isLoadingPrice ? (
+                                  <div className="flex items-center text-sm text-gray-600">
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Fetching price...
+                                  </div>
+                                ) : fetchedPrice && fetchedPrice > 0 ? (
+                                  <div className="bg-green-50 border border-green-200 rounded-md p-2 text-green-700">
+                                    <div className="flex items-center">
+                                      <DollarSign className="h-4 w-4 mr-1" />
+                                      <span className="font-medium">Market Price: ${fetchedPrice.toFixed(2)}</span>
+                                    </div>
+                                    <p className="text-xs mt-1">Based on {selectedCondition.replace('_', ' ')} condition</p>
+                                  </div>
+                                ) : selectedCondition && !isLoadingPrice ? (
+                                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-2 text-yellow-700">
+                                    <p className="text-sm">No price available for this condition</p>
+                                  </div>
+                                ) : null}
+                              </div>
+                            )}
                           </div>
                         )}
                         
@@ -330,11 +443,19 @@ const CardResults: React.FC<CardResultsProps> = ({
                         onClick={() => handleAddToList(card)}
                         className={`p-2 rounded-lg transition-colors duration-200 ${
                           hasProductId 
-                            ? 'text-gray-400 hover:text-green-500 hover:bg-green-50' 
+                            ? (isCertified || selectedCondition) 
+                              ? 'text-gray-400 hover:text-green-500 hover:bg-green-50' 
+                              : 'text-gray-300 cursor-not-allowed'
                             : 'text-gray-300 cursor-not-allowed'
                         }`}
-                        disabled={!hasProductId}
-                        title={hasProductId ? "Add to trade-in list" : "Cannot add - missing product ID"}
+                        disabled={!hasProductId || (!isCertified && !selectedCondition)}
+                        title={
+                          !hasProductId 
+                            ? "Cannot add - missing product ID"
+                            : (!isCertified && !selectedCondition)
+                              ? "Please select a condition first"
+                              : "Add to trade-in list"
+                        }
                       >
                         <PlusCircle className="h-5 w-5" />
                       </button>

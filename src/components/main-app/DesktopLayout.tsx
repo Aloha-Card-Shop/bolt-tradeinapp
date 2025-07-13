@@ -53,7 +53,7 @@ interface DesktopLayoutProps {
   selectCustomer: (customer: Customer | null) => void;
   handleCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
   clearList: () => void;
-  handleAddToList: (card: CardDetails | SavedCard, price: number) => void;
+  handleAddToList: (card: CardDetails | SavedCard, condition: string, price: number) => void;
 }
 
 export const DesktopLayout: React.FC<DesktopLayoutProps> = ({

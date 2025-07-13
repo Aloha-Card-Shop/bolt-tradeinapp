@@ -8,7 +8,7 @@ import SalesDataBreakdown from './trade-in/SalesDataBreakdown';
 interface GradedCardResultsProps {
   results: CardDetails[];
   isLoading: boolean;
-  onAddToList: (card: CardDetails, price: number) => void;
+  onAddToList: (card: CardDetails, condition: string, price: number) => void;
   onRemoveCard?: (card: CardDetails) => void;
 }
 
@@ -54,7 +54,7 @@ const GradedCardResults: React.FC<GradedCardResultsProps> = ({
     const adjustedPrice = adjustedPrices.get(cardId);
     
     if (adjustedPrice && adjustedPrice > 0) {
-      onAddToList(card, adjustedPrice);
+      onAddToList(card, 'certified', adjustedPrice);
     } else {
       // Use grade-based pricing as fallback
       const gradeValue = parseFloat(card.certification?.grade || '0');
@@ -70,7 +70,7 @@ const GradedCardResults: React.FC<GradedCardResultsProps> = ({
         defaultPrice = 10;  // Lower grades estimate
       }
       
-      onAddToList(card, defaultPrice);
+      onAddToList(card, 'certified', defaultPrice);
     }
   };
 
