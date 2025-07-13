@@ -8,6 +8,7 @@ import MyTradeIns from './pages/my-trade-ins';
 import Login from './pages/login';
 import ShopifySettingsPage from './pages/admin/shopify-settings';
 import ShopifyMappingsPage from './pages/admin/shopify-mappings';
+import CardInventory from './pages/admin/inventory';
 import AppHeader from './components/layout/AppHeader';
 import AuthGuard from './components/AuthGuard';
 import AdminPage from './pages/admin';
@@ -49,6 +50,7 @@ function App() {
             <Route path="/admin/ebay-test" element={<EbayTestPage />} />
             <Route path="/admin/shopify/settings" element={<ShopifySettingsPage />} />
             <Route path="/admin/shopify/mappings" element={<ShopifyMappingsPage />} />
+            <Route path="/admin/inventory" element={<CardInventory />} />
           </Routes>
         </div>
         <MobileNavigation />

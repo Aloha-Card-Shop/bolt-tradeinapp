@@ -3,7 +3,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Home, Settings, ClipboardList, UserCircle, DollarSign, 
-  LogOut, Barcode, Printer, ShoppingCart, Map, Key
+  LogOut, Barcode, Printer, ShoppingCart, Map, Key, Package
 } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import AdminNavLink from './AdminNavLink';
@@ -77,6 +77,18 @@ const AdminNavMobile: React.FC<AdminNavMobileProps> = ({ userRole, mobileNavExpa
             isMobile
           />
         </>
+      )}
+
+      {/* Manager & Admin Links */}
+      {(userRole === 'admin' || userRole === 'manager') && (
+        <AdminNavLink 
+          icon={Package} 
+          label="Card Inventory" 
+          path="/admin/inventory" 
+          onClick={() => handleNavigation('/admin/inventory')} 
+          activeColor="purple"
+          isMobile
+        />
       )}
       
       {/* Admin Only Links */}

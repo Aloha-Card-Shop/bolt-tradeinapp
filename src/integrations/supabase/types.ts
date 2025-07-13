@@ -107,6 +107,110 @@ export type Database = {
         }
         Relationships: []
       }
+      card_inventory: {
+        Row: {
+          card_id: string
+          created_at: string | null
+          current_selling_price: number | null
+          id: string
+          last_price_check: string | null
+          last_printed_at: string | null
+          market_price: number | null
+          notes: string | null
+          print_count: number | null
+          printed: boolean | null
+          printed_by: string | null
+          processed_at: string | null
+          processed_by: string | null
+          shopify_product_id: string | null
+          shopify_sync_error: string | null
+          shopify_synced: boolean | null
+          shopify_synced_at: string | null
+          shopify_variant_id: string | null
+          status: string | null
+          trade_in_item_id: string
+          trade_in_price: number
+          updated_at: string | null
+        }
+        Insert: {
+          card_id: string
+          created_at?: string | null
+          current_selling_price?: number | null
+          id?: string
+          last_price_check?: string | null
+          last_printed_at?: string | null
+          market_price?: number | null
+          notes?: string | null
+          print_count?: number | null
+          printed?: boolean | null
+          printed_by?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          shopify_product_id?: string | null
+          shopify_sync_error?: string | null
+          shopify_synced?: boolean | null
+          shopify_synced_at?: string | null
+          shopify_variant_id?: string | null
+          status?: string | null
+          trade_in_item_id: string
+          trade_in_price: number
+          updated_at?: string | null
+        }
+        Update: {
+          card_id?: string
+          created_at?: string | null
+          current_selling_price?: number | null
+          id?: string
+          last_price_check?: string | null
+          last_printed_at?: string | null
+          market_price?: number | null
+          notes?: string | null
+          print_count?: number | null
+          printed?: boolean | null
+          printed_by?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          shopify_product_id?: string | null
+          shopify_sync_error?: string | null
+          shopify_synced?: boolean | null
+          shopify_synced_at?: string | null
+          shopify_variant_id?: string | null
+          status?: string | null
+          trade_in_item_id?: string
+          trade_in_price?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_inventory_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_inventory_printed_by_fkey"
+            columns: ["printed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_inventory_processed_by_fkey"
+            columns: ["processed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_inventory_trade_in_item_id_fkey"
+            columns: ["trade_in_item_id"]
+            isOneToOne: false
+            referencedRelation: "trade_in_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cards: {
         Row: {
           attributes: Json | null

@@ -31,6 +31,7 @@ const AdminNav: React.FC<AdminNavProps> = ({ userRole }) => {
     if (path === '/dashboard/manager') return 'Trade-Ins';
     if (path === '/admin/shopify/settings') return 'Shopify Settings';
     if (path === '/admin/shopify/mappings') return 'Shopify Mappings';
+    if (path === '/admin/inventory') return 'Card Inventory';
     if (path === '/admin/trade-values') return 'Trade Values';
     if (path === '/admin/barcodes') return 'Barcodes';
     if (path === '/admin/printers') return 'Printers';
