@@ -52,7 +52,10 @@ const ItemValues: React.FC<ItemValuesProps> = ({
         value={price}
         isLoading={isLoadingPrice || false}
         error={isPriceUnavailable ? "Price unavailable" : undefined}
-        onValueChange={onMarketPriceChange ? (_, value) => onMarketPriceChange(value) : undefined}
+        onValueChange={onMarketPriceChange ? (valueType, value) => {
+          console.log('ItemValues: Market price onValueChange called with:', { valueType, value });
+          onMarketPriceChange(value);
+        } : undefined}
         editable={!!onMarketPriceChange}
         valueType="cash"
       />
