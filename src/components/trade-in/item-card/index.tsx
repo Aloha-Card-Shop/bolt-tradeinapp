@@ -51,7 +51,8 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     toggleHolo,
     toggleReverseHolo,
     updatePaymentType,
-    updateQuantity
+    updateQuantity,
+    handleMarketPriceChange: handleMarketPriceChangeFromHook
   } = useTradeInItemHandlers({
     item,
     index,
@@ -113,26 +114,10 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     }
   }, [item, index, onUpdate, onValueAdjustment, instanceId]);
 
-  // Handle market price changes - when user edits the base market price
+  // Handle market price changes - delegate to the hook which has proper logic
   const handleMarketPriceChange = useCallback((newPrice: number) => {
-    console.log(`TradeInItem [${instanceId}]: Market price change for ${item.card.name}: ${newPrice}`);
-    
-    // Update the item with the new price and clear manual override flags
-    // This will cause the system to recalculate all values based on the new market price
-    const updatedItem: TradeInItemType = {
-      ...item,
-      price: newPrice,
-      // Clear manual overrides so values recalculate from the new base price
-      cashValueManuallySet: false,
-      tradeValueManuallySet: false,
-      cashValue: undefined,
-      tradeValue: undefined,
-      // Mark as initial calculation to force recalculation
-      initialCalculation: true
-    };
-    
-    onUpdate(index, updatedItem);
-  }, [item, index, onUpdate, instanceId]);
+    handleMarketPriceChangeFromHook(newPrice);
+  }, [handleMarketPriceChangeFromHook]);
 
   // Toggle collapse state for certified cards
   const handleToggleCollapse = useCallback(() => {

@@ -28,6 +28,7 @@ interface UseTradeInItemHandlersReturn {
   updatePaymentType: (type: 'cash' | 'trade') => void;
   updateQuantity: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handlePriceChangeWrapper: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleMarketPriceChange: (newPrice: number) => void;
 }
 
 export const useTradeInItemHandlers = ({
@@ -118,6 +119,12 @@ export const useTradeInItemHandlers = ({
     }
   }, [handlePriceChange]);
 
+  // Market price change handler that uses the underlying hook logic
+  const handleMarketPriceChange = useCallback((newPrice: number) => {
+    console.log(`TradeInItem [${instanceId}]: Market price change via hook for ${item.card.name}: ${newPrice}`);
+    handlePriceChange(newPrice);
+  }, [handlePriceChange, item.card.name, instanceId]);
+
   return {
     displayValue: displayValue || 0, // Ensure we always return a number
     isCalculating,
@@ -131,6 +138,7 @@ export const useTradeInItemHandlers = ({
     toggleReverseHolo,
     updatePaymentType,
     updateQuantity,
-    handlePriceChangeWrapper
+    handlePriceChangeWrapper,
+    handleMarketPriceChange
   };
 };
