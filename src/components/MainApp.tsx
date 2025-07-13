@@ -80,7 +80,7 @@ function MainApp() {
     }
   }, [handleInputChange, performSearch, isMobile]);
 
-  const handleAddToList = useCallback((card: CardDetails | SavedCard, price: number) => {
+  const handleAddToList = useCallback((card: CardDetails | SavedCard, condition: string, price: number) => {
     // Enhanced productId validation
     if (!card.productId) {
       console.error(`Cannot add ${card.name} - Card has no productId`, card);
@@ -104,7 +104,7 @@ function MainApp() {
     
     addItem(cardToAdd, price);
     resetSearch(); // Reset search after adding card
-    toast.success(`Added ${card.name} to trade-in list`);
+    toast.success(`Added ${card.name} (${condition.replace('_', ' ')}) to trade-in list`);
     
     // On mobile, switch to trade-in view after adding card
     if (isMobile) {
