@@ -63,16 +63,16 @@ const AdminNavMobile: React.FC<AdminNavMobileProps> = ({ userRole, mobileNavExpa
           <AdminNavLink 
             icon={ShoppingCart} 
             label="Shopify Settings" 
-            path="/admin/shopify-settings" 
-            onClick={() => handleNavigation('/admin/shopify-settings')} 
+            path="/admin/shopify/settings" 
+            onClick={() => handleNavigation('/admin/shopify/settings')} 
             activeColor="cyan"
             isMobile
           />
           <AdminNavLink 
             icon={Map} 
             label="Shopify Mappings" 
-            path="/admin/shopify-mappings" 
-            onClick={() => handleNavigation('/admin/shopify-mappings')} 
+            path="/admin/shopify/mappings" 
+            onClick={() => handleNavigation('/admin/shopify/mappings')} 
             activeColor="cyan"
             isMobile
           />
