@@ -16,14 +16,14 @@ export function useInitialCalculation({ item, onUpdate }: UseInitialCalculationP
     onUpdate({ initialCalculation: value });
   }, [item.card.name, onUpdate]);
   
-  // Sync initialCalculation state with item prop
+  // Sync initialCalculation state with item prop - IMMEDIATE sync for market price changes
   useEffect(() => {
     const itemInitialCalc = !!item.initialCalculation;
     if (initialCalculationState !== itemInitialCalc) {
-      console.log(`useInitialCalculation: Syncing state change from ${initialCalculationState} to ${itemInitialCalc} for ${item.card.name}`);
+      console.log(`useInitialCalculation: IMMEDIATE sync from ${initialCalculationState} to ${itemInitialCalc} for ${item.card.name}`);
       setInitialCalculationState(itemInitialCalc);
     }
-  }, [item.initialCalculation, initialCalculationState, item.card.name]);
+  }, [item.initialCalculation]); // Removed other deps to make sync more immediate
   
   return {
     initialCalculationState,

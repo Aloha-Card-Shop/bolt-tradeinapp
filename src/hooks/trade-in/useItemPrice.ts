@@ -82,6 +82,21 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   // Calculate the display value and update item values when needed
   useEffect(() => {
     import('./utils/valueCalculation').then(({ calculateDisplayValue, createValueUpdates, shouldRecalculate }) => {
+      console.log(`useItemPrice [${instanceId}]: Checking shouldRecalculate for ${item.card.name} with:`, {
+        isLoading,
+        price: item.price,
+        cashValue: item.cashValue,
+        tradeValue: item.tradeValue,
+        paymentType: item.paymentType,
+        initialCalculationState,
+        itemInitialCalculation: item.initialCalculation,
+        valuesChanged: valuesChanged(),
+        calculatedCashValue,
+        calculatedTradeValue,
+        cashValueManuallySet: item.cashValueManuallySet,
+        tradeValueManuallySet: item.tradeValueManuallySet
+      });
+
       // Improved calculation trigger logic - always calculate for undefined values or initial state
       const shouldCalculate = shouldRecalculate({
         isLoading,
@@ -97,6 +112,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         cashValueManuallySet: item.cashValueManuallySet,
         tradeValueManuallySet: item.tradeValueManuallySet
       });
+
+      console.log(`useItemPrice [${instanceId}]: shouldRecalculate result: ${shouldCalculate} for ${item.card.name}`);
       
       logger.logCalculationDecision({
         cashValue,
@@ -112,6 +129,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
       
       // Force calculation based on the shouldCalculate criteria
       if (shouldCalculate) {
+        console.log(`useItemPrice [${instanceId}]: Applying calculation for ${item.card.name}`);
+        
         logger.logForceCalculation({
           calculatedCash: calculatedCashValue,
           prevCalcCash: prevCalculatedCashValue.current,
@@ -145,6 +164,7 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         
         // Only update if we have changes to make
         if (Object.keys(updates).length > 0) {
+          console.log(`useItemPrice [${instanceId}]: Applying updates to ${item.card.name}:`, updates);
           logger.logUpdates(updates);
           onUpdate(updates);
           
@@ -152,7 +172,11 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
           if (updates.paymentType === 'cash') {
             setMarketPriceSet(true);
           }
+        } else {
+          console.log(`useItemPrice [${instanceId}]: No updates needed for ${item.card.name}`);
         }
+      } else {
+        console.log(`useItemPrice [${instanceId}]: Skipping calculation for ${item.card.name}`);
       }
     });
   }, [

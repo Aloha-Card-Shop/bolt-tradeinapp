@@ -63,9 +63,31 @@ export function shouldRecalculate(params: {
     tradeValueManuallySet
   } = params;
 
+  console.log('shouldRecalculate: Evaluating conditions', {
+    isLoading,
+    price,
+    cashValue,
+    tradeValue,
+    paymentType,
+    initialCalculationState,
+    itemInitialCalculation,
+    valuesChanged,
+    calculatedCashValue,
+    calculatedTradeValue,
+    cashValueManuallySet,
+    tradeValueManuallySet
+  });
+
   // Don't calculate if still loading or no price
   if (isLoading || price <= 0) {
+    console.log('shouldRecalculate: Skipping due to loading or invalid price');
     return false;
+  }
+
+  // PRIORITY FIX: If item.initialCalculation is true, always recalculate regardless of local state
+  if (itemInitialCalculation === true) {
+    console.log('shouldRecalculate: FORCING recalculation due to item.initialCalculation=true');
+    return true;
   }
 
   // Always calculate if values are undefined (new/re-added items)
@@ -74,9 +96,9 @@ export function shouldRecalculate(params: {
     return true;
   }
 
-  // Always calculate if this is an initial calculation
-  if (initialCalculationState || itemInitialCalculation) {
-    console.log('shouldRecalculate: Initial calculation state, forcing calculation');
+  // If this is an initial calculation from hook state, we should recalculate
+  if (initialCalculationState) {
+    console.log('shouldRecalculate: Hook initialCalculationState is true, forcing calculation');
     return true;
   }
 
@@ -105,6 +127,7 @@ export function shouldRecalculate(params: {
     return true;
   }
 
+  console.log('shouldRecalculate: No recalculation needed');
   return false;
 }
 
