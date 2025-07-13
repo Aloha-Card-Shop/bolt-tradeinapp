@@ -8,6 +8,7 @@ import CreateUserModal from '../../components/admin/CreateUserModal';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import ErrorMessage from '../../components/admin/ErrorMessage';
 import EditUserModal from '../../components/admin/EditUserModal';
+import ScraperTestPanel from '../../components/admin/ScraperTestPanel';
 
 interface StaffUser {
   id: string;
@@ -252,6 +253,10 @@ const AdminPage = () => {
             onDeleteUser={handleDeleteUser}
             onEditUser={handleEditUser}
           />
+        </div>
+
+        <div className="mt-8">
+          <ScraperTestPanel />
         </div>
       </div>
 
