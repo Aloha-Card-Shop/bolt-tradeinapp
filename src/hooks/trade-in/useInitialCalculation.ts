@@ -18,10 +18,12 @@ export function useInitialCalculation({ item, onUpdate }: UseInitialCalculationP
   
   // Sync initialCalculation state with item prop
   useEffect(() => {
-    if (initialCalculationState !== !!item.initialCalculation) {
-      setInitialCalculationState(!!item.initialCalculation);
+    const itemInitialCalc = !!item.initialCalculation;
+    if (initialCalculationState !== itemInitialCalc) {
+      console.log(`useInitialCalculation: Syncing state change from ${initialCalculationState} to ${itemInitialCalc} for ${item.card.name}`);
+      setInitialCalculationState(itemInitialCalc);
     }
-  }, [item.initialCalculation, initialCalculationState]);
+  }, [item.initialCalculation, initialCalculationState, item.card.name]);
   
   return {
     initialCalculationState,
