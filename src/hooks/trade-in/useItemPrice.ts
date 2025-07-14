@@ -110,7 +110,8 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
         calculatedCashValue,
         calculatedTradeValue,
         cashValueManuallySet: item.cashValueManuallySet,
-        tradeValueManuallySet: item.tradeValueManuallySet
+        tradeValueManuallySet: item.tradeValueManuallySet,
+        marketPriceManuallySet: item.marketPriceManuallySet
       });
 
       console.log(`useItemPrice [${instanceId}]: shouldRecalculate result: ${shouldCalculate} for ${item.card.name}`);

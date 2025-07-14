@@ -10,6 +10,7 @@ interface TradeInItemsListProps {
   onUpdateItem: (index: number, item: TradeInItemType) => void;
   onValueChange: (itemId: string, values: { tradeValue: number; cashValue: number }) => void;
   onValueAdjustment?: (index: number, valueType: 'cash' | 'trade', value: number) => void;
+  onMarketPriceChange?: (index: number, price: number) => void;
   hideDetailedPricing?: boolean;
 }
 
@@ -19,6 +20,7 @@ const TradeInItemsList: React.FC<TradeInItemsListProps> = ({
   onUpdateItem,
   onValueChange,
   onValueAdjustment,
+  onMarketPriceChange,
   hideDetailedPricing = false
 }) => {
   // Track which items are expanded (first item is expanded by default)
@@ -64,6 +66,9 @@ const TradeInItemsList: React.FC<TradeInItemsListProps> = ({
                 onValueChange={(values) => onValueChange(item.card.id || `item-${idx}`, values)}
                 onValueAdjustment={onValueAdjustment ? (valueType: 'cash' | 'trade', value: number) => {
                   onValueAdjustment(idx, valueType, value);
+                } : undefined}
+                onMarketPriceChange={onMarketPriceChange ? (price: number) => {
+                  onMarketPriceChange(idx, price);
                 } : undefined}
                 hideDetailedPricing={hideDetailedPricing}
               />

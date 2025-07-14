@@ -50,6 +50,7 @@ interface DesktopLayoutProps {
   removeItem: (index: number) => void;
   updateItem: (index: number, item: TradeInItem) => void;
   handleValueAdjustment: (index: number, valueType: 'cash' | 'trade', value: number) => void;
+  handleMarketPriceChange: (index: number, price: number) => void;
   selectCustomer: (customer: Customer | null) => void;
   handleCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
   clearList: () => void;
@@ -89,6 +90,7 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   removeItem,
   updateItem,
   handleValueAdjustment,
+  handleMarketPriceChange,
   selectCustomer,
   handleCustomerCreate,
   clearList,
@@ -152,18 +154,19 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
 
       <div className="md:col-span-4">
         <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden sticky top-8">
-          <TradeInListWithCustomer 
-            items={items}
-            selectedCustomer={selectedCustomer}
-            customers={customers}
-            isLoadingCustomers={isLoadingCustomers}
-            onRemoveItem={removeItem}
-            onUpdateItem={updateItem}
-            onValueAdjustment={handleValueAdjustment}
-            onCustomerSelect={selectCustomer}
-            onCustomerCreate={handleCustomerCreate}
-            clearList={clearList}
-          />
+            <TradeInListWithCustomer
+              items={items}
+              selectedCustomer={selectedCustomer}
+              customers={customers}
+              isLoadingCustomers={isLoadingCustomers}
+              onRemoveItem={removeItem}
+              onUpdateItem={updateItem}
+              onValueAdjustment={handleValueAdjustment}
+              onMarketPriceChange={handleMarketPriceChange}
+              onCustomerSelect={selectCustomer}
+              onCustomerCreate={handleCustomerCreate}
+              clearList={clearList}
+            />
         </div>
       </div>
     </div>

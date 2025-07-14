@@ -28,6 +28,7 @@ export interface TradeInItem {
   // Manual override flags
   cashValueManuallySet?: boolean;
   tradeValueManuallySet?: boolean;
+  marketPriceManuallySet?: boolean;
 }
 
 const STORAGE_KEY = 'tradeInProgress';
@@ -133,7 +134,8 @@ export const useTradeInListWithCustomer = () => {
         isPriceUnavailable: false,
         initialCalculation: true, // Always mark new items for initial calculation
         cashValueManuallySet: false,
-        tradeValueManuallySet: false
+        tradeValueManuallySet: false,
+        marketPriceManuallySet: false
       };
       
       console.log(`addItem: Creating new item with initial state:`, {
@@ -197,10 +199,11 @@ export const useTradeInListWithCustomer = () => {
             [key]: value,
           };
 
-          // Clear manual override flags when relevant attributes change
-          if (key === 'price' || key === 'condition' || key === 'paymentType' || key === 'isFirstEdition' || key === 'isHolo') {
+          // Clear manual override flags when relevant attributes change (but not when manually setting price)
+          if ((key === 'condition' || key === 'paymentType' || key === 'isFirstEdition' || key === 'isHolo') && key !== 'price') {
             updatedItem.cashValueManuallySet = false;
             updatedItem.tradeValueManuallySet = false;
+            updatedItem.marketPriceManuallySet = false;
             console.log(`updateItemAttribute: Cleared manual override flags due to ${key} change`);
           }
 
@@ -228,6 +231,33 @@ export const useTradeInListWithCustomer = () => {
           updatedItem.tradeValueManuallySet = true;
           console.log(`handleValueAdjustment: Manually set trade value to ${value}`);
         }
+        
+        newItems[index] = updatedItem;
+      }
+      return newItems;
+    });
+  }, []);
+
+  // New function to handle manual market price changes
+  const handleMarketPriceChange = useCallback((index: number, newPrice: number) => {
+    console.log(`handleMarketPriceChange: Setting price to ${newPrice} for item at index ${index}`);
+    setItems((prev) => {
+      const newItems = [...prev];
+      if (newItems[index]) {
+        const updatedItem = { 
+          ...newItems[index],
+          price: newPrice,
+          marketPriceManuallySet: true,
+          // Clear initial calculation flag to prevent auto-updates
+          initialCalculation: false
+        };
+        
+        console.log(`handleMarketPriceChange: Updated item:`, {
+          cardName: updatedItem.card.name,
+          newPrice: updatedItem.price,
+          marketPriceManuallySet: updatedItem.marketPriceManuallySet,
+          initialCalculation: updatedItem.initialCalculation
+        });
         
         newItems[index] = updatedItem;
       }
@@ -355,6 +385,7 @@ export const useTradeInListWithCustomer = () => {
     updateItem,
     updateItemAttribute,
     handleValueAdjustment,
+    handleMarketPriceChange,
     fetchItemPrice,
     clearList,
     selectCustomer

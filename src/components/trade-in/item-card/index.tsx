@@ -14,6 +14,7 @@ interface TradeInItemProps {
   onUpdate: (index: number, item: TradeInItemType) => void;
   onValueChange: (values: { tradeValue: number; cashValue: number }) => void;
   onValueAdjustment?: (valueType: 'cash' | 'trade', value: number) => void;
+  onMarketPriceChange?: (price: number) => void;
   hideDetailedPricing?: boolean;
 }
 
@@ -24,6 +25,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   onUpdate,
   onValueChange,
   onValueAdjustment,
+  onMarketPriceChange,
   hideDetailedPricing = false
 }) => {
   // Use the logger hook
@@ -99,10 +101,15 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     }
   }, [item, index, onUpdate, onValueAdjustment, instanceId]);
 
-  // Handle market price changes - delegate to the hook which has proper logic
+  // Handle market price changes - use prop if available, otherwise delegate to hook
   const handleMarketPriceChange = useCallback((newPrice: number) => {
-    handleMarketPriceChangeFromHook(newPrice);
-  }, [handleMarketPriceChangeFromHook]);
+    console.log(`TradeInItem [${instanceId}]: Market price change to ${newPrice}, using ${onMarketPriceChange ? 'prop handler' : 'hook handler'}`);
+    if (onMarketPriceChange) {
+      onMarketPriceChange(newPrice);
+    } else {
+      handleMarketPriceChangeFromHook(newPrice);
+    }
+  }, [onMarketPriceChange, handleMarketPriceChangeFromHook, instanceId]);
 
   // Toggle collapse state for certified cards
   const handleToggleCollapse = useCallback(() => {

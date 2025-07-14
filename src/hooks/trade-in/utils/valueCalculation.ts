@@ -47,6 +47,7 @@ export function shouldRecalculate(params: {
   calculatedTradeValue: number;
   cashValueManuallySet?: boolean;
   tradeValueManuallySet?: boolean;
+  marketPriceManuallySet?: boolean;
 }): boolean {
   const {
     isLoading,
@@ -60,7 +61,8 @@ export function shouldRecalculate(params: {
     calculatedCashValue,
     calculatedTradeValue,
     cashValueManuallySet,
-    tradeValueManuallySet
+    tradeValueManuallySet,
+    marketPriceManuallySet
   } = params;
 
   console.log('shouldRecalculate: Evaluating conditions', {
@@ -75,7 +77,8 @@ export function shouldRecalculate(params: {
     calculatedCashValue,
     calculatedTradeValue,
     cashValueManuallySet,
-    tradeValueManuallySet
+    tradeValueManuallySet,
+    marketPriceManuallySet
   });
 
   // Don't calculate if still loading or no price
