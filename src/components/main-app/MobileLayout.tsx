@@ -161,19 +161,21 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
       )}
       
       {activeSection === 'tradein' && (
-        <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden p-4">
-          <TradeInSheet
-            items={sheetItems}
-            selectedCustomer={selectedCustomer}
-            customers={customers}
-            isLoadingCustomers={isLoadingCustomers}
-            onUpdateItem={updateSheetItem}
-            onRemoveItem={removeItemFromSheet}
-            onMarketPriceChange={updateMarketPrice}
-            onCustomerSelect={selectCustomer}
-            onCustomerCreate={handleCustomerCreate}
-            clearSheet={clearSheet}
-          />
+        <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+          <div className="p-4">
+            <TradeInSheet
+              items={sheetItems}
+              selectedCustomer={selectedCustomer}
+              customers={customers}
+              isLoadingCustomers={isLoadingCustomers}
+              onUpdateItem={updateSheetItem}
+              onRemoveItem={removeItemFromSheet}
+              onMarketPriceChange={updateMarketPrice}
+              onCustomerSelect={selectCustomer}
+              onCustomerCreate={handleCustomerCreate}
+              clearSheet={clearSheet}
+            />
+          </div>
         </div>
       )}
       

@@ -3,6 +3,7 @@ import { Edit3, Trash2, Calculator, DollarSign, Coins, Package } from 'lucide-re
 import { TradeInSheetItem } from '../../hooks/useTradeInSheet';
 import { useTradeValue } from '../../hooks/useTradeValue';
 import { Customer } from '../../hooks/useCustomers';
+import CustomerSection from './CustomerSection';
 
 interface TradeInSheetProps {
   items: TradeInSheetItem[];
@@ -32,14 +33,8 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
   onMarketPriceChange,
   onCustomerSelect,
   onCustomerCreate,
-  clearSheet,
+  // clearSheet - Future feature for clearing the sheet
 }) => {
-  // Prevent unused variable warnings
-  void customers;
-  void isLoadingCustomers;
-  void onCustomerSelect;
-  void onCustomerCreate;
-  void clearSheet;
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
 
@@ -122,6 +117,17 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Customer Selection */}
+      {customers && onCustomerSelect && onCustomerCreate && (
+        <CustomerSection
+          selectedCustomer={selectedCustomer}
+          customers={customers}
+          isLoadingCustomers={isLoadingCustomers || false}
+          onCustomerSelect={onCustomerSelect}
+          onCustomerCreate={onCustomerCreate}
+        />
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border">
         <div className="flex items-center space-x-3">
@@ -135,15 +141,6 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
             </p>
           </div>
         </div>
-        
-        {selectedCustomer && (
-          <div className="text-right">
-            <p className="text-sm font-medium text-foreground">
-              {selectedCustomer.firstName} {selectedCustomer.lastName}
-            </p>
-            <p className="text-xs text-muted-foreground">{selectedCustomer.email}</p>
-          </div>
-        )}
       </div>
 
       {/* Sheet Table */}

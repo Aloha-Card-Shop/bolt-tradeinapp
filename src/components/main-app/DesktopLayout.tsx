@@ -100,77 +100,81 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   handleCustomerCreate
 }) => {
   return (
-    <div className="hidden md:grid md:grid-cols-12 md:gap-8">
-      <div className="md:col-span-3 space-y-8">
-        <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-          <CardSearch 
-            cardDetails={cardDetails}
-            onInputChange={handleInputChange}
-            setOptions={setOptions}
-            isLoadingSets={isLoadingSets}
-            isSearching={isSearching}
-            searchInputRef={searchInputRef}
-            potentialCardNumber={potentialCardNumber}
-            onUseAsCardNumber={handleUseAsCardNumber}
-            performSearch={performSearch}
-            isFiltered={isSetFiltered}
-            onShowAllSets={handleShowAllSets}
-            onAddCertificateToResults={addCertificateToResults}
-            onClearResults={handleClearResults}
-            cardType={cardType}
-            onCardTypeChange={setCardType}
-          />
-        </div>
-        
-        {savedCards.length > 0 && (
+    <div className="hidden md:block space-y-8">
+      {/* Top Row: Search and Results */}
+      <div className="grid grid-cols-12 gap-8">
+        {/* Search Column - 4 cols */}
+        <div className="col-span-4 space-y-8">
           <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-            <SavedCards 
-              savedCards={savedCards}
-              onRemove={removeCard}
-              onCheck={handleCheckSavedCard}
+            <CardSearch 
+              cardDetails={cardDetails}
+              onInputChange={handleInputChange}
+              setOptions={setOptions}
+              isLoadingSets={isLoadingSets}
+              isSearching={isSearching}
+              searchInputRef={searchInputRef}
+              potentialCardNumber={potentialCardNumber}
+              onUseAsCardNumber={handleUseAsCardNumber}
+              performSearch={performSearch}
+              isFiltered={isSetFiltered}
+              onShowAllSets={handleShowAllSets}
+              onAddCertificateToResults={addCertificateToResults}
+              onClearResults={handleClearResults}
+              cardType={cardType}
+              onCardTypeChange={setCardType}
             />
           </div>
-        )}
-      </div>
-      
-      <div className="md:col-span-5">
-        <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-          {cardType === 'raw' ? (
-            <CardResults 
-              results={searchResults}
-              isLoading={isSearching}
-              onAddToList={handleAddToList}
-              hasMoreResults={hasMoreResults}
-              loadMoreResults={loadMoreResults}
-              totalResults={totalResults}
-            />
-          ) : (
-            <GradedCardResults 
-              results={gradedResults}
-              isLoading={isGradedSearching}
-              onAddToList={handleAddToList}
-              onRemoveCard={removeCardFromResults}
-            />
+          
+          {savedCards.length > 0 && (
+            <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+              <SavedCards 
+                savedCards={savedCards}
+                onRemove={removeCard}
+                onCheck={handleCheckSavedCard}
+              />
+            </div>
           )}
+        </div>
+        
+        {/* Results Column - 8 cols */}
+        <div className="col-span-8">
+          <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+            {cardType === 'raw' ? (
+              <CardResults 
+                results={searchResults}
+                isLoading={isSearching}
+                onAddToList={handleAddToList}
+                hasMoreResults={hasMoreResults}
+                loadMoreResults={loadMoreResults}
+                totalResults={totalResults}
+              />
+            ) : (
+              <GradedCardResults 
+                results={gradedResults}
+                isLoading={isGradedSearching}
+                onAddToList={handleAddToList}
+                onRemoveCard={removeCardFromResults}
+              />
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="md:col-span-4">
-        <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden sticky top-8">
-          <div className="p-6">
-            <TradeInSheet
-              items={sheetItems}
-              selectedCustomer={selectedCustomer}
-              customers={customers}
-              isLoadingCustomers={isLoadingCustomers}
-              onUpdateItem={updateSheetItem}
-              onRemoveItem={removeItemFromSheet}
-              onMarketPriceChange={updateMarketPrice}
-              onCustomerSelect={selectCustomer}
-              onCustomerCreate={handleCustomerCreate}
-              clearSheet={clearSheet}
-            />
-          </div>
+      {/* Bottom Row: Trade-in Sheet - Full Width */}
+      <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+        <div className="p-6">
+          <TradeInSheet
+            items={sheetItems}
+            selectedCustomer={selectedCustomer}
+            customers={customers}
+            isLoadingCustomers={isLoadingCustomers}
+            onUpdateItem={updateSheetItem}
+            onRemoveItem={removeItemFromSheet}
+            onMarketPriceChange={updateMarketPrice}
+            onCustomerSelect={selectCustomer}
+            onCustomerCreate={handleCustomerCreate}
+            clearSheet={clearSheet}
+          />
         </div>
       </div>
     </div>
