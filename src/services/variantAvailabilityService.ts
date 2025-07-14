@@ -45,12 +45,14 @@ export const getCardVariantAvailability = async (
       console.log('Querying by name and set:', { cardName, setName });
       
       // First try exact name match with group lookup
-      const { data: groupData } = await supabase
+      const { data: groupData, error: groupError } = await supabase
         .from('groups')
         .select('groupid')
         .ilike('name', `%${setName}%`)
         .limit(1)
         .single();
+
+      console.log('Group lookup result:', { groupData, groupError });
 
       if (groupData) {
         console.log('Found group for set:', groupData.groupid);
@@ -67,9 +69,11 @@ export const getCardVariantAvailability = async (
       return defaultAvailability;
     }
 
+    console.log('About to execute query...');
     const { data, error } = await query.limit(5); // Get multiple to see what we're matching
 
     console.log('Query result:', { data, error });
+    console.log('Raw query data:', JSON.stringify(data, null, 2));
 
     if (error) {
       console.error('Database error:', error);
@@ -78,6 +82,17 @@ export const getCardVariantAvailability = async (
 
     if (!data || data.length === 0) {
       console.log('No variant data found for card:', { productId, cardName, setName });
+      
+      // Let's also try a broader search to see if the card exists at all
+      console.log('Trying broader search...');
+      const { data: broadData, error: broadError } = await supabase
+        .from('unified_products')
+        .select('*')
+        .eq('product_id', parseInt(productId || '0'))
+        .limit(1);
+      
+      console.log('Broad search result:', { broadData, broadError });
+      
       return defaultAvailability;
     }
 
