@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Edit3, Trash2, DollarSign, Coins, Package, CheckCircle } from 'lucide-react';
+import { Edit3, Trash2, DollarSign, Package, CheckCircle } from 'lucide-react';
 import { TradeInSheetItem } from '../../hooks/useTradeInSheet';
 import { useTradeValue } from '../../hooks/useTradeValue';
 import { Customer } from '../../hooks/useCustomers';
@@ -48,18 +48,31 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
   // Calculate totals with memoization
   const totals = useMemo(() => {
     return items.reduce((acc, item) => {
-      const cashValue = item.cashValue || 0;
-      const tradeValue = item.tradeValue || 0;
+      // Use the same logic as individual rows to calculate trade values
+      const gameType = item.fullCardData.game;
+      const basePrice = item.price;
+      
+      // Calculate cash and trade values using the same hook logic
+      // This is a simplified version of useTradeValue calculation
+      const cashPercentage = gameType === 'pokemon' ? 0.35 : 0.35; // Default values
+      const tradePercentage = gameType === 'pokemon' ? 0.50 : 0.50; // Default values
+      
+      const calculatedCashValue = basePrice * cashPercentage;
+      const calculatedTradeValue = basePrice * tradePercentage;
+      
+      // Use effective values (manual override or calculated)
+      const effectiveCashValue = item.cashValue ?? calculatedCashValue;
+      const effectiveTradeValue = item.tradeValue ?? calculatedTradeValue;
       
       if (item.paymentType === 'cash') {
-        acc.cashTotal += cashValue * item.quantity;
+        acc.cashTotal += effectiveCashValue * item.quantity;
       } else if (item.paymentType === 'trade') {
-        acc.tradeTotal += tradeValue * item.quantity;
+        acc.tradeTotal += effectiveTradeValue * item.quantity;
       }
       
       acc.itemCount += item.quantity;
       return acc;
-    }, { cashTotal: 0, tradeTotal: 0, itemCount: 0 });
+    }, { cashTotal: 0, tradeTotal: 0, itemCount: 0, totalValue: 0 });
   }, [items]);
 
   // Validation state
@@ -319,20 +332,13 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
       {/* Sticky Action Bar */}
       <div className="sticky bottom-0 z-10 bg-white/95 backdrop-blur-sm border-t p-4 space-y-4">
         {/* Totals */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="flex items-center space-x-2 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-            <DollarSign className="h-5 w-5 text-green-600" />
+        <div className="grid grid-cols-2 gap-4">
+          {/* Total Value (based on selected payment types) */}
+          <div className="flex items-center space-x-2 p-3 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+            <DollarSign className="h-5 w-5 text-primary" />
             <div>
-              <p className="text-xs font-medium text-green-700">Cash</p>
-              <p className="text-sm font-bold text-green-800">${totals.cashTotal.toFixed(2)}</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-2 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
-            <Coins className="h-5 w-5 text-blue-600" />
-            <div>
-              <p className="text-xs font-medium text-blue-700">Trade</p>
-              <p className="text-sm font-bold text-blue-800">${totals.tradeTotal.toFixed(2)}</p>
+              <p className="text-xs font-medium text-primary">Total Value</p>
+              <p className="text-sm font-bold text-primary">${(totals.cashTotal + totals.tradeTotal).toFixed(2)}</p>
             </div>
           </div>
           
