@@ -11,16 +11,55 @@ export const useTradeInActions = (setTradeIns: React.Dispatch<React.SetStateActi
   const handleApproveTradeIn = async (tradeInId: string) => {
     setActionLoading(tradeInId);
     try {
-      const { error } = await supabase
+      const currentUser = (await supabase.auth.getUser()).data.user;
+      if (!currentUser) {
+        throw new Error('No authenticated user found');
+      }
+
+      // First, update the trade-in status
+      const { error: updateError } = await supabase
         .from('trade_ins')
         .update({ 
           status: 'accepted',
           handled_at: new Date().toISOString(),
-          handled_by: (await supabase.auth.getUser()).data.user?.id
+          handled_by: currentUser.id
         })
         .eq('id', tradeInId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Get all trade-in items for this trade-in to create inventory records
+      const { data: tradeInItems, error: itemsError } = await supabase
+        .from('trade_in_items')
+        .select('*')
+        .eq('trade_in_id', tradeInId);
+
+      if (itemsError) throw itemsError;
+
+      if (tradeInItems && tradeInItems.length > 0) {
+        // Create inventory records for each trade-in item
+        const inventoryRecords = tradeInItems.map(item => ({
+          trade_in_item_id: item.id,
+          card_id: item.card_id,
+          trade_in_price: item.price,
+          processed_by: currentUser.id,
+          processed_at: new Date().toISOString(),
+          status: 'available',
+          shopify_synced: false,
+          printed: false,
+          print_count: 0
+        }));
+
+        const { error: inventoryError } = await supabase
+          .from('card_inventory')
+          .insert(inventoryRecords);
+
+        if (inventoryError) {
+          console.error('Error creating inventory records:', inventoryError);
+          // Continue with the approval even if inventory creation fails
+          // This prevents the trade-in from being stuck in pending state
+        }
+      }
 
       // Update local state
       setTradeIns(prev => prev.map(tradeIn => 
