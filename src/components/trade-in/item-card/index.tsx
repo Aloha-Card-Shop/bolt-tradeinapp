@@ -13,7 +13,6 @@ interface TradeInItemProps {
   index: number;
   onRemove: (index: number) => void;
   onUpdate: (index: number, item: TradeInItemType) => void;
-  onConditionChange: (condition: string) => void;
   onValueChange: (values: { tradeValue: number; cashValue: number }) => void;
   onValueAdjustment?: (valueType: 'cash' | 'trade', value: number) => void;
   hideDetailedPricing?: boolean;
@@ -24,7 +23,6 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   index, 
   onRemove, 
   onUpdate,
-  onConditionChange,
   onValueChange,
   onValueAdjustment,
   hideDetailedPricing = false
@@ -46,7 +44,7 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     error,
     cashValue,
     tradeValue,
-    handleConditionChangeWrapper,
+    
     toggleFirstEdition,
     toggleHolo,
     toggleReverseHolo,
@@ -64,11 +62,6 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   // Get debug information - ensure we have valid values
   const { isDebugMode, debugInfo } = useDebugInfo(item, cashValue || 0, tradeValue || 0, error);
 
-  // Handle condition changes, passing through to the parent
-  const handleConditionChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const wrappedEvent = handleConditionChangeWrapper(e);
-    onConditionChange(wrappedEvent.target.value);
-  }, [handleConditionChangeWrapper, onConditionChange]);
 
   // Handle manual value adjustments with reverse calculation (trade values only)
   const handleValueAdjustment = useCallback(async (valueType: 'cash' | 'trade', value: number) => {
@@ -142,7 +135,6 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
             displayValue={displayValue}
             isCalculating={isCalculating}
             error={error}
-            handleConditionChange={handleConditionChange}
             updateQuantity={updateQuantity}
             toggleFirstEdition={toggleFirstEdition}
             toggleHolo={toggleHolo}

@@ -13,7 +13,6 @@ interface ItemContentProps {
   displayValue: number;
   isCalculating: boolean;
   error?: string;
-  handleConditionChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   updateQuantity: (e: React.ChangeEvent<HTMLInputElement>) => void;
   toggleFirstEdition: () => void;
   toggleHolo: () => void;
@@ -41,7 +40,6 @@ const ItemContent: React.FC<ItemContentProps> = ({
   displayValue,
   isCalculating,
   error,
-  handleConditionChange,
   updateQuantity,
   toggleFirstEdition,
   toggleHolo,
@@ -76,14 +74,12 @@ const ItemContent: React.FC<ItemContentProps> = ({
       ) : (
         // Render normal controls for regular cards
         <ItemControls
-          condition={item.condition}
           quantity={item.quantity}
           isFirstEdition={item.isFirstEdition}
           isHolo={item.isHolo}
           isReverseHolo={item.isReverseHolo || false}
           paymentType={item.paymentType}
           isLoadingPrice={item.isLoadingPrice}
-          onConditionChange={handleConditionChange}
           onQuantityChange={updateQuantity}
           onToggleFirstEdition={toggleFirstEdition}
           onToggleHolo={toggleHolo}

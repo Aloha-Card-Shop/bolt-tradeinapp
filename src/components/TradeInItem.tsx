@@ -7,7 +7,6 @@ interface TradeInItemProps {
   index: number;
   onRemove: (index: number) => void;
   onUpdate: (index: number, item: TradeInItemType) => void;
-  onConditionChange: (condition: string) => void;
   onValueChange: (values: { tradeValue: number; cashValue: number }) => void;
   onValueAdjustment?: (index: number, valueType: 'cash' | 'trade', value: number) => void;
 }
@@ -18,7 +17,6 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
   index, 
   onRemove, 
   onUpdate, 
-  onConditionChange, 
   onValueChange,
   onValueAdjustment 
 }) => {
@@ -80,7 +78,6 @@ const TradeInItemWrapper: React.FC<TradeInItemProps> = ({
       index={index}
       onRemove={onRemove}
       onUpdate={onUpdate}
-      onConditionChange={onConditionChange}
       onValueChange={onValueChange}
       onValueAdjustment={handleValueAdjustment}
       hideDetailedPricing={false} // Show detailed pricing in wrapper context
