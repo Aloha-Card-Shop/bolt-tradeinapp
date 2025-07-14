@@ -24,6 +24,7 @@ interface ScrapeRequest {
   language: string;
   isFirstEdition?: boolean;
   isHolo?: boolean;
+  isReverseHolo?: boolean;
 }
 
 async function processQueue() {
@@ -102,7 +103,8 @@ Deno.serve(async (req) => {
       condition: requestData.condition,
       language: requestData.language,
       isFirstEdition: requestData.isFirstEdition,
-      isHolo: requestData.isHolo
+      isHolo: requestData.isHolo,
+      isReverseHolo: requestData.isReverseHolo
     });
     
     const { url, productId } = requestData;

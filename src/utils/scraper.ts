@@ -144,7 +144,8 @@ export const fetchCardPrices = async (
         condition,
         language,
         isFirstEdition: firstEdition,
-        isHolo: holo
+        isHolo: holo,
+        isReverseHolo: reverseHolo
       }
     });
 
