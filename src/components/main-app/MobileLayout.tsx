@@ -59,7 +59,7 @@ interface MobileLayoutProps {
   // Customer props
   customers: Customer[];
   isLoadingCustomers: boolean;
-  handleCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
+  handleCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<Customer>;
 }
 
 export const MobileLayout: React.FC<MobileLayoutProps> = ({

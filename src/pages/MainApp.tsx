@@ -7,7 +7,7 @@ import { useCardSearch } from '../hooks/useCardSearch';
 import { useGradedCardSearch } from '../hooks/useGradedCardSearch';
 import { useSavedCards } from '../hooks/useSavedCards';
 import { useTradeInSheet } from '../hooks/useTradeInSheet';
-import { useCustomers } from '../hooks/useCustomers';
+import { useCustomers, Customer } from '../hooks/useCustomers';
 import { CardDetails, SavedCard } from '../types/card';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 
@@ -62,9 +62,9 @@ function MainApp() {
   } = useTradeInSheet();
   const { customers, isLoading: isLoadingCustomers, createCustomer } = useCustomers();
 
-  // Wrapper function to handle the return type mismatch
-  const handleCustomerCreate = async (firstName: string, lastName: string, email?: string, phone?: string): Promise<void> => {
-    await createCustomer(firstName, lastName, email, phone);
+  // Wrapper function to handle customer creation and return the created customer
+  const handleCustomerCreate = async (firstName: string, lastName: string, email?: string, phone?: string): Promise<Customer> => {
+    return await createCustomer(firstName, lastName, email, phone);
   };
 
   const handleCheckSavedCard = useCallback((card: SavedCard) => {

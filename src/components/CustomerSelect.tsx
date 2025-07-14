@@ -7,7 +7,7 @@ export interface CustomerSelectProps {
   isLoading: boolean;
   selectedCustomer?: Customer | null;
   onSelect: (customer: Customer | null) => void;
-  onCreateNew: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
+  onCreateNew: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<Customer>;
   isSubmitting?: boolean;
 }
 
@@ -38,12 +38,18 @@ const CustomerSelect: React.FC<CustomerSelectProps> = ({
 
   const handleCreateNew = async () => {
     try {
-      await onCreateNew(
+      const createdCustomer = await onCreateNew(
         newCustomer.firstName,
         newCustomer.lastName,
         newCustomer.email || undefined,
         newCustomer.phone || undefined
       );
+      
+      // Auto-select the newly created customer
+      if (createdCustomer) {
+        onSelect(createdCustomer);
+      }
+      
       setIsCreatingNew(false);
       setNewCustomer({
         firstName: '',

@@ -9,7 +9,7 @@ interface CustomerSectionProps {
   customers: Customer[];
   isLoadingCustomers: boolean;
   onCustomerSelect: (customer: Customer | null) => void;
-  onCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
+  onCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<Customer>;
 }
 
 const CustomerSection: React.FC<CustomerSectionProps> = ({
@@ -27,8 +27,11 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({
   };
 
   const handleCustomerCreate = async (firstName: string, lastName: string, email?: string, phone?: string) => {
-    await onCustomerCreate(firstName, lastName, email, phone);
+    const createdCustomer = await onCustomerCreate(firstName, lastName, email, phone);
+    // Auto-select the newly created customer
+    onCustomerSelect(createdCustomer);
     setIsSelectingCustomer(false);
+    return createdCustomer;
   };
 
   if (isSelectingCustomer) {

@@ -20,7 +20,7 @@ interface TradeInListWithCustomerProps {
   onValueAdjustment?: (index: number, valueType: 'cash' | 'trade', value: number) => void;
   onMarketPriceChange?: (index: number, price: number) => void;
   onCustomerSelect: (customer: Customer | null) => void;
-  onCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
+  onCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<Customer>;
   clearList: () => void;
 }
 
@@ -133,7 +133,7 @@ const TradeInListWithCustomer: React.FC<TradeInListWithCustomerProps> = ({
 
       await insertTradeInAndItems(tradeInData, reviewedItems);
       
-      toast.success('Trade-in submitted successfully!');
+      toast.success('Trade-in submitted successfully! A manager will review and approve it shortly.');
       clearList();
       setShowReviewModal(false);
     } catch (error) {
@@ -225,9 +225,9 @@ const TradeInListWithCustomer: React.FC<TradeInListWithCustomerProps> = ({
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                     disabled={!selectedCustomer}
-                    title={!selectedCustomer ? 'Please select a customer first' : ''}
+                    title={!selectedCustomer ? 'Please select a customer first' : 'Send trade-in to manager for approval'}
                   >
-                    Review & Send to Manager
+                    Review & Send for Approval
                   </button>
                 </div>
               )}

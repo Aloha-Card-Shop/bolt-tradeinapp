@@ -19,7 +19,7 @@ interface TradeInReviewProps {
   isLoadingCustomers: boolean;
   selectedCustomer: Customer | null;
   onCustomerSelect: (customer: Customer | null) => void;
-  onCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
+  onCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<Customer>;
   totalCashValue: number;
   totalTradeValue: number;
   itemValues: Array<{

@@ -14,7 +14,7 @@ interface TradeInSheetProps {
   onRemoveItem: (index: number) => void;
   onMarketPriceChange: (index: number, newPrice: number) => void;
   onCustomerSelect?: (customer: Customer | null) => void;
-  onCustomerCreate?: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
+  onCustomerCreate?: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<Customer>;
   clearSheet?: () => void;
 }
 

@@ -71,13 +71,15 @@ const CustomerSelectPage = () => {
     }
   };
 
-  const handleCreateCustomer = async (firstName: string, lastName: string, email?: string, phone?: string): Promise<void> => {
+  const handleCreateCustomer = async (firstName: string, lastName: string, email?: string, phone?: string): Promise<Customer> => {
     try {
       const newCustomer = await createCustomer(firstName, lastName, email, phone);
       handleCustomerSelect(newCustomer);
+      return newCustomer;
     } catch (error) {
       console.error('Error creating customer:', error);
       setError(error instanceof Error ? error.message : 'Failed to create customer');
+      throw error;
     }
   };
 
