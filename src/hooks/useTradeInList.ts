@@ -103,10 +103,10 @@ export const useTradeInList = () => {
         quantity: 1,
         // For certified cards, we don't need condition
         condition: isCertified ? 'certified' : '',
-        // For certified cards, we don't need these attributes
-        isFirstEdition: isCertified ? false : false,
-        isHolo: isCertified ? false : true,
-        isReverseHolo: isCertified ? false : false,
+        // Use variant states from search results if available
+        isFirstEdition: card.variantStates?.isFirstEdition || false,
+        isHolo: card.variantStates?.isHolo || false,
+        isReverseHolo: card.variantStates?.isReverseHolo || false,
         price: finalPrice,
         paymentType: null, 
         isLoadingPrice: false,

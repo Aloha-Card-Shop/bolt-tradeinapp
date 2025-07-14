@@ -6,7 +6,6 @@ import ItemContent from './ItemContent';
 import { useComponentLogger } from '../../../hooks/trade-in/useComponentLogger';
 import { useDebugInfo } from '../../../hooks/trade-in/useDebugInfo';
 import { useTradeInItemHandlers } from '../../../hooks/trade-in/handlers/useTradeInItemHandlers';
-import { useCardVariantAvailability } from '../../../hooks/useCardVariantAvailability';
 
 interface TradeInItemProps {
   item: TradeInItemType;
@@ -30,9 +29,6 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
   // Use the logger hook
   const { instanceId } = useComponentLogger('TradeInItem', item, index);
   
-  // Use the variant availability hook
-  const { availability, isLoading: isLoadingAvailability } = useCardVariantAvailability(item.card);
-  
   // State for collapsible functionality (only for certified cards)
   const [isCollapsed, setIsCollapsed] = useState(false);
   const isCertified = item.card.isCertified;
@@ -44,10 +40,6 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
     error,
     cashValue,
     tradeValue,
-    
-    toggleFirstEdition,
-    toggleHolo,
-    toggleReverseHolo,
     updatePaymentType,
     updateQuantity,
     handleMarketPriceChange: handleMarketPriceChangeFromHook
@@ -136,17 +128,12 @@ const TradeInItem: React.FC<TradeInItemProps> = ({
             isCalculating={isCalculating}
             error={error}
             updateQuantity={updateQuantity}
-            toggleFirstEdition={toggleFirstEdition}
-            toggleHolo={toggleHolo}
-            toggleReverseHolo={toggleReverseHolo}
             updatePaymentType={updatePaymentType}
             onValueAdjustment={handleValueAdjustment}
             onMarketPriceChange={handleMarketPriceChange}
             isDebugMode={isDebugMode}
             debugInfo={debugInfo}
             hideDetailedPricing={hideDetailedPricing}
-            availability={availability}
-            isLoadingAvailability={isLoadingAvailability}
           />
         </div>
       )}

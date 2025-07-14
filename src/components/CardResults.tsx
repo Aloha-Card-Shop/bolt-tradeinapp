@@ -34,6 +34,11 @@ const CardResults: React.FC<CardResultsProps> = ({
   const [fetchedPrices, setFetchedPrices] = useState<Map<string, number>>(new Map());
   const [priceLoading, setPriceLoading] = useState<Set<string>>(new Set());
   
+  // Variant states
+  const [firstEditionStates, setFirstEditionStates] = useState<Map<string, boolean>>(new Map());
+  const [holoStates, setHoloStates] = useState<Map<string, boolean>>(new Map());
+  const [reverseHoloStates, setReverseHoloStates] = useState<Map<string, boolean>>(new Map());
+  
   // Debug logging for results
   useEffect(() => {
     console.log('CardResults received results:', results);
@@ -108,13 +113,18 @@ const CardResults: React.FC<CardResultsProps> = ({
     setPriceLoading(prev => new Set(prev).add(cardId));
 
     try {
+      // Get current variant states for this card
+      const isFirstEdition = firstEditionStates.get(cardId) || false;
+      const isHolo = holoStates.get(cardId) || false;
+      const isReverseHolo = reverseHoloStates.get(cardId) || false;
+      
       const data = await fetchCardPrices(
         card.productId,
         condition,
-        false, // isFirstEdition - will be selectable in trade-in list
-        false, // isHolo - will be selectable in trade-in list  
+        isFirstEdition,
+        isHolo,
         card.game,
-        false  // isReverseHolo - will be selectable in trade-in list
+        isReverseHolo
       );
       
       if (!data.unavailable) {
@@ -129,6 +139,88 @@ const CardResults: React.FC<CardResultsProps> = ({
     } catch (error) {
       console.error("Error fetching price:", error);
       toast.error("Failed to fetch price");
+    } finally {
+      setPriceLoading(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(cardId);
+        return newSet;
+      });
+    }
+  };
+
+  // Handle variant toggling
+  const handleFirstEditionToggle = async (cardId: string, card: CardDetails) => {
+    const newValue = !firstEditionStates.get(cardId);
+    setFirstEditionStates(prev => {
+      const newMap = new Map(prev);
+      newMap.set(cardId, newValue);
+      return newMap;
+    });
+    
+    // Refetch price if condition is selected
+    const selectedCondition = selectedConditions.get(cardId);
+    if (selectedCondition && card.productId && !card.isCertified) {
+      await refetchPrice(cardId, card, selectedCondition);
+    }
+  };
+
+  const handleHoloToggle = async (cardId: string, card: CardDetails) => {
+    const newValue = !holoStates.get(cardId);
+    setHoloStates(prev => {
+      const newMap = new Map(prev);
+      newMap.set(cardId, newValue);
+      return newMap;
+    });
+    
+    // Refetch price if condition is selected
+    const selectedCondition = selectedConditions.get(cardId);
+    if (selectedCondition && card.productId && !card.isCertified) {
+      await refetchPrice(cardId, card, selectedCondition);
+    }
+  };
+
+  const handleReverseHoloToggle = async (cardId: string, card: CardDetails) => {
+    const newValue = !reverseHoloStates.get(cardId);
+    setReverseHoloStates(prev => {
+      const newMap = new Map(prev);
+      newMap.set(cardId, newValue);
+      return newMap;
+    });
+    
+    // Refetch price if condition is selected
+    const selectedCondition = selectedConditions.get(cardId);
+    if (selectedCondition && card.productId && !card.isCertified) {
+      await refetchPrice(cardId, card, selectedCondition);
+    }
+  };
+
+  // Helper function to refetch price with current variants
+  const refetchPrice = async (cardId: string, card: CardDetails, condition: string) => {
+    setPriceLoading(prev => new Set(prev).add(cardId));
+
+    try {
+      const isFirstEdition = firstEditionStates.get(cardId) || false;
+      const isHolo = holoStates.get(cardId) || false;
+      const isReverseHolo = reverseHoloStates.get(cardId) || false;
+      
+      const data = await fetchCardPrices(
+        card.productId!,
+        condition,
+        isFirstEdition,
+        isHolo,
+        card.game,
+        isReverseHolo
+      );
+      
+      if (!data.unavailable) {
+        setFetchedPrices(prev => {
+          const newMap = new Map(prev);
+          newMap.set(cardId, parseFloat(data.price));
+          return newMap;
+        });
+      }
+    } catch (error) {
+      console.error("Error refetching price:", error);
     } finally {
       setPriceLoading(prev => {
         const newSet = new Set(prev);
@@ -179,13 +271,24 @@ const CardResults: React.FC<CardResultsProps> = ({
     
     console.log("Adding card with productId:", card.productId, "condition:", selectedCondition, card);
     
+    // Create card with variant information
+    const cardWithVariants = {
+      ...card,
+      // Add variant states to the card object
+      variantStates: {
+        isFirstEdition: firstEditionStates.get(cardId) || false,
+        isHolo: holoStates.get(cardId) || false,
+        isReverseHolo: reverseHoloStates.get(cardId) || false,
+      }
+    };
+    
     // For certified cards, use adjusted price if available, otherwise use grade-based pricing
     if (card.isCertified && card.certification?.grade) {
       const adjustedPrice = adjustedPrices.get(cardId);
       const condition = 'certified'; // Always use 'certified' for PSA cards
       
       if (adjustedPrice && adjustedPrice > 0) {
-        onAddToList(card, condition, adjustedPrice);
+        onAddToList(cardWithVariants, condition, adjustedPrice);
       } else {
         const gradeValue = parseFloat(card.certification.grade || '0');
         let defaultPrice = 0;
@@ -200,12 +303,12 @@ const CardResults: React.FC<CardResultsProps> = ({
           defaultPrice = 10;  // Lower grades estimate
         }
         
-        onAddToList(card, condition, defaultPrice);
+        onAddToList(cardWithVariants, condition, defaultPrice);
       }
     } else {
       // For regular cards, use the fetched price or 0
       const fetchedPrice = fetchedPrices.get(cardId) || 0;
-      onAddToList(card, selectedCondition!, fetchedPrice);
+      onAddToList(cardWithVariants, selectedCondition!, fetchedPrice);
     }
   };
 
@@ -336,30 +439,77 @@ const CardResults: React.FC<CardResultsProps> = ({
                                 </option>
                               ))}
                             </select>
+                          </div>
+                        )}
+
+                        {/* Card Type/Variant Selectors for non-certified cards */}
+                        {!isCertified && selectedCondition && (
+                          <div className="mt-3">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Card Type
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                onClick={() => handleFirstEditionToggle(cardId, card)}
+                                className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                  firstEditionStates.get(cardId) 
+                                    ? 'bg-blue-100 text-blue-700 border border-blue-300' 
+                                    : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                                }`}
+                                disabled={isLoadingPrice}
+                              >
+                                1st Edition
+                              </button>
+                              <button
+                                onClick={() => handleHoloToggle(cardId, card)}
+                                className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                  holoStates.get(cardId) 
+                                    ? 'bg-purple-100 text-purple-700 border border-purple-300' 
+                                    : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                                }`}
+                                disabled={isLoadingPrice}
+                              >
+                                Holo
+                              </button>
+                              <button
+                                onClick={() => handleReverseHoloToggle(cardId, card)}
+                                className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                  reverseHoloStates.get(cardId) 
+                                    ? 'bg-green-100 text-green-700 border border-green-300' 
+                                    : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                                }`}
+                                disabled={isLoadingPrice}
+                              >
+                                Reverse Holo
+                              </button>
+                            </div>
                             
-                            {/* Show fetched price for selected condition */}
-                            {selectedCondition && (
-                              <div className="mt-2">
-                                {isLoadingPrice ? (
-                                  <div className="flex items-center text-sm text-gray-600">
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Fetching price...
+                            {/* Show fetched price for selected condition and variants */}
+                            <div className="mt-2">
+                              {isLoadingPrice ? (
+                                <div className="flex items-center text-sm text-gray-600">
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Fetching price...
+                                </div>
+                              ) : fetchedPrice && fetchedPrice > 0 ? (
+                                <div className="bg-green-50 border border-green-200 rounded-md p-2 text-green-700">
+                                  <div className="flex items-center">
+                                    <DollarSign className="h-4 w-4 mr-1" />
+                                    <span className="font-medium">Market Price: ${fetchedPrice.toFixed(2)}</span>
                                   </div>
-                                ) : fetchedPrice && fetchedPrice > 0 ? (
-                                  <div className="bg-green-50 border border-green-200 rounded-md p-2 text-green-700">
-                                    <div className="flex items-center">
-                                      <DollarSign className="h-4 w-4 mr-1" />
-                                      <span className="font-medium">Market Price: ${fetchedPrice.toFixed(2)}</span>
-                                    </div>
-                                    <p className="text-xs mt-1">Based on {selectedCondition.replace('_', ' ')} condition</p>
-                                  </div>
-                                ) : selectedCondition && !isLoadingPrice ? (
-                                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-2 text-yellow-700">
-                                    <p className="text-sm">No price available for this condition</p>
-                                  </div>
-                                ) : null}
-                              </div>
-                            )}
+                                  <p className="text-xs mt-1">
+                                    {selectedCondition.replace('_', ' ')} 
+                                    {firstEditionStates.get(cardId) && ', 1st Edition'}
+                                    {holoStates.get(cardId) && ', Holo'}
+                                    {reverseHoloStates.get(cardId) && ', Reverse Holo'}
+                                  </p>
+                                </div>
+                              ) : selectedCondition && !isLoadingPrice ? (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-2 text-yellow-700">
+                                  <p className="text-sm">No price available for this variant</p>
+                                </div>
+                              ) : null}
+                            </div>
                           </div>
                         )}
                         

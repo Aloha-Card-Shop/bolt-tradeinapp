@@ -55,6 +55,12 @@ export interface CardDetails {
   certification?: CardCertification;
   isCertified?: boolean;
   priceSource?: PriceSource;
+  // Variant states from search results
+  variantStates?: {
+    isFirstEdition: boolean;
+    isHolo: boolean;
+    isReverseHolo: boolean;
+  };
 }
 
 export interface PriceData {

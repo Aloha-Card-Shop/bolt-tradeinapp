@@ -6,7 +6,6 @@ import ItemValues from './ItemValues';
 import WarningMessages from './WarningMessages';
 import DebugPanel from './DebugPanel';
 import CertifiedCardControls from './CertifiedCardControls';
-import { VariantAvailability } from '../../../services/variantAvailabilityService';
 
 interface ItemContentProps {
   item: TradeInItem;
@@ -14,9 +13,6 @@ interface ItemContentProps {
   isCalculating: boolean;
   error?: string;
   updateQuantity: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  toggleFirstEdition: () => void;
-  toggleHolo: () => void;
-  toggleReverseHolo: () => void;
   updatePaymentType: (type: 'cash' | 'trade') => void;
   onValueAdjustment?: (valueType: 'cash' | 'trade', value: number) => void;
   onMarketPriceChange?: (price: number) => void;
@@ -31,8 +27,6 @@ interface ItemContentProps {
     error?: string;
   };
   hideDetailedPricing?: boolean;
-  availability?: VariantAvailability;
-  isLoadingAvailability?: boolean;
 }
 
 const ItemContent: React.FC<ItemContentProps> = ({
@@ -41,17 +35,12 @@ const ItemContent: React.FC<ItemContentProps> = ({
   isCalculating,
   error,
   updateQuantity,
-  toggleFirstEdition,
-  toggleHolo,
-  toggleReverseHolo,
   updatePaymentType,
   onValueAdjustment,
   onMarketPriceChange,
   isDebugMode,
   debugInfo,
-  hideDetailedPricing = false,
-  availability,
-  isLoadingAvailability
+  hideDetailedPricing = false
 }) => {
   // Check if the card is certified (PSA card)
   const isCertified = item.card.isCertified;
@@ -75,18 +64,10 @@ const ItemContent: React.FC<ItemContentProps> = ({
         // Render normal controls for regular cards
         <ItemControls
           quantity={item.quantity}
-          isFirstEdition={item.isFirstEdition}
-          isHolo={item.isHolo}
-          isReverseHolo={item.isReverseHolo || false}
           paymentType={item.paymentType}
           isLoadingPrice={item.isLoadingPrice}
           onQuantityChange={updateQuantity}
-          onToggleFirstEdition={toggleFirstEdition}
-          onToggleHolo={toggleHolo}
-          onToggleReverseHolo={toggleReverseHolo}
           onPaymentTypeChange={updatePaymentType}
-          availability={availability}
-          isLoadingAvailability={isLoadingAvailability}
         />
       )}
 
