@@ -87,3 +87,6 @@ verify_jwt = false
 
 [functions.psa-scraper]
 verify_jwt = false
+
+[functions.scrape-price]
+verify_jwt = false
