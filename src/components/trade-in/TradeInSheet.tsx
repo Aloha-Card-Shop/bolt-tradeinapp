@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Edit3, Trash2, Calculator, DollarSign, Coins, Package } from 'lucide-react';
+import { Edit3, Trash2, DollarSign, Coins, Package } from 'lucide-react';
 import { TradeInSheetItem } from '../../hooks/useTradeInSheet';
 import { useTradeValue } from '../../hooks/useTradeValue';
 import { Customer } from '../../hooks/useCustomers';
@@ -127,21 +127,6 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
           onCustomerCreate={onCustomerCreate}
         />
       )}
-      
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-primary/20 rounded-lg">
-            <Calculator className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Smart Trade-in Sheet</h2>
-            <p className="text-sm text-muted-foreground">
-              {totals.itemCount} items • Auto-calculated values
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Sheet Table */}
       <div className="rounded-lg border bg-card overflow-hidden shadow-sm">
