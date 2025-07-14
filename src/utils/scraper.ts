@@ -97,6 +97,16 @@ export const buildTcgPlayerUrl = (
   return url;
 };
 
+// Define condition hierarchy from best to worst
+const CONDITION_HIERARCHY = [
+  'mint',
+  'near_mint', 
+  'lightly_played',
+  'moderately_played', 
+  'heavily_played',
+  'damaged'
+];
+
 export const fetchCardPrices = async (
   productId: string,
   condition: string, 
@@ -104,15 +114,9 @@ export const fetchCardPrices = async (
   isHolo?: boolean,
   game?: string,
   isReverseHolo?: boolean
-): Promise<{ price: string; unavailable?: boolean }> => {
-  try {
-    if (!productId) {
-      throw new Error('Product ID is required');
-    }
-
-    // Initialize cache cleanup on first use
-    initializeScraper();
-
+): Promise<{ price: string; unavailable?: boolean; actualCondition?: string }> => {
+  // Helper function to try fetching price for a specific condition
+  const tryFetchPriceForCondition = async (conditionToTry: string): Promise<{ price: string; unavailable?: boolean; actualCondition?: string }> => {
     const language = game === 'japanese-pokemon' ? 'Japanese' : 'English';
     
     // Ensure boolean values are explicitly handled - default to false if undefined
@@ -122,7 +126,7 @@ export const fetchCardPrices = async (
     
     const url = buildTcgPlayerUrl(
       productId, 
-      condition, 
+      conditionToTry, 
       language, 
       firstEdition, 
       holo,
@@ -132,7 +136,7 @@ export const fetchCardPrices = async (
     // Check cache first
     const cachedEntry = priceCache.get(url);
     if (cachedEntry && (Date.now() - cachedEntry.timestamp) < CACHE_TTL) {
-      return { price: cachedEntry.price.toFixed(2) };
+      return { price: cachedEntry.price.toFixed(2), actualCondition: conditionToTry };
     }
 
     if (import.meta.env.DEV) {
@@ -162,9 +166,6 @@ export const fetchCardPrices = async (
     
     // Handle case where price is not available
     if (!data.price && data.price !== 0) {
-      if (import.meta.env.DEV) {
-        console.log('Price not found for this item configuration');
-      }
       return { price: "0.00", unavailable: true };
     }
 
@@ -175,9 +176,6 @@ export const fetchCardPrices = async (
          data.price === '$-' || 
          data.price === '$0.00' ||
          data.price.includes('unavailable'))) {
-      if (import.meta.env.DEV) {
-        console.log('Price not available for this item');
-      }
       return { price: "0.00", unavailable: true };
     }
 
@@ -191,14 +189,12 @@ export const fetchCardPrices = async (
       // Check if we have a valid number format
       priceValue = parseFloat(priceString);
       if (isNaN(priceValue) || !isFinite(priceValue)) {
-        console.error('Invalid price format received:', data.price);
         return { price: "0.00", unavailable: true };
       }
     } else if (typeof data.price === 'number') {
       // If price is already a number, just use it
       priceValue = data.price;
     } else {
-      console.error('Unexpected price format:', typeof data.price, data.price);
       return { price: "0.00", unavailable: true };
     }
 
@@ -211,7 +207,53 @@ export const fetchCardPrices = async (
       timestamp: Date.now()
     });
 
-    return { price: formattedPrice.toFixed(2) };
+    return { price: formattedPrice.toFixed(2), actualCondition: conditionToTry };
+  };
+
+  try {
+    if (!productId) {
+      throw new Error('Product ID is required');
+    }
+
+    // Initialize cache cleanup on first use
+    initializeScraper();
+
+    // Find the starting condition index
+    let startIndex = CONDITION_HIERARCHY.indexOf(condition);
+    if (startIndex === -1) {
+      // If condition not in hierarchy, try as-is first
+      const result = await tryFetchPriceForCondition(condition);
+      if (!result.unavailable) {
+        return result;
+      }
+      // Start from near_mint if unknown condition
+      startIndex = 1;
+    }
+
+    // Try conditions starting from the requested condition and going down
+    for (let i = startIndex; i < CONDITION_HIERARCHY.length; i++) {
+      const conditionToTry = CONDITION_HIERARCHY[i];
+      
+      if (import.meta.env.DEV) {
+        console.log(`Trying condition: ${conditionToTry}`);
+      }
+      
+      const result = await tryFetchPriceForCondition(conditionToTry);
+      
+      if (!result.unavailable) {
+        if (conditionToTry !== condition && import.meta.env.DEV) {
+          console.log(`Found price for ${conditionToTry} instead of ${condition}`);
+        }
+        return result;
+      }
+    }
+
+    // If we get here, no price was found for any condition
+    if (import.meta.env.DEV) {
+      console.log('No price found for any condition');
+    }
+    return { price: "0.00", unavailable: true };
+    
   } catch (error) {
     console.error('Error fetching price:', error);
     return { price: "0.00", unavailable: true };

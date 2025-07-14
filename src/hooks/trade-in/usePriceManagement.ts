@@ -43,6 +43,12 @@ export const usePriceManagement = ({
 
       console.log(`usePriceManagement [${instanceId}]: Got new price for ${item.card.name}:`, data);
       
+      // Check if we used a different condition as fallback
+      const usedFallback = data.actualCondition && data.actualCondition !== item.condition;
+      if (usedFallback && import.meta.env.DEV) {
+        console.log(`Used fallback condition ${data.actualCondition} instead of ${item.condition} for ${item.card.name}`);
+      }
+      
       // Reset calculated values and make sure we recalculate
       onUpdate({
         price: parseFloat(data.price),
@@ -51,7 +57,9 @@ export const usePriceManagement = ({
         cashValue: undefined, // Reset to force recalculation
         tradeValue: undefined, // Reset to force recalculation
         initialCalculation: true, // Set flag to force calculation
-        marketPriceManuallySet: false // Clear manual flag on refresh
+        marketPriceManuallySet: false, // Clear manual flag on refresh
+        usedFallback: usedFallback || false,
+        fallbackReason: usedFallback ? `Price found using ${data.actualCondition} condition` : undefined
       });
       
       // Reset market price flag so we get default payment type

@@ -51,6 +51,11 @@ export const usePriceFetcher = ({
       } else {
         setPrice(parseFloat(data.price));
         setIsPriceUnavailable(false);
+        
+        // Show notification if fallback condition was used
+        if (data.actualCondition && data.actualCondition !== condition) {
+          toast.success(`Price found using ${data.actualCondition} condition`);
+        }
       }
     } catch (e) {
       setError((e as Error).message);
