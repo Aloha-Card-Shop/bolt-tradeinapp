@@ -5,6 +5,8 @@ interface CacheEntry {
   price: number;
   timestamp: number;
 }
+
+const SCRAPER_URL = 'https://render-tcgplayer-scraper.onrender.com/scrape-price';
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours (increased from 4 hours)
 const CACHE_CLEANUP_INTERVAL = 30 * 60 * 1000; // 30 minutes
 const priceCache = new Map<string, CacheEntry>();
@@ -137,31 +139,29 @@ export const fetchCardPrices = async (
       console.log('Fetching price from:', url);
     }
     
-    const { data, error } = await supabase.functions.invoke('scrape-price', {
-      body: {
-        url,
-        productId,
-        condition,
-        language,
-        isFirstEdition: firstEdition,
-        isHolo: holo,
-        ...(reverseHolo && { isReverseHolo: reverseHolo })
-      }
+    const response = await fetch(SCRAPER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url }),
     });
 
-    if (error) {
-      throw new Error(`Failed to fetch price: ${error.message}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch price: ${response.status}`);
     }
+
+    const data = await response.json();
     if (import.meta.env.DEV) {
       console.log('Price data received:', data);
     }
     
-    if (data?.error) {
+    if (data.error) {
       throw new Error(data.error);
     }
     
     // Handle case where price is not available
-    if (!data?.price && data?.price !== 0) {
+    if (!data.price && data.price !== 0) {
       if (import.meta.env.DEV) {
         console.log('Price not found for this item configuration');
       }
