@@ -56,13 +56,19 @@ const TradeInPriceReviewModal: React.FC<TradeInPriceReviewModalProps> = ({
   const handlePriceAdjustment = (index: number, newPrice: number) => {
     const updatedItems = [...reviewItems];
     const oldPrice = updatedItems[index].price;
+    const item = updatedItems[index];
+    
+    // Calculate trade-in values using correct percentages
+    const cashPercentage = 0.35; // 35% for cash
+    const tradePercentage = 0.50; // 50% for trade
+    
     updatedItems[index] = {
-      ...updatedItems[index],
+      ...item,
       price: newPrice,
       // Recalculate trade/cash values based on new price and payment type
-      ...(updatedItems[index].paymentType === 'cash' 
-        ? { cashValue: newPrice * 0.5 } // Assuming 50% cash rate
-        : { tradeValue: newPrice * 0.65 }) // Assuming 65% trade rate
+      ...(item.paymentType === 'cash' 
+        ? { cashValue: newPrice * cashPercentage }
+        : { tradeValue: newPrice * tradePercentage })
     };
     
     setReviewItems(updatedItems);
@@ -89,12 +95,17 @@ const TradeInPriceReviewModal: React.FC<TradeInPriceReviewModalProps> = ({
   const applyBulkAdjustment = (percentage: number) => {
     const updatedItems = reviewItems.map(item => {
       const newPrice = item.price * (1 + percentage / 100);
+      
+      // Calculate trade-in values using correct percentages
+      const cashPercentage = 0.35; // 35% for cash
+      const tradePercentage = 0.50; // 50% for trade
+      
       return {
         ...item,
         price: newPrice,
         ...(item.paymentType === 'cash' 
-          ? { cashValue: newPrice * 0.5 }
-          : { tradeValue: newPrice * 0.65 })
+          ? { cashValue: newPrice * cashPercentage }
+          : { tradeValue: newPrice * tradePercentage })
       };
     });
     

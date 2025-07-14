@@ -207,17 +207,30 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
   }
 
   function convertToTradeInItems(sheetItems: TradeInSheetItem[]) {
-    return sheetItems.map(item => ({
-      card: item.fullCardData,
-      quantity: item.quantity,
-      price: item.price,
-      condition: item.condition,
-      paymentType: item.paymentType,
-      cashValue: item.paymentType === 'cash' ? item.price : 0,
-      tradeValue: item.paymentType === 'trade' ? item.price : 0,
-      isFirstEdition: item.isFirstEdition,
-      isHolo: item.isHolo
-    }));
+    return sheetItems.map(item => {
+      // Calculate proper trade-in values based on game type and price
+      const gameType = item.fullCardData.game;
+      const basePrice = item.price;
+      
+      // Use the same percentages as the main calculation
+      const cashPercentage = gameType === 'pokemon' ? 0.35 : 0.35; // 35% for cash
+      const tradePercentage = gameType === 'pokemon' ? 0.50 : 0.50; // 50% for trade
+      
+      const calculatedCashValue = basePrice * cashPercentage;
+      const calculatedTradeValue = basePrice * tradePercentage;
+      
+      return {
+        card: item.fullCardData,
+        quantity: item.quantity,
+        price: item.price,
+        condition: item.condition,
+        paymentType: item.paymentType,
+        cashValue: item.cashValue ?? calculatedCashValue,
+        tradeValue: item.tradeValue ?? calculatedTradeValue,
+        isFirstEdition: item.isFirstEdition,
+        isHolo: item.isHolo
+      };
+    });
   }
 
   if (items.length === 0) {
