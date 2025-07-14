@@ -1,13 +1,13 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Edit3, Trash2, Calculator, DollarSign, Coins, Package } from 'lucide-react';
-import { TradeInItem } from '../../hooks/useTradeInListWithCustomer';
+import { TradeInSheetItem } from '../../hooks/useTradeInSheet';
 import { useTradeValue } from '../../hooks/useTradeValue';
 import { Customer } from '../../hooks/useCustomers';
 
 interface TradeInSheetProps {
-  items: TradeInItem[];
+  items: TradeInSheetItem[];
   selectedCustomer: Customer | null;
-  onUpdateItem: (index: number, item: TradeInItem) => void;
+  onUpdateItem: (index: number, updates: Partial<TradeInSheetItem>) => void;
   onRemoveItem: (index: number) => void;
   onMarketPriceChange: (index: number, newPrice: number) => void;
 }
@@ -56,7 +56,7 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
     const item = items[rowIndex];
     if (!item) return;
 
-    const updatedItem = { ...item };
+    const updates: Partial<TradeInSheetItem> = {};
 
     switch (field) {
       case 'price':
@@ -64,22 +64,22 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
         onMarketPriceChange(rowIndex, newPrice);
         break;
       case 'quantity':
-        updatedItem.quantity = parseInt(tempValue) || 1;
-        onUpdateItem(rowIndex, updatedItem);
+        updates.quantity = parseInt(tempValue) || 1;
+        onUpdateItem(rowIndex, updates);
         break;
       case 'condition':
-        updatedItem.condition = tempValue;
-        onUpdateItem(rowIndex, updatedItem);
+        updates.condition = tempValue as any;
+        onUpdateItem(rowIndex, updates);
         break;
       case 'paymentType':
-        updatedItem.paymentType = tempValue as 'cash' | 'trade';
-        onUpdateItem(rowIndex, updatedItem);
+        updates.paymentType = tempValue as 'cash' | 'trade';
+        onUpdateItem(rowIndex, updates);
         break;
     }
 
     setEditingCell(null);
     setTempValue('');
-  }, [editingCell, tempValue, items, onUpdateItem, onMarketPriceChange]);
+  }, [editingCell, tempValue, onUpdateItem, onMarketPriceChange]);
 
   const cancelEdit = useCallback(() => {
     setEditingCell(null);
@@ -149,7 +149,7 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
             <tbody>
               {items.map((item, index) => (
                 <SheetRow
-                  key={`${item.card.id}-${index}`}
+                  key={`${item.fullCardData.id}-${index}`}
                   item={item}
                   index={index}
                   editingCell={editingCell}
@@ -204,7 +204,7 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
 };
 
 interface SheetRowProps {
-  item: TradeInItem;
+  item: TradeInSheetItem;
   index: number;
   editingCell: EditingCell | null;
   tempValue: string;
@@ -228,7 +228,7 @@ const SheetRow: React.FC<SheetRowProps> = ({
   onTempValueChange,
   onRemove,
 }) => {
-  const { cashValue, tradeValue } = useTradeValue(item.card.game, item.price);
+  const { cashValue, tradeValue } = useTradeValue(item.fullCardData.game, item.price);
   
   // Use calculated values or fallback to item values
   const effectiveCashValue = item.cashValue ?? cashValue;
@@ -255,16 +255,18 @@ const SheetRow: React.FC<SheetRowProps> = ({
       {/* Card Name */}
       <td className="p-3">
         <div className="flex items-center space-x-3">
-          {item.card.imageUrl && (
+          {item.fullCardData.imageUrl && (
             <img 
-              src={item.card.imageUrl} 
-              alt={item.card.name}
+              src={item.fullCardData.imageUrl} 
+              alt={item.fullCardData.name}
               className="w-8 h-11 object-cover rounded border"
             />
           )}
           <div className="min-w-0 flex-1">
-            <p className="font-medium text-sm text-foreground truncate">{item.card.name}</p>
-            <p className="text-xs text-muted-foreground truncate">{item.card.set}</p>
+            <p className="font-medium text-sm text-foreground truncate">{item.fullCardData.name}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {'setName' in item.fullCardData ? (item.fullCardData as any).setName : (item.fullCardData as any).set}
+            </p>
           </div>
         </div>
       </td>

@@ -7,7 +7,7 @@ import SavedCards from '../SavedCards';
 import { TradeInSheet } from '../trade-in/TradeInSheet';
 import { MobileNavigation } from './MobileNavigation';
 import { CardDetails, SavedCard } from '../../types/card';
-import { TradeInItem } from '../../hooks/useTradeInListWithCustomer';
+import { TradeInSheetItem } from '../../hooks/useTradeInSheet';
 import { Customer } from '../../hooks/useCustomers';
 import { SetOption } from '../../hooks/useSetOptions';
 
@@ -46,12 +46,12 @@ interface MobileLayoutProps {
   removeCard: (id: string) => void;
   handleCheckSavedCard: (card: SavedCard) => void;
   
-  // Trade-in props
-  items: TradeInItem[];
+  // Sheet props
+  sheetItems: TradeInSheetItem[];
   selectedCustomer: Customer | null;
-  removeItem: (index: number) => void;
-  updateItem: (index: number, item: TradeInItem) => void;
-  handleMarketPriceChange: (index: number, price: number) => void;
+  removeItemFromSheet: (index: number) => void;
+  updateSheetItem: (index: number, updates: Partial<TradeInSheetItem>) => void;
+  updateMarketPrice: (index: number, price: number) => void;
   handleAddToList: (card: CardDetails | SavedCard, condition: string, price: number) => void;
 }
 
@@ -83,11 +83,11 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
   savedCards,
   removeCard,
   handleCheckSavedCard,
-  items,
+  sheetItems,
   selectedCustomer,
-  removeItem,
-  updateItem,
-  handleMarketPriceChange,
+  removeItemFromSheet,
+  updateSheetItem,
+  updateMarketPrice,
   handleAddToList
 }) => {
   return (
@@ -151,11 +151,11 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
       {activeSection === 'tradein' && (
         <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden p-4">
           <TradeInSheet
-            items={items}
+            items={sheetItems}
             selectedCustomer={selectedCustomer}
-            onUpdateItem={updateItem}
-            onRemoveItem={removeItem}
-            onMarketPriceChange={handleMarketPriceChange}
+            onUpdateItem={updateSheetItem}
+            onRemoveItem={removeItemFromSheet}
+            onMarketPriceChange={updateMarketPrice}
           />
         </div>
       )}
@@ -163,7 +163,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
       <MobileNavigation 
         activeSection={activeSection}
         setActiveSection={setActiveSection}
-        itemsCount={items.length}
+        itemsCount={sheetItems.length}
       />
     </div>
   );

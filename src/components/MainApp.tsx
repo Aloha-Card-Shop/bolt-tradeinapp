@@ -7,11 +7,8 @@ import { MobileLayout } from './main-app/MobileLayout';
 import { useCardSearch } from '../hooks/useCardSearch';
 import { useGradedCardSearch } from '../hooks/useGradedCardSearch';
 import { useSavedCards } from '../hooks/useSavedCards';
-import { useTradeInListWithCustomer } from '../hooks/useTradeInListWithCustomer';
 import { useTradeInSheet } from '../hooks/useTradeInSheet';
-import { useCustomers } from '../hooks/useCustomers';
 import { CardDetails, SavedCard } from '../types/card';
-import { toast } from 'react-hot-toast';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 
 function MainApp() {
@@ -53,26 +50,16 @@ function MainApp() {
   } = useGradedCardSearch();
   
   const { savedCards, removeCard } = useSavedCards();
-  const { items, selectedCustomer, removeItem, updateItem, handleValueAdjustment, handleMarketPriceChange, clearList, selectCustomer } = useTradeInListWithCustomer();
   const { 
     sheetItems, 
-    selectedCustomer: sheetSelectedCustomer, 
+    selectedCustomer, 
     addItemToSheet, 
     removeItemFromSheet, 
     updateSheetItem, 
     updateMarketPrice,
+    clearSheet,
+    selectCustomer
   } = useTradeInSheet();
-  const { customers, isLoading: isLoadingCustomers, createCustomer } = useCustomers();
-
-  // Wrapper function to handle the return type mismatch
-  const handleCustomerCreate = useCallback(async (firstName: string, lastName: string, email?: string, phone?: string): Promise<void> => {
-    try {
-      await createCustomer(firstName, lastName, email, phone);
-    } catch (error) {
-      console.error('Error creating customer:', error);
-      toast.error('Failed to create customer');
-    }
-  }, [createCustomer]);
 
   const handleCheckSavedCard = useCallback((card: SavedCard) => {
     const event = {
@@ -135,23 +122,14 @@ function MainApp() {
     savedCards,
     removeCard,
     handleCheckSavedCard,
-    items,
-    selectedCustomer,
-    customers,
-    isLoadingCustomers,
-    removeItem,
-    updateItem,
-    handleValueAdjustment,
-    handleMarketPriceChange,
-    selectCustomer,
-    handleCustomerCreate,
-    clearList,
     // Sheet props
     sheetItems,
-    sheetSelectedCustomer,
+    selectedCustomer,
     removeItemFromSheet,
     updateSheetItem,
     updateMarketPrice,
+    clearSheet,
+    selectCustomer,
     handleAddToList
   };
 

@@ -46,7 +46,7 @@ interface DesktopLayoutProps {
   
   // Sheet props
   sheetItems: TradeInSheetItem[];
-  sheetSelectedCustomer: Customer | null;
+  selectedCustomer: Customer | null;
   removeItemFromSheet: (index: number) => void;
   updateSheetItem: (index: number, updates: Partial<TradeInSheetItem>) => void;
   updateMarketPrice: (index: number, price: number) => void;
@@ -81,7 +81,7 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   handleAddToList,
   // Sheet props
   sheetItems,
-  sheetSelectedCustomer,
+  selectedCustomer,
   removeItemFromSheet,
   updateSheetItem,
   updateMarketPrice
@@ -147,7 +147,7 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
           <div className="p-6">
             <TradeInSheet
               items={sheetItems}
-              selectedCustomer={sheetSelectedCustomer}
+              selectedCustomer={selectedCustomer}
               onUpdateItem={updateSheetItem}
               onRemoveItem={removeItemFromSheet}
               onMarketPriceChange={updateMarketPrice}
