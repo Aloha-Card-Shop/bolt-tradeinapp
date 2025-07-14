@@ -24,21 +24,14 @@ const DynamicCardTypeSelector: React.FC<DynamicCardTypeSelectorProps> = ({
 
   useEffect(() => {
     const fetchAvailability = async () => {
-      console.log('DynamicCardTypeSelector: fetchAvailability called', { productId, cardName, setName });
-      
-      if (!productId && !cardName) {
-        console.log('DynamicCardTypeSelector: No productId or cardName, returning early');
-        return;
-      }
+      if (!productId && !cardName) return;
       
       setIsLoading(true);
       try {
-        console.log('DynamicCardTypeSelector: Calling getCardVariantAvailability');
         const variantData = await getCardVariantAvailability(productId, cardName, setName);
-        console.log('DynamicCardTypeSelector: Variant data received:', variantData);
         setAvailability(variantData);
       } catch (error) {
-        console.error('DynamicCardTypeSelector: Error fetching variant availability:', error);
+        console.error('Error fetching variant availability:', error);
       } finally {
         setIsLoading(false);
       }
@@ -120,51 +113,14 @@ const DynamicCardTypeSelector: React.FC<DynamicCardTypeSelectorProps> = ({
   };
 
   const availableTypes = getAvailableTypes();
-  
-  console.log('DynamicCardTypeSelector: Rendering logic', { 
-    isLoading, 
-    availability, 
-    availableTypes, 
-    selectedType,
-    availableTypesLength: availableTypes.length 
-  });
 
-  // If still loading, show loading state
-  if (isLoading) {
-    console.log('DynamicCardTypeSelector: Still loading, showing loading state');
-    return (
-      <div className="mb-3">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Card Type
-        </label>
-        <div className="flex items-center text-sm text-gray-500">
-          Loading variants...
-        </div>
-      </div>
-    );
-  }
-
-  // If no types are available, show debug info
-  if (availableTypes.length === 0) {
-    console.log('DynamicCardTypeSelector: No available types found');
-    return (
-      <div className="mb-3">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Card Type
-        </label>
-        <div className="text-sm text-gray-500">
-          No variants available for this card
-        </div>
-        <div className="text-xs text-gray-400 mt-1">
-          Debug: {JSON.stringify(availability)}
-        </div>
-      </div>
-    );
+  // If no types are available or still loading, don't render anything
+  if (isLoading || availableTypes.length === 0) {
+    return null;
   }
 
   // If only one type is available, don't show selector but auto-select it
   if (availableTypes.length === 1 && selectedType !== availableTypes[0].key) {
-    console.log('DynamicCardTypeSelector: Auto-selecting single variant:', availableTypes[0].key);
     onTypeChange(availableTypes[0].key);
     return null;
   }
