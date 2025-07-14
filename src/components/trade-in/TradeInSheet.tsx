@@ -7,9 +7,14 @@ import { Customer } from '../../hooks/useCustomers';
 interface TradeInSheetProps {
   items: TradeInSheetItem[];
   selectedCustomer: Customer | null;
+  customers?: Customer[];
+  isLoadingCustomers?: boolean;
   onUpdateItem: (index: number, updates: Partial<TradeInSheetItem>) => void;
   onRemoveItem: (index: number) => void;
   onMarketPriceChange: (index: number, newPrice: number) => void;
+  onCustomerSelect?: (customer: Customer | null) => void;
+  onCustomerCreate?: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
+  clearSheet?: () => void;
 }
 
 interface EditingCell {
@@ -20,10 +25,21 @@ interface EditingCell {
 export const TradeInSheet: React.FC<TradeInSheetProps> = ({
   items,
   selectedCustomer,
+  customers,
+  isLoadingCustomers,
   onUpdateItem,
   onRemoveItem,
   onMarketPriceChange,
+  onCustomerSelect,
+  onCustomerCreate,
+  clearSheet,
 }) => {
+  // Prevent unused variable warnings
+  void customers;
+  void isLoadingCustomers;
+  void onCustomerSelect;
+  void onCustomerCreate;
+  void clearSheet;
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
 

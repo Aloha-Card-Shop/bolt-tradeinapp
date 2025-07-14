@@ -53,6 +53,13 @@ interface MobileLayoutProps {
   updateSheetItem: (index: number, updates: Partial<TradeInSheetItem>) => void;
   updateMarketPrice: (index: number, price: number) => void;
   handleAddToList: (card: CardDetails | SavedCard, condition: string, price: number) => void;
+  clearSheet: () => void;
+  selectCustomer: (customer: Customer | null) => void;
+  
+  // Customer props
+  customers: Customer[];
+  isLoadingCustomers: boolean;
+  handleCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
 }
 
 export const MobileLayout: React.FC<MobileLayoutProps> = ({
@@ -88,7 +95,12 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
   removeItemFromSheet,
   updateSheetItem,
   updateMarketPrice,
-  handleAddToList
+  handleAddToList,
+  clearSheet,
+  selectCustomer,
+  customers,
+  isLoadingCustomers,
+  handleCustomerCreate
 }) => {
   return (
     <div className="md:hidden">
@@ -153,9 +165,14 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
           <TradeInSheet
             items={sheetItems}
             selectedCustomer={selectedCustomer}
+            customers={customers}
+            isLoadingCustomers={isLoadingCustomers}
             onUpdateItem={updateSheetItem}
             onRemoveItem={removeItemFromSheet}
             onMarketPriceChange={updateMarketPrice}
+            onCustomerSelect={selectCustomer}
+            onCustomerCreate={handleCustomerCreate}
+            clearSheet={clearSheet}
           />
         </div>
       )}

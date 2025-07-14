@@ -50,6 +50,13 @@ interface DesktopLayoutProps {
   removeItemFromSheet: (index: number) => void;
   updateSheetItem: (index: number, updates: Partial<TradeInSheetItem>) => void;
   updateMarketPrice: (index: number, price: number) => void;
+  clearSheet: () => void;
+  selectCustomer: (customer: Customer | null) => void;
+  
+  // Customer props
+  customers: Customer[];
+  isLoadingCustomers: boolean;
+  handleCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
 }
 
 export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
@@ -84,7 +91,13 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   selectedCustomer,
   removeItemFromSheet,
   updateSheetItem,
-  updateMarketPrice
+  updateMarketPrice,
+  clearSheet,
+  selectCustomer,
+  // Customer props
+  customers,
+  isLoadingCustomers,
+  handleCustomerCreate
 }) => {
   return (
     <div className="hidden md:grid md:grid-cols-12 md:gap-8">
@@ -148,9 +161,14 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
             <TradeInSheet
               items={sheetItems}
               selectedCustomer={selectedCustomer}
+              customers={customers}
+              isLoadingCustomers={isLoadingCustomers}
               onUpdateItem={updateSheetItem}
               onRemoveItem={removeItemFromSheet}
               onMarketPriceChange={updateMarketPrice}
+              onCustomerSelect={selectCustomer}
+              onCustomerCreate={handleCustomerCreate}
+              clearSheet={clearSheet}
             />
           </div>
         </div>
