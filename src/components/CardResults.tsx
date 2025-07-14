@@ -389,16 +389,27 @@ const CardResults: React.FC<CardResultsProps> = ({
                         )}
 
                         {/* Card Type Selector for non-certified cards */}
-                        {!isCertified && (
-                          <DynamicCardTypeSelector
-                            productId={card.productId}
-                            cardName={card.name}
-                            setName={card.set}
-                            selectedType={selectedCardType || ''}
-                            onTypeChange={(type) => handleCardTypeChange(cardId, type, card)}
-                            disabled={!hasProductId}
-                          />
-                        )}
+                        {!isCertified && (() => {
+                          console.log('CardResults: Rendering DynamicCardTypeSelector for card:', {
+                            cardId,
+                            cardName: card.name,
+                            productId: card.productId,
+                            setName: card.set,
+                            selectedCardType,
+                            hasProductId,
+                            isCertified
+                          });
+                          return (
+                            <DynamicCardTypeSelector
+                              productId={card.productId}
+                              cardName={card.name}
+                              setName={card.set}
+                              selectedType={selectedCardType || ''}
+                              onTypeChange={(type) => handleCardTypeChange(cardId, type, card)}
+                              disabled={!hasProductId}
+                            />
+                          );
+                        })()}
 
                         {/* Condition Selector for non-certified cards */}
                         {!isCertified && (
