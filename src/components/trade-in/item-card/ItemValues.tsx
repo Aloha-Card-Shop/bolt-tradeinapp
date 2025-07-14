@@ -48,7 +48,7 @@ const ItemValues: React.FC<ItemValuesProps> = ({
   return (
     <div className="mt-4 space-y-3">
       <ValueDisplay
-        label="Market Price (Source)"
+        label="Market Price (Editable)"
         value={price}
         isLoading={isLoadingPrice || false}
         error={isPriceUnavailable ? "Price unavailable" : undefined}
