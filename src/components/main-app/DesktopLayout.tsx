@@ -4,9 +4,9 @@ import CardSearch from '../CardSearch';
 import CardResults from '../CardResults';
 import GradedCardResults from '../GradedCardResults';
 import SavedCards from '../SavedCards';
-import TradeInListWithCustomer from '../trade-in/TradeInListWithCustomer';
+import { TradeInSheet } from '../trade-in/TradeInSheet';
+import { TradeInSheetItem } from '../../hooks/useTradeInSheet';
 import { CardDetails, SavedCard } from '../../types/card';
-import { TradeInItem } from '../../hooks/useTradeInListWithCustomer';
 import { Customer } from '../../hooks/useCustomers';
 import { SetOption } from '../../hooks/useSetOptions';
 
@@ -42,19 +42,14 @@ interface DesktopLayoutProps {
   removeCard: (id: string) => void;
   handleCheckSavedCard: (card: SavedCard) => void;
   
-  // Trade-in props
-  items: TradeInItem[];
-  selectedCustomer: Customer | null;
-  customers: Customer[];
-  isLoadingCustomers: boolean;
-  removeItem: (index: number) => void;
-  updateItem: (index: number, item: TradeInItem) => void;
-  handleValueAdjustment: (index: number, valueType: 'cash' | 'trade', value: number) => void;
-  handleMarketPriceChange: (index: number, price: number) => void;
-  selectCustomer: (customer: Customer | null) => void;
-  handleCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
-  clearList: () => void;
   handleAddToList: (card: CardDetails | SavedCard, condition: string, price: number) => void;
+  
+  // Sheet props
+  sheetItems: TradeInSheetItem[];
+  sheetSelectedCustomer: Customer | null;
+  removeItemFromSheet: (index: number) => void;
+  updateSheetItem: (index: number, updates: Partial<TradeInSheetItem>) => void;
+  updateMarketPrice: (index: number, price: number) => void;
 }
 
 export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
@@ -83,18 +78,13 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   savedCards,
   removeCard,
   handleCheckSavedCard,
-  items,
-  selectedCustomer,
-  customers,
-  isLoadingCustomers,
-  removeItem,
-  updateItem,
-  handleValueAdjustment,
-  handleMarketPriceChange,
-  selectCustomer,
-  handleCustomerCreate,
-  clearList,
-  handleAddToList
+  handleAddToList,
+  // Sheet props
+  sheetItems,
+  sheetSelectedCustomer,
+  removeItemFromSheet,
+  updateSheetItem,
+  updateMarketPrice
 }) => {
   return (
     <div className="hidden md:grid md:grid-cols-12 md:gap-8">
@@ -154,19 +144,15 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
 
       <div className="md:col-span-4">
         <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden sticky top-8">
-            <TradeInListWithCustomer
-              items={items}
-              selectedCustomer={selectedCustomer}
-              customers={customers}
-              isLoadingCustomers={isLoadingCustomers}
-              onRemoveItem={removeItem}
-              onUpdateItem={updateItem}
-              onValueAdjustment={handleValueAdjustment}
-              onMarketPriceChange={handleMarketPriceChange}
-              onCustomerSelect={selectCustomer}
-              onCustomerCreate={handleCustomerCreate}
-              clearList={clearList}
+          <div className="p-6">
+            <TradeInSheet
+              items={sheetItems}
+              selectedCustomer={sheetSelectedCustomer}
+              onUpdateItem={updateSheetItem}
+              onRemoveItem={removeItemFromSheet}
+              onMarketPriceChange={updateMarketPrice}
             />
+          </div>
         </div>
       </div>
     </div>

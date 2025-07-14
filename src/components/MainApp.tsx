@@ -8,6 +8,7 @@ import { useCardSearch } from '../hooks/useCardSearch';
 import { useGradedCardSearch } from '../hooks/useGradedCardSearch';
 import { useSavedCards } from '../hooks/useSavedCards';
 import { useTradeInListWithCustomer } from '../hooks/useTradeInListWithCustomer';
+import { useTradeInSheet } from '../hooks/useTradeInSheet';
 import { useCustomers } from '../hooks/useCustomers';
 import { CardDetails, SavedCard } from '../types/card';
 import { toast } from 'react-hot-toast';
@@ -52,7 +53,15 @@ function MainApp() {
   } = useGradedCardSearch();
   
   const { savedCards, removeCard } = useSavedCards();
-  const { items, selectedCustomer, addItem, removeItem, updateItem, handleValueAdjustment, handleMarketPriceChange, clearList, selectCustomer } = useTradeInListWithCustomer();
+  const { items, selectedCustomer, removeItem, updateItem, handleValueAdjustment, handleMarketPriceChange, clearList, selectCustomer } = useTradeInListWithCustomer();
+  const { 
+    sheetItems, 
+    selectedCustomer: sheetSelectedCustomer, 
+    addItemToSheet, 
+    removeItemFromSheet, 
+    updateSheetItem, 
+    updateMarketPrice,
+  } = useTradeInSheet();
   const { customers, isLoading: isLoadingCustomers, createCustomer } = useCustomers();
 
   // Wrapper function to handle the return type mismatch
@@ -81,36 +90,15 @@ function MainApp() {
   }, [handleInputChange, performSearch, isMobile]);
 
   const handleAddToList = useCallback((card: CardDetails | SavedCard, condition: string, price: number) => {
-    // Enhanced productId validation
-    if (!card.productId) {
-      console.error(`Cannot add ${card.name} - Card has no productId`, card);
-      toast.error(`Cannot add ${card.name || 'card'} - Missing product ID`);
-      return;
-    }
-    
-    // Additional validation to ensure productId is a valid string
-    const productId = String(card.productId);
-    if (productId === 'undefined' || productId === 'null' || productId === '') {
-      console.error(`Invalid product ID for ${card.name}:`, productId);
-      toast.error(`Cannot add ${card.name || 'card'} - Invalid product ID`);
-      return;
-    }
-    
-    // Create a new card object with the validated productId
-    const cardToAdd = {
-      ...card,
-      productId: productId,
-    };
-    
-    addItem(cardToAdd, price);
+    // Add to the new sheet instead of old list
+    addItemToSheet(card, condition, price);
     resetSearch(); // Reset search after adding card
-    toast.success(`Added ${card.name} (${condition.replace('_', ' ')}) to trade-in list`);
     
     // On mobile, switch to trade-in view after adding card
     if (isMobile) {
       setActiveSection('tradein');
     }
-  }, [addItem, resetSearch, isMobile]);
+  }, [addItemToSheet, resetSearch, isMobile]);
 
   // Determine which clear function to use based on card type
   const handleClearResults = useCallback(() => {
@@ -158,6 +146,12 @@ function MainApp() {
     selectCustomer,
     handleCustomerCreate,
     clearList,
+    // Sheet props
+    sheetItems,
+    sheetSelectedCustomer,
+    removeItemFromSheet,
+    updateSheetItem,
+    updateMarketPrice,
     handleAddToList
   };
 
