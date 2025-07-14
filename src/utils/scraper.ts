@@ -145,7 +145,7 @@ export const fetchCardPrices = async (
         language,
         isFirstEdition: firstEdition,
         isHolo: holo,
-        isReverseHolo: reverseHolo
+        ...(reverseHolo && { isReverseHolo: reverseHolo })
       }
     });
 
