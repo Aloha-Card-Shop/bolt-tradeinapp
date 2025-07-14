@@ -161,8 +161,8 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
       )}
       
       {activeSection === 'tradein' && (
-        <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-          <div className="p-4">
+        <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20">
+          <div className="p-4 pb-0">
             <TradeInSheet
               items={sheetItems}
               selectedCustomer={selectedCustomer}

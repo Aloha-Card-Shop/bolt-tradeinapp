@@ -167,8 +167,8 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
             
             {/* Trade-in Sheet Column - 8 cols */}
             <div className="col-span-8">
-              <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-                <div className="p-6">
+              <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20">
+                <div className="p-6 pb-0">
                   <TradeInSheet
                     items={sheetItems}
                     selectedCustomer={selectedCustomer}
@@ -190,8 +190,8 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
         {/* Trade-in Sheet Full Width when no saved cards */}
         {savedCards.length === 0 && (
           <div className="col-span-12">
-            <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-              <div className="p-6">
+            <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20">
+              <div className="p-6 pb-0">
                 <TradeInSheet
                   items={sheetItems}
                   selectedCustomer={selectedCustomer}
