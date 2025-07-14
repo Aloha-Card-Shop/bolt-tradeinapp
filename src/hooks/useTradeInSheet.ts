@@ -47,7 +47,7 @@ export const useTradeInSheet = () => {
       isHolo: isCertified ? false : true,
       isReverseHolo: isCertified ? false : false,
       price,
-      paymentType: null,
+      paymentType: 'cash',
       // Values will be calculated automatically
       cashValue: undefined,
       tradeValue: undefined,
