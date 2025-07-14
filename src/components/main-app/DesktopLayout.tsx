@@ -104,7 +104,7 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
       {/* Top Row: Search and Results */}
       <div className="grid grid-cols-12 gap-8">
         {/* Search Column - 4 cols */}
-        <div className="col-span-4 space-y-8">
+        <div className="col-span-4">
           <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
             <CardSearch 
               cardDetails={cardDetails}
@@ -124,16 +124,6 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
               onCardTypeChange={setCardType}
             />
           </div>
-          
-          {savedCards.length > 0 && (
-            <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-              <SavedCards 
-                savedCards={savedCards}
-                onRemove={removeCard}
-                onCheck={handleCheckSavedCard}
-              />
-            </div>
-          )}
         </div>
         
         {/* Results Column - 8 cols */}
@@ -160,21 +150,39 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
         </div>
       </div>
 
-      {/* Bottom Row: Trade-in Sheet - Full Width */}
-      <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-        <div className="p-6">
-          <TradeInSheet
-            items={sheetItems}
-            selectedCustomer={selectedCustomer}
-            customers={customers}
-            isLoadingCustomers={isLoadingCustomers}
-            onUpdateItem={updateSheetItem}
-            onRemoveItem={removeItemFromSheet}
-            onMarketPriceChange={updateMarketPrice}
-            onCustomerSelect={selectCustomer}
-            onCustomerCreate={handleCustomerCreate}
-            clearSheet={clearSheet}
-          />
+      {/* Bottom Row: Customer Section and Trade-in Sheet */}
+      <div className="grid grid-cols-12 gap-8">
+        {/* Customer + Saved Cards Column - 4 cols */}
+        <div className="col-span-4 space-y-8">
+          {savedCards.length > 0 && (
+            <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+              <SavedCards 
+                savedCards={savedCards}
+                onRemove={removeCard}
+                onCheck={handleCheckSavedCard}
+              />
+            </div>
+          )}
+        </div>
+        
+        {/* Trade-in Sheet Column - 8 cols */}
+        <div className="col-span-8">
+          <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+            <div className="p-6">
+              <TradeInSheet
+                items={sheetItems}
+                selectedCustomer={selectedCustomer}
+                customers={customers}
+                isLoadingCustomers={isLoadingCustomers}
+                onUpdateItem={updateSheetItem}
+                onRemoveItem={removeItemFromSheet}
+                onMarketPriceChange={updateMarketPrice}
+                onCustomerSelect={selectCustomer}
+                onCustomerCreate={handleCustomerCreate}
+                clearSheet={clearSheet}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
