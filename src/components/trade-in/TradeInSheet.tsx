@@ -132,8 +132,8 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
 
       {/* Sheet Table */}
       <div className="rounded-lg border bg-card overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-x-auto min-w-full">
+          <table className="w-full min-w-[800px]">
             <thead>
               <tr className="bg-muted/50 border-b">
                 <th className="text-left p-3 font-medium text-sm text-muted-foreground">Card</th>
@@ -168,7 +168,7 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
       </div>
 
       {/* Totals */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
           <div className="p-2 bg-green-100 rounded-lg">
             <DollarSign className="h-5 w-5 text-green-600" />

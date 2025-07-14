@@ -4,7 +4,7 @@ import CardSearch from '../CardSearch';
 import CardResults from '../CardResults';
 import GradedCardResults from '../GradedCardResults';
 import SavedCards from '../SavedCards';
-import TradeInListWithCustomer from '../trade-in/TradeInListWithCustomer';
+import { TradeInSheet } from '../trade-in/TradeInSheet';
 import { MobileNavigation } from './MobileNavigation';
 import { CardDetails, SavedCard } from '../../types/card';
 import { TradeInItem } from '../../hooks/useTradeInListWithCustomer';
@@ -49,15 +49,9 @@ interface MobileLayoutProps {
   // Trade-in props
   items: TradeInItem[];
   selectedCustomer: Customer | null;
-  customers: Customer[];
-  isLoadingCustomers: boolean;
   removeItem: (index: number) => void;
   updateItem: (index: number, item: TradeInItem) => void;
-  handleValueAdjustment: (index: number, valueType: 'cash' | 'trade', value: number) => void;
   handleMarketPriceChange: (index: number, price: number) => void;
-  selectCustomer: (customer: Customer | null) => void;
-  handleCustomerCreate: (firstName: string, lastName: string, email?: string, phone?: string) => Promise<void>;
-  clearList: () => void;
   handleAddToList: (card: CardDetails | SavedCard, condition: string, price: number) => void;
 }
 
@@ -91,15 +85,9 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
   handleCheckSavedCard,
   items,
   selectedCustomer,
-  customers,
-  isLoadingCustomers,
   removeItem,
   updateItem,
-  handleValueAdjustment,
   handleMarketPriceChange,
-  selectCustomer,
-  handleCustomerCreate,
-  clearList,
   handleAddToList
 }) => {
   return (
@@ -161,19 +149,13 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
       )}
       
       {activeSection === 'tradein' && (
-        <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-          <TradeInListWithCustomer
+        <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-xl border border-white/20 overflow-hidden p-4">
+          <TradeInSheet
             items={items}
             selectedCustomer={selectedCustomer}
-            customers={customers}
-            isLoadingCustomers={isLoadingCustomers}
-            onRemoveItem={removeItem}
             onUpdateItem={updateItem}
-            onValueAdjustment={handleValueAdjustment}
+            onRemoveItem={removeItem}
             onMarketPriceChange={handleMarketPriceChange}
-            onCustomerSelect={selectCustomer}
-            onCustomerCreate={handleCustomerCreate}
-            clearList={clearList}
           />
         </div>
       )}
