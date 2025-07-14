@@ -6,13 +6,14 @@ interface ItemConditionSelectProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   id: string;
+  usedFallback?: boolean;
 }
 
-const ItemConditionSelect: React.FC<ItemConditionSelectProps> = ({ value, onChange, id }) => {
+const ItemConditionSelect: React.FC<ItemConditionSelectProps> = ({ value, onChange, id, usedFallback = false }) => {
   return (
     <div>
       <label htmlFor={id} className="block text-xs font-medium text-gray-700 mb-1">
-        Condition
+        Condition {usedFallback && <span className="text-amber-600" title="Price found using fallback condition">*</span>}
       </label>
       <select
         id={id}

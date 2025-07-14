@@ -37,7 +37,10 @@ const TradeInItemCard: React.FC<TradeInItemCardProps> = ({ item }) => {
       <div className="grid grid-cols-2 gap-2 mb-2">
         <div>
           <p className="text-xs text-gray-500">Condition</p>
-          <p className="text-sm">{item.condition.replace(/_/g, ' ')}</p>
+          <p className="text-sm">
+            {item.condition.replace(/_/g, ' ')}
+            {item.usedFallback && <span className="text-amber-600 ml-1" title="Price found using fallback condition">*</span>}
+          </p>
         </div>
         <div>
           <p className="text-xs text-gray-500">Quantity</p>

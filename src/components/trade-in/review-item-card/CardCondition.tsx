@@ -5,13 +5,14 @@ import { CONDITIONS } from '../../../constants/tradeInConstants';
 interface CardConditionProps {
   condition: string;
   onChange: (condition: string) => void;
+  usedFallback?: boolean;
 }
 
-const CardCondition: React.FC<CardConditionProps> = ({ condition, onChange }) => {
+const CardCondition: React.FC<CardConditionProps> = ({ condition, onChange, usedFallback = false }) => {
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        Condition
+        Condition {usedFallback && <span className="text-amber-600" title="Price found using fallback condition">*</span>}
       </label>
       <select
         value={condition}

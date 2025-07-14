@@ -126,6 +126,7 @@ const ItemAttributesSection: React.FC<ItemAttributesSectionProps> = ({
       <CardCondition 
         condition={item.condition}
         onChange={handleConditionChange}
+        usedFallback={item.usedFallback}
       />
 
       <CardQuantity 

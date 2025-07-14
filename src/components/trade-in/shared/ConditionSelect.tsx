@@ -5,17 +5,19 @@ interface ConditionSelectProps {
   condition: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   disabled?: boolean;
+  usedFallback?: boolean;
 }
 
 const ConditionSelect: React.FC<ConditionSelectProps> = ({
   condition,
   onChange,
-  disabled = false
+  disabled = false,
+  usedFallback = false
 }) => {
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        Condition
+        Condition {usedFallback && <span className="text-amber-600" title="Price found using fallback condition">*</span>}
       </label>
       <select
         value={condition}

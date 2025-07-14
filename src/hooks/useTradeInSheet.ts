@@ -4,9 +4,10 @@ import { TradeInItem } from './useTradeInListWithCustomer';
 import { Customer } from './useCustomers';
 import { toast } from 'react-hot-toast';
 
-export interface TradeInSheetItem extends Omit<TradeInItem, 'key' | 'isLoadingPrice' | 'error' | 'isPriceUnavailable' | 'usedFallback' | 'fallbackReason' | 'initialCalculation'> {
+export interface TradeInSheetItem extends Omit<TradeInItem, 'key' | 'isLoadingPrice' | 'error' | 'isPriceUnavailable' | 'fallbackReason' | 'initialCalculation'> {
   // Store complete card data but only expose what's needed in the UI
   fullCardData: CardDetails | SavedCard;
+  usedFallback?: boolean;
 }
 
 export const useTradeInSheet = () => {

@@ -87,7 +87,10 @@ const TradeInItemsList: React.FC<TradeInItemsListProps> = ({
                     <div>
                       <h3 className="font-medium text-gray-900">{item.card.name}</h3>
                       <p className="text-sm text-gray-500">
-                        {item.card.set} • Qty: {item.quantity} • <span className="font-medium text-gray-700">{item.condition.replace('_', ' ')}</span>
+                        {item.card.set} • Qty: {item.quantity} • <span className="font-medium text-gray-700">
+                          {item.condition.replace('_', ' ')}
+                          {item.usedFallback && <span className="text-amber-600 ml-1" title="Price found using fallback condition">*</span>}
+                        </span>
                       </p>
                     </div>
                   </div>

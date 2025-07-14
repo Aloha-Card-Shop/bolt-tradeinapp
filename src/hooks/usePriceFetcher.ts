@@ -24,6 +24,7 @@ export const usePriceFetcher = ({
   const [error, setError] = useState<string | undefined>();
   const [price, setPrice] = useState<number>(0);
   const [isPriceUnavailable, setIsPriceUnavailable] = useState(false);
+  const [usedFallback, setUsedFallback] = useState(false);
   
   const fetchPrice = useCallback(async () => {
     if (!productId || !condition) {
@@ -47,13 +48,15 @@ export const usePriceFetcher = ({
       if (data.unavailable) {
         setPrice(0);
         setIsPriceUnavailable(true);
+        setUsedFallback(false);
         toast.error("No price available for this card configuration");
       } else {
         setPrice(parseFloat(data.price));
         setIsPriceUnavailable(false);
+        setUsedFallback(data.usedFallback || false);
         
         // Show notification if fallback condition was used
-        if (data.actualCondition && data.actualCondition !== condition) {
+        if (data.usedFallback && data.actualCondition) {
           toast.success(`Price found using ${data.actualCondition} condition`);
         }
       }
@@ -68,6 +71,7 @@ export const usePriceFetcher = ({
   const updatePrice = (newPrice: number) => {
     setPrice(newPrice);
     setIsPriceUnavailable(false);
+    setUsedFallback(false);
   };
 
   return {
@@ -75,6 +79,7 @@ export const usePriceFetcher = ({
     error,
     price,
     isPriceUnavailable,
+    usedFallback,
     fetchPrice,
     updatePrice
   };

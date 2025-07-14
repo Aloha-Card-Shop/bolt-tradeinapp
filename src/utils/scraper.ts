@@ -114,7 +114,7 @@ export const fetchCardPrices = async (
   isHolo?: boolean,
   game?: string,
   isReverseHolo?: boolean
-): Promise<{ price: string; unavailable?: boolean; actualCondition?: string }> => {
+): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; usedFallback?: boolean }> => {
   // Helper function to try fetching price for a specific condition
   const tryFetchPriceForCondition = async (conditionToTry: string): Promise<{ price: string; unavailable?: boolean; actualCondition?: string }> => {
     const language = game === 'japanese-pokemon' ? 'Japanese' : 'English';
@@ -210,6 +210,30 @@ export const fetchCardPrices = async (
     return { price: formattedPrice.toFixed(2), actualCondition: conditionToTry };
   };
 
+  // Smart condition prioritization based on starting condition
+  const getOptimizedConditionOrder = (startingCondition: string): string[] => {
+    const startIndex = CONDITION_HIERARCHY.indexOf(startingCondition);
+    if (startIndex === -1) return CONDITION_HIERARCHY;
+    
+    // Try current condition first, then descending order (worse conditions are more likely to have prices)
+    const optimizedOrder: string[] = [];
+    
+    // Add starting condition first
+    optimizedOrder.push(startingCondition);
+    
+    // Add worse conditions (higher index)
+    for (let i = startIndex + 1; i < CONDITION_HIERARCHY.length; i++) {
+      optimizedOrder.push(CONDITION_HIERARCHY[i]);
+    }
+    
+    // Add better conditions (lower index) 
+    for (let i = startIndex - 1; i >= 0; i--) {
+      optimizedOrder.push(CONDITION_HIERARCHY[i]);
+    }
+    
+    return [...new Set(optimizedOrder)]; // Remove duplicates
+  };
+
   try {
     if (!productId) {
       throw new Error('Product ID is required');
@@ -218,22 +242,15 @@ export const fetchCardPrices = async (
     // Initialize cache cleanup on first use
     initializeScraper();
 
-    // Find the starting condition index
-    let startIndex = CONDITION_HIERARCHY.indexOf(condition);
-    if (startIndex === -1) {
-      // If condition not in hierarchy, try as-is first
-      const result = await tryFetchPriceForCondition(condition);
-      if (!result.unavailable) {
-        return result;
-      }
-      // Start from near_mint if unknown condition
-      startIndex = 1;
+    // Use optimized condition order for better performance
+    const conditionsToTry = getOptimizedConditionOrder(condition);
+    
+    if (import.meta.env.DEV) {
+      console.log(`Trying conditions in order: ${conditionsToTry.join(', ')}`);
     }
 
-    // Try conditions starting from the requested condition and going down
-    for (let i = startIndex; i < CONDITION_HIERARCHY.length; i++) {
-      const conditionToTry = CONDITION_HIERARCHY[i];
-      
+    // Try conditions in optimized order
+    for (const conditionToTry of conditionsToTry) {
       if (import.meta.env.DEV) {
         console.log(`Trying condition: ${conditionToTry}`);
       }
@@ -241,10 +258,11 @@ export const fetchCardPrices = async (
       const result = await tryFetchPriceForCondition(conditionToTry);
       
       if (!result.unavailable) {
-        if (conditionToTry !== condition && import.meta.env.DEV) {
+        const usedFallback = conditionToTry !== condition;
+        if (usedFallback && import.meta.env.DEV) {
           console.log(`Found price for ${conditionToTry} instead of ${condition}`);
         }
-        return result;
+        return { ...result, usedFallback };
       }
     }
 

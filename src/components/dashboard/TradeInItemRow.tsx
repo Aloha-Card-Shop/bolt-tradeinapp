@@ -37,6 +37,7 @@ const TradeInItemRow: React.FC<TradeInItemRowProps> = ({ item }) => {
       <td className="px-4 py-2 border-b">
         <p className="text-sm text-gray-700">
           {item.condition.replace(/_/g, ' ')}
+          {item.usedFallback && <span className="text-amber-600 ml-1" title="Price found using fallback condition">*</span>}
         </p>
       </td>
       <td className="px-4 py-2 border-b">

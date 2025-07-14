@@ -330,6 +330,7 @@ const SheetRow: React.FC<SheetRowProps> = ({
             className="w-full px-2 py-1 text-left text-sm hover:bg-muted rounded transition-colors"
           >
             {getConditionLabel(item.condition)}
+            {item.usedFallback && <span className="text-amber-600 ml-1" title="Price found using fallback condition">*</span>}
           </button>
         )}
       </td>
