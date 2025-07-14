@@ -25,6 +25,7 @@ export interface TradeInItem {
     // Manual override flags
     cashValueManuallySet?: boolean;
     tradeValueManuallySet?: boolean;
+    marketPriceManuallySet?: boolean;
   };
   tcgplayer_url?: string;
   image_url?: string;

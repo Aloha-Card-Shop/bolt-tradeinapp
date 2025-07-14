@@ -105,6 +105,7 @@ const ItemContent: React.FC<ItemContentProps> = ({
         isCertified={isCertified}
         priceSource={priceSource}
         hideDetailedPricing={hideDetailedPricing}
+        marketPriceManuallySet={item.marketPriceManuallySet}
       />
       
       <WarningMessages 

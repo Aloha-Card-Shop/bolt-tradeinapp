@@ -197,13 +197,16 @@ export const useItemPrice = ({ item, onUpdate }: UseItemPriceProps) => {
   });
 
   // Force price refresh if we have a card without a price but with a productId
+  // But only if the market price wasn't manually set
   useEffect(() => {
-    if (item.price <= 0 && item.card.productId && !item.isLoadingPrice && (initialCalculationState || item.initialCalculation)) {
+    if (item.price <= 0 && item.card.productId && !item.isLoadingPrice && 
+        (initialCalculationState || item.initialCalculation) && 
+        !item.marketPriceManuallySet) {
       logger.logPriceRefresh();
       refreshPrice();
     }
   }, [item.price, item.card.productId, item.isLoadingPrice, refreshPrice, 
-      initialCalculationState, item.initialCalculation, logger]);
+      initialCalculationState, item.initialCalculation, item.marketPriceManuallySet, logger]);
 
   // Explicitly log the return values
   const returnValues = {

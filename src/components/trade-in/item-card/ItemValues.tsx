@@ -19,6 +19,7 @@ interface ItemValuesProps {
   isCertified?: boolean;
   priceSource?: PriceSource;
   hideDetailedPricing?: boolean;
+  marketPriceManuallySet?: boolean;
 }
 
 const ItemValues: React.FC<ItemValuesProps> = ({
@@ -35,7 +36,8 @@ const ItemValues: React.FC<ItemValuesProps> = ({
   fallbackReason,
   isCertified,
   priceSource,
-  hideDetailedPricing = false
+  hideDetailedPricing = false,
+  marketPriceManuallySet = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -48,7 +50,7 @@ const ItemValues: React.FC<ItemValuesProps> = ({
   return (
     <div className="mt-4 space-y-3">
       <ValueDisplay
-        label="Market Price (Editable)"
+        label={marketPriceManuallySet ? "Market Price (Manually Set)" : "Market Price (Editable)"}
         value={price}
         isLoading={isLoadingPrice || false}
         error={isPriceUnavailable ? "Price unavailable" : undefined}

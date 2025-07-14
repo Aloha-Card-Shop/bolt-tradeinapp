@@ -50,7 +50,8 @@ export const usePriceManagement = ({
         error: undefined,
         cashValue: undefined, // Reset to force recalculation
         tradeValue: undefined, // Reset to force recalculation
-        initialCalculation: true // Set flag to force calculation
+        initialCalculation: true, // Set flag to force calculation
+        marketPriceManuallySet: false // Clear manual flag on refresh
       });
       
       // Reset market price flag so we get default payment type
@@ -78,7 +79,7 @@ export const usePriceManagement = ({
       return;
     }
     
-    // Update price and reset calculated values - CRITICAL: Clear manual override flags
+    // Update price and reset calculated values - SET market price manually flag
     onUpdate({
       price: newPrice,
       cashValue: undefined, // Reset to force recalculation 
@@ -86,11 +87,12 @@ export const usePriceManagement = ({
       error: undefined,
       initialCalculation: true, // Set flag to force calculation
       cashValueManuallySet: false, // Clear manual override flag
-      tradeValueManuallySet: false // Clear manual override flag
+      tradeValueManuallySet: false, // Clear manual override flag
+      marketPriceManuallySet: true // Mark market price as manually set
     });
     
-    // Reset market price flag so we get default payment type
-    setMarketPriceSet(false);
+    // Set market price flag to true since it was manually edited
+    setMarketPriceSet(true);
     
     // Ensure our local state knows we need to recalculate
     setInitialCalculation(true);
