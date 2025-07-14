@@ -32,7 +32,7 @@ export const useSearchEffects = ({
   // Load sets when game type changes
   useEffect(() => {
     loadSetsByGame(cardDetails.game);
-  }, [cardDetails.game, loadSetsByGame]);
+  }, [cardDetails.game]); // Removed loadSetsByGame from deps since it's memoized
 
   // Debounced search effect with better dependency management
   useEffect(() => {
