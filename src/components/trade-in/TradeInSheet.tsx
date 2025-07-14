@@ -4,6 +4,9 @@ import { TradeInSheetItem } from '../../hooks/useTradeInSheet';
 import { useTradeValue } from '../../hooks/useTradeValue';
 import { Customer } from '../../hooks/useCustomers';
 import CustomerSection from './CustomerSection';
+import TradeInPriceReviewModal from './TradeInPriceReviewModal';
+import { insertTradeInAndItems } from '../../services/insertTradeInAndItems';
+import { toast } from 'react-hot-toast';
 
 interface TradeInSheetProps {
   items: TradeInSheetItem[];
@@ -33,10 +36,12 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
   onMarketPriceChange,
   onCustomerSelect,
   onCustomerCreate,
-  // clearSheet - Future feature for clearing the sheet
+  clearSheet
 }) => {
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -104,6 +109,90 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
     { value: 'heavily_played', label: 'Heavily Played' },
     { value: 'damaged', label: 'Damaged' },
   ];
+
+  // Helper functions
+  function handleOpenReview() {
+    if (items.length === 0) {
+      toast.error('No items in trade-in list');
+      return;
+    }
+    
+    if (!selectedCustomer) {
+      toast.error('Please select a customer before proceeding');
+      return;
+    }
+
+    // Validate that all items have payment types selected
+    const itemsWithoutPaymentType = items.filter(item => !item.paymentType);
+    if (itemsWithoutPaymentType.length > 0) {
+      toast.error('Please select payment type for all items before proceeding');
+      return;
+    }
+
+    // Validate that all items have valid prices
+    const itemsWithoutPrice = items.filter(item => !item.price || item.price <= 0);
+    if (itemsWithoutPrice.length > 0) {
+      toast.error('All items must have a valid market price');
+      return;
+    }
+
+    setShowReviewModal(true);
+  }
+
+  async function handleSubmitTradeIn(reviewedItems: any[], notes?: string) {
+    if (!selectedCustomer || !selectedCustomer.id) {
+      toast.error('Please select a customer');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      const tradeInData = {
+        customer_id: selectedCustomer.id,
+        trade_in_date: new Date().toISOString(),
+        total_value: totals.cashTotal + totals.tradeTotal,
+        cash_value: totals.cashTotal,
+        trade_value: totals.tradeTotal,
+        notes: notes || null,
+        status: 'pending' as const,
+        payment_type: totals.cashTotal > 0 && totals.tradeTotal > 0 ? 'mixed' as const : 
+                     totals.tradeTotal > 0 ? 'trade' as const : 'cash' as const
+      };
+
+      await insertTradeInAndItems(tradeInData, reviewedItems);
+      
+      toast.success('Trade-in submitted successfully! A manager will review and approve it shortly.');
+      if (clearSheet) clearSheet();
+      setShowReviewModal(false);
+    } catch (error) {
+      console.error('Error submitting trade-in:', error);
+      toast.error('Failed to submit trade-in. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function handleUpdateItems(updatedItems: any[]) {
+    // Update all items in the parent component
+    updatedItems.forEach((item, index) => {
+      onUpdateItem(index, item);
+    });
+  }
+
+  function convertToTradeInItems(sheetItems: TradeInSheetItem[]) {
+    return sheetItems.map(item => ({
+      card: item.fullCardData,
+      quantity: item.quantity,
+      price: item.price,
+      condition: item.condition,
+      paymentType: item.paymentType,
+      cashValue: item.paymentType === 'cash' ? item.price : 0,
+      tradeValue: item.paymentType === 'trade' ? item.price : 0,
+      isFirstEdition: item.isFirstEdition,
+      isHolo: item.isHolo
+    }));
+  }
 
   if (items.length === 0) {
     return (
@@ -197,6 +286,37 @@ export const TradeInSheet: React.FC<TradeInSheetProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Submit Button */}
+      {items.length > 0 && (
+        <div className="mt-6 p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border border-gray-200">
+          <button 
+            onClick={handleOpenReview}
+            className={`w-full py-3 px-4 font-medium rounded-lg transition-colors ${
+              selectedCustomer 
+                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+            disabled={!selectedCustomer}
+            title={!selectedCustomer ? 'Please select a customer first' : 'Send trade-in to manager for approval'}
+          >
+            Review & Send for Approval
+          </button>
+        </div>
+      )}
+
+      {/* Review Modal */}
+      {showReviewModal && (
+        <TradeInPriceReviewModal
+          isOpen={showReviewModal}
+          onClose={() => setShowReviewModal(false)}
+          items={convertToTradeInItems(items)}
+          selectedCustomer={selectedCustomer}
+          onSubmit={handleSubmitTradeIn}
+          onUpdateItems={handleUpdateItems}
+          isSubmitting={isSubmitting}
+        />
+      )}
     </div>
   );
 };
