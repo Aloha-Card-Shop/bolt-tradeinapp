@@ -8,6 +8,7 @@ import { formatCurrency } from '../utils/formatters';
 import SalesDataBreakdown from './trade-in/SalesDataBreakdown';
 import { fetchCardPrices } from '../utils/scraper';
 import { CONDITION_OPTIONS } from '../types/card';
+import CardVariantSelectors from './CardResults/CardVariantSelectors';
 
 interface CardResultsProps {
   results: CardDetails[];
@@ -38,6 +39,20 @@ const CardResults: React.FC<CardResultsProps> = ({
   const [firstEditionStates, setFirstEditionStates] = useState<Map<string, boolean>>(new Map());
   const [holoStates, setHoloStates] = useState<Map<string, boolean>>(new Map());
   const [reverseHoloStates, setReverseHoloStates] = useState<Map<string, boolean>>(new Map());
+  const [unlimitedStates, setUnlimitedStates] = useState<Map<string, boolean>>(new Map());
+  const [firstEditionHoloStates, setFirstEditionHoloStates] = useState<Map<string, boolean>>(new Map());
+  const [unlimitedHoloStates, setUnlimitedHoloStates] = useState<Map<string, boolean>>(new Map());
+
+  // Generic variant toggle handler
+  const handleVariantToggle = async (cardId: string, card: CardDetails, variantKey: string) => {
+    createVariantToggle(variantKey)(cardId);
+    
+    // Refetch price if condition is selected
+    const selectedCondition = selectedConditions.get(cardId);
+    if (selectedCondition && card.productId && !card.isCertified) {
+      await refetchPrice(cardId, card, selectedCondition);
+    }
+  };
   
   // Debug logging for results
   useEffect(() => {
@@ -148,49 +163,36 @@ const CardResults: React.FC<CardResultsProps> = ({
     }
   };
 
-  // Handle variant toggling
-  const handleFirstEditionToggle = async (cardId: string, card: CardDetails) => {
-    const newValue = !firstEditionStates.get(cardId);
-    setFirstEditionStates(prev => {
-      const newMap = new Map(prev);
-      newMap.set(cardId, newValue);
-      return newMap;
-    });
-    
-    // Refetch price if condition is selected
-    const selectedCondition = selectedConditions.get(cardId);
-    if (selectedCondition && card.productId && !card.isCertified) {
-      await refetchPrice(cardId, card, selectedCondition);
-    }
-  };
+  // Variant state toggle functions
+  const createVariantToggle = (variantKey: string) => (cardId: string) => {
+    const stateSetters: Record<string, (fn: (prev: Map<string, boolean>) => Map<string, boolean>) => void> = {
+      firstEdition: setFirstEditionStates,
+      holo: setHoloStates,
+      reverseHolo: setReverseHoloStates,
+      unlimited: setUnlimitedStates,
+      firstEditionHolo: setFirstEditionHoloStates,
+      unlimitedHolo: setUnlimitedHoloStates
+    };
 
-  const handleHoloToggle = async (cardId: string, card: CardDetails) => {
-    const newValue = !holoStates.get(cardId);
-    setHoloStates(prev => {
-      const newMap = new Map(prev);
-      newMap.set(cardId, newValue);
-      return newMap;
-    });
-    
-    // Refetch price if condition is selected
-    const selectedCondition = selectedConditions.get(cardId);
-    if (selectedCondition && card.productId && !card.isCertified) {
-      await refetchPrice(cardId, card, selectedCondition);
-    }
-  };
+    const stateGetters: Record<string, Map<string, boolean>> = {
+      firstEdition: firstEditionStates,
+      holo: holoStates,
+      reverseHolo: reverseHoloStates,
+      unlimited: unlimitedStates,
+      firstEditionHolo: firstEditionHoloStates,
+      unlimitedHolo: unlimitedHoloStates
+    };
 
-  const handleReverseHoloToggle = async (cardId: string, card: CardDetails) => {
-    const newValue = !reverseHoloStates.get(cardId);
-    setReverseHoloStates(prev => {
-      const newMap = new Map(prev);
-      newMap.set(cardId, newValue);
-      return newMap;
-    });
+    const setter = stateSetters[variantKey];
+    const getter = stateGetters[variantKey];
     
-    // Refetch price if condition is selected
-    const selectedCondition = selectedConditions.get(cardId);
-    if (selectedCondition && card.productId && !card.isCertified) {
-      await refetchPrice(cardId, card, selectedCondition);
+    if (setter && getter) {
+      const newValue = !getter.get(cardId);
+      setter(prev => {
+        const newMap = new Map(prev);
+        newMap.set(cardId, newValue);
+        return newMap;
+      });
     }
   };
 
@@ -444,73 +446,21 @@ const CardResults: React.FC<CardResultsProps> = ({
 
                         {/* Card Type/Variant Selectors for non-certified cards */}
                         {!isCertified && selectedCondition && (
-                          <div className="mt-3">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Card Type
-                            </label>
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                onClick={() => handleFirstEditionToggle(cardId, card)}
-                                className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                                  firstEditionStates.get(cardId) 
-                                    ? 'bg-blue-100 text-blue-700 border border-blue-300' 
-                                    : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
-                                }`}
-                                disabled={isLoadingPrice}
-                              >
-                                1st Edition
-                              </button>
-                              <button
-                                onClick={() => handleHoloToggle(cardId, card)}
-                                className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                                  holoStates.get(cardId) 
-                                    ? 'bg-purple-100 text-purple-700 border border-purple-300' 
-                                    : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
-                                }`}
-                                disabled={isLoadingPrice}
-                              >
-                                Holo
-                              </button>
-                              <button
-                                onClick={() => handleReverseHoloToggle(cardId, card)}
-                                className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                                  reverseHoloStates.get(cardId) 
-                                    ? 'bg-green-100 text-green-700 border border-green-300' 
-                                    : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
-                                }`}
-                                disabled={isLoadingPrice}
-                              >
-                                Reverse Holo
-                              </button>
-                            </div>
-                            
-                            {/* Show fetched price for selected condition and variants */}
-                            <div className="mt-2">
-                              {isLoadingPrice ? (
-                                <div className="flex items-center text-sm text-gray-600">
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                  Fetching price...
-                                </div>
-                              ) : fetchedPrice && fetchedPrice > 0 ? (
-                                <div className="bg-green-50 border border-green-200 rounded-md p-2 text-green-700">
-                                  <div className="flex items-center">
-                                    <DollarSign className="h-4 w-4 mr-1" />
-                                    <span className="font-medium">Market Price: ${fetchedPrice.toFixed(2)}</span>
-                                  </div>
-                                  <p className="text-xs mt-1">
-                                    {selectedCondition.replace('_', ' ')} 
-                                    {firstEditionStates.get(cardId) && ', 1st Edition'}
-                                    {holoStates.get(cardId) && ', Holo'}
-                                    {reverseHoloStates.get(cardId) && ', Reverse Holo'}
-                                  </p>
-                                </div>
-                              ) : selectedCondition && !isLoadingPrice ? (
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-2 text-yellow-700">
-                                  <p className="text-sm">No price available for this variant</p>
-                                </div>
-                              ) : null}
-                            </div>
-                          </div>
+                          <CardVariantSelectors
+                            card={card}
+                            selectedCondition={selectedCondition}
+                            fetchedPrice={fetchedPrice}
+                            isLoadingPrice={isLoadingPrice}
+                            firstEditionState={firstEditionStates.get(cardId) || false}
+                            holoState={holoStates.get(cardId) || false}
+                            reverseHoloState={reverseHoloStates.get(cardId) || false}
+                            unlimitedState={unlimitedStates.get(cardId) || false}
+                            firstEditionHoloState={firstEditionHoloStates.get(cardId) || false}
+                            unlimitedHoloState={unlimitedHoloStates.get(cardId) || false}
+                            onVariantToggle={(variantKey) => 
+                              handleVariantToggle(cardId, card, variantKey)
+                            }
+                          />
                         )}
                         
                         {/* Price information with conditional display for certified cards */}
