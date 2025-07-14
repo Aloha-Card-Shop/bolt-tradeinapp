@@ -30,15 +30,26 @@ const DynamicCardTypeSelector: React.FC<DynamicCardTypeSelectorProps> = ({
       try {
         const variantData = await getCardVariantAvailability(productId, cardName, setName);
         setAvailability(variantData);
+        
+        // Auto-set 'normal' type if no variants are available and no type is currently selected
+        const hasAnyVariants = Object.values(variantData).some(value => value === true);
+        if (!hasAnyVariants && !selectedType) {
+          console.log('No variants available for card, setting default type to normal:', cardName);
+          onTypeChange('normal');
+        }
       } catch (error) {
         console.error('Error fetching variant availability:', error);
+        // Fallback to normal type if there's an error
+        if (!selectedType) {
+          onTypeChange('normal');
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchAvailability();
-  }, [productId, cardName, setName]);
+  }, [productId, cardName, setName, selectedType, onTypeChange]);
 
   // Define available card types based on database availability
   const getAvailableTypes = () => {

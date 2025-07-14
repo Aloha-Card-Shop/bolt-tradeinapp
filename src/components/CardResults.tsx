@@ -114,6 +114,15 @@ const CardResults: React.FC<CardResultsProps> = ({
   const handleConditionChange = async (cardId: string, condition: string, card: CardDetails) => {
     if (!condition || !card.productId) return;
     
+    console.log('Condition change triggered for card:', {
+      cardId,
+      cardName: card.name,
+      condition,
+      productId: card.productId,
+      isCertified: card.isCertified,
+      currentCardType: selectedCardTypes.get(cardId)
+    });
+    
     // Update selected condition
     setSelectedConditions(prev => {
       const newMap = new Map(prev);
@@ -129,6 +138,7 @@ const CardResults: React.FC<CardResultsProps> = ({
 
     try {
       const selectedCardType = selectedCardTypes.get(cardId) || 'normal';
+      console.log('Fetching price with card type:', selectedCardType);
       const data = await fetchCardPricesWithType(card.productId, condition, selectedCardType, card.game);
       
       if (!data.unavailable) {
