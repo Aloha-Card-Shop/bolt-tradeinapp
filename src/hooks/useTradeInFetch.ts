@@ -134,6 +134,27 @@ export const useTradeInFetch = (statusFilter: StatusFilter) => {
 
   useEffect(() => {
     fetchTradeIns();
+
+    // Set up real-time subscription for trade-ins
+    const channel = supabase
+      .channel('trade-ins-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'trade_ins'
+        },
+        (payload) => {
+          console.log('Trade-ins changed:', payload);
+          fetchTradeIns();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [statusFilter]);
 
   return {

@@ -7,6 +7,7 @@ import { AdminNav } from '../navigation';
 import DesktopNavigation from './DesktopNavigation';
 import UserInfo from './UserInfo';
 import MobileMenu from './MobileMenu';
+import PendingTradeInsBadge from './PendingTradeInsBadge';
 
 const AppHeader: React.FC = () => {
   const { user, loading } = useSession();
@@ -52,6 +53,9 @@ const AppHeader: React.FC = () => {
           
           {/* Desktop Navigation */}
           <DesktopNavigation userRole={userRole} />
+          
+          {/* Pending Trade-ins Badge */}
+          <PendingTradeInsBadge userRole={userRole} />
           
           {/* User Info - Desktop */}
           {!loading && user && (

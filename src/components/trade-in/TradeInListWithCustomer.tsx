@@ -133,7 +133,7 @@ const TradeInListWithCustomer: React.FC<TradeInListWithCustomerProps> = ({
 
       await insertTradeInAndItems(tradeInData, reviewedItems);
       
-      toast.success('Trade-in submitted successfully! A manager will review and approve it shortly.');
+      toast.success('Trade-in submitted successfully! A manager will review and approve it shortly. You can check the status in your trade-ins.');
       clearList();
       setShowReviewModal(false);
     } catch (error) {
