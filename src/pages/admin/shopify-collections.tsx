@@ -103,8 +103,12 @@ const ShopifyCollections: React.FC = () => {
   };
 
   useEffect(() => {
+    console.log('ShopifyCollections - User role:', userRole);
     if (userRole && ['admin', 'manager', 'shopify_manager'].includes(userRole)) {
+      console.log('ShopifyCollections - Access granted, fetching collections');
       fetchCollections();
+    } else {
+      console.log('ShopifyCollections - Access denied for role:', userRole);
     }
   }, [userRole]);
 
