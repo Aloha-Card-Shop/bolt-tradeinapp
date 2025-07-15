@@ -35,17 +35,27 @@ Deno.serve(async (req) => {
     const { data: settings, error: settingsError } = await supabase
       .from('shopify_settings')
       .select('*')
-      .single()
+      .maybeSingle()
 
-    if (settingsError || !settings) {
-      console.error('Failed to fetch Shopify settings:', settingsError)
+    console.log('Shopify settings query result:', { settings, settingsError })
+
+    if (settingsError) {
+      console.error('Database error fetching Shopify settings:', settingsError)
+      return new Response(
+        JSON.stringify({ error: 'Database error fetching Shopify settings', details: settingsError.message }),
+        { status: 500, headers: corsHeaders }
+      )
+    }
+
+    if (!settings) {
+      console.error('No Shopify settings found in database')
       return new Response(
         JSON.stringify({ error: 'Shopify settings not configured' }),
         { status: 400, headers: corsHeaders }
       )
     }
 
-    const shopifyUrl = `https://${settings.shop_domain}.myshopify.com`
+    const shopifyUrl = `https://${settings.shop_domain}`
     const headers = {
       'X-Shopify-Access-Token': settings.access_token,
       'Content-Type': 'application/json',
