@@ -81,8 +81,7 @@ export const useTradeInActions = (setTradeIns: React.Dispatch<React.SetStateActi
             shopify_synced: false,
             printed: false,
             print_count: 0,
-            // Store SKU in notes field for now since there's no dedicated SKU column
-            notes: `SKU: ${sku}`
+            sku: sku
           };
         });
 

@@ -127,6 +127,7 @@ export type Database = {
           shopify_synced: boolean | null
           shopify_synced_at: string | null
           shopify_variant_id: string | null
+          sku: string | null
           status: string | null
           trade_in_item_id: string
           trade_in_price: number
@@ -151,6 +152,7 @@ export type Database = {
           shopify_synced?: boolean | null
           shopify_synced_at?: string | null
           shopify_variant_id?: string | null
+          sku?: string | null
           status?: string | null
           trade_in_item_id: string
           trade_in_price: number
@@ -175,6 +177,7 @@ export type Database = {
           shopify_synced?: boolean | null
           shopify_synced_at?: string | null
           shopify_variant_id?: string | null
+          sku?: string | null
           status?: string | null
           trade_in_item_id?: string
           trade_in_price?: number
