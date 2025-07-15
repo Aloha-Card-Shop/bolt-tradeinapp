@@ -31,25 +31,31 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
         // otherwise fall back to the trade-in ID
         let barcodeValue = tradeIn.id;
         
-        if (item && item.tcgplayer_url) {
-          // Extract TCGPlayer ID from URL
-          const tcgplayerIdMatch = item.tcgplayer_url.match(/\/(\d+)/);
-          const tcgplayerId = tcgplayerIdMatch ? tcgplayerIdMatch[1] : undefined;
+        if (item) {
+          // Check if this is a graded card first
+          const certificationData = {
+            isCertified: !!item.attributes?.isCertified,
+            certNumber: item.attributes?.certNumber,
+            grade: item.attributes?.grade
+          };
           
-          // If we have a TCGPlayer ID, generate a SKU
-          if (tcgplayerId) {
-            const isFirstEdition = !!item.attributes?.isFirstEdition;
-            const isHolo = !!item.attributes?.isHolo;
-            const isReverseHolo = false; // Default to false if not present
-            
-            barcodeValue = generateSku(
-              tcgplayerId,
-              isFirstEdition,
-              isHolo,
-              item.condition,
-              isReverseHolo
-            );
-          }
+          // Extract TCGPlayer ID from URL if available
+          const tcgplayerId = item.tcgplayer_url ? 
+            item.tcgplayer_url.match(/\/(\d+)/)?.[1] : undefined;
+          
+          // Generate SKU with certification data
+          const isFirstEdition = !!item.attributes?.isFirstEdition;
+          const isHolo = !!item.attributes?.isHolo;
+          const isReverseHolo = false; // Default to false if not present
+          
+          barcodeValue = generateSku(
+            tcgplayerId,
+            isFirstEdition,
+            isHolo,
+            item.condition,
+            isReverseHolo,
+            certificationData
+          );
         }
         
         JsBarcode(barcodeRef.current, barcodeValue, {
@@ -86,23 +92,30 @@ const CardBarcodeGenerator: React.FC<CardBarcodeGeneratorProps> = ({
 
   // Create SKU display if applicable
   let skuDisplay = '';
-  if (item && item.tcgplayer_url) {
-    const tcgplayerIdMatch = item.tcgplayer_url.match(/\/(\d+)/);
-    const tcgplayerId = tcgplayerIdMatch ? tcgplayerIdMatch[1] : undefined;
+  if (item) {
+    // Check if this is a graded card
+    const certificationData = {
+      isCertified: !!item.attributes?.isCertified,
+      certNumber: item.attributes?.certNumber,
+      grade: item.attributes?.grade
+    };
     
-    if (tcgplayerId) {
-      const isFirstEdition = !!item.attributes?.isFirstEdition;
-      const isHolo = !!item.attributes?.isHolo;
-      const isReverseHolo = false; // Default to false since it's not in the attributes type
-      
-      skuDisplay = generateSku(
-        tcgplayerId,
-        isFirstEdition,
-        isHolo,
-        item.condition,
-        isReverseHolo
-      );
-    }
+    // Extract TCGPlayer ID from URL if available
+    const tcgplayerId = item.tcgplayer_url ? 
+      item.tcgplayer_url.match(/\/(\d+)/)?.[1] : undefined;
+    
+    const isFirstEdition = !!item.attributes?.isFirstEdition;
+    const isHolo = !!item.attributes?.isHolo;
+    const isReverseHolo = false; // Default to false since it's not in the attributes type
+    
+    skuDisplay = generateSku(
+      tcgplayerId,
+      isFirstEdition,
+      isHolo,
+      item.condition,
+      isReverseHolo,
+      certificationData
+    );
   }
   
   return (

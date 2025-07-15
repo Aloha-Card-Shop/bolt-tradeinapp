@@ -28,27 +28,63 @@ export const useTradeInActions = (setTradeIns: React.Dispatch<React.SetStateActi
 
       if (updateError) throw updateError;
 
-      // Get all trade-in items for this trade-in to create inventory records
+      // Get all trade-in items with card data for this trade-in to create inventory records
       const { data: tradeInItems, error: itemsError } = await supabase
         .from('trade_in_items')
-        .select('*')
+        .select(`
+          *,
+          cards:card_id (
+            tcgplayer_url
+          )
+        `)
         .eq('trade_in_id', tradeInId);
 
       if (itemsError) throw itemsError;
 
       if (tradeInItems && tradeInItems.length > 0) {
+        // Import SKU generator
+        const { generateSku } = await import('../utils/skuGenerator');
+        
         // Create inventory records for each trade-in item
-        const inventoryRecords = tradeInItems.map(item => ({
-          trade_in_item_id: item.id,
-          card_id: item.card_id,
-          trade_in_price: item.price,
-          processed_by: currentUser.id,
-          processed_at: new Date().toISOString(),
-          status: 'available',
-          shopify_synced: false,
-          printed: false,
-          print_count: 0
-        }));
+        const inventoryRecords = tradeInItems.map(item => {
+          // Generate SKU for this item
+          let sku = 'UNKNOWN';
+          
+          const cardData = item.cards as any;
+          if (cardData?.tcgplayer_url || item.attributes) {
+            const tcgplayerId = cardData?.tcgplayer_url ? 
+              cardData.tcgplayer_url.match(/\/(\d+)/)?.[1] : undefined;
+            
+            const certificationData = {
+              isCertified: !!item.attributes?.isCertified,
+              certNumber: item.attributes?.certNumber,
+              grade: item.attributes?.grade
+            };
+            
+            sku = generateSku(
+              tcgplayerId,
+              !!item.attributes?.isFirstEdition,
+              !!item.attributes?.isHolo,
+              item.condition,
+              false, // isReverseHolo - default to false
+              certificationData
+            );
+          }
+          
+          return {
+            trade_in_item_id: item.id,
+            card_id: item.card_id,
+            trade_in_price: item.price,
+            processed_by: currentUser.id,
+            processed_at: new Date().toISOString(),
+            status: 'available',
+            shopify_synced: false,
+            printed: false,
+            print_count: 0,
+            // Store SKU in notes field for now since there's no dedicated SKU column
+            notes: `SKU: ${sku}`
+          };
+        });
 
         const { error: inventoryError } = await supabase
           .from('card_inventory')

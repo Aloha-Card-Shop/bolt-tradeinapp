@@ -26,6 +26,11 @@ export interface TradeInItem {
     cashValueManuallySet?: boolean;
     tradeValueManuallySet?: boolean;
     marketPriceManuallySet?: boolean;
+    // Graded card certification data
+    isCertified?: boolean;
+    certNumber?: string;
+    grade?: string | number;
+    certificationCompany?: string;
   };
   tcgplayer_url?: string;
   image_url?: string;
