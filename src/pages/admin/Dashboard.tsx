@@ -34,6 +34,11 @@ const Dashboard: React.FC = () => {
                 <h2 className="text-lg font-medium mb-2">Shopify Mappings</h2>
                 <p className="text-gray-600">Manage Shopify field mappings</p>
               </Link>
+              
+              <Link to="/admin/shopify/collections" className="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                <h2 className="text-lg font-medium mb-2">Shopify Collections</h2>
+                <p className="text-gray-600">Sync collections and manage webhooks</p>
+              </Link>
             </>
           )}
           

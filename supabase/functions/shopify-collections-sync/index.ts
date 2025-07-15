@@ -1,0 +1,160 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+interface ShopifyCollection {
+  id: number
+  handle: string
+  title: string
+  body_html?: string
+  image?: {
+    src: string
+  }
+  products_count: number
+  collection_type: string
+  published: boolean
+  updated_at: string
+}
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Get Shopify settings
+    const { data: settings, error: settingsError } = await supabase
+      .from('shopify_settings')
+      .select('*')
+      .single()
+
+    if (settingsError || !settings) {
+      console.error('Failed to fetch Shopify settings:', settingsError)
+      return new Response(
+        JSON.stringify({ error: 'Shopify settings not configured' }),
+        { status: 400, headers: corsHeaders }
+      )
+    }
+
+    const shopifyUrl = `https://${settings.shop_domain}.myshopify.com`
+    const headers = {
+      'X-Shopify-Access-Token': settings.access_token,
+      'Content-Type': 'application/json',
+    }
+
+    console.log('Fetching collections from Shopify...')
+
+    // Fetch all collections from Shopify
+    let allCollections: ShopifyCollection[] = []
+    let nextPageInfo = null
+    let hasNextPage = true
+
+    while (hasNextPage) {
+      let url = `${shopifyUrl}/admin/api/2023-10/collections.json?limit=250`
+      if (nextPageInfo) {
+        url += `&page_info=${nextPageInfo}`
+      }
+
+      const response = await fetch(url, { headers })
+      
+      if (!response.ok) {
+        console.error('Shopify API error:', response.status, await response.text())
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch collections from Shopify' }),
+          { status: response.status, headers: corsHeaders }
+        )
+      }
+
+      const data = await response.json()
+      allCollections = allCollections.concat(data.collections || [])
+
+      // Check for pagination
+      const linkHeader = response.headers.get('link')
+      if (linkHeader && linkHeader.includes('rel="next"')) {
+        const nextMatch = linkHeader.match(/<[^>]*page_info=([^&>]+)[^>]*>;\s*rel="next"/)
+        nextPageInfo = nextMatch ? nextMatch[1] : null
+        hasNextPage = !!nextPageInfo
+      } else {
+        hasNextPage = false
+      }
+    }
+
+    console.log(`Fetched ${allCollections.length} collections from Shopify`)
+
+    // Update collections in database
+    const upsertPromises = allCollections.map(async (collection) => {
+      const collectionData = {
+        shopify_collection_id: collection.id.toString(),
+        handle: collection.handle,
+        title: collection.title,
+        description: collection.body_html || null,
+        image_url: collection.image?.src || null,
+        product_count: collection.products_count,
+        collection_type: collection.collection_type,
+        published: collection.published,
+        last_synced_at: new Date().toISOString(),
+      }
+
+      // Upsert collection
+      const { error: upsertError } = await supabase
+        .from('shopify_collections')
+        .upsert(collectionData, { 
+          onConflict: 'shopify_collection_id',
+          ignoreDuplicates: false 
+        })
+
+      if (upsertError) {
+        console.error(`Error upserting collection ${collection.id}:`, upsertError)
+        return { success: false, collection_id: collection.id, error: upsertError }
+      }
+
+      return { success: true, collection_id: collection.id }
+    })
+
+    const results = await Promise.all(upsertPromises)
+    const successCount = results.filter(r => r.success).length
+    const errorCount = results.filter(r => !r.success).length
+
+    console.log(`Collections sync completed: ${successCount} success, ${errorCount} errors`)
+
+    // Get updated collections list
+    const { data: collections, error: collectionsError } = await supabase
+      .from('shopify_collections')
+      .select(`
+        *,
+        shopify_collection_sync_settings(*)
+      `)
+      .order('title')
+
+    if (collectionsError) {
+      console.error('Error fetching updated collections:', collectionsError)
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: `Synced ${successCount} collections successfully`,
+        errors: errorCount,
+        collections: collections || [],
+        total_collections: allCollections.length
+      }),
+      { status: 200, headers: corsHeaders }
+    )
+
+  } catch (error) {
+    console.error('Error in collections sync:', error)
+    return new Response(
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      { status: 500, headers: corsHeaders }
+    )
+  }
+})

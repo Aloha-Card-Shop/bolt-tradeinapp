@@ -593,6 +593,63 @@ export type Database = {
           },
         ]
       }
+      inventory_movements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          inventory_item_id: string
+          movement_type: string
+          quantity_after: number
+          quantity_before: number
+          quantity_change: number
+          reason: string | null
+          reference_id: string | null
+          reference_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          inventory_item_id: string
+          movement_type: string
+          quantity_after: number
+          quantity_before: number
+          quantity_change: number
+          reason?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          inventory_item_id?: string
+          movement_type?: string
+          quantity_after?: number
+          quantity_before?: number
+          quantity_change?: number
+          reason?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "card_inventory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       locations: {
         Row: {
           address: string | null
@@ -953,6 +1010,102 @@ export type Database = {
         }
         Relationships: []
       }
+      shopify_collection_sync_settings: {
+        Row: {
+          auto_add_products: boolean | null
+          auto_price_products: boolean | null
+          collection_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          sync_enabled: boolean
+          sync_frequency: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_add_products?: boolean | null
+          auto_price_products?: boolean | null
+          collection_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          sync_enabled?: boolean
+          sync_frequency?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_add_products?: boolean | null
+          auto_price_products?: boolean | null
+          collection_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          sync_enabled?: boolean
+          sync_frequency?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopify_collection_sync_settings_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shopify_collection_sync_settings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shopify_collections: {
+        Row: {
+          collection_type: string | null
+          created_at: string
+          description: string | null
+          handle: string
+          id: string
+          image_url: string | null
+          last_synced_at: string | null
+          product_count: number | null
+          published: boolean | null
+          shopify_collection_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          collection_type?: string | null
+          created_at?: string
+          description?: string | null
+          handle: string
+          id?: string
+          image_url?: string | null
+          last_synced_at?: string | null
+          product_count?: number | null
+          published?: boolean | null
+          shopify_collection_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          collection_type?: string | null
+          created_at?: string
+          description?: string | null
+          handle?: string
+          id?: string
+          image_url?: string | null
+          last_synced_at?: string | null
+          product_count?: number | null
+          published?: boolean | null
+          shopify_collection_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       shopify_field_mappings: {
         Row: {
           created_at: string | null
@@ -994,6 +1147,74 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      shopify_sales_tracking: {
+        Row: {
+          created_at: string
+          currency: string | null
+          error_message: string | null
+          id: string
+          inventory_item_id: string | null
+          line_item_id: string
+          price: number
+          processed: boolean | null
+          processed_at: string | null
+          quantity_sold: number
+          shopify_order_id: string
+          shopify_order_number: string | null
+          shopify_product_id: string | null
+          shopify_variant_id: string | null
+          sku: string | null
+          total_amount: number
+          webhook_data: Json | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          error_message?: string | null
+          id?: string
+          inventory_item_id?: string | null
+          line_item_id: string
+          price: number
+          processed?: boolean | null
+          processed_at?: string | null
+          quantity_sold: number
+          shopify_order_id: string
+          shopify_order_number?: string | null
+          shopify_product_id?: string | null
+          shopify_variant_id?: string | null
+          sku?: string | null
+          total_amount: number
+          webhook_data?: Json | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          error_message?: string | null
+          id?: string
+          inventory_item_id?: string | null
+          line_item_id?: string
+          price?: number
+          processed?: boolean | null
+          processed_at?: string | null
+          quantity_sold?: number
+          shopify_order_id?: string
+          shopify_order_number?: string | null
+          shopify_product_id?: string | null
+          shopify_variant_id?: string | null
+          sku?: string | null
+          total_amount?: number
+          webhook_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopify_sales_tracking_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "card_inventory"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shopify_settings: {
         Row: {

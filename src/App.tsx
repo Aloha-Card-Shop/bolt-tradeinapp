@@ -20,6 +20,7 @@ import PrintersPage from './pages/admin/printers';
 import ApiSettingsPage from './pages/admin/api-settings';
 import EbayTestPage from './pages/admin/ebay-test';
 import CustomersPage from './pages/admin/customers';
+import ShopifyCollections from './pages/admin/shopify-collections';
 import MobileNavigation from './components/layout/MobileNavigation';
 import { useMediaQuery } from './hooks/useMediaQuery';
 
@@ -50,6 +51,7 @@ function App() {
             <Route path="/admin/ebay-test" element={<EbayTestPage />} />
             <Route path="/admin/shopify/settings" element={<ShopifySettingsPage />} />
             <Route path="/admin/shopify/mappings" element={<ShopifyMappingsPage />} />
+            <Route path="/admin/shopify/collections" element={<ShopifyCollections />} />
             <Route path="/admin/inventory" element={<CardInventory />} />
           </Routes>
         </div>
