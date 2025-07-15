@@ -121,13 +121,13 @@ const AdminPageContent: React.FC<AdminPageContentProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+    <div className="card-base p-8">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Staff Users</h2>
+        <h2 className="text-xl font-semibold text-foreground">Staff Users</h2>
         {editPermissions[currentViewRole] && (
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+            className="btn-primary"
           >
             <UserPlus className="h-5 w-5 mr-2" />
             Add Staff User
