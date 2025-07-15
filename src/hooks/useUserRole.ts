@@ -5,8 +5,8 @@ export const useUserRole = () => {
   const { user } = useSession();
   
   // Extract role from user metadata or JWT claims
-  const role = (user as any)?.role || 
-               (user as any)?.user_metadata?.role || 
+  const role = (user as any)?.user_metadata?.role || 
+               (user as any)?.role || 
                'user';
   
   const isAdmin = role === 'admin';
