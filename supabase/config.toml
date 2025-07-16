@@ -87,3 +87,6 @@ verify_jwt = false
 
 [functions.psa-scraper]
 verify_jwt = false
+
+[functions.shopify-fetch-collection-products]
+verify_jwt = true
