@@ -80,17 +80,33 @@ Deno.serve(async (req) => {
     let hasNextPage = true
 
     while (hasNextPage) {
-      let url = `${shopifyUrl}/admin/api/2023-10/collections.json?limit=250`
+      let url = `${shopifyUrl}/admin/api/2024-07/collections.json?limit=250`
       if (nextPageInfo) {
         url += `&page_info=${nextPageInfo}`
       }
 
+      console.log('Fetching from URL:', url)
       const response = await fetch(url, { headers })
       
       if (!response.ok) {
-        console.error('Shopify API error:', response.status, await response.text())
+        const errorText = await response.text()
+        console.error('Shopify API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: url,
+          headers: Object.fromEntries(response.headers.entries()),
+          body: errorText
+        })
         return new Response(
-          JSON.stringify({ error: 'Failed to fetch collections from Shopify' }),
+          JSON.stringify({ 
+            error: 'Failed to fetch collections from Shopify',
+            details: {
+              status: response.status,
+              statusText: response.statusText,
+              body: errorText,
+              url: url
+            }
+          }),
           { status: response.status, headers: corsHeaders }
         )
       }
