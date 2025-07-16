@@ -53,15 +53,38 @@ const ShopifyCollections: React.FC = () => {
   const syncCollections = async () => {
     setSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('shopify-collections-sync');
+      console.log('Running Shopify debug test...');
       
-      if (error) throw error;
+      // First run the debug test to see what endpoints work
+      const { data: debugData, error: debugError } = await supabase.functions.invoke('shopify-debug-test');
       
-      toast.success(data.message || 'Collections synced successfully');
-      await fetchCollections();
+      if (debugError) {
+        console.error('Debug test error:', debugError);
+        toast.error(`Debug test failed: ${debugError.message}`);
+        return;
+      }
+
+      console.log('Debug test results:', debugData);
+      
+      if (debugData.success) {
+        const workingEndpoints = debugData.results.filter((r: any) => r.success);
+        const failedEndpoints = debugData.results.filter((r: any) => !r.success);
+        
+        if (workingEndpoints.length > 0) {
+          toast.success(`Found ${workingEndpoints.length} working endpoints: ${workingEndpoints.map((e: any) => e.name).join(', ')}`);
+        } else {
+          toast.error(`All ${failedEndpoints.length} endpoints failed. Check your Shopify token permissions.`);
+        }
+        
+        // Show detailed results
+        console.table(debugData.results);
+      } else {
+        toast.error(`Debug test failed: ${debugData.error}`);
+      }
+      
     } catch (error) {
-      console.error('Error syncing collections:', error);
-      toast.error('Failed to sync collections');
+      console.error('Error running debug test:', error);
+      toast.error('Failed to run debug test');
     } finally {
       setSyncing(false);
     }
