@@ -18,6 +18,7 @@ interface InventoryItem {
   print_count: number;
   status: string;
   notes: string | null;
+  import_source: string;
   cards: {
     id: string;
     name: string;
@@ -28,7 +29,7 @@ interface InventoryItem {
   trade_in_items: {
     condition: string;
     quantity: number;
-  };
+  } | null;
   processed_by_profile: {
     email: string;
   } | null;
@@ -40,6 +41,7 @@ const CardInventory = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [syncFilter, setSyncFilter] = useState('all');
+  const [sourceFilter, setSourceFilter] = useState('all');
   
 
   useEffect(() => {
@@ -68,7 +70,7 @@ const CardInventory = () => {
             email
           )
         `)
-        .order('processed_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setInventory(data || []);
@@ -119,8 +121,9 @@ const CardInventory = () => {
     const matchesSync = syncFilter === 'all' || 
                        (syncFilter === 'synced' && item.shopify_synced) ||
                        (syncFilter === 'not_synced' && !item.shopify_synced);
+    const matchesSource = sourceFilter === 'all' || item.import_source === sourceFilter;
     
-    return matchesSearch && matchesStatus && matchesSync;
+    return matchesSearch && matchesStatus && matchesSync && matchesSource;
   });
 
   const getStatusBadge = (status: string) => {
@@ -172,7 +175,7 @@ const CardInventory = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Card Inventory</h1>
-                <p className="text-sm text-gray-500">Track and manage your approved trade-in cards</p>
+                <p className="text-sm text-gray-500">Track and manage cards from trade-ins and Shopify sync</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -219,6 +222,17 @@ const CardInventory = () => {
                   <option value="all">All Sync Status</option>
                   <option value="synced">🔄 Synced</option>
                   <option value="not_synced">⏳ Not Synced</option>
+                </select>
+              </div>
+              <div className="relative">
+                <select 
+                  value={sourceFilter} 
+                  onChange={(e) => setSourceFilter(e.target.value)}
+                  className="appearance-none px-4 py-3 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-colors"
+                >
+                  <option value="all">All Sources</option>
+                  <option value="trade_in">🔄 Trade-In</option>
+                  <option value="shopify">🛍️ Shopify</option>
                 </select>
               </div>
             </div>
@@ -291,9 +305,24 @@ const CardInventory = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                        {item.trade_in_items.condition.replace('_', ' ')}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        {item.trade_in_items ? (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                            {item.trade_in_items.condition.replace('_', ' ')}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                            N/A
+                          </span>
+                        )}
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                          item.import_source === 'shopify' 
+                            ? 'bg-purple-100 text-purple-700' 
+                            : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {item.import_source === 'shopify' ? '🛍️ Shopify' : '🔄 Trade-In'}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm font-semibold text-gray-900">{formatCurrency(item.trade_in_price)}</span>
@@ -380,12 +409,13 @@ const CardInventory = () => {
                 : "Start by approving some trade-ins to build your inventory."
               }
             </p>
-            {(searchTerm || statusFilter !== 'all' || syncFilter !== 'all') && (
+            {(searchTerm || statusFilter !== 'all' || syncFilter !== 'all' || sourceFilter !== 'all') && (
               <button 
                 onClick={() => {
                   setSearchTerm('');
                   setStatusFilter('all');
                   setSyncFilter('all');
+                  setSourceFilter('all');
                 }}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >

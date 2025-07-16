@@ -113,6 +113,7 @@ export type Database = {
           created_at: string | null
           current_selling_price: number | null
           id: string
+          import_source: string | null
           last_price_check: string | null
           last_printed_at: string | null
           market_price: number | null
@@ -129,7 +130,7 @@ export type Database = {
           shopify_variant_id: string | null
           sku: string | null
           status: string | null
-          trade_in_item_id: string
+          trade_in_item_id: string | null
           trade_in_price: number
           updated_at: string | null
         }
@@ -138,6 +139,7 @@ export type Database = {
           created_at?: string | null
           current_selling_price?: number | null
           id?: string
+          import_source?: string | null
           last_price_check?: string | null
           last_printed_at?: string | null
           market_price?: number | null
@@ -154,7 +156,7 @@ export type Database = {
           shopify_variant_id?: string | null
           sku?: string | null
           status?: string | null
-          trade_in_item_id: string
+          trade_in_item_id?: string | null
           trade_in_price: number
           updated_at?: string | null
         }
@@ -163,6 +165,7 @@ export type Database = {
           created_at?: string | null
           current_selling_price?: number | null
           id?: string
+          import_source?: string | null
           last_price_check?: string | null
           last_printed_at?: string | null
           market_price?: number | null
@@ -179,7 +182,7 @@ export type Database = {
           shopify_variant_id?: string | null
           sku?: string | null
           status?: string | null
-          trade_in_item_id?: string
+          trade_in_item_id?: string | null
           trade_in_price?: number
           updated_at?: string | null
         }

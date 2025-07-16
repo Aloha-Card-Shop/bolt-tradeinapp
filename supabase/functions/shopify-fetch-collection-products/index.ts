@@ -222,16 +222,95 @@ serve(async (req) => {
               status: 'exists_in_inventory'
             });
           } else {
-            // This product is in Shopify but not in our inventory
-            productSummary.push({
-              title: product.title,
-              variant_title: variant.title || 'Default Title',
-              sku: variant.sku || '',
-              price: variant.price || '0.00',
-              shopify_product_id: product.id,
-              shopify_variant_id: variant.id,
-              status: 'shopify_only'
-            });
+            // This product is in Shopify but not in our inventory - create it
+            const cardName = variant.title !== 'Default Title' ? `${product.title} - ${variant.title}` : product.title;
+            
+            // Create or find card for this product
+            let cardId;
+            const { data: existingCard } = await supabase
+              .from('cards')
+              .select('id')
+              .eq('name', cardName)
+              .single();
+              
+            if (existingCard) {
+              cardId = existingCard.id;
+            } else {
+              // Create new card
+              const { data: newCard, error: cardError } = await supabase
+                .from('cards')
+                .insert({
+                  name: cardName,
+                  image_url: product.image?.src || null,
+                  game: 'pokemon', // Default to pokemon
+                  market_price: parseFloat(variant.price) || 0,
+                  attributes: {
+                    shopify_product_id: product.id,
+                    shopify_variant_id: variant.id,
+                    handle: product.handle,
+                    vendor: product.vendor,
+                    product_type: product.product_type,
+                    tags: product.tags
+                  }
+                })
+                .select('id')
+                .single();
+                
+              if (cardError) {
+                console.error('Error creating card:', cardError);
+                productSummary.push({
+                  title: product.title,
+                  variant_title: variant.title || 'Default Title',
+                  sku: variant.sku || '',
+                  price: variant.price || '0.00',
+                  status: 'card_creation_failed',
+                  error: cardError.message
+                });
+                continue;
+              }
+              
+              cardId = newCard.id;
+            }
+            
+            // Create inventory record
+            const { error: inventoryError } = await supabase
+              .from('card_inventory')
+              .insert({
+                card_id: cardId,
+                trade_in_item_id: null, // NULL since it's not from a trade-in
+                trade_in_price: 0,
+                current_selling_price: parseFloat(variant.price) || 0,
+                market_price: parseFloat(variant.price) || 0,
+                shopify_product_id: product.id.toString(),
+                shopify_variant_id: variant.id.toString(),
+                shopify_synced: true,
+                shopify_synced_at: new Date().toISOString(),
+                status: 'available',
+                import_source: 'shopify',
+                sku: variant.sku || null
+              });
+              
+            if (inventoryError) {
+              console.error('Error creating inventory record:', inventoryError);
+              productSummary.push({
+                title: product.title,
+                variant_title: variant.title || 'Default Title',
+                sku: variant.sku || '',
+                price: variant.price || '0.00',
+                status: 'inventory_creation_failed',
+                error: inventoryError.message
+              });
+            } else {
+              productSummary.push({
+                title: product.title,
+                variant_title: variant.title || 'Default Title',
+                sku: variant.sku || '',
+                price: variant.price || '0.00',
+                shopify_product_id: product.id,
+                shopify_variant_id: variant.id,
+                status: 'created_in_inventory'
+              });
+            }
           }
         }
       }
