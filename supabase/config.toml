@@ -90,3 +90,9 @@ verify_jwt = false
 
 [functions.shopify-fetch-collection-products]
 verify_jwt = true
+
+[functions.shopify-sync-item]
+verify_jwt = true
+
+[functions.shopify-order-webhook]
+verify_jwt = false

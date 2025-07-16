@@ -82,10 +82,16 @@ const CardInventory = () => {
     }
   };
 
-  const handleShopifySync = async (_itemId: string) => {
+  const handleShopifySync = async (itemId: string) => {
     try {
-      // This would integrate with existing Shopify sync functionality
-      toast.success("Shopify sync initiated (integration needed)");
+      const { error } = await supabase.functions.invoke('shopify-sync-item', {
+        body: { inventoryItemId: itemId }
+      });
+
+      if (error) throw error;
+
+      toast.success("Item synced to Shopify successfully!");
+      fetchInventory(); // Refresh the list
     } catch (error) {
       console.error('Error syncing to Shopify:', error);
       toast.error("Failed to sync to Shopify");
