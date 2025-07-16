@@ -111,7 +111,16 @@ serve(async (req) => {
     let existingCount = 0;
 
     for (const product of allProducts) {
-      for (const variant of product.variants) {
+      // Check if product has variants and if variants is an array
+      const variants = Array.isArray(product.variants) ? product.variants : [];
+      console.log(`Product "${product.title}" has ${variants.length} variants`);
+      
+      if (variants.length === 0) {
+        console.warn(`Product "${product.title}" has no variants, skipping`);
+        continue;
+      }
+
+      for (const variant of variants) {
         // Check if this product variant exists in our card_inventory
         const { data: existingInventory } = await supabase
           .from('card_inventory')
@@ -123,18 +132,18 @@ serve(async (req) => {
           existingCount++;
           productSummary.push({
             title: product.title,
-            variant_title: variant.title,
-            sku: variant.sku,
-            price: variant.price,
+            variant_title: variant.title || 'Default Title',
+            sku: variant.sku || '',
+            price: variant.price || '0.00',
             status: 'exists_in_inventory'
           });
         } else {
           // This product is in Shopify but not in our inventory
           productSummary.push({
             title: product.title,
-            variant_title: variant.title,
-            sku: variant.sku,
-            price: variant.price,
+            variant_title: variant.title || 'Default Title',
+            sku: variant.sku || '',
+            price: variant.price || '0.00',
             shopify_product_id: product.id,
             shopify_variant_id: variant.id,
             status: 'shopify_only'
