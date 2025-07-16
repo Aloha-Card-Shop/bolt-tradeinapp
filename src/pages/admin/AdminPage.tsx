@@ -224,6 +224,14 @@ const AdminPage = () => {
                 <Printer className="h-4 w-4 mr-2" />
                 Printers
               </Link>
+
+              <Link
+                to="/admin/inventory"
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-gray-600 hover:text-purple-600 hover:bg-purple-50"
+              >
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Card Inventory
+              </Link>
             </div>
           </div>
         </div>
