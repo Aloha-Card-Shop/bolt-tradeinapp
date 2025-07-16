@@ -79,8 +79,43 @@ Deno.serve(async (req) => {
     let nextPageInfo = null
     let hasNextPage = true
 
+    // Test connection first with shop info endpoint
+    console.log('Testing Shopify API connection...')
+    const testUrl = `${shopifyUrl}/admin/api/2024-10/shop.json`
+    const testResponse = await fetch(testUrl, { headers })
+    
+    if (!testResponse.ok) {
+      const errorText = await testResponse.text()
+      console.error('Shopify API connection test failed:', {
+        status: testResponse.status,
+        statusText: testResponse.statusText,
+        url: testUrl,
+        headers: Object.fromEntries(testResponse.headers.entries()),
+        body: errorText
+      })
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to connect to Shopify API. Please verify your access token has the correct permissions (read_products, read_collections)',
+          details: {
+            status: testResponse.status,
+            statusText: testResponse.statusText,
+            body: errorText,
+            url: testUrl,
+            suggestion: testResponse.status === 401 ? 'Invalid access token' : 
+                       testResponse.status === 403 ? 'Access token lacks required permissions' :
+                       testResponse.status === 404 ? 'Invalid shop domain or API version' :
+                       'Unknown API error'
+          }
+        }),
+        { status: testResponse.status, headers: corsHeaders }
+      )
+    }
+
+    const shopInfo = await testResponse.json()
+    console.log('Shopify connection successful. Shop:', shopInfo.shop?.name || 'Unknown')
+
     while (hasNextPage) {
-      let url = `${shopifyUrl}/admin/api/2024-07/collections.json?limit=250`
+      let url = `${shopifyUrl}/admin/api/2024-10/collections.json?limit=250`
       if (nextPageInfo) {
         url += `&page_info=${nextPageInfo}`
       }
@@ -104,7 +139,11 @@ Deno.serve(async (req) => {
               status: response.status,
               statusText: response.statusText,
               body: errorText,
-              url: url
+              url: url,
+              suggestion: response.status === 401 ? 'Invalid access token' : 
+                         response.status === 403 ? 'Access token lacks read_collections permission' :
+                         response.status === 404 ? 'Collections endpoint not found - verify API version and shop domain' :
+                         'Unknown API error'
             }
           }),
           { status: response.status, headers: corsHeaders }
