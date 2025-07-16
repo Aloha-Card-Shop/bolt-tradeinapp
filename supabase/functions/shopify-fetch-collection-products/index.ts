@@ -132,16 +132,27 @@ serve(async (req) => {
     let existingCount = 0;
 
     for (const product of allProducts) {
+      console.log(`Processing product: "${product.title}" (ID: ${product.id})`);
+      console.log(`Product keys:`, Object.keys(product));
+      console.log(`Product variants type:`, typeof product.variants);
+      console.log(`Product variants value:`, product.variants);
+      
       // Check if product has variants and if variants is an array
       const variants = Array.isArray(product.variants) ? product.variants : [];
       console.log(`Product "${product.title}" has ${variants.length} variants`);
       
       if (variants.length === 0) {
         console.warn(`Product "${product.title}" has no variants, skipping`);
+        // Let's also log the entire product structure for the first few products
+        if (productSummary.length < 3) {
+          console.log(`Full product structure:`, JSON.stringify(product, null, 2));
+        }
         continue;
       }
 
       for (const variant of variants) {
+        console.log(`Processing variant:`, variant);
+        
         // Check if this product variant exists in our card_inventory
         const { data: existingInventory } = await supabase
           .from('card_inventory')
