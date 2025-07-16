@@ -26,6 +26,8 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Parse request body to get sync options
+    const { fetchProductCounts = false } = req.method === 'POST' ? await req.json().catch(() => ({})) : {}
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -124,22 +126,25 @@ Deno.serve(async (req) => {
 
     // Fetch custom collections
     console.log('Fetching custom collections...')
-    const customCollections = await fetchCollectionsByType('custom_collections')
+    const customCollections = await fetchCollectionsByType('custom_collections', fetchProductCounts)
     
     // Fetch smart collections
     console.log('Fetching smart collections...')
-    const smartCollections = await fetchCollectionsByType('smart_collections')
+    const smartCollections = await fetchCollectionsByType('smart_collections', fetchProductCounts)
     
     // Combine both types
     allCollections = [...customCollections, ...smartCollections]
 
-    async function fetchCollectionsByType(collectionType: string) {
+    async function fetchCollectionsByType(collectionType: string, includeProductCounts: boolean = false) {
       const collections: ShopifyCollection[] = []
       let nextPageInfo = null
       let hasNextPage = true
 
       while (hasNextPage) {
         let url = `${shopifyUrl}/admin/api/2024-10/${collectionType}.json?limit=250`
+        if (includeProductCounts) {
+          url += '&products_count=true'
+        }
         if (nextPageInfo) {
           url += `&page_info=${nextPageInfo}`
         }
@@ -192,16 +197,20 @@ Deno.serve(async (req) => {
 
     // Update collections in database
     const upsertPromises = allCollections.map(async (collection) => {
-      const collectionData = {
+      const collectionData: any = {
         shopify_collection_id: collection.id.toString(),
         handle: collection.handle,
         title: collection.title,
         description: collection.body_html || null,
         image_url: collection.image?.src || null,
-        product_count: collection.products_count,
         collection_type: collection.collection_type,
         published: collection.published,
         last_synced_at: new Date().toISOString(),
+      }
+
+      // Only update product_count if we specifically fetched it
+      if (fetchProductCounts) {
+        collectionData.product_count = collection.products_count
       }
 
       // Upsert collection
