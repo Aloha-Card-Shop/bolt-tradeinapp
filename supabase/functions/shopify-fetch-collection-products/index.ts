@@ -69,13 +69,17 @@ serve(async (req) => {
     let allProducts: any[] = [];
     let hasNextPage = true;
     let pageInfo = '';
+    let pageCount = 0;
 
     while (hasNextPage) {
+      pageCount++;
       const url = new URL(`https://${settings.shop_domain}/admin/api/2025-07/collections/${collection.shopify_collection_id}/products.json`);
       url.searchParams.append('limit', '250');
       if (pageInfo) {
         url.searchParams.append('page_info', pageInfo);
       }
+
+      console.log(`Making Shopify API request (page ${pageCount}): ${url.toString()}`);
 
       const response = await fetch(url.toString(), {
         headers: {
@@ -84,22 +88,39 @@ serve(async (req) => {
         },
       });
 
+      console.log(`Shopify API response status: ${response.status}`);
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`Shopify API error: ${response.status} - ${errorText}`);
-        throw new Error(`Failed to fetch products: ${response.status}`);
+        throw new Error(`Failed to fetch products: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
-      allProducts = allProducts.concat(data.products);
+      console.log(`Received ${data.products?.length || 0} products in this page`);
+      console.log(`Response data keys:`, Object.keys(data));
+      
+      if (data.products) {
+        allProducts = allProducts.concat(data.products);
+      } else {
+        console.warn('No products array in response:', data);
+      }
 
       // Check for pagination
       const linkHeader = response.headers.get('link');
+      console.log(`Link header:`, linkHeader);
       hasNextPage = linkHeader ? linkHeader.includes('rel="next"') : false;
       
       if (hasNextPage && linkHeader) {
         const nextLinkMatch = linkHeader.match(/<[^>]+page_info=([^>]+)>;\s*rel="next"/);
         pageInfo = nextLinkMatch ? nextLinkMatch[1] : '';
+        console.log(`Next page info:`, pageInfo);
+      }
+      
+      // Safety break to prevent infinite loops
+      if (pageCount > 50) {
+        console.warn('Breaking pagination loop after 50 pages');
+        break;
       }
     }
 
