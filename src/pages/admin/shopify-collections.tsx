@@ -126,13 +126,8 @@ const ShopifyCollections: React.FC = () => {
       
       if (error) throw error;
       
-      // Show detailed results
-      const summary = data.summary;
-      toast.success(
-        `${collection.title}: Found ${summary.total_variants} items. ` +
-        `${summary.existing_in_inventory} already in inventory, ` +
-        `${summary.shopify_only} only in Shopify.`
-      );
+      // Show success message for background processing
+      toast.success(`${collection.title}: Background sync started successfully!`);
       
       // Log detailed results for debugging
       console.log('Collection products fetch results:', data);
