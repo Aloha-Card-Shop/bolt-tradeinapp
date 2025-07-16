@@ -123,6 +123,8 @@ serve(async (req) => {
     const productSummary = [];
     let existingCount = 0;
     let totalVariants = 0;
+    let failedProducts = [];
+    let productsWithoutVariants = [];
 
     // Process products in batches to avoid overwhelming the API
     const batchSize = 10;
@@ -143,6 +145,7 @@ serve(async (req) => {
 
           if (!productResponse.ok) {
             console.error(`Failed to fetch product ${productId}: ${productResponse.status}`);
+            failedProducts.push({ id: productId, status: productResponse.status });
             return null;
           }
 
@@ -150,6 +153,7 @@ serve(async (req) => {
           return productData.product;
         } catch (error) {
           console.error(`Error fetching product ${productId}:`, error);
+          failedProducts.push({ id: productId, error: error.message });
           return null;
         }
       });
@@ -167,7 +171,12 @@ serve(async (req) => {
         console.log(`Product "${product.title}" has ${variants.length} variants`);
         
         if (variants.length === 0) {
-          console.warn(`Product "${product.title}" has no variants, skipping`);
+          console.warn(`Product "${product.title}" has no variants!`);
+          productsWithoutVariants.push({
+            id: product.id,
+            title: product.title,
+            status: product.status
+          });
           continue;
         }
 
@@ -205,6 +214,8 @@ serve(async (req) => {
     }
 
     console.log(`Processed ${allProductIds.length} products with ${totalVariants} total variants`);
+    console.log(`Failed to fetch ${failedProducts.length} products:`, failedProducts);
+    console.log(`Found ${productsWithoutVariants.length} products without variants:`, productsWithoutVariants);
 
     return new Response(
       JSON.stringify({
@@ -218,8 +229,12 @@ serve(async (req) => {
           total_products: allProductIds.length,
           total_variants: totalVariants,
           existing_in_inventory: existingCount,
-          shopify_only: productSummary.length - existingCount
+          shopify_only: productSummary.length - existingCount,
+          failed_products: failedProducts.length,
+          products_without_variants: productsWithoutVariants.length
         },
+        failed_products: failedProducts,
+        products_without_variants: productsWithoutVariants,
         products: productSummary
       }),
       { 
