@@ -31,26 +31,37 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get Shopify settings
+    // Get active Shopify settings
     const { data: settings, error: settingsError } = await supabase
       .from('shopify_settings')
       .select('*')
-      .maybeSingle()
+      .eq('is_active', true)
+      .single()
 
-    console.log('Shopify settings query result:', { settings, settingsError })
+    console.log('Shopify settings query result:', { 
+      settings: settings ? { 
+        shop_domain: settings.shop_domain,
+        has_access_token: !!settings.access_token,
+        is_active: settings.is_active
+      } : null, 
+      settingsError 
+    })
 
     if (settingsError) {
       console.error('Database error fetching Shopify settings:', settingsError)
       return new Response(
-        JSON.stringify({ error: 'Database error fetching Shopify settings', details: settingsError.message }),
+        JSON.stringify({ 
+          error: 'Database error fetching Shopify settings', 
+          details: settingsError.message 
+        }),
         { status: 500, headers: corsHeaders }
       )
     }
 
     if (!settings) {
-      console.error('No Shopify settings found in database')
+      console.error('No active Shopify settings found in database')
       return new Response(
-        JSON.stringify({ error: 'Shopify settings not configured' }),
+        JSON.stringify({ error: 'No active Shopify settings configured' }),
         { status: 400, headers: corsHeaders }
       )
     }

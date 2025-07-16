@@ -1223,6 +1223,7 @@ export type Database = {
           api_secret: string
           created_at: string | null
           id: string
+          is_active: boolean | null
           shop_domain: string
           storefront_access_token: string | null
           updated_at: string | null
@@ -1234,6 +1235,7 @@ export type Database = {
           api_secret: string
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           shop_domain: string
           storefront_access_token?: string | null
           updated_at?: string | null
@@ -1245,6 +1247,7 @@ export type Database = {
           api_secret?: string
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           shop_domain?: string
           storefront_access_token?: string | null
           updated_at?: string | null
