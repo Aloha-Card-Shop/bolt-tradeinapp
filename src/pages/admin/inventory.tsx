@@ -25,6 +25,7 @@ interface InventoryItem {
     set_name: string | null;
     image_url: string | null;
     card_number: string | null;
+    attributes: any;
   };
   trade_in_items: {
     condition: string;
@@ -42,6 +43,7 @@ const CardInventory = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [syncFilter, setSyncFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
+  const [tagFilter, setTagFilter] = useState('all');
   
 
   useEffect(() => {
@@ -60,7 +62,8 @@ const CardInventory = () => {
             name,
             set_name,
             image_url,
-            card_number
+            card_number,
+            attributes
           ),
           trade_in_items (
             condition,
@@ -118,6 +121,20 @@ const CardInventory = () => {
     }
   };
 
+  // Extract unique Shopify tags from inventory
+  const getUniqueShopifyTags = () => {
+    const tagSet = new Set<string>();
+    inventory.forEach(item => {
+      if (item.cards.attributes?.tags) {
+        const tags = item.cards.attributes.tags.split(',').map((tag: string) => tag.trim());
+        tags.forEach((tag: string) => tagSet.add(tag));
+      }
+    });
+    return Array.from(tagSet).sort();
+  };
+
+  const uniqueTags = getUniqueShopifyTags();
+
   const filteredInventory = inventory.filter(item => {
     const matchesSearch = item.cards.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.cards.set_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -129,7 +146,11 @@ const CardInventory = () => {
                        (syncFilter === 'not_synced' && !item.shopify_synced);
     const matchesSource = sourceFilter === 'all' || item.import_source === sourceFilter;
     
-    return matchesSearch && matchesStatus && matchesSync && matchesSource;
+    const matchesTag = tagFilter === 'all' || 
+                      (item.cards.attributes?.tags && 
+                       item.cards.attributes.tags.toLowerCase().includes(tagFilter.toLowerCase()));
+    
+    return matchesSearch && matchesStatus && matchesSync && matchesSource && matchesTag;
   });
 
   const getStatusBadge = (status: string) => {
@@ -239,6 +260,18 @@ const CardInventory = () => {
                   <option value="all">All Sources</option>
                   <option value="trade_in">🔄 Trade-In</option>
                   <option value="shopify">🛍️ Shopify</option>
+                </select>
+              </div>
+              <div className="relative">
+                <select 
+                  value={tagFilter} 
+                  onChange={(e) => setTagFilter(e.target.value)}
+                  className="appearance-none px-4 py-3 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-colors"
+                >
+                  <option value="all">All Tags</option>
+                  {uniqueTags.map(tag => (
+                    <option key={tag} value={tag}>🏷️ {tag}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -415,13 +448,14 @@ const CardInventory = () => {
                 : "Start by approving some trade-ins to build your inventory."
               }
             </p>
-            {(searchTerm || statusFilter !== 'all' || syncFilter !== 'all' || sourceFilter !== 'all') && (
+            {(searchTerm || statusFilter !== 'all' || syncFilter !== 'all' || sourceFilter !== 'all' || tagFilter !== 'all') && (
               <button 
                 onClick={() => {
                   setSearchTerm('');
                   setStatusFilter('all');
                   setSyncFilter('all');
                   setSourceFilter('all');
+                  setTagFilter('all');
                 }}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
