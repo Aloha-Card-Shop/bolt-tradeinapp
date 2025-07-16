@@ -186,91 +186,96 @@ const ShopifyCollections: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="bg-white shadow rounded-lg divide-y divide-gray-200">
             {collections.map((collection) => {
               const syncSettings = collection.shopify_collection_sync_settings?.[0];
               const syncEnabled = syncSettings?.sync_enabled || false;
 
               return (
-                <div key={collection.id} className="bg-white overflow-hidden shadow rounded-lg">
-                  {/* Collection Image */}
-                  <div className="aspect-w-16 aspect-h-9">
-                    {collection.image_url ? (
-                      <img
-                        src={collection.image_url}
-                        alt={collection.title}
-                        className="w-full h-48 object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                        <Settings className="h-12 w-12 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Collection Info */}
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-medium text-gray-900">{collection.title}</h3>
-                        <p className="text-sm text-gray-500 mt-1">{collection.handle}</p>
-                      </div>
-                      <div className="flex flex-col items-end space-y-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          collection.published 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {collection.published ? 'Published' : 'Draft'}
-                        </span>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {collection.product_count || 0} products
-                        </span>
-                      </div>
+                <div key={collection.id} className="p-6">
+                  <div className="flex items-start space-x-4">
+                    {/* Collection Image */}
+                    <div className="flex-shrink-0">
+                      {collection.image_url ? (
+                        <img
+                          src={collection.image_url}
+                          alt={collection.title}
+                          className="w-20 h-20 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 bg-gray-200 flex items-center justify-center rounded-lg">
+                          <Settings className="h-8 w-8 text-gray-400" />
+                        </div>
+                      )}
                     </div>
 
-                    {collection.description && (
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                        {collection.description.replace(/<[^>]*>/g, '')}
-                      </p>
-                    )}
+                    {/* Collection Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-medium text-gray-900 truncate">{collection.title}</h3>
+                          <p className="text-sm text-gray-500 mt-1">Handle: {collection.handle}</p>
+                          <p className="text-sm text-gray-500">Type: {collection.collection_type || 'custom'}</p>
+                        </div>
+                        
+                        <div className="flex items-center space-x-4">
+                          <div className="flex flex-col items-end space-y-2">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              collection.published 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {collection.published ? 'Published' : 'Draft'}
+                            </span>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {collection.product_count || 0} products
+                            </span>
+                          </div>
 
-                    {/* Controls */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={syncEnabled}
-                            onChange={(e) => toggleSync(collection, e.target.checked)}
-                            disabled={updatingSync === collection.id}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                        <span className="text-sm font-medium text-gray-900">
-                          {syncEnabled ? 'Sync Enabled' : 'Sync Disabled'}
-                        </span>
-                        {updatingSync === collection.id && (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        )}
+                          {/* Controls */}
+                          <div className="flex items-center space-x-3">
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={syncEnabled}
+                                onChange={(e) => toggleSync(collection, e.target.checked)}
+                                disabled={updatingSync === collection.id}
+                                className="sr-only peer"
+                              />
+                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                            <span className="text-sm font-medium text-gray-900 whitespace-nowrap">
+                              {syncEnabled ? 'Sync Enabled' : 'Sync Disabled'}
+                            </span>
+                            {updatingSync === collection.id && (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              window.open(`https://admin.shopify.com/collections/${collection.shopify_collection_id}`, '_blank');
+                            }}
+                            className="p-2 text-gray-400 hover:text-gray-500"
+                            title="Open in Shopify"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
 
-                      <button
-                        onClick={() => {
-                          window.open(`https://admin.shopify.com/collections/${collection.shopify_collection_id}`, '_blank');
-                        }}
-                        className="p-2 text-gray-400 hover:text-gray-500"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </button>
-                    </div>
+                      {collection.description && (
+                        <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                          {collection.description.replace(/<[^>]*>/g, '')}
+                        </p>
+                      )}
 
-                    {collection.last_synced_at && (
-                      <p className="text-xs text-gray-500 mt-3">
-                        Last synced: {new Date(collection.last_synced_at).toLocaleString()}
-                      </p>
-                    )}
+                      {collection.last_synced_at && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          Last synced: {new Date(collection.last_synced_at).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
