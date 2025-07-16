@@ -65,8 +65,8 @@ serve(async (req) => {
 
     console.log(`Fetching products from Shopify collection: ${collection.shopify_collection_id}`);
 
-    // Fetch products from Shopify collection
-    let allProducts: any[] = [];
+    // First, get the list of product IDs from the collection
+    let allProductIds: string[] = [];
     let hasNextPage = true;
     let pageInfo = '';
     let pageCount = 0;
@@ -75,12 +75,12 @@ serve(async (req) => {
       pageCount++;
       const url = new URL(`https://${settings.shop_domain}/admin/api/2025-07/collections/${collection.shopify_collection_id}/products.json`);
       url.searchParams.append('limit', '250');
-      url.searchParams.append('fields', 'id,title,handle,status,product_type,vendor,tags,created_at,updated_at,variants');
+      url.searchParams.append('fields', 'id');
       if (pageInfo) {
         url.searchParams.append('page_info', pageInfo);
       }
 
-      console.log(`Making Shopify API request (page ${pageCount}): ${url.toString()}`);
+      console.log(`Fetching product IDs (page ${pageCount}): ${url.toString()}`);
 
       const response = await fetch(url.toString(), {
         headers: {
@@ -89,8 +89,6 @@ serve(async (req) => {
         },
       });
 
-      console.log(`Shopify API response status: ${response.status}`);
-
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`Shopify API error: ${response.status} - ${errorText}`);
@@ -98,104 +96,127 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      console.log(`Received ${data.products?.length || 0} products in this page`);
-      console.log(`Response data keys:`, Object.keys(data));
+      console.log(`Received ${data.products?.length || 0} product IDs in this page`);
       
       if (data.products) {
-        allProducts = allProducts.concat(data.products);
-      } else {
-        console.warn('No products array in response:', data);
+        allProductIds = allProductIds.concat(data.products.map((p: any) => p.id.toString()));
       }
 
       // Check for pagination
       const linkHeader = response.headers.get('link');
-      console.log(`Link header:`, linkHeader);
       hasNextPage = linkHeader ? linkHeader.includes('rel="next"') : false;
       
       if (hasNextPage && linkHeader) {
         const nextLinkMatch = linkHeader.match(/<[^>]+page_info=([^>]+)>;\s*rel="next"/);
         pageInfo = nextLinkMatch ? nextLinkMatch[1] : '';
-        console.log(`Next page info:`, pageInfo);
       }
       
-      // Safety break to prevent infinite loops
       if (pageCount > 50) {
         console.warn('Breaking pagination loop after 50 pages');
         break;
       }
     }
 
-    console.log(`Found ${allProducts.length} products in collection "${collection.title}"`);
+    console.log(`Found ${allProductIds.length} product IDs. Now fetching full product details...`);
 
-    // Process each product and check if it exists in our inventory
+    // Now fetch each product individually to get full details including variants
     const productSummary = [];
-    let syncedCount = 0;
     let existingCount = 0;
+    let totalVariants = 0;
 
-    for (const product of allProducts) {
-      console.log(`Processing product: "${product.title}" (ID: ${product.id})`);
-      console.log(`Product keys:`, Object.keys(product));
-      console.log(`Product variants type:`, typeof product.variants);
-      console.log(`Product variants value:`, product.variants);
-      
-      // Check if product has variants and if variants is an array
-      const variants = Array.isArray(product.variants) ? product.variants : [];
-      console.log(`Product "${product.title}" has ${variants.length} variants`);
-      
-      if (variants.length === 0) {
-        console.warn(`Product "${product.title}" has no variants, skipping`);
-        // Let's also log the entire product structure for the first few products
-        if (productSummary.length < 3) {
-          console.log(`Full product structure:`, JSON.stringify(product, null, 2));
+    // Process products in batches to avoid overwhelming the API
+    const batchSize = 10;
+    for (let i = 0; i < allProductIds.length; i += batchSize) {
+      const batch = allProductIds.slice(i, i + batchSize);
+      console.log(`Processing batch ${Math.floor(i/batchSize) + 1}: products ${i + 1}-${Math.min(i + batchSize, allProductIds.length)}`);
+
+      // Fetch products in parallel for this batch
+      const productPromises = batch.map(async (productId) => {
+        try {
+          const productUrl = `https://${settings.shop_domain}/admin/api/2025-07/products/${productId}.json`;
+          const productResponse = await fetch(productUrl, {
+            headers: {
+              'X-Shopify-Access-Token': settings.access_token,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!productResponse.ok) {
+            console.error(`Failed to fetch product ${productId}: ${productResponse.status}`);
+            return null;
+          }
+
+          const productData = await productResponse.json();
+          return productData.product;
+        } catch (error) {
+          console.error(`Error fetching product ${productId}:`, error);
+          return null;
         }
-        continue;
-      }
+      });
 
-      for (const variant of variants) {
-        console.log(`Processing variant:`, variant);
+      const batchProducts = await Promise.all(productPromises);
+
+      // Process each product in this batch
+      for (const product of batchProducts) {
+        if (!product) continue;
+
+        console.log(`Processing product: "${product.title}" (ID: ${product.id})`);
         
-        // Check if this product variant exists in our card_inventory
-        const { data: existingInventory } = await supabase
-          .from('card_inventory')
-          .select('id, sku, shopify_product_id, shopify_variant_id')
-          .eq('shopify_product_id', product.id.toString())
-          .eq('shopify_variant_id', variant.id.toString());
+        const variants = Array.isArray(product.variants) ? product.variants : [];
+        totalVariants += variants.length;
+        console.log(`Product "${product.title}" has ${variants.length} variants`);
+        
+        if (variants.length === 0) {
+          console.warn(`Product "${product.title}" has no variants, skipping`);
+          continue;
+        }
 
-        if (existingInventory && existingInventory.length > 0) {
-          existingCount++;
-          productSummary.push({
-            title: product.title,
-            variant_title: variant.title || 'Default Title',
-            sku: variant.sku || '',
-            price: variant.price || '0.00',
-            status: 'exists_in_inventory'
-          });
-        } else {
-          // This product is in Shopify but not in our inventory
-          productSummary.push({
-            title: product.title,
-            variant_title: variant.title || 'Default Title',
-            sku: variant.sku || '',
-            price: variant.price || '0.00',
-            shopify_product_id: product.id,
-            shopify_variant_id: variant.id,
-            status: 'shopify_only'
-          });
+        for (const variant of variants) {
+          // Check if this product variant exists in our card_inventory
+          const { data: existingInventory } = await supabase
+            .from('card_inventory')
+            .select('id, sku, shopify_product_id, shopify_variant_id')
+            .eq('shopify_product_id', product.id.toString())
+            .eq('shopify_variant_id', variant.id.toString());
+
+          if (existingInventory && existingInventory.length > 0) {
+            existingCount++;
+            productSummary.push({
+              title: product.title,
+              variant_title: variant.title || 'Default Title',
+              sku: variant.sku || '',
+              price: variant.price || '0.00',
+              status: 'exists_in_inventory'
+            });
+          } else {
+            // This product is in Shopify but not in our inventory
+            productSummary.push({
+              title: product.title,
+              variant_title: variant.title || 'Default Title',
+              sku: variant.sku || '',
+              price: variant.price || '0.00',
+              shopify_product_id: product.id,
+              shopify_variant_id: variant.id,
+              status: 'shopify_only'
+            });
+          }
         }
       }
     }
 
+    console.log(`Processed ${allProductIds.length} products with ${totalVariants} total variants`);
+
     return new Response(
       JSON.stringify({
-        message: `Fetched ${allProducts.length} products from "${collection.title}"`,
+        message: `Fetched ${allProductIds.length} products from "${collection.title}" with ${totalVariants} variants`,
         collection: {
           id: collectionId,
           title: collection.title,
           shopify_collection_id: collection.shopify_collection_id
         },
         summary: {
-          total_products: allProducts.length,
-          total_variants: productSummary.length,
+          total_products: allProductIds.length,
+          total_variants: totalVariants,
           existing_in_inventory: existingCount,
           shopify_only: productSummary.length - existingCount
         },
