@@ -75,6 +75,7 @@ serve(async (req) => {
       pageCount++;
       const url = new URL(`https://${settings.shop_domain}/admin/api/2025-07/collections/${collection.shopify_collection_id}/products.json`);
       url.searchParams.append('limit', '250');
+      url.searchParams.append('fields', 'id,title,handle,status,product_type,vendor,tags,created_at,updated_at,variants');
       if (pageInfo) {
         url.searchParams.append('page_info', pageInfo);
       }
