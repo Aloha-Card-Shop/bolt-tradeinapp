@@ -122,96 +122,70 @@ Deno.serve(async (req) => {
     const shopInfo = await testResponse.json()
     console.log('Shopify connection successful. Shop:', shopInfo.shop?.name || 'Unknown')
 
-    // Test collections endpoint access specifically
-    console.log('Testing collections endpoint access...')
-    const collectionsTestUrl = `${shopifyUrl}/admin/api/2024-10/collections.json?limit=1`
-    const collectionsTestResponse = await fetch(collectionsTestUrl, { headers })
+    // Fetch custom collections
+    console.log('Fetching custom collections...')
+    const customCollections = await fetchCollectionsByType('custom_collections')
     
-    if (!collectionsTestResponse.ok) {
-      const errorText = await collectionsTestResponse.text()
-      console.error('Collections endpoint test failed:', {
-        status: collectionsTestResponse.status,
-        statusText: collectionsTestResponse.statusText,
-        url: collectionsTestUrl,
-        body: errorText
-      })
-      
-      if (collectionsTestResponse.status === 403 || collectionsTestResponse.status === 401) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Your access token does not have permission to read collections',
-            details: {
-              status: collectionsTestResponse.status,
-              body: errorText,
-              required_permission: 'read_collections',
-              instructions: [
-                '1. Go to your Shopify Admin panel',
-                '2. Navigate to Apps → Private apps',
-                '3. Click on your private app',
-                '4. Scroll to Admin API permissions',
-                '5. Find "Products" section and enable "Read access"',
-                '6. Find "Product listings" section and enable "Read access"',
-                '7. Save the changes',
-                '8. Regenerate your access token',
-                '9. Update the token in your Shopify settings'
-              ]
-            }
-          }),
-          { status: 403, headers: corsHeaders }
-        )
-      }
-    }
+    // Fetch smart collections
+    console.log('Fetching smart collections...')
+    const smartCollections = await fetchCollectionsByType('smart_collections')
     
-    console.log('Collections endpoint accessible. Proceeding with sync...')
+    // Combine both types
+    allCollections = [...customCollections, ...smartCollections]
 
-    while (hasNextPage) {
-      let url = `${shopifyUrl}/admin/api/2024-10/collections.json?limit=250`
-      if (nextPageInfo) {
-        url += `&page_info=${nextPageInfo}`
+    async function fetchCollectionsByType(collectionType: string) {
+      const collections: ShopifyCollection[] = []
+      let nextPageInfo = null
+      let hasNextPage = true
+
+      while (hasNextPage) {
+        let url = `${shopifyUrl}/admin/api/2024-10/${collectionType}.json?limit=250`
+        if (nextPageInfo) {
+          url += `&page_info=${nextPageInfo}`
+        }
+
+        console.log(`Fetching ${collectionType} from URL:`, url)
+        const response = await fetch(url, { headers })
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error(`Shopify API error for ${collectionType}:`, {
+            status: response.status,
+            statusText: response.statusText,
+            url: url,
+            body: errorText
+          })
+          
+          if (response.status === 403 || response.status === 401) {
+            throw new Error(`Access token lacks permission to read ${collectionType}`)
+          }
+          
+          throw new Error(`Failed to fetch ${collectionType}: ${response.status} ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        const collectionsData = data.custom_collections || data.smart_collections || []
+        
+        // Add collection_type to each collection
+        const typedCollections = collectionsData.map((collection: any) => ({
+          ...collection,
+          collection_type: collectionType === 'custom_collections' ? 'custom' : 'smart'
+        }))
+        
+        collections.push(...typedCollections)
+
+        // Check for pagination
+        const linkHeader = response.headers.get('link')
+        if (linkHeader && linkHeader.includes('rel="next"')) {
+          const nextMatch = linkHeader.match(/<[^>]*page_info=([^&>]+)[^>]*>;\s*rel="next"/)
+          nextPageInfo = nextMatch ? nextMatch[1] : null
+          hasNextPage = !!nextPageInfo
+        } else {
+          hasNextPage = false
+        }
       }
-
-      console.log('Fetching from URL:', url)
-      const response = await fetch(url, { headers })
       
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Shopify API error:', {
-          status: response.status,
-          statusText: response.statusText,
-          url: url,
-          headers: Object.fromEntries(response.headers.entries()),
-          body: errorText
-        })
-        return new Response(
-          JSON.stringify({ 
-            error: 'Failed to fetch collections from Shopify',
-            details: {
-              status: response.status,
-              statusText: response.statusText,
-              body: errorText,
-              url: url,
-              suggestion: response.status === 401 ? 'Invalid access token' : 
-                         response.status === 403 ? 'Access token lacks read_collections permission' :
-                         response.status === 404 ? 'Collections endpoint not found - verify API version and shop domain' :
-                         'Unknown API error'
-            }
-          }),
-          { status: response.status, headers: corsHeaders }
-        )
-      }
-
-      const data = await response.json()
-      allCollections = allCollections.concat(data.collections || [])
-
-      // Check for pagination
-      const linkHeader = response.headers.get('link')
-      if (linkHeader && linkHeader.includes('rel="next"')) {
-        const nextMatch = linkHeader.match(/<[^>]*page_info=([^&>]+)[^>]*>;\s*rel="next"/)
-        nextPageInfo = nextMatch ? nextMatch[1] : null
-        hasNextPage = !!nextPageInfo
-      } else {
-        hasNextPage = false
-      }
+      return collections
     }
 
     console.log(`Fetched ${allCollections.length} collections from Shopify`)
