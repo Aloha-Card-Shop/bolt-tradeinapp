@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../integrations/supabase/client';
-import { Loader2, RefreshCw, ExternalLink, Settings, AlertCircle } from 'lucide-react';
+import { Loader2, RefreshCw, ExternalLink, Settings, AlertCircle, Download } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useUserRole } from '../../hooks/useUserRole';
 
@@ -30,6 +30,7 @@ const ShopifyCollections: React.FC = () => {
   const [quickSyncing, setQuickSyncing] = useState(false);
   const [fullSyncing, setFullSyncing] = useState(false);
   const [updatingSync, setUpdatingSync] = useState<string | null>(null);
+  const [fetchingProducts, setFetchingProducts] = useState<string | null>(null);
 
   const fetchCollections = async () => {
     try {
@@ -113,6 +114,34 @@ const ShopifyCollections: React.FC = () => {
       toast.error('Failed to update sync settings');
     } finally {
       setUpdatingSync(null);
+    }
+  };
+
+  const fetchCollectionProducts = async (collection: ShopifyCollection) => {
+    setFetchingProducts(collection.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('shopify-fetch-collection-products', {
+        body: { collectionId: collection.id }
+      });
+      
+      if (error) throw error;
+      
+      // Show detailed results
+      const summary = data.summary;
+      toast.success(
+        `${collection.title}: Found ${summary.total_variants} items. ` +
+        `${summary.existing_in_inventory} already in inventory, ` +
+        `${summary.shopify_only} only in Shopify.`
+      );
+      
+      // Log detailed results for debugging
+      console.log('Collection products fetch results:', data);
+      
+    } catch (error) {
+      console.error('Error fetching collection products:', error);
+      toast.error('Failed to fetch collection products: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setFetchingProducts(null);
     }
   };
 
@@ -295,6 +324,24 @@ const ShopifyCollections: React.FC = () => {
                         <p className="text-sm text-gray-600 mt-2 line-clamp-2">
                           {collection.description.replace(/<[^>]*>/g, '')}
                         </p>
+                      )}
+
+                      {syncEnabled && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <button
+                            onClick={() => fetchCollectionProducts(collection)}
+                            disabled={fetchingProducts === collection.id}
+                            className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                            title="Fetch all products in this collection from Shopify"
+                          >
+                            {fetchingProducts === collection.id ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <Download className="mr-2 h-4 w-4" />
+                            )}
+                            Fetch Products
+                          </button>
+                        </div>
                       )}
 
                       {collection.last_synced_at && (
