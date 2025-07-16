@@ -79,8 +79,10 @@ Deno.serve(async (req) => {
     let nextPageInfo = null
     let hasNextPage = true
 
-    // Test connection first with shop info endpoint
-    console.log('Testing Shopify API connection...')
+    // Test connection and permissions first
+    console.log('Testing Shopify API connection and permissions...')
+    
+    // Test basic connection
     const testUrl = `${shopifyUrl}/admin/api/2024-10/shop.json`
     const testResponse = await fetch(testUrl, { headers })
     
@@ -90,21 +92,27 @@ Deno.serve(async (req) => {
         status: testResponse.status,
         statusText: testResponse.statusText,
         url: testUrl,
-        headers: Object.fromEntries(testResponse.headers.entries()),
         body: errorText
       })
       return new Response(
         JSON.stringify({ 
-          error: 'Failed to connect to Shopify API. Please verify your access token has the correct permissions (read_products, read_collections)',
+          error: 'Failed to connect to Shopify API',
           details: {
             status: testResponse.status,
             statusText: testResponse.statusText,
             body: errorText,
             url: testUrl,
-            suggestion: testResponse.status === 401 ? 'Invalid access token' : 
+            suggestion: testResponse.status === 401 ? 'Invalid access token - regenerate your private app token' : 
                        testResponse.status === 403 ? 'Access token lacks required permissions' :
                        testResponse.status === 404 ? 'Invalid shop domain or API version' :
-                       'Unknown API error'
+                       'Unknown API error',
+            next_steps: testResponse.status === 403 ? [
+              'Go to Shopify Admin → Apps → Private apps',
+              'Edit your private app',
+              'Enable read_products and read_collections permissions',
+              'Save and regenerate access token',
+              'Update token in settings'
+            ] : []
           }
         }),
         { status: testResponse.status, headers: corsHeaders }
@@ -113,6 +121,48 @@ Deno.serve(async (req) => {
 
     const shopInfo = await testResponse.json()
     console.log('Shopify connection successful. Shop:', shopInfo.shop?.name || 'Unknown')
+
+    // Test collections endpoint access specifically
+    console.log('Testing collections endpoint access...')
+    const collectionsTestUrl = `${shopifyUrl}/admin/api/2024-10/collections.json?limit=1`
+    const collectionsTestResponse = await fetch(collectionsTestUrl, { headers })
+    
+    if (!collectionsTestResponse.ok) {
+      const errorText = await collectionsTestResponse.text()
+      console.error('Collections endpoint test failed:', {
+        status: collectionsTestResponse.status,
+        statusText: collectionsTestResponse.statusText,
+        url: collectionsTestUrl,
+        body: errorText
+      })
+      
+      if (collectionsTestResponse.status === 403 || collectionsTestResponse.status === 401) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Your access token does not have permission to read collections',
+            details: {
+              status: collectionsTestResponse.status,
+              body: errorText,
+              required_permission: 'read_collections',
+              instructions: [
+                '1. Go to your Shopify Admin panel',
+                '2. Navigate to Apps → Private apps',
+                '3. Click on your private app',
+                '4. Scroll to Admin API permissions',
+                '5. Find "Products" section and enable "Read access"',
+                '6. Find "Product listings" section and enable "Read access"',
+                '7. Save the changes',
+                '8. Regenerate your access token',
+                '9. Update the token in your Shopify settings'
+              ]
+            }
+          }),
+          { status: 403, headers: corsHeaders }
+        )
+      }
+    }
+    
+    console.log('Collections endpoint accessible. Proceeding with sync...')
 
     while (hasNextPage) {
       let url = `${shopifyUrl}/admin/api/2024-10/collections.json?limit=250`

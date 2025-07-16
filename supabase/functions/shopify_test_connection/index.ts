@@ -1,114 +1,223 @@
-
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
-serve(async (req) => {
+interface ShopifyTokenInfo {
+  scopes: string[]
+  associated_user_scope?: string
+}
+
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    // Create a Supabase client with the Admin key
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseAnonKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-    const adminSupabase = createClient(supabaseUrl, supabaseAnonKey);
-    
-    console.log("Fetching Shopify settings from database...");
-    
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    console.log('Testing Shopify connection and permissions...')
+
     // Get Shopify settings
-    const { data: settings, error: settingsError } = await adminSupabase
-      .from("shopify_settings")
-      .select("shop_domain, access_token")
-      .limit(1)
-      .single();
-    
-    if (settingsError) {
-      console.error("Error fetching Shopify settings:", settingsError);
+    const { data: settings, error: settingsError } = await supabase
+      .from('shopify_settings')
+      .select('shop_domain, access_token, is_active')
+      .eq('is_active', true)
+      .single()
+
+    console.log('Shopify settings query result:', {
+      settings: settings ? {
+        shop_domain: settings.shop_domain,
+        has_access_token: !!settings.access_token,
+        is_active: settings.is_active
+      } : null,
+      settingsError
+    })
+
+    if (settingsError || !settings) {
       return new Response(
         JSON.stringify({ 
-          success: false, 
-          error: `Failed to fetch Shopify settings: ${settingsError.message}` 
+          error: 'No active Shopify settings found. Please configure Shopify integration first.',
+          settingsError 
         }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+        { status: 400, headers: corsHeaders }
+      )
     }
+
+    const { shop_domain, access_token } = settings
+    const shopifyUrl = `https://${shop_domain}`
     
-    if (!settings) {
-      console.error("No Shopify settings found");
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "No Shopify settings found. Please configure your Shopify settings first." 
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const headers = {
+      'X-Shopify-Access-Token': access_token,
+      'Content-Type': 'application/json',
     }
+
+    // Test 1: Basic shop info
+    console.log('Testing basic shop connection...')
+    const shopResponse = await fetch(`${shopifyUrl}/admin/api/2024-10/shop.json`, { headers })
     
-    console.log(`Testing connection to Shopify shop: ${settings.shop_domain}`);
-    
-    // Use the Shopify Admin API to fetch shop information as a simple test
-    // This is a very lightweight call that should work for any valid shop + token
-    const shopifyResponse = await fetch(`https://${settings.shop_domain}/admin/api/2023-04/shop.json`, {
-      headers: {
-        "X-Shopify-Access-Token": settings.access_token,
-        "Content-Type": "application/json",
-      },
-    });
-    
-    if (!shopifyResponse.ok) {
-      const errorText = await shopifyResponse.text();
-      console.error(`Shopify API error: ${shopifyResponse.status} - ${errorText}`);
+    if (!shopResponse.ok) {
+      const errorText = await shopResponse.text()
+      console.error('Shop connection failed:', {
+        status: shopResponse.status,
+        statusText: shopResponse.statusText,
+        body: errorText
+      })
       
-      let errorMessage = `Shopify API error (${shopifyResponse.status})`;
-      if (shopifyResponse.status === 401) {
-        errorMessage = "Authentication failed: Your access token is invalid or expired";
-      } else if (shopifyResponse.status === 404) {
-        errorMessage = "Shop not found: Verify your shop domain is correct";
-      } else if (shopifyResponse.status === 429) {
-        errorMessage = "Rate limit exceeded: Too many requests to the Shopify API";
-      } else {
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = `Shopify API error: ${errorData.errors || errorText}`;
-        } catch {
-          errorMessage = `Shopify API error: ${errorText.substring(0, 100)}`;
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to connect to Shopify shop',
+          status: shopResponse.status,
+          details: errorText,
+          suggestion: shopResponse.status === 401 ? 'Invalid access token - please regenerate' : 
+                     shopResponse.status === 403 ? 'Access token lacks basic permissions' :
+                     shopResponse.status === 404 ? 'Invalid shop domain' :
+                     'Unknown connection error'
+        }),
+        { status: shopResponse.status, headers: corsHeaders }
+      )
+    }
+
+    const shopInfo = await shopResponse.json()
+    console.log('Shop connection successful:', shopInfo.shop?.name)
+
+    // Test 2: Check token permissions using GraphQL Admin API
+    console.log('Testing token permissions...')
+    const permissionsQuery = `
+      query {
+        app {
+          installation {
+            accessScopes {
+              handle
+            }
+          }
         }
       }
-      
-      return new Response(
-        JSON.stringify({ success: false, error: errorMessage }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    `
+
+    const graphqlResponse = await fetch(`${shopifyUrl}/admin/api/2024-10/graphql.json`, {
+      method: 'POST',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query: permissionsQuery })
+    })
+
+    let tokenPermissions = []
+    if (graphqlResponse.ok) {
+      const graphqlData = await graphqlResponse.json()
+      if (graphqlData.data?.app?.installation?.accessScopes) {
+        tokenPermissions = graphqlData.data.app.installation.accessScopes.map((scope: any) => scope.handle)
+      }
     }
+
+    // Test 3: Try to access collections endpoint
+    console.log('Testing collections access...')
+    const collectionsResponse = await fetch(`${shopifyUrl}/admin/api/2024-10/collections.json?limit=1`, { headers })
     
-    const shopData = await shopifyResponse.json();
+    const collectionsAccessible = collectionsResponse.ok
+    let collectionsError = null
     
-    console.log("Successfully connected to Shopify!");
+    if (!collectionsResponse.ok) {
+      collectionsError = await collectionsResponse.text()
+      console.log('Collections access failed:', {
+        status: collectionsResponse.status,
+        error: collectionsError
+      })
+    }
+
+    // Test 4: Try to access products endpoint
+    console.log('Testing products access...')
+    const productsResponse = await fetch(`${shopifyUrl}/admin/api/2024-10/products.json?limit=1`, { headers })
+    
+    const productsAccessible = productsResponse.ok
+    let productsError = null
+    
+    if (!productsResponse.ok) {
+      productsError = await productsResponse.text()
+      console.log('Products access failed:', {
+        status: productsResponse.status,
+        error: productsError
+      })
+    }
+
+    // Required permissions for collections sync
+    const requiredPermissions = ['read_products', 'read_collections']
+    const optionalPermissions = ['write_products', 'write_inventory']
+    
+    const hasRequiredPermissions = requiredPermissions.every(perm => 
+      tokenPermissions.includes(perm)
+    )
+
+    const missingRequired = requiredPermissions.filter(perm => 
+      !tokenPermissions.includes(perm)
+    )
+
+    const hasOptionalPermissions = optionalPermissions.filter(perm => 
+      tokenPermissions.includes(perm)
+    )
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        shop: {
+          name: shopInfo.shop?.name,
+          domain: shopInfo.shop?.domain,
+          plan: shopInfo.shop?.plan_name
+        },
+        permissions: {
+          detected: tokenPermissions,
+          required: requiredPermissions,
+          optional: optionalPermissions,
+          missing_required: missingRequired,
+          has_optional: hasOptionalPermissions,
+          has_all_required: hasRequiredPermissions
+        },
+        endpoint_tests: {
+          shop_info: true,
+          collections: {
+            accessible: collectionsAccessible,
+            error: collectionsError,
+            status: collectionsResponse.status
+          },
+          products: {
+            accessible: productsAccessible,
+            error: productsError,
+            status: productsResponse.status
+          }
+        },
+        recommendations: hasRequiredPermissions ? 
+          ['Your token has all required permissions. Collections sync should work.'] :
+          [
+            'Your access token is missing required permissions:',
+            ...missingRequired.map(perm => `- ${perm}`),
+            '',
+            'To fix this:',
+            '1. Go to your Shopify Admin → Apps → Private apps',
+            '2. Click on your private app',
+            '3. Update the permissions to include read_products and read_collections',
+            '4. Save and regenerate the access token',
+            '5. Update the token in your Shopify settings'
+          ]
+      }),
+      { headers: corsHeaders }
+    )
+
+  } catch (error) {
+    console.error('Connection test error:', error)
     return new Response(
       JSON.stringify({ 
-        success: true, 
-        message: "Successfully connected to Shopify!",
-        shop: shopData.shop.name,
-        domain: shopData.shop.domain,
-        plan: shopData.shop.plan_name
+        error: 'Failed to test Shopify connection',
+        details: error.message 
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-    
-  } catch (err) {
-    console.error("Unexpected error:", err);
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: err instanceof Error ? err.message : "An unexpected error occurred" 
-      }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+      { status: 500, headers: corsHeaders }
+    )
   }
-});
+})
