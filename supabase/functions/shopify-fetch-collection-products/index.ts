@@ -127,38 +127,62 @@ serve(async (req) => {
     let productsWithoutVariants = [];
 
     // Process products in batches to avoid overwhelming the API
-    const batchSize = 10;
+    const batchSize = 5; // Reduced batch size to avoid rate limiting
+    const delayBetweenBatches = 2000; // 2 second delay between batches
+    
     for (let i = 0; i < allProductIds.length; i += batchSize) {
       const batch = allProductIds.slice(i, i + batchSize);
       console.log(`Processing batch ${Math.floor(i/batchSize) + 1}: products ${i + 1}-${Math.min(i + batchSize, allProductIds.length)}`);
 
-      // Fetch products in parallel for this batch
+      // Fetch products in parallel for this batch with retry logic
       const productPromises = batch.map(async (productId) => {
-        try {
-          const productUrl = `https://${settings.shop_domain}/admin/api/2025-07/products/${productId}.json`;
-          const productResponse = await fetch(productUrl, {
-            headers: {
-              'X-Shopify-Access-Token': settings.access_token,
-              'Content-Type': 'application/json',
-            },
-          });
+        const maxRetries = 3;
+        const retryDelay = 1000; // 1 second delay between retries
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            const productUrl = `https://${settings.shop_domain}/admin/api/2025-07/products/${productId}.json`;
+            const productResponse = await fetch(productUrl, {
+              headers: {
+                'X-Shopify-Access-Token': settings.access_token,
+                'Content-Type': 'application/json',
+              },
+            });
 
-          if (!productResponse.ok) {
+            if (productResponse.ok) {
+              const productData = await productResponse.json();
+              return productData.product;
+            } else if (productResponse.status === 429) {
+              // Rate limited, wait and retry
+              console.log(`Rate limited on product ${productId}, attempt ${attempt}/${maxRetries}`);
+              if (attempt < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+                continue;
+              }
+            }
+            
             console.error(`Failed to fetch product ${productId}: ${productResponse.status}`);
             failedProducts.push({ id: productId, status: productResponse.status });
             return null;
+          } catch (error) {
+            console.error(`Error fetching product ${productId} (attempt ${attempt}):`, error);
+            if (attempt === maxRetries) {
+              failedProducts.push({ id: productId, error: error.message });
+              return null;
+            }
+            await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
           }
-
-          const productData = await productResponse.json();
-          return productData.product;
-        } catch (error) {
-          console.error(`Error fetching product ${productId}:`, error);
-          failedProducts.push({ id: productId, error: error.message });
-          return null;
         }
+        return null;
       });
 
       const batchProducts = await Promise.all(productPromises);
+      
+      // Add delay between batches to avoid rate limiting
+      if (i + batchSize < allProductIds.length) {
+        console.log(`Waiting ${delayBetweenBatches}ms before next batch...`);
+        await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+      }
 
       // Process each product in this batch
       for (const product of batchProducts) {
