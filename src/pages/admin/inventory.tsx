@@ -140,6 +140,24 @@ const CardInventory = () => {
     return psaMatch ? psaMatch[1] : undefined;
   };
 
+  const extractCertNumber = (item: InventoryItem) => {
+    // Look for cert number in various places in the card attributes
+    const attrs = item.cards.attributes;
+    if (!attrs) return undefined;
+
+    // Check for cert number in tags (format: "Cert: 12345678")
+    const tags = attrs.tags || '';
+    const certMatch = tags.match(/Cert[:\s]*(\d+)/i);
+    if (certMatch) return certMatch[1];
+
+    // Check for cert number in other attribute fields
+    if (attrs.cert_number) return attrs.cert_number;
+    if (attrs.certification_number) return attrs.certification_number;
+    if (attrs.psa_cert) return attrs.psa_cert;
+
+    return undefined;
+  };
+
   // Extract unique Shopify tags from inventory
   const getUniqueShopifyTags = () => {
     const tagSet = new Set<string>();
@@ -506,6 +524,7 @@ const CardInventory = () => {
           cardSet={selectedCard.cards.set_name}
           cardNumber={selectedCard.cards.card_number}
           psaGrade={extractPsaGrade(selectedCard)}
+          certNumber={extractCertNumber(selectedCard)}
         />
       )}
     </div>
