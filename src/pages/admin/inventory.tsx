@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ShoppingCart, Printer, RefreshCw, Search, Package, DollarSign, TrendingUp, Calendar } from 'lucide-react';
+import { ShoppingCart, Printer, RefreshCw, Search, Package, DollarSign, TrendingUp, Calendar, BarChart3 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../../utils/formatters';
+import EbaySalesModal from '../../components/admin/EbaySalesModal';
 
 interface InventoryItem {
   id: string;
@@ -44,6 +45,8 @@ const CardInventory = () => {
   const [syncFilter, setSyncFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('all');
+  const [salesModalOpen, setSalesModalOpen] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<InventoryItem | null>(null);
   
 
   useEffect(() => {
@@ -119,6 +122,22 @@ const CardInventory = () => {
       console.error('Error refreshing price:', error);
       toast.error("Failed to refresh price");
     }
+  };
+
+  const handleViewSales = (item: InventoryItem) => {
+    setSelectedCard(item);
+    setSalesModalOpen(true);
+  };
+
+  const isGradedCard = (item: InventoryItem) => {
+    const tags = item.cards.attributes?.tags || '';
+    return tags.toLowerCase().includes('psa') || tags.toLowerCase().includes('bgs');
+  };
+
+  const extractPsaGrade = (item: InventoryItem) => {
+    const tags = item.cards.attributes?.tags || '';
+    const psaMatch = tags.match(/PSA\s*(\d+)/i);
+    return psaMatch ? psaMatch[1] : undefined;
   };
 
   // Extract unique Shopify tags from inventory
@@ -425,6 +444,15 @@ const CardInventory = () => {
                         >
                           <RefreshCw className="h-4 w-4" />
                         </button>
+                        {isGradedCard(item) && (
+                          <button
+                            onClick={() => handleViewSales(item)}
+                            className="p-2 rounded-lg transition-colors hover:bg-orange-50 text-orange-600 hover:text-orange-700"
+                            title="View eBay Sales"
+                          >
+                            <BarChart3 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -465,6 +493,21 @@ const CardInventory = () => {
           </div>
         )}
       </div>
+
+      {/* eBay Sales Modal */}
+      {selectedCard && (
+        <EbaySalesModal
+          isOpen={salesModalOpen}
+          onClose={() => {
+            setSalesModalOpen(false);
+            setSelectedCard(null);
+          }}
+          cardName={selectedCard.cards.name}
+          cardSet={selectedCard.cards.set_name}
+          cardNumber={selectedCard.cards.card_number}
+          psaGrade={extractPsaGrade(selectedCard)}
+        />
+      )}
     </div>
   );
 };
