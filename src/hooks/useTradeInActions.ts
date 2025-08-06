@@ -91,9 +91,9 @@ export const useTradeInActions = (setTradeIns: React.Dispatch<React.SetStateActi
           .insert(inventoryRecords);
 
         if (inventoryError) {
-          console.error('Error creating inventory records:', inventoryError);
           // Continue with the approval even if inventory creation fails
           // This prevents the trade-in from being stuck in pending state
+          setErrorMessage('Warning: Trade-in approved but inventory creation failed');
         }
       }
 
@@ -102,7 +102,6 @@ export const useTradeInActions = (setTradeIns: React.Dispatch<React.SetStateActi
         tradeIn.id === tradeInId ? {...tradeIn, status: 'accepted'} : tradeIn
       ));
     } catch (err) {
-      console.error('Error approving trade-in:', err);
       setErrorMessage(`Failed to approve trade-in: ${(err as Error).message}`);
     } finally {
       setActionLoading(null);
@@ -128,7 +127,6 @@ export const useTradeInActions = (setTradeIns: React.Dispatch<React.SetStateActi
         tradeIn.id === tradeInId ? {...tradeIn, status: 'rejected'} : tradeIn
       ));
     } catch (err) {
-      console.error('Error denying trade-in:', err);
       setErrorMessage(`Failed to deny trade-in: ${(err as Error).message}`);
     } finally {
       setActionLoading(null);
@@ -147,7 +145,6 @@ export const useTradeInActions = (setTradeIns: React.Dispatch<React.SetStateActi
       // Update local state
       setTradeIns(prev => prev.filter(tradeIn => tradeIn.id !== tradeInId));
     } catch (err) {
-      console.error('Error deleting trade-in:', err);
       setErrorMessage(`Failed to delete trade-in: ${(err as Error).message}`);
     } finally {
       setActionLoading(null);

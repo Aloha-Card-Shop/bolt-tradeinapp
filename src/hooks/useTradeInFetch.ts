@@ -39,7 +39,6 @@ export const useTradeInFetch = (statusFilter: StatusFilter) => {
       const { data, error } = await query.order('trade_in_date', { ascending: false });
 
       if (error) {
-        console.error('Error fetching trade-ins:', error);
         setErrorMessage(`Error fetching trade-ins: ${error.message}`);
       } else if (data) {
         // Transform data to match our interface
@@ -125,7 +124,6 @@ export const useTradeInFetch = (statusFilter: StatusFilter) => {
         setTradeIns(tradeInsWithCustomerName);
       }
     } catch (err) {
-      console.error('Error fetching trade-ins:', err);
       setErrorMessage('Failed to fetch trade-ins');
     } finally {
       setIsDataLoading(false);
@@ -145,8 +143,7 @@ export const useTradeInFetch = (statusFilter: StatusFilter) => {
           schema: 'public',
           table: 'trade_ins'
         },
-        (payload) => {
-          console.log('Trade-ins changed:', payload);
+        () => {
           fetchTradeIns();
         }
       )

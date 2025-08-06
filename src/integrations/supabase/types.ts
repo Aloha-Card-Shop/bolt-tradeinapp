@@ -107,6 +107,45 @@ export type Database = {
         }
         Relationships: []
       }
+      brands: {
+        Row: {
+          color_primary: string | null
+          color_secondary: string | null
+          created_at: string
+          description: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          slug: string
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          color_primary?: string | null
+          color_secondary?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          slug: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          color_primary?: string | null
+          color_secondary?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          slug?: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       card_inventory: {
         Row: {
           card_id: string
@@ -452,6 +491,7 @@ export type Database = {
       }
       events: {
         Row: {
+          brand_id: string | null
           category: string
           created_at: string
           created_by: string | null
@@ -459,12 +499,17 @@ export type Database = {
           date: string
           description: string | null
           id: string
+          image_url: string | null
           location: string
+          location_id: string | null
           max_attendees: number
+          slug: string | null
+          status: string | null
           title: string
           updated_at: string
         }
         Insert: {
+          brand_id?: string | null
           category: string
           created_at?: string
           created_by?: string | null
@@ -472,12 +517,17 @@ export type Database = {
           date: string
           description?: string | null
           id?: string
+          image_url?: string | null
           location: string
+          location_id?: string | null
           max_attendees?: number
+          slug?: string | null
+          status?: string | null
           title: string
           updated_at?: string
         }
         Update: {
+          brand_id?: string | null
           category?: string
           created_at?: string
           created_by?: string | null
@@ -485,12 +535,31 @@ export type Database = {
           date?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           location?: string
+          location_id?: string | null
           max_attendees?: number
+          slug?: string | null
+          status?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       featured_shopify_products: {
         Row: {
@@ -656,21 +725,39 @@ export type Database = {
       locations: {
         Row: {
           address: string | null
+          city: string | null
           created_at: string
           id: string
+          map_url: string | null
           name: string
+          phone: string | null
+          photo_url: string | null
+          state: string | null
+          store_hours: Json | null
         }
         Insert: {
           address?: string | null
+          city?: string | null
           created_at?: string
           id?: string
+          map_url?: string | null
           name: string
+          phone?: string | null
+          photo_url?: string | null
+          state?: string | null
+          store_hours?: Json | null
         }
         Update: {
           address?: string | null
+          city?: string | null
           created_at?: string
           id?: string
+          map_url?: string | null
           name?: string
+          phone?: string | null
+          photo_url?: string | null
+          state?: string | null
+          store_hours?: Json | null
         }
         Relationships: []
       }
@@ -844,6 +931,66 @@ export type Database = {
           tg_id?: number | null
         }
         Relationships: []
+      }
+      posts: {
+        Row: {
+          author_id: string | null
+          brand_id: string | null
+          content: string | null
+          created_at: string
+          excerpt: string | null
+          featured_image: string | null
+          id: string
+          published: boolean | null
+          published_at: string | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          brand_id?: string | null
+          content?: string | null
+          created_at?: string
+          excerpt?: string | null
+          featured_image?: string | null
+          id?: string
+          published?: boolean | null
+          published_at?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          brand_id?: string | null
+          content?: string | null
+          created_at?: string
+          excerpt?: string | null
+          featured_image?: string | null
+          id?: string
+          published?: boolean | null
+          published_at?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       print_logs: {
         Row: {
@@ -1744,6 +1891,10 @@ export type Database = {
       has_required_role: {
         Args: { required_roles: string[] }
         Returns: boolean
+      }
+      secure_get_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
     }
     Enums: {
