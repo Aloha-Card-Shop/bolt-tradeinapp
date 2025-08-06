@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../integrations/supabase/client';
 import { TradeInItem } from '../types/tradeIn';
 import { toast } from 'react-hot-toast';
 import { useSession } from './useSession';

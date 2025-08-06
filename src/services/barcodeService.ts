@@ -1,5 +1,5 @@
 
-import { supabase } from '../lib/supabase';
+import { supabase } from '../integrations/supabase/client';
 import { BarcodeTemplate, BarcodeSetting, PrintLog } from '../types/barcode';
 import { TradeIn } from '../types/tradeIn';
 import { downloadService } from './downloadService';

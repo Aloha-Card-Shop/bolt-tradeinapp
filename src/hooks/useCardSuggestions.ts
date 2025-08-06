@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { CardDetails, GameType } from '../types/card';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../integrations/supabase/client';
 import { addToSearchHistory, getSearchHistory } from '../utils/cardSearchUtils';
 
 // Local storage key for search history

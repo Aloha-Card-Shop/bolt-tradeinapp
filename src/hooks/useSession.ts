@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../integrations/supabase/client';
 import { toast } from 'react-hot-toast';
 import { SessionHookReturn, SessionUser } from '../types/session';
 import { AppError } from '../types/error';

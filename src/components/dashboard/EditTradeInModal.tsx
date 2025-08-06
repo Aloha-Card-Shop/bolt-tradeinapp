@@ -5,7 +5,7 @@ import { TradeIn, TradeInItem } from '../../types/tradeIn';
 import { useTradeInItemUpdate } from '../../hooks/useTradeInItemUpdate';
 import EditableTradeInItemRow from './EditableTradeInItemRow';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../integrations/supabase/client';
 import { useUserRole } from '../../hooks/useUserRole';
 
 interface EditTradeInModalProps {

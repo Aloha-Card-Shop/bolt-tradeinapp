@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, ArrowLeft, Loader2, AlertCircle, Pencil, Trash2, X, ChevronDown, ChevronUp, Clock, CheckCircle2, XCircle } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../integrations/supabase/client';
 import { useSession } from '../../hooks/useSession';
 
 interface TradeInItem {

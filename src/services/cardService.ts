@@ -1,7 +1,7 @@
 
 // src/services/cardService.ts
 
-import { supabase } from '../lib/supabase';
+import { supabase } from '../integrations/supabase/client';
 import { CardDetails } from '../types/card';
 
 export async function getOrCreateCard(card: CardDetails): Promise<string> {

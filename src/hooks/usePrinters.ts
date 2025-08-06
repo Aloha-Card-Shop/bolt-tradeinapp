@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../integrations/supabase/client';
 import { Printer, Location, PrinterModel } from '../types/printer';
 import { toast } from 'react-hot-toast';
 

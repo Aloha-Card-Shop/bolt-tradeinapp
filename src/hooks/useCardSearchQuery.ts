@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../integrations/supabase/client';
 import { CardDetails } from '../types/card';
 
 export const useCardSearchQuery = () => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../integrations/supabase/client';
 import { ShoppingCart, Printer, RefreshCw, Search, Package, DollarSign, TrendingUp, Calendar, BarChart3 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../../utils/formatters';

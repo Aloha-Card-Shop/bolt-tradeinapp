@@ -9,9 +9,8 @@ const PrintersPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'printers' | 'settings'>('printers');
   const [showTestModal, setShowTestModal] = useState(false);
 
-  const handleSaveSettings = async (settings: any) => {
-    // TODO: Implement settings save functionality
-    console.log('Saving printer settings:', settings);
+  const handleSaveSettings = async () => {
+    // Settings save functionality will be implemented when needed
   };
 
   return (

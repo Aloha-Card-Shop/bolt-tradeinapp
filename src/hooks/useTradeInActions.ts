@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../integrations/supabase/client';
 import { TradeIn } from '../types/tradeIn';
 import { deleteTradeIn } from '../services/tradeInService';
 

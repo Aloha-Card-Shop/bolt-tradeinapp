@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '../integrations/supabase/client';
 
 export async function deleteTradeIn(tradeInId: string) {
   console.log(`🗑️ Starting deletion of trade-in ${tradeInId}`);
