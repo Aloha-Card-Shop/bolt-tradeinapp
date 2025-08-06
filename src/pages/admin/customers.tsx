@@ -70,7 +70,12 @@ const CustomerManagement = () => {
 
       if (error) throw error;
 
-      setCustomers(data);
+      setCustomers((data || []).map(customer => ({
+        ...customer,
+        created_at: customer.created_at || new Date().toISOString(),
+        email: customer.email || null,
+        phone: customer.phone || null
+      })));
       setError(null);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -101,6 +106,9 @@ const CustomerManagement = () => {
 
       const tradeIns = data.map(tradeIn => ({
         ...tradeIn,
+        trade_in_date: tradeIn.trade_in_date || new Date().toISOString(),
+        created_at: tradeIn.created_at || new Date().toISOString(),
+        handled_at: tradeIn.handled_at || null,
         items: tradeIn.items.map((item: any) => ({
           card_name: item.card.name,
           quantity: item.quantity,
@@ -111,7 +119,7 @@ const CustomerManagement = () => {
 
       setCustomers(prev => prev.map(customer => 
         customer.id === customerId
-          ? { ...customer, trade_ins: tradeIns }
+          ? { ...customer, trade_ins: tradeIns as any }
           : customer
       ));
     } catch (error) {

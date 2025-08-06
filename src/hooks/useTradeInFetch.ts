@@ -48,7 +48,7 @@ export const useTradeInFetch = (statusFilter: StatusFilter) => {
           const tradeIn: TradeIn = {
             id: item.id,
             customer_id: item.customer_id,
-            trade_in_date: item.trade_in_date,
+            trade_in_date: item.trade_in_date || new Date().toISOString(),
             total_value: item.total_value,
             cash_value: item.cash_value || 0,
             trade_value: item.trade_value || 0,

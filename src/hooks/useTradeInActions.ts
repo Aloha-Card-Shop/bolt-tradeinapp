@@ -55,16 +55,17 @@ export const useTradeInActions = (setTradeIns: React.Dispatch<React.SetStateActi
             const tcgplayerId = cardData?.tcgplayer_url ? 
               cardData.tcgplayer_url.match(/\/(\d+)/)?.[1] : undefined;
             
+            const attrs = item.attributes as any;
             const certificationData = {
-              isCertified: !!item.attributes?.isCertified,
-              certNumber: item.attributes?.certNumber,
-              grade: item.attributes?.grade
+              isCertified: !!attrs?.isCertified,
+              certNumber: attrs?.certNumber,
+              grade: attrs?.grade
             };
             
             sku = generateSku(
               tcgplayerId,
-              !!item.attributes?.isFirstEdition,
-              !!item.attributes?.isHolo,
+              !!attrs?.isFirstEdition,
+              !!attrs?.isHolo,
               item.condition,
               false, // isReverseHolo - default to false
               certificationData

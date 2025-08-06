@@ -79,7 +79,14 @@ const CardInventory = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setInventory(data || []);
+      setInventory((data || []).map(item => ({
+        ...item,
+        last_price_check: item.last_price_check || new Date().toISOString(),
+        created_at: item.created_at || new Date().toISOString(),
+        last_printed_at: item.last_printed_at || undefined,
+        processed_at: item.processed_at || new Date().toISOString(),
+        shopify_synced_at: item.shopify_synced_at || undefined
+      })) as any);
       } catch (error) {
       console.error('Error fetching inventory:', error);
       toast.error("Failed to fetch inventory");

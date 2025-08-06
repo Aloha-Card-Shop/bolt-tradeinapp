@@ -13,7 +13,14 @@ export const barcodeService = {
       .order('name');
     
     if (error) throw error;
-    return data || [];
+    return (data || []).map(template => ({
+      ...template,
+      description: template.description || undefined,
+      is_default: template.is_default || false,
+      created_by: template.created_by || undefined,
+      updated_at: template.updated_at || undefined,
+      created_at: template.created_at || undefined
+    }));
   },
 
   fetchTemplateById: async (id: string): Promise<BarcodeTemplate | null> => {
@@ -27,7 +34,14 @@ export const barcodeService = {
       if (error.code === 'PGRST116') return null; // No rows returned
       throw error;
     }
-    return data;
+    return data ? {
+      ...data,
+      description: data.description || undefined,
+      is_default: data.is_default || false,
+      created_by: data.created_by || undefined,
+      updated_at: data.updated_at || undefined,
+      created_at: data.created_at || undefined
+    } : null;
   },
 
   fetchDefaultTemplate: async (): Promise<BarcodeTemplate | null> => {
@@ -41,7 +55,14 @@ export const barcodeService = {
       if (error.code === 'PGRST116') return null; // No rows returned
       throw error;
     }
-    return data;
+    return data ? {
+      ...data,
+      description: data.description || undefined,
+      is_default: data.is_default || false,
+      created_by: data.created_by || undefined,
+      updated_at: data.updated_at || undefined,
+      created_at: data.created_at || undefined
+    } : null;
   },
 
   createTemplate: async (template: Omit<BarcodeTemplate, 'id' | 'created_at' | 'updated_at'>): Promise<BarcodeTemplate> => {
@@ -52,7 +73,14 @@ export const barcodeService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      description: data.description || undefined,
+      is_default: data.is_default || false,
+      created_by: data.created_by || undefined,
+      updated_at: data.updated_at || undefined,
+      created_at: data.created_at || undefined
+    };
   },
 
   updateTemplate: async (id: string, updates: Partial<BarcodeTemplate>): Promise<BarcodeTemplate> => {
@@ -64,7 +92,14 @@ export const barcodeService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      description: data.description || undefined,
+      is_default: data.is_default || false,
+      created_by: data.created_by || undefined,
+      updated_at: data.updated_at || undefined,
+      created_at: data.created_at || undefined
+    };
   },
 
   deleteTemplate: async (id: string): Promise<void> => {
@@ -100,7 +135,7 @@ export const barcodeService = {
       .order('setting_name');
     
     if (error) throw error;
-    return data || [];
+    return (data || []) as BarcodeSetting[];
   },
 
   fetchSettingByName: async (name: string): Promise<BarcodeSetting | null> => {
@@ -114,7 +149,7 @@ export const barcodeService = {
       if (error.code === 'PGRST116') return null; // No rows returned
       throw error;
     }
-    return data;
+    return data as BarcodeSetting;
   },
 
   updateSetting: async (name: string, value: any, description?: string): Promise<BarcodeSetting> => {
@@ -132,7 +167,7 @@ export const barcodeService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return data as BarcodeSetting;
   },
 
   // Print logging
@@ -150,7 +185,13 @@ export const barcodeService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      template_id: data.template_id || undefined,
+      error_message: data.error_message || undefined,
+      print_job_id: data.print_job_id || undefined,
+      printed_at: data.printed_at || undefined
+    } as PrintLog;
   },
 
   fetchPrintLogs: async (limit = 50): Promise<PrintLog[]> => {
@@ -164,7 +205,13 @@ export const barcodeService = {
       .limit(limit);
     
     if (error) throw error;
-    return data || [];
+    return (data || []).map(log => ({
+      ...log,
+      template_id: log.template_id || undefined,
+      error_message: log.error_message || undefined,
+      print_job_id: log.print_job_id || undefined,
+      printed_at: log.printed_at || undefined
+    })) as PrintLog[];
   },
 
   fetchPrintLogsByTradeIn: async (tradeInId: string): Promise<PrintLog[]> => {
@@ -178,7 +225,13 @@ export const barcodeService = {
       .order('printed_at', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    return (data || []).map(log => ({
+      ...log,
+      template_id: log.template_id || undefined,
+      error_message: log.error_message || undefined,
+      print_job_id: log.print_job_id || undefined,
+      printed_at: log.printed_at || undefined
+    })) as PrintLog[];
   },
 
   // Template rendering utility

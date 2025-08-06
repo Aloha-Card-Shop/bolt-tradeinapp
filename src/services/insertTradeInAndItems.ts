@@ -157,7 +157,13 @@ export async function insertTradeInAndItems(
     }
 
     console.log('Successfully created trade-in with items');
-    return tradeIn;
+    return {
+      ...tradeIn,
+      trade_in_date: tradeIn.trade_in_date || new Date().toISOString(),
+      status: tradeIn.status as 'pending' | 'accepted' | 'rejected',
+      payment_type: tradeIn.payment_type as 'cash' | 'trade' | 'mixed',
+      created_at: tradeIn.created_at || new Date().toISOString()
+    };
   } catch (error) {
     console.error('Error in insertTradeInAndItems:', error);
     throw error instanceof Error 

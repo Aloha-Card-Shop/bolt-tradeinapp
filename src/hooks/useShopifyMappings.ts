@@ -32,7 +32,14 @@ export const useShopifyMappings = () => {
       
       if (error) throw error;
       
-      setMappings(data || []);
+      setMappings((data || []).map(mapping => ({
+        ...mapping,
+        is_active: mapping.is_active ?? true,
+        sort_order: mapping.sort_order ?? 0,
+        description: mapping.description || null,
+        transform_template: mapping.transform_template || null,
+        mapping_type: mapping.mapping_type as 'product' | 'variant' | 'metadata'
+      })));
     } catch (err) {
       console.error('Error fetching Shopify mappings:', err);
       setError((err as Error).message || 'Failed to load Shopify mappings');

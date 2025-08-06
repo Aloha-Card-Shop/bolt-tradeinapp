@@ -64,7 +64,7 @@ export async function getOrCreateCard(card: CardDetails): Promise<string> {
         name: card.name,
         game: card.game,
         set_name: card.set || null,
-        card_number: card.number || null,
+        card_number: typeof card.number === 'string' ? card.number : String(card.number || ''),
         image_url: card.imageUrl || null,
         attributes: { 
           // Store product ID in both field formats for maximum compatibility
