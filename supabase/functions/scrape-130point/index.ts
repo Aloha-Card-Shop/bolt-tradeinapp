@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import FirecrawlApp from 'https://esm.sh/@mendable/firecrawl-js@1.29.3';
 
 // Configure CORS headers for the API response
 const corsHeaders = {
@@ -11,6 +12,17 @@ const corsHeaders = {
 // Simple cache implementation
 const cache = new Map<string, { data: any, timestamp: number }>();
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
+
+// Firecrawl configuration
+const FIRECRAWL_API_KEY = 'fc-2dea0a85f9e84cb6ae0783193103e207';
+let firecrawlApp: FirecrawlApp | null = null;
+
+const getFirecrawlApp = (): FirecrawlApp => {
+  if (!firecrawlApp) {
+    firecrawlApp = new FirecrawlApp({ apiKey: FIRECRAWL_API_KEY });
+  }
+  return firecrawlApp;
+};
 
 // Rate limiting
 const rateLimits = new Map<string, number[]>();
@@ -169,23 +181,24 @@ serve(async (req) => {
     
     console.log(`Searching 130point.com for: ${searchQuery}`);
     
-    // Make the request to 130point.com
-    const response = await fetch(FORM_SUBMIT_URL, {
-      method: 'POST',
-      headers,
-      body: formData,
-      redirect: 'follow',
+    // Use Firecrawl to scrape 130point with search query
+    const app = getFirecrawlApp();
+    const encodedQuery = encodeURIComponent(searchQuery);
+    const searchUrl = `https://130point.com/sales/?search=${encodedQuery}&searchButton=&sortBy=date_desc`;
+    
+    const scrapeResult = await app.scrapeUrl(searchUrl, {
+      formats: ['markdown', 'html']
     });
 
-    if (!response.ok) {
+    if (!scrapeResult.success) {
       return new Response(
-        JSON.stringify({ error: `Request failed with status: ${response.status}` }),
-        { status: response.status, headers: {...corsHeaders, 'Content-Type': 'application/json'} }
+        JSON.stringify({ error: 'Failed to scrape 130point sales data' }),
+        { status: 500, headers: {...corsHeaders, 'Content-Type': 'application/json'} }
       );
     }
 
-    // Get the HTML response as text
-    const html = await response.text();
+    // Get the HTML response from Firecrawl
+    const html = (scrapeResult as any).data?.html || '';
     
     // Store result in cache
     const result = { html };

@@ -1,12 +1,6 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
-import { 
-  extractCertificateData,
-  determineGameType,
-  determinePlayerName
-} from "./utils.ts";
+import FirecrawlApp from 'https://esm.sh/@mendable/firecrawl-js@1.29.3';
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -17,6 +11,17 @@ const corsHeaders = {
 // Cache for certificate lookups to reduce scraping frequency
 const certCache = new Map();
 const CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours cache
+
+// Firecrawl configuration
+const FIRECRAWL_API_KEY = 'fc-2dea0a85f9e84cb6ae0783193103e207';
+let firecrawlApp: FirecrawlApp | null = null;
+
+const getFirecrawlApp = (): FirecrawlApp => {
+  if (!firecrawlApp) {
+    firecrawlApp = new FirecrawlApp({ apiKey: FIRECRAWL_API_KEY });
+  }
+  return firecrawlApp;
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -86,63 +91,35 @@ function checkCache(certNumber: string): Response | null {
   return null;
 }
 
-// Fetch certificate data from PSA website
+// Fetch certificate data from PSA website using Firecrawl
 async function fetchCertificateData(certNumber: string): Promise<Response> {
   try {
-    // Scrape the PSA certificate page
     const psaUrl = `https://www.psacard.com/cert/${certNumber}`;
-    console.log(`Attempting to scrape URL: ${psaUrl}`);
+    console.log(`Attempting to scrape URL with Firecrawl: ${psaUrl}`);
     
-    // Fetch the page content with improved headers
-    const response = await fetch(psaUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1'
-      }
+    const app = getFirecrawlApp();
+    const scrapeResult = await app.scrapeUrl(psaUrl, {
+      formats: ['markdown', 'html']
     });
-    
-    console.log(`Fetch response status: ${response.status} ${response.statusText}`);
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        console.log(`Certificate not found: ${certNumber}`);
-        return new Response(
-          JSON.stringify({ error: "Not Found", message: "Certificate not found" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      console.error(`HTTP error ${response.status}: ${response.statusText}`);
-      // Return fallback data instead of throwing error
-      console.log("Returning fallback data due to HTTP error");
+    if (!scrapeResult.success) {
+      console.log(`Firecrawl scraping failed for certificate: ${certNumber}`);
       return createFallbackResponse(certNumber);
     }
 
-    // Get the HTML content
-    const html = await response.text();
-    console.log(`Received HTML content length: ${html.length} characters`);
+    // Extract certificate data from scraped content
+    const htmlContent = (scrapeResult as any).data?.html || '';
+    const markdownContent = (scrapeResult as any).data?.markdown || '';
     
-    if (html.length < 100) {
-      console.log("HTML content too short, likely blocked or empty response");
-      return createFallbackResponse(certNumber);
-    }
+    console.log(`Firecrawl scraped content - HTML: ${htmlContent.length} chars, Markdown: ${markdownContent.length} chars`);
     
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-    
-    if (!doc) {
-      console.error("Failed to parse HTML document");
+    if (htmlContent.length < 100 && markdownContent.length < 50) {
+      console.log("Scraped content too short, likely blocked or empty response");
       return createFallbackResponse(certNumber);
     }
 
-    console.log("HTML document parsed successfully");
-
-    // Extract certificate data
-    const certData = extractCertificateData(doc, certNumber);
+    // Extract certificate data from content
+    const certData = extractCertificateDataFromContent(htmlContent, markdownContent, certNumber);
     console.log("Certificate data extracted:", JSON.stringify(certData, null, 2));
     
     // Check if extraction was successful
@@ -165,6 +142,84 @@ async function fetchCertificateData(certNumber: string): Promise<Response> {
     console.error("Error in fetchCertificateData:", error);
     console.log("Returning fallback data due to exception");
     return createFallbackResponse(certNumber);
+  }
+}
+
+// Extract certificate data from HTML and markdown content
+function extractCertificateDataFromContent(htmlContent: string, markdownContent: string, certNumber: string): any {
+  try {
+    // Try to extract from markdown first (cleaner format)
+    let cardName = 'Unknown Card';
+    let grade = '10';
+    let year = undefined;
+    let set = undefined;
+    let cardNumber = undefined;
+    let imageUrl = undefined;
+    
+    // Extract grade
+    const gradeMatch = markdownContent.match(/Grade\s*:?\s*(\d+)/i) || htmlContent.match(/Grade\s*:?\s*(\d+)/i);
+    if (gradeMatch) {
+      grade = gradeMatch[1];
+    }
+    
+    // Extract card name
+    const cardNameMatch = markdownContent.match(/Card\s*:?\s*([^\n\r]+)/i) || 
+                         htmlContent.match(/<title[^>]*>([^<]+)/i) ||
+                         markdownContent.match(/\*\*([^*]+)\*\*/);
+    if (cardNameMatch) {
+      cardName = cardNameMatch[1].trim().replace(/PSA.*$/, '').trim();
+    }
+    
+    // Extract year 
+    const yearMatch = markdownContent.match(/(\d{4})/);
+    if (yearMatch) {
+      year = yearMatch[1];
+    }
+    
+    // Extract set information
+    const setMatch = markdownContent.match(/Set\s*:?\s*([^\n\r]+)/i) ||
+                     cardName.match(/(Base Set|Jungle|Fossil|Team Rocket|Gym|Neo|E-Card|EX|Diamond|Pearl|Platinum|HeartGold|SoulSilver|Black|White|XY|Sun|Moon|Sword|Shield)/i);
+    if (setMatch) {
+      set = setMatch[1].trim();
+    }
+    
+    // Extract card number
+    const numberMatch = markdownContent.match(/#(\d+)/);
+    if (numberMatch) {
+      cardNumber = numberMatch[1];
+    }
+    
+    // Try to find image URL
+    const imageMatch = htmlContent.match(/src="([^"]*(?:jpg|jpeg|png|gif)[^"]*)"/i);
+    if (imageMatch) {
+      imageUrl = imageMatch[1];
+    }
+    
+    return {
+      certNumber,
+      cardName,
+      grade,
+      year,
+      set,
+      cardNumber,
+      imageUrl,
+      certificationDate: new Date().toISOString(),
+      game: 'pokemon' // Default to pokemon
+    };
+    
+  } catch (error) {
+    console.error('Error extracting certificate data:', error);
+    return {
+      certNumber,
+      cardName: "Certificate Data Extraction Failed",
+      grade: "10",
+      year: undefined,
+      set: undefined,
+      cardNumber: undefined,
+      imageUrl: undefined,
+      certificationDate: new Date().toISOString(),
+      game: 'pokemon'
+    };
   }
 }
 

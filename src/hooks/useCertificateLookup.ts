@@ -1,9 +1,9 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { CardDetails, GameType } from '../types/card';
 import { useEbayPriceLookup } from './useEbayPriceLookup';
+import { FirecrawlService } from '../utils/FirecrawlService';
 
 export interface CertificateData {
   certNumber: string;
@@ -69,56 +69,40 @@ export const useCertificateLookup = () => {
     setResult(null);
 
     try {
-      console.log('Looking up certificate:', certNumber.trim());
+      console.log('Looking up certificate with Firecrawl:', certNumber.trim());
       
-      const { data, error } = await supabase.functions.invoke('cert-lookup', {
-        body: { certNumber: certNumber.trim() }
-      });
+      const firecrawlResult = await FirecrawlService.scrapePSACertificate(certNumber.trim());
 
-      console.log('Certificate lookup response:', { data, error });
+      console.log('Firecrawl certificate lookup response:', firecrawlResult);
 
-      if (error) {
-        console.error('Certificate lookup error:', error);
-        let errorMessage = 'Failed to look up certificate';
-        
-        if (error.message) {
-          errorMessage = error.message;
-        } else if (typeof error === 'string') {
-          errorMessage = error;
-        }
-        
+      if (!firecrawlResult.success) {
+        console.error('Certificate lookup error:', firecrawlResult.error);
+        const errorMessage = firecrawlResult.error || 'Failed to look up certificate';
         setError(errorMessage);
         toast.error(errorMessage);
         return;
       }
 
-      if (!data || !data.data) {
-        let errorMessage = 'Certificate not found';
-        
-        // Check if we have more specific error information
-        if (data && data.error) {
-          if (data.error === 'Not Found') {
-            errorMessage = `Certificate ${certNumber.trim()} not found in PSA database`;
-          } else if (data.message) {
-            errorMessage = data.message;
-          }
-        } else {
-          errorMessage = 'Certificate not found or invalid response. Please check the certificate number.';
-        }
-        
+      if (!firecrawlResult.data) {
+        const errorMessage = `Certificate ${certNumber.trim()} not found in PSA database`;
         setError(errorMessage);
         toast.error(errorMessage);
         return;
       }
 
-      setResult(data.data);
-      toast.success('Certificate found!');
-      
-      // Convert to card details and look up the price automatically
-      const cardDetails = convertToCardDetails(data.data);
-      if (cardDetails) {
-        // Look up price from eBay
-        await lookupPrice(cardDetails);
+      // Type guard to ensure we have the right data structure
+      if ('certNumber' in firecrawlResult.data) {
+        setResult(firecrawlResult.data);
+        toast.success('Certificate found!');
+        
+        // Convert to card details and look up the price automatically
+        const cardDetails = convertToCardDetails(firecrawlResult.data);
+        if (cardDetails) {
+          // Look up price from eBay
+          await lookupPrice(cardDetails);
+        }
+      } else {
+        throw new Error('Invalid certificate data format');
       }
     } catch (err: unknown) {
       console.error('Certificate lookup error:', err);
