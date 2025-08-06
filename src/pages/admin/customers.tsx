@@ -227,89 +227,96 @@ const CustomerManagement = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 animate-fade-in">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center text-gray-600 hover:text-gray-800"
+            className="flex items-center text-gray-600 hover:text-primary transition-all duration-300 hover:scale-105 group"
           >
-            <ArrowLeft className="h-5 w-5 mr-2" />
+            <ArrowLeft className="h-5 w-5 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
             Back to Dashboard
           </button>
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Users className="h-6 w-6 text-blue-600" />
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-gradient-to-r from-primary to-primary-glow rounded-xl shadow-lg">
+              <Users className="h-7 w-7 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Customer Management</h1>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                Customer Management
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">Manage customer accounts and trade history</p>
+            </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+        <div className="glass rounded-2xl shadow-2xl border border-white/20 p-8 animate-scale-in">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 rounded-lg flex items-start space-x-3">
+            <div className="mb-6 p-4 bg-red-50 rounded-xl flex items-start space-x-3 border border-red-200 animate-slide-in-right">
               <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-red-700">{error}</p>
+              <p className="text-sm text-red-700 font-medium">{error}</p>
             </div>
           )}
 
           {isLoading ? (
-            <div className="text-center py-8">
-              <Loader2 className="h-8 w-8 text-blue-500 animate-spin mx-auto" />
-              <p className="mt-4 text-gray-600">Loading customers...</p>
+            <div className="text-center py-12">
+              <div className="animate-float mb-4">
+                <Loader2 className="h-10 w-10 text-primary animate-spin mx-auto" />
+              </div>
+              <p className="text-lg text-muted-foreground animate-pulse">Loading customers...</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="table-enhanced">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Name</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Email</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Phone</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Created</th>
-                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">Actions</th>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Created</th>
+                    <th className="text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {customers.map(customer => (
+                <tbody>
+                  {customers.map((customer, index) => (
                     <React.Fragment key={customer.id}>
-                      <tr>
-                        <td className="py-3 px-4">
+                      <tr className="animate-fade-in hover-lift" style={{animationDelay: `${index * 0.1}s`}}>
+                        <td>
                           <button
                             onClick={() => toggleCustomerDetails(customer.id)}
-                            className="flex items-center text-left group"
+                            className="flex items-center text-left group transition-all duration-300"
                           >
                             {expandedCustomer === customer.id ? (
-                              <ChevronUp className="h-4 w-4 mr-2 text-gray-400 group-hover:text-gray-600" />
+                              <ChevronUp className="h-5 w-5 mr-3 text-muted-foreground group-hover:text-primary transition-all duration-300 group-hover:scale-110" />
                             ) : (
-                              <ChevronDown className="h-4 w-4 mr-2 text-gray-400 group-hover:text-gray-600" />
+                              <ChevronDown className="h-5 w-5 mr-3 text-muted-foreground group-hover:text-primary transition-all duration-300 group-hover:scale-110" />
                             )}
-                            <span className="font-medium text-gray-900 group-hover:text-blue-600">
+                            <span className="font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
                               {customer.first_name} {customer.last_name}
                             </span>
                           </button>
                         </td>
-                        <td className="py-3 px-4">
-                          <p className="text-gray-600">{customer.email || '-'}</p>
+                        <td>
+                          <p className="text-muted-foreground font-medium">{customer.email || '-'}</p>
                         </td>
-                        <td className="py-3 px-4">
-                          <p className="text-gray-600">{customer.phone || '-'}</p>
+                        <td>
+                          <p className="text-muted-foreground font-medium">{customer.phone || '-'}</p>
                         </td>
-                        <td className="py-3 px-4">
-                          <p className="text-gray-600">
+                        <td>
+                          <p className="text-muted-foreground font-medium">
                             {new Date(customer.created_at).toLocaleDateString()}
                           </p>
                         </td>
-                        <td className="py-3 px-4">
+                        <td>
                           <div className="flex items-center justify-end space-x-2">
                             <button
                               onClick={() => handleEditCustomer(customer)}
-                              className="p-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
+                              className="p-2 text-info hover:text-info-foreground hover:bg-info/10 rounded-lg transition-all duration-300 hover:scale-110 hover:shadow-md"
                               title="Edit customer"
                             >
                               <Pencil className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteCustomer(customer.id)}
-                              className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
+                              className="p-2 text-red-500 hover:text-white hover:bg-red-500 rounded-lg transition-all duration-300 hover:scale-110 hover:shadow-md"
                               title="Delete customer"
                             >
                               <Trash2 className="h-4 w-4" />
