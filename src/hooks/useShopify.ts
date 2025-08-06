@@ -143,7 +143,8 @@ export const useShopify = () => {
 
   const getShopifyLogs = async (tradeInId: string) => {
     try {
-      const { data, error } = await supabase
+      // Note: shopify_debug_logs table not in current types, using any for now
+      const { data, error } = await (supabase as any)
         .from('shopify_debug_logs')
         .select('*')
         .eq('trade_in_id', tradeInId)

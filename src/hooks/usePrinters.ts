@@ -20,7 +20,10 @@ export const usePrinters = (locationId?: string) => {
         .order('model', { ascending: true });
       
       if (error) throw error;
-      setPrinterModels(data || []);
+      setPrinterModels((data || []).map(model => ({
+        ...model,
+        printer_type: model.printer_type as 'ZPL' | 'RAW'
+      })));
     } catch (err) {
       console.error('Error fetching printer models:', err);
     }
@@ -35,7 +38,10 @@ export const usePrinters = (locationId?: string) => {
         .order('name', { ascending: true });
       
       if (error) throw error;
-      setLocations(data || []);
+      setLocations((data || []).map(loc => ({
+        ...loc,
+        address: loc.address || undefined
+      })));
     } catch (err) {
       console.error('Error fetching locations:', err);
       setError(`Error fetching locations: ${(err as Error).message}`);
@@ -67,8 +73,8 @@ export const usePrinters = (locationId?: string) => {
         name: printer.name,
         printer_id: printer.printer_id,
         location_id: printer.location_id,
-        is_default: printer.is_default,
-        printer_type: printer.printer_type || 'ZPL',
+        is_default: printer.is_default || false,
+        printer_type: (printer.printer_type || 'ZPL') as 'ZPL' | 'RAW',
         created_at: printer.created_at,
         location: printer.locations as unknown as Location
       }));

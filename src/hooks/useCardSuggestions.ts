@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { CardDetails, GameType } from '../types/card';
 import { supabase } from '../integrations/supabase/client';
@@ -72,27 +71,28 @@ export const useCardSuggestions = () => {
       // Transform to CardDetails format with improved card number and product ID extraction
       const suggestions = allMatches.map(product => {
         // Extract card number from attributes using multiple possible paths
+        const attrs = product.attributes as any;
         let cardNumber = '';
-        if (product.attributes) {
-          if (product.attributes.Number) {
-            cardNumber = typeof product.attributes.Number === 'object' ? 
-              (product.attributes.Number.value || product.attributes.Number.displayName || '') : 
-              product.attributes.Number;
-          } else if (product.attributes.number) {
-            cardNumber = typeof product.attributes.number === 'object' ? 
-              (product.attributes.number.value || product.attributes.number.displayName || '') : 
-              product.attributes.number;
-          } else if (product.attributes.card_number) {
-            cardNumber = typeof product.attributes.card_number === 'object' ? 
-              (product.attributes.card_number.value || product.attributes.card_number.displayName || '') : 
-              product.attributes.card_number;
+        if (attrs && typeof attrs === 'object') {
+          if (attrs.Number) {
+            cardNumber = typeof attrs.Number === 'object' ? 
+              (attrs.Number.value || attrs.Number.displayName || '') : 
+              String(attrs.Number);
+          } else if (attrs.number) {
+            cardNumber = typeof attrs.number === 'object' ? 
+              (attrs.number.value || attrs.number.displayName || '') : 
+              String(attrs.number);
+          } else if (attrs.card_number) {
+            cardNumber = typeof attrs.card_number === 'object' ? 
+              (attrs.card_number.value || attrs.card_number.displayName || '') : 
+              String(attrs.card_number);
           }
         }
 
         // Prioritize tcgplayer_product_id, then fall back to other ID fields
         const productId = 
           product.tcgplayer_product_id || 
-          (product.attributes?.tcgplayer_product_id?.toString()) || 
+          (attrs?.tcgplayer_product_id?.toString()) || 
           product.product_id?.toString() || 
           null;
 

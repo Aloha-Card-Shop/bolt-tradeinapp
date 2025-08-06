@@ -68,14 +68,14 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
                 image_url: cardData?.image_url,
                 rarity: cardData?.rarity,
                 tcgplayer_url: cardData?.tcgplayer_url
-              };
+              } as TradeInItem;
             });
             
-            setItems(formattedItems as any);
+            setItems(formattedItems);
             
             // Update tradeIn.items directly
             if (tradeIn.items) {
-              tradeIn.items = formattedItems as any;
+              tradeIn.items = formattedItems;
             }
           }
         } catch (err) {
@@ -106,7 +106,7 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
         // Directly update the local state with the returned data
         setItems(prevItems => 
           prevItems.map(prevItem => 
-            prevItem.id === item.id ? { ...prevItem, ...updatedData } : prevItem
+            prevItem.id === item.id ? { ...prevItem, ...updatedData } as TradeInItem : prevItem
           )
         );
         
@@ -118,10 +118,10 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
           );
           
           // Update the parent tradeIn object's items
-          tradeIn.items = updatedItems;
+          tradeIn.items = updatedItems as TradeInItem[];
         }
         
-        return updatedData as TradeInItem;
+        return { ...item, ...updatedData } as TradeInItem;
       } else if (updatedData) {
         // If we just got a boolean success response, update with the updates we sent
         const updatedItem = { ...item, ...updates };
