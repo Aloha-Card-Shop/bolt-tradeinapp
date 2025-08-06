@@ -71,11 +71,11 @@ const EditTradeInModal: React.FC<EditTradeInModalProps> = ({ tradeIn, onClose })
               };
             });
             
-            setItems(formattedItems);
+            setItems(formattedItems as any);
             
             // Update tradeIn.items directly
             if (tradeIn.items) {
-              tradeIn.items = formattedItems;
+              tradeIn.items = formattedItems as any;
             }
           }
         } catch (err) {

@@ -43,7 +43,11 @@ const ShopifySettingsForm: React.FC = () => {
       if (error) throw error;
 
       if (data) {
-        setSettings(data);
+        setSettings({ 
+          ...data, 
+          storefront_access_token: data.storefront_access_token || undefined,
+          is_active: data.is_active ?? true 
+        });
       }
     } catch (error) {
       console.error('Error fetching settings:', error);

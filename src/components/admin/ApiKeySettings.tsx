@@ -49,7 +49,7 @@ const ApiKeySettings = () => {
         
       if (error) throw error;
       
-      setApiKeys(data || []);
+      setApiKeys((data || []).map(key => ({ ...key, is_active: key.is_active ?? true } as any)));
       
       // Initialize showValues state
       const initialShowValues: Record<string, boolean> = {};
