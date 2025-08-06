@@ -112,7 +112,8 @@ export const fetchCardPrices = async (
   isFirstEdition?: boolean,
   isHolo?: boolean,
   game?: string,
-  isReverseHolo?: boolean
+  isReverseHolo?: boolean,
+  timeoutMs: number = 10000
 ): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; usedFallback?: boolean }> => {
   // Helper function to try fetching price for a specific condition
   const tryFetchPriceForCondition = async (conditionToTry: string): Promise<{ price: string; unavailable?: boolean; actualCondition?: string }> => {
@@ -220,39 +221,48 @@ export const fetchCardPrices = async (
       throw new Error('Product ID is required');
     }
 
-    // Initialize cache cleanup on first use
-    initializeScraper();
+    // Add timeout wrapper for the entire operation
+    const timeoutPromise = new Promise<{ price: string; unavailable: true }>((_, reject) => 
+      setTimeout(() => reject(new Error(`Price fetch timed out after ${timeoutMs}ms`)), timeoutMs)
+    );
 
-    // Use optimized condition order for better performance
-    const conditionsToTry = getOptimizedConditionOrder(condition);
-    
-    if (import.meta.env.DEV) {
-      console.log(`Trying conditions in order: ${conditionsToTry.join(', ')}`);
-    }
+    const fetchPromise = (async () => {
+      // Initialize cache cleanup on first use
+      initializeScraper();
 
-    // Try conditions in optimized order
-    for (const conditionToTry of conditionsToTry) {
+      // Limit condition fallbacks to maximum 2 conditions for faster response
+      const conditionsToTry = getOptimizedConditionOrder(condition).slice(0, 2);
+      
       if (import.meta.env.DEV) {
-        console.log(`Trying condition: ${conditionToTry}`);
+        console.log(`Trying conditions in order: ${conditionsToTry.join(', ')}`);
       }
-      
-      const result = await tryFetchPriceForCondition(conditionToTry);
-      
-      if (!result.unavailable) {
-        const usedFallback = conditionToTry !== condition;
-        if (usedFallback && import.meta.env.DEV) {
-          console.log(`Found price for ${conditionToTry} instead of ${condition}`);
-        }
-        return { ...result, usedFallback };
-      }
-    }
 
-    // If we get here, no price was found for any condition
-    if (import.meta.env.DEV) {
-      console.log('No price found for any condition');
-    }
-    return { price: "0.00", unavailable: true };
-    
+      // Try conditions in optimized order
+      for (const conditionToTry of conditionsToTry) {
+        if (import.meta.env.DEV) {
+          console.log(`Trying condition: ${conditionToTry}`);
+        }
+        
+        const result = await tryFetchPriceForCondition(conditionToTry);
+        
+        if (!result.unavailable) {
+          const usedFallback = conditionToTry !== condition;
+          if (usedFallback && import.meta.env.DEV) {
+            console.log(`Found price for ${conditionToTry} instead of ${condition}`);
+          }
+          return { ...result, usedFallback };
+        }
+      }
+
+      // If we get here, no price was found for any condition
+      if (import.meta.env.DEV) {
+        console.log('No price found for any condition');
+      }
+      return { price: "0.00", unavailable: true };
+    })();
+
+    return await Promise.race([fetchPromise, timeoutPromise]);
+
   } catch (error) {
     console.error('Error fetching price:', error);
     return { price: "0.00", unavailable: true };
