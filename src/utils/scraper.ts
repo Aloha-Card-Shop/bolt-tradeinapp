@@ -1,12 +1,11 @@
 
 import { supabase } from '../lib/supabase';
+import { FirecrawlService } from './FirecrawlService';
 
 interface CacheEntry {
   price: number;
   timestamp: number;
 }
-
-const SCRAPER_URL = 'https://render-tcgplayer-scraper.onrender.com/scrape-price';
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours (increased from 4 hours)
 const CACHE_CLEANUP_INTERVAL = 30 * 60 * 1000; // 30 minutes
 const priceCache = new Map<string, CacheEntry>();
@@ -140,74 +139,56 @@ export const fetchCardPrices = async (
     }
 
     if (import.meta.env.DEV) {
-      console.log('Fetching price from:', url);
+      console.log('Fetching price from Firecrawl for:', productId);
     }
     
-    const response = await fetch(SCRAPER_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ url }),
-    });
+    // Use Firecrawl to scrape TCGPlayer price
+    const result = await FirecrawlService.scrapeTCGPlayerPrice(
+      productId,
+      conditionToTry,
+      language,
+      firstEdition,
+      holo,
+      reverseHolo
+    );
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch price: ${response.status}`);
+    if (!result.success) {
+      throw new Error(`Failed to fetch price: ${result.error}`);
     }
 
-    const data = await response.json();
     if (import.meta.env.DEV) {
-      console.log('Price data received:', data);
+      console.log('Price data received from Firecrawl:', result.data);
     }
     
-    if (data.error) {
-      throw new Error(data.error);
-    }
-    
-    // Handle case where price is not available
-    if (!data.price && data.price !== 0) {
-      return { price: "0.00", unavailable: true };
-    }
-
-    // Check for indicators of unavailable prices
-    if (typeof data.price === 'string' && 
-        (data.price === '-' || 
-         data.price === 'N/A' || 
-         data.price === '$-' || 
-         data.price === '$0.00' ||
-         data.price.includes('unavailable'))) {
-      return { price: "0.00", unavailable: true };
-    }
-
-    // Improved price cleaning - handle different formats more robustly
-    let priceValue: number;
-    
-    if (typeof data.price === 'string') {
-      // Remove any currency symbol and non-numeric characters except decimal point
-      const priceString = data.price.trim().replace(/[^\d.]/g, '');
+    // Type guard to check if this is a price response
+    if ('price' in result.data) {
+      const priceData = result.data;
       
-      // Check if we have a valid number format
-      priceValue = parseFloat(priceString);
+      // Handle case where price is not available
+      if (priceData.unavailable || !priceData.price) {
+        return { price: "0.00", unavailable: true };
+      }
+
+      const priceValue = parseFloat(priceData.price);
       if (isNaN(priceValue) || !isFinite(priceValue)) {
         return { price: "0.00", unavailable: true };
       }
-    } else if (typeof data.price === 'number') {
-      // If price is already a number, just use it
-      priceValue = data.price;
-    } else {
-      return { price: "0.00", unavailable: true };
+
+      // Cache the formatted price using a simple cache key
+      const cacheKey = `${productId}-${conditionToTry}-${language}-${firstEdition}-${holo}-${reverseHolo}`;
+      priceCache.set(cacheKey, {
+        price: priceValue,
+        timestamp: Date.now()
+      });
+
+      return { 
+        price: priceValue.toFixed(2), 
+        actualCondition: conditionToTry
+      };
     }
-
-    // Ensure price is formatted to 2 decimal places for consistency
-    const formattedPrice = parseFloat(priceValue.toFixed(2));
-
-    // Cache the formatted price
-    priceCache.set(url, {
-      price: formattedPrice,
-      timestamp: Date.now()
-    });
-
-    return { price: formattedPrice.toFixed(2), actualCondition: conditionToTry };
+    
+    // If it's not a price response, return unavailable
+    return { price: "0.00", unavailable: true };
   };
 
   // Smart condition prioritization based on starting condition

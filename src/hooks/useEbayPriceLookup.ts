@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { CardDetails } from '../types/card';
-import { supabase } from '../lib/supabase';
+import { FirecrawlService } from '../utils/FirecrawlService';
 
 export interface EbaySoldItem {
   title: string;
@@ -85,67 +85,72 @@ export const useEbayPriceLookup = () => {
     }
 
     try {
-      // Call the eBay price lookup Edge Function
-      const response = await supabase.functions.invoke('psa-ebay-price', {
-        body: {
-          game: setName,
-          card_name: cardName,
-          card_number: cardNumber,
-          psa_grade: grade
-        }
-      });
+      // Build search query for eBay
+      const searchQuery = `${cardName} ${setName} ${cardNumber} PSA ${grade}`.trim();
+      console.log('Looking up eBay price with Firecrawl for:', searchQuery);
+      
+      // Use Firecrawl to scrape eBay sold listings
+      const firecrawlResult = await FirecrawlService.scrapeEbaySoldListings(searchQuery);
 
-      if (response.error) {
-        throw new Error(`eBay API error: ${response.error.message}`);
+      if (!firecrawlResult.success) {
+        throw new Error(`eBay lookup failed: ${firecrawlResult.error}`);
       }
 
-      const data = response.data;
+      // Type guard to ensure we have the right data structure
+      if ('averagePrice' in firecrawlResult.data) {
+        const ebayData = firecrawlResult.data;
+        
+        // Calculate price range from sold items
+        const soldItems = 'soldItems' in ebayData ? ebayData.soldItems : [];
+        const prices = soldItems?.map((item: any) => item.price).filter((price: number) => price > 0) || [];
+        const priceRange = prices.length > 0 
+          ? { min: Math.min(...prices), max: Math.max(...prices) }
+          : { min: 0, max: 0 };
 
-      if (data.error) {
-        throw new Error(data.error);
-      }
+        // Prepare the result with enhanced data
+        const result: EbayPriceResult = {
+          averagePrice: ebayData.averagePrice || 0,
+          salesCount: ebayData.salesCount || 0,
+          searchUrl: ebayData.searchUrl || '',
+          query: searchQuery,
+          soldItems: soldItems || [],
+          timestamp: new Date().toISOString(),
+          priceRange,
+          outliersRemoved: 0,
+          calculationMethod: 'firecrawl-scraping',
+          // Add compatibility fields
+          filteredSalesCount: ebayData.salesCount || 0,
+          debug: {
+            searchQuery: searchQuery,
+            filteredSalesCount: ebayData.salesCount || 0,
+            processSteps: ['Firecrawl eBay scraping'],
+            errors: []
+          },
+          pageTitle: undefined,
+          htmlSnippet: undefined
+        };
 
-      // Prepare the result with enhanced data
-      const result: EbayPriceResult = {
-        averagePrice: data.average_price,
-        salesCount: data.sales_count,
-        searchUrl: data.search_url,
-        query: data.query,
-        soldItems: data.sold_items || [],
-        timestamp: new Date().toISOString(),
-        priceRange: data.price_range || { min: 0, max: 0 },
-        outliersRemoved: data.outliers_removed || 0,
-        calculationMethod: data.calculation_method || 'unknown',
-        // Add compatibility fields
-        filteredSalesCount: data.sales_count,
-        debug: {
-          searchQuery: data.query,
-          filteredSalesCount: data.sales_count,
-          processSteps: [],
-          errors: []
-        },
-        pageTitle: undefined,
-        htmlSnippet: undefined
-      };
-
-      // Cache the result
-      priceCache.set(cacheKey, {
-        data: result,
-        timestamp: Date.now()
-      });
-
-      setPriceData(result);
-      setIsLoading(false);
-
-      if (result.salesCount > 0) {
-        toast.success(`Found ${result.salesCount} recent sold items on eBay`);
-      } else {
-        toast(`No sold items found on eBay. Try the search link for manual checking.`, {
-          duration: 6000,
+        // Cache the result
+        priceCache.set(cacheKey, {
+          data: result,
+          timestamp: Date.now()
         });
-      }
 
-      return result;
+        setPriceData(result);
+        setIsLoading(false);
+
+        if (result.salesCount > 0) {
+          toast.success(`Found ${result.salesCount} recent sold items on eBay`);
+        } else {
+          toast(`No sold items found on eBay. Try the search link for manual checking.`, {
+            duration: 6000,
+          });
+        }
+
+        return result;
+      } else {
+        throw new Error('Invalid response format from eBay lookup');
+      }
 
     } catch (err) {
       console.error("Error fetching eBay price data:", err);
