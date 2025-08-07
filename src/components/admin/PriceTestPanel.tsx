@@ -2,74 +2,130 @@ import { useState } from 'react';
 import { fetchCardPrices } from '../../utils/scraper';
 import { FirecrawlService } from '../../utils/FirecrawlService';
 
+const TEST_PRODUCTS = [
+  { id: '497601', name: 'Bramblin (Test Card)' },
+  { id: '496033', name: 'Charizard ex (Popular)' },
+  { id: '123456', name: 'Invalid ID (Error Test)' }
+];
+
+interface TestResult {
+  duration: string;
+  attempt: number;
+  success: boolean;
+  testType: string;
+  error?: string;
+  [key: string]: any;
+}
+
 export const PriceTestPanel = () => {
-  const [productId, setProductId] = useState('497601'); // Bramblin test card
+  const [productId, setProductId] = useState('497601');
   const [condition, setCondition] = useState('near_mint');
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [results, setResults] = useState<TestResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [testType, setTestType] = useState<'scraper' | 'firecrawl'>('scraper');
+  const [circuitBreakerOpen, setCircuitBreakerOpen] = useState(false);
+  const [consecutiveFailures, setConsecutiveFailures] = useState(0);
 
-  const testScraperFunction = async () => {
+  const runTestWithRetry = async (testFunction: () => Promise<any>, type: 'scraper' | 'firecrawl') => {
+    if (circuitBreakerOpen) {
+      setError('Circuit breaker is open. Too many consecutive failures. Try again in 5 minutes.');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
-    setResult(null);
+    
+    const maxAttempts = 3;
+    const timeoutMs = 30000; // 30 seconds
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const startTime = Date.now();
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error(`Request timed out after ${timeoutMs/1000} seconds`)), timeoutMs)
+        );
 
-    try {
-      const startTime = Date.now();
-      
-      // Add timeout wrapper
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timed out after 10 seconds')), 10000)
-      );
-
-      const fetchPromise = fetchCardPrices(productId, condition, false, false, 'pokemon');
-      
-      const result = await Promise.race([fetchPromise, timeoutPromise]);
-      const endTime = Date.now();
-      
-      setResult({
-        ...(result as object),
-        duration: `${endTime - startTime}ms`,
-        testType: 'scraper'
-      });
-    } catch (err) {
-      console.error('Scraper test error:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setIsLoading(false);
+        const result = await Promise.race([testFunction(), timeoutPromise]);
+        const endTime = Date.now();
+        
+        const testResult: TestResult = {
+          ...(result as object),
+          duration: `${endTime - startTime}ms`,
+          attempt,
+          success: true,
+          testType: type
+        };
+        
+        setResults(prev => [testResult, ...prev.slice(0, 4)]); // Keep last 5 results
+        setConsecutiveFailures(0);
+        setIsLoading(false);
+        return;
+        
+      } catch (err) {
+        console.error(`${type} test error (attempt ${attempt}):`, err);
+        
+        if (attempt === maxAttempts) {
+          const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+          setError(`Failed after ${maxAttempts} attempts: ${errorMsg}`);
+          
+          const newFailures = consecutiveFailures + 1;
+          setConsecutiveFailures(newFailures);
+          
+          if (newFailures >= 3) {
+            setCircuitBreakerOpen(true);
+            setTimeout(() => setCircuitBreakerOpen(false), 5 * 60 * 1000); // 5 minutes
+          }
+          
+          const failedResult: TestResult = {
+            duration: '0ms',
+            attempt,
+            success: false,
+            testType: type,
+            error: errorMsg
+          };
+          setResults(prev => [failedResult, ...prev.slice(0, 4)]);
+        } else {
+          // Wait before retry with exponential backoff
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+        }
+      }
     }
+    
+    setIsLoading(false);
   };
 
-  const testFirecrawlDirect = async () => {
+  const testScraperFunction = () => runTestWithRetry(
+    () => fetchCardPrices(productId, condition, false, false, 'pokemon'),
+    'scraper'
+  );
+
+  const testFirecrawlDirect = () => runTestWithRetry(
+    () => FirecrawlService.scrapeTCGPlayerPrice(productId, condition, 'English', false, false, false),
+    'firecrawl'
+  );
+
+  const runBulkTest = async () => {
+    if (circuitBreakerOpen) {
+      setError('Circuit breaker is open. Cannot run bulk tests.');
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
-    setResult(null);
-
-    try {
-      const startTime = Date.now();
+    
+    for (const product of TEST_PRODUCTS) {
+      const originalProductId = productId;
+      setProductId(product.id);
       
-      // Add timeout wrapper
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timed out after 10 seconds')), 10000)
-      );
-
-      const fetchPromise = FirecrawlService.scrapeTCGPlayerPrice(productId, condition, 'English', false, false, false);
+      await testFirecrawlDirect();
+      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay between tests
       
-      const result = await Promise.race([fetchPromise, timeoutPromise]);
-      const endTime = Date.now();
-      
-      setResult({
-        ...(result as object),
-        duration: `${endTime - startTime}ms`,
-        testType: 'firecrawl'
-      });
-    } catch (err) {
-      console.error('Firecrawl test error:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setIsLoading(false);
+      setProductId(originalProductId);
     }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -103,28 +159,42 @@ export const PriceTestPanel = () => {
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button 
             onClick={() => { setTestType('scraper'); testScraperFunction(); }}
-            disabled={isLoading}
+            disabled={isLoading || circuitBreakerOpen}
             className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
           >
             {isLoading && testType === 'scraper' ? 'Testing Scraper...' : 'Test Scraper Function'}
           </button>
           <button 
             onClick={() => { setTestType('firecrawl'); testFirecrawlDirect(); }}
-            disabled={isLoading}
+            disabled={isLoading || circuitBreakerOpen}
             className="px-4 py-2 border border-border rounded hover:bg-accent disabled:opacity-50"
           >
             {isLoading && testType === 'firecrawl' ? 'Testing Firecrawl...' : 'Test Firecrawl Direct'}
           </button>
+          <button 
+            onClick={() => { setTestType('firecrawl'); runBulkTest(); }}
+            disabled={isLoading || circuitBreakerOpen}
+            className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90 disabled:opacity-50"
+          >
+            {isLoading && testType === 'firecrawl' ? 'Running Bulk Test...' : 'Bulk Test (All Products)'}
+          </button>
         </div>
+
+        {circuitBreakerOpen && (
+          <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <h4 className="font-semibold text-orange-800">Circuit Breaker Open</h4>
+            <p className="text-orange-700">Too many consecutive failures. Waiting 5 minutes before allowing new tests.</p>
+          </div>
+        )}
 
         {isLoading && (
           <div className="p-4 bg-blue-50 rounded-lg">
             <div className="flex items-center gap-2">
               <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-              <span>Testing price fetch (timeout: 10s)...</span>
+              <span>Testing price fetch (timeout: 30s, up to 3 retries)...</span>
             </div>
           </div>
         )}
@@ -133,15 +203,44 @@ export const PriceTestPanel = () => {
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
             <h4 className="font-semibold text-red-800">Error:</h4>
             <p className="text-red-700">{error}</p>
+            {consecutiveFailures > 0 && (
+              <p className="text-red-600 mt-2">Consecutive failures: {consecutiveFailures}/3</p>
+            )}
           </div>
         )}
 
-        {result && (
-          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h4 className="font-semibold text-green-800">Result ({result.testType}):</h4>
-            <pre className="mt-2 text-sm text-green-700 whitespace-pre-wrap">
-              {JSON.stringify(result, null, 2)}
-            </pre>
+        {results.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="font-semibold">Test Results (Last 5):</h4>
+            {results.map((result, index) => (
+              <div key={index} className={`p-4 border rounded-lg ${
+                result.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+              }`}>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h5 className={`font-semibold ${result.success ? 'text-green-800' : 'text-red-800'}`}>
+                      {result.success ? '✓' : '✗'} {result.testType} (Attempt {result.attempt})
+                    </h5>
+                    <p className={`text-sm ${result.success ? 'text-green-700' : 'text-red-700'}`}>
+                      Duration: {result.duration}
+                    </p>
+                    {result.error && (
+                      <p className="text-red-600 text-sm mt-1">Error: {result.error}</p>
+                    )}
+                  </div>
+                  {result.success && (
+                    <span className={`text-xs px-2 py-1 rounded ${result.success ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
+                      {result.success ? 'Success' : 'Failed'}
+                    </span>
+                  )}
+                </div>
+                {result.success && (
+                  <pre className="mt-2 text-xs text-green-700 whitespace-pre-wrap overflow-auto max-h-32">
+                    {JSON.stringify(result, null, 2)}
+                  </pre>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>
