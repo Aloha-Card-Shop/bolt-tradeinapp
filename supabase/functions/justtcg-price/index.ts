@@ -146,8 +146,8 @@ Deno.serve(async (req) => {
     const condParam = condMap[normCondKey] ?? undefined;
     const printingParam = (isHolo || isReverseHolo) ? 'Foil' : 'Normal';
 
-    // Try multiple possible parameter names for TCGplayer product id since API docs vary
-    const paramCandidates = ['tcgplayerId', 'tcgPlayerId', 'tcgplayer_id', 'tcgplayerProductId', 'productId'];
+    // Try multiple possible parameter names for identifiers (TCGplayer product or JustTCG card id)
+    const paramCandidates = ['tcgplayerId', 'tcgPlayerId', 'tcgplayer_id', 'tcgplayerProductId', 'productId', 'cardId', 'card_id', 'id'];
 
     let payload: any = null;
     let cards: any[] = [];
