@@ -245,17 +245,19 @@ Deno.serve(async (req) => {
       selected = scored[0].c;
     }
 
-    // Build condition price map and enforce monotonicity (worse condition <= better)
+    // Build condition price map
     const condOrder = ['mint', 'near_mint', 'lightly_played', 'moderately_played', 'heavily_played', 'damaged'];
     const rawPrices: Record<string, number | undefined> = {};
     for (const cond of condOrder) {
       rawPrices[cond] = extractPriceForCondition(selected, cond, { isHolo, isReverseHolo });
     }
+    // Keep a copy of original prices (before any adjustments)
+    const origPrices: Record<string, number | undefined> = { ...rawPrices };
 
     let conditionAnomalyAdjusted = false;
     const adjustments: string[] = [];
 
-    // Enforce non-increasing prices from best to worst condition
+    // Enforce non-increasing prices from best to worst condition (better condition should not be cheaper)
     let prev: number | undefined = undefined;
     for (const cond of condOrder) {
       const cur = rawPrices[cond];
@@ -270,24 +272,38 @@ Deno.serve(async (req) => {
       }
     }
 
-    const requestedCond = String(condition ?? 'near_mint');
+    // Normalize requested condition to our keys
+    const normalizeCondKey = (s: any) => String(s ?? '').toLowerCase().replace(/[\s\-]+/g, '_');
+    const requestedKey = condOrder.includes(normalizeCondKey(condition)) ? normalizeCondKey(condition) : 'near_mint';
+    const requestedIdx = condOrder.indexOf(requestedKey);
 
-    // Helper to find the first available price in fallback order
-    const fallbackOrder = ['near_mint', 'lightly_played', 'moderately_played', 'heavily_played', 'damaged'];
-
-    const pickPrice = (cond: string): number | undefined => {
-      const v = rawPrices[cond];
+    const pickFrom = (map: Record<string, number | undefined>, cond: string): number | undefined => {
+      const v = map[cond];
       return typeof v === 'number' && v > 0 ? v : undefined;
     };
 
-    // Try requested condition first
-    let chosenCond = requestedCond;
-    let chosen = pickPrice(requestedCond);
+    // Strategy 1: choose the cheapest among requested and any better condition (using original prices)
+    const candidatesBetterEq = condOrder.slice(0, requestedIdx + 1);
+    let chosenCond = requestedKey;
+    let chosen: number | undefined;
+    let selectionStrategy = 'min_from_better_or_equal';
 
-    if (!(chosen && chosen > 0)) {
-      // Try fallbacks
-      for (const cond of fallbackOrder) {
-        const v = pickPrice(cond);
+    let minVal = Number.POSITIVE_INFINITY;
+    for (const cond of candidatesBetterEq) {
+      const v = pickFrom(origPrices, cond);
+      if (v !== undefined && v < minVal) {
+        minVal = v;
+        chosen = v;
+        chosenCond = cond;
+      }
+    }
+
+    // If none available among requested+better, fallback to worse (first available)
+    if (chosen === undefined) {
+      selectionStrategy = 'fallback_to_worse';
+      const worseConds = condOrder.slice(requestedIdx + 1);
+      for (const cond of worseConds) {
+        const v = pickFrom(origPrices, cond);
         if (v !== undefined) {
           chosen = v;
           chosenCond = cond;
@@ -304,6 +320,7 @@ Deno.serve(async (req) => {
           method: 'justtcg',
           conditionAnomalyAdjusted,
           adjustmentNote: conditionAnomalyAdjusted ? adjustments.join('; ') : undefined,
+          selectionStrategy,
         }),
         {
           status: 200,
@@ -313,12 +330,13 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ price: '0.00', unavailable: true, method: 'justtcg', conditionAnomalyAdjusted, adjustmentNote: conditionAnomalyAdjusted ? adjustments.join('; ') : undefined }),
+      JSON.stringify({ price: '0.00', unavailable: true, method: 'justtcg', conditionAnomalyAdjusted, adjustmentNote: conditionAnomalyAdjusted ? adjustments.join('; ') : undefined, selectionStrategy: 'unavailable' }),
       {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       }
     );
+
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e?.message ?? e), stack: (e as any)?.stack }), {
       status: 500,
