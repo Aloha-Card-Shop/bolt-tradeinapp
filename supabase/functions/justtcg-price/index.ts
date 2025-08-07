@@ -115,29 +115,56 @@ Deno.serve(async (req) => {
       });
     }
 
-    const url = `https://api.justtcg.com/v1/cards?tcgplayerId=${encodeURIComponent(productId)}`;
+    // Try multiple possible parameter names for TCGplayer product id since API docs vary
+    const paramCandidates = ['tcgplayerId', 'tcgPlayerId', 'tcgplayer_id', 'tcgplayerProductId', 'productId'];
 
-    const jtRes = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'x-api-key': apiKey,
-        'accept': 'application/json',
-      },
-    });
+    let payload: any = null;
+    let cards: any[] = [];
+    let lastStatus: number | undefined;
+    let lastDetail: string | undefined;
 
-    if (!jtRes.ok) {
-      const text = await jtRes.text();
-      const status = jtRes.status;
-      return new Response(JSON.stringify({ error: 'JustTCG request failed', status, detail: text }), {
-        status: 502,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    for (const param of paramCandidates) {
+      const url = `https://api.justtcg.com/v1/cards?${param}=${encodeURIComponent(productId)}${game ? `&game=${encodeURIComponent(String(game))}` : ''}`;
+      console.log(`[justtcg] Fetch attempt with param="${param}" url=${url}`);
+
+      const jtRes = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'x-api-key': apiKey,
+          'accept': 'application/json',
+        },
       });
+
+      if (!jtRes.ok) {
+        lastStatus = jtRes.status;
+        lastDetail = await jtRes.text();
+        console.log(`[justtcg] Non-OK response for param=${param} status=${jtRes.status} detailSnippet=${(lastDetail || '').slice(0, 200)}`);
+        continue;
+      }
+
+      try {
+        payload = await jtRes.json();
+      } catch (e) {
+        console.log(`[justtcg] Failed to parse JSON for param=${param}:`, e);
+        continue;
+      }
+
+      cards = payload?.cards ?? payload?.data ?? payload?.results ?? payload?.items ?? [];
+      console.log(`[justtcg] Parsed payload keys: ${Object.keys(payload || {}).join(', ')}; cardsLength=${Array.isArray(cards) ? cards.length : 'n/a'}`);
+
+      if (Array.isArray(cards) && cards.length > 0) {
+        break;
+      }
     }
 
-    const payload = await jtRes.json();
-    const cards = payload?.cards ?? payload?.data ?? payload?.results ?? [];
-
     if (!Array.isArray(cards) || cards.length === 0) {
+      // If we had an error earlier, return that for easier debugging
+      if (lastStatus && lastDetail) {
+        return new Response(JSON.stringify({ price: '0.00', unavailable: true, method: 'justtcg', lastStatus, detail: (lastDetail || '').slice(0, 500) }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
       return new Response(JSON.stringify({ price: '0.00', unavailable: true, method: 'justtcg' }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
