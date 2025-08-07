@@ -23,21 +23,46 @@ function pickNumber(obj: any, keys: string[]): number | undefined {
   return undefined;
 }
 
-// Try to extract a condition price from diverse API shapes
-function extractPriceForCondition(card: any, condition: string): number | undefined {
+// Try to extract a condition price from diverse API shapes, including JustTCG variants array
+function extractPriceForCondition(card: any, condition: string, flags?: { isHolo?: boolean; isReverseHolo?: boolean; }) {
   const aliases: Record<string, string[]> = {
-    mint: ['mint', 'm'],
-    near_mint: ['near_mint', 'nearMint', 'nm'],
-    lightly_played: ['lightly_played', 'lightlyPlayed', 'lp'],
-    moderately_played: ['moderately_played', 'moderatelyPlayed', 'mp'],
-    heavily_played: ['heavily_played', 'heavilyPlayed', 'hp'],
-    damaged: ['damaged', 'poor', 'dp'],
+    mint: ['mint', 'm', 'near mint (sealed?)'],
+    near_mint: ['near_mint', 'near-mint', 'near mint', 'nearmint', 'nm'],
+    lightly_played: ['lightly_played', 'lightly-played', 'lightly played', 'lp'],
+    moderately_played: ['moderately_played', 'moderately-played', 'moderately played', 'mp'],
+    heavily_played: ['heavily_played', 'heavily-played', 'heavily played', 'hp'],
+    damaged: ['damaged', 'poor', 'dp', 'd'],
   };
 
   const priceFieldPrefs = ['marketPrice', 'market', 'avg', 'average', 'mid', 'price', 'low'];
   const condKeys = aliases[condition] ?? [condition];
 
-  // Common shapes we might see
+  // 1) JustTCG canonical shape: variants[] with { condition, printing, price }
+  const variants = Array.isArray(card?.variants) ? card.variants : undefined;
+  if (variants) {
+    const norm = (s: string) => String(s || '').toLowerCase().replace(/[_\-\s]+/g, '_').trim();
+    const targetConds = new Set(condKeys.map((k) => norm(k)));
+
+    // Filter by matching condition
+    let candidates = variants.filter((v: any) => targetConds.has(norm(v?.condition)) && typeof v?.price === 'number');
+
+    // Prefer printing based on flags (Foil when holo/reverse, else Normal)
+    const preferFoil = !!(flags?.isHolo || flags?.isReverseHolo);
+    const scorePrinting = (p: string | undefined) => {
+      const s = String(p || '').toLowerCase();
+      if (preferFoil) return /foil|holo/.test(s) ? 2 : 1;
+      // prefer Normal when not foil
+      return /normal/.test(s) ? 2 : (/foil|holo/.test(s) ? 1 : 0);
+    };
+
+    if (candidates.length > 0) {
+      candidates.sort((a: any, b: any) => scorePrinting(b?.printing) - scorePrinting(a?.printing));
+      const price = candidates[0]?.price;
+      if (typeof price === 'number' && price > 0) return price;
+    }
+  }
+
+  // 2) Other possible shapes from different providers
   const containers = [
     card?.prices,
     card?.marketPrices,
@@ -63,7 +88,7 @@ function extractPriceForCondition(card: any, condition: string): number | undefi
     }
   }
 
-  // Top-level simple fallbacks
+  // 3) Top-level simple fallbacks
   const fallback = pickNumber(card, priceFieldPrefs);
   if (fallback !== undefined) return fallback;
 
@@ -115,6 +140,12 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Prepare optional filters for JustTCG API
+    const condMap: Record<string, string> = { mint: 'M', near_mint: 'NM', lightly_played: 'LP', moderately_played: 'MP', heavily_played: 'HP', damaged: 'D' };
+    const normCondKey = String(condition ?? '').toLowerCase().replace(/[\s\-]+/g, '_');
+    const condParam = condMap[normCondKey] ?? undefined;
+    const printingParam = (isHolo || isReverseHolo) ? 'Foil' : 'Normal';
+
     // Try multiple possible parameter names for TCGplayer product id since API docs vary
     const paramCandidates = ['tcgplayerId', 'tcgPlayerId', 'tcgplayer_id', 'tcgplayerProductId', 'productId'];
 
@@ -124,7 +155,7 @@ Deno.serve(async (req) => {
     let lastDetail: string | undefined;
 
     for (const param of paramCandidates) {
-      const url = `https://api.justtcg.com/v1/cards?${param}=${encodeURIComponent(productId)}${game ? `&game=${encodeURIComponent(String(game))}` : ''}`;
+      const url = `https://api.justtcg.com/v1/cards?${param}=${encodeURIComponent(productId)}${game ? `&game=${encodeURIComponent(String(game))}` : ''}${condParam ? `&condition=${encodeURIComponent(condParam)}` : ''}${printingParam ? `&printing=${encodeURIComponent(printingParam)}` : ''}`;
       console.log(`[justtcg] Fetch attempt with param="${param}" url=${url}`);
 
       const jtRes = await fetch(url, {
@@ -184,7 +215,7 @@ Deno.serve(async (req) => {
     const condOrder = ['mint', 'near_mint', 'lightly_played', 'moderately_played', 'heavily_played', 'damaged'];
     const rawPrices: Record<string, number | undefined> = {};
     for (const cond of condOrder) {
-      rawPrices[cond] = extractPriceForCondition(selected, cond);
+      rawPrices[cond] = extractPriceForCondition(selected, cond, { isHolo, isReverseHolo });
     }
 
     let conditionAnomalyAdjusted = false;
