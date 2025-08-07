@@ -153,31 +153,80 @@ Deno.serve(async (req) => {
       selected = scored[0].c;
     }
 
-    const priceNumber = extractPriceForCondition(selected, String(condition ?? 'near_mint'));
-
-    if (priceNumber && priceNumber > 0) {
-      return new Response(JSON.stringify({ price: Number(priceNumber.toFixed(2)), actualCondition: condition, method: 'justtcg' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+    // Build condition price map and enforce monotonicity (worse condition <= better)
+    const condOrder = ['mint', 'near_mint', 'lightly_played', 'moderately_played', 'heavily_played', 'damaged'];
+    const rawPrices: Record<string, number | undefined> = {};
+    for (const cond of condOrder) {
+      rawPrices[cond] = extractPriceForCondition(selected, cond);
     }
 
-    // If exact condition not found, try a simple fallback order
-    const fallbackOrder = ['near_mint', 'lightly_played', 'moderately_played', 'heavily_played', 'damaged'];
-    for (const cond of fallbackOrder) {
-      const n = extractPriceForCondition(selected, cond);
-      if (n && n > 0) {
-        return new Response(JSON.stringify({ price: Number(n.toFixed(2)), actualCondition: cond, method: 'justtcg' }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        });
+    let conditionAnomalyAdjusted = false;
+    const adjustments: string[] = [];
+
+    // Enforce non-increasing prices from best to worst condition
+    let prev: number | undefined = undefined;
+    for (const cond of condOrder) {
+      const cur = rawPrices[cond];
+      if (prev !== undefined && cur !== undefined && cur > prev) {
+        // Cap this worse condition to the previous (better) price
+        rawPrices[cond] = prev;
+        conditionAnomalyAdjusted = true;
+        adjustments.push(`${cond} capped to ${prev.toFixed(2)}`);
+      }
+      if (rawPrices[cond] !== undefined) {
+        prev = rawPrices[cond];
       }
     }
 
-    return new Response(JSON.stringify({ price: '0.00', unavailable: true, method: 'justtcg' }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
+    const requestedCond = String(condition ?? 'near_mint');
+
+    // Helper to find the first available price in fallback order
+    const fallbackOrder = ['near_mint', 'lightly_played', 'moderately_played', 'heavily_played', 'damaged'];
+
+    const pickPrice = (cond: string): number | undefined => {
+      const v = rawPrices[cond];
+      return typeof v === 'number' && v > 0 ? v : undefined;
+    };
+
+    // Try requested condition first
+    let chosenCond = requestedCond;
+    let chosen = pickPrice(requestedCond);
+
+    if (!(chosen && chosen > 0)) {
+      // Try fallbacks
+      for (const cond of fallbackOrder) {
+        const v = pickPrice(cond);
+        if (v !== undefined) {
+          chosen = v;
+          chosenCond = cond;
+          break;
+        }
+      }
+    }
+
+    if (chosen && chosen > 0) {
+      return new Response(
+        JSON.stringify({
+          price: Number(chosen.toFixed(2)),
+          actualCondition: chosenCond,
+          method: 'justtcg',
+          conditionAnomalyAdjusted,
+          adjustmentNote: conditionAnomalyAdjusted ? adjustments.join('; ') : undefined,
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ price: '0.00', unavailable: true, method: 'justtcg', conditionAnomalyAdjusted, adjustmentNote: conditionAnomalyAdjusted ? adjustments.join('; ') : undefined }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      }
+    );
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e?.message ?? e), stack: (e as any)?.stack }), {
       status: 500,

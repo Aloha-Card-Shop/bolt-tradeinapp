@@ -99,3 +99,6 @@ verify_jwt = true
 
 [functions.shopify-order-webhook]
 verify_jwt = false
+
+[functions.justtcg-price]
+verify_jwt = false

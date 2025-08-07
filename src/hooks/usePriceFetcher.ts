@@ -55,6 +55,11 @@ export const usePriceFetcher = ({
         setIsPriceUnavailable(false);
         setUsedFallback(data.usedFallback || false);
         
+        // Notify if the edge function normalized inconsistent condition prices
+        if ((data as any).conditionAnomalyAdjusted) {
+          toast('Price adjusted to respect condition order');
+        }
+        
         // Show notification if fallback condition was used
         if (data.usedFallback && data.actualCondition) {
           toast.success(`Price found using ${data.actualCondition} condition`);

@@ -113,9 +113,9 @@ export const fetchCardPrices = async (
   game?: string,
   isReverseHolo?: boolean,
   timeoutMs: number = 10000
-): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; usedFallback?: boolean; method?: string }> => {
+): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; usedFallback?: boolean; method?: string; conditionAnomalyAdjusted?: boolean; adjustmentNote?: string }> => {
   // Helper function to try fetching price using edge function
-  const tryFetchPriceWithEdgeFunction = async (conditionToTry: string): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; method: string }> => {
+  const tryFetchPriceWithEdgeFunction = async (conditionToTry: string): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; method: string; conditionAnomalyAdjusted?: boolean; adjustmentNote?: string }> => {
     try {
       
       const firstEdition = isFirstEdition === true;
@@ -143,11 +143,13 @@ export const fetchCardPrices = async (
         return {
           price: Number(numeric).toFixed(2),
           actualCondition: conditionToTry,
-          method: 'justtcg'
+          method: 'justtcg',
+          conditionAnomalyAdjusted: Boolean((data as any)?.conditionAnomalyAdjusted),
+          adjustmentNote: (data as any)?.adjustmentNote,
         };
       }
 
-      return { price: "0.00", unavailable: true, method: 'justtcg' };
+      return { price: "0.00", unavailable: true, method: 'justtcg', conditionAnomalyAdjusted: Boolean((data as any)?.conditionAnomalyAdjusted), adjustmentNote: (data as any)?.adjustmentNote };
     } catch (error) {
       console.error('Edge function price fetch failed:', error);
       throw error;
