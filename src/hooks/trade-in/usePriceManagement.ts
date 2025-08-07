@@ -38,7 +38,11 @@ export const usePriceManagement = ({
         item.isFirstEdition,
         item.isHolo,
         item.card.game,
-        item.isReverseHolo
+        item.isReverseHolo,
+        undefined,
+        item.card.set,
+        item.card.name,
+        (item.card as any).number
       );
 
       console.log(`usePriceManagement [${instanceId}]: Got new price for ${item.card.name}:`, data);

@@ -77,7 +77,11 @@ export const useTradeInPricing = (updateItemAttribute: (index: number, key: keyo
         item.isFirstEdition,
         item.isHolo,
         item.card.game,
-        item.isReverseHolo
+        item.isReverseHolo,
+        undefined,
+        item.card.set,
+        item.card.name,
+        (item.card as any).number
       );
       
       if (data.unavailable) {

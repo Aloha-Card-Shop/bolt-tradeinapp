@@ -348,7 +348,11 @@ export const useTradeInListWithCustomer = () => {
         item.isFirstEdition, // Explicitly pass the current state
         item.isHolo,         // Explicitly pass the current state
         item.card.game,
-        item.isReverseHolo   // Explicitly pass the current state
+        item.isReverseHolo,   // Explicitly pass the current state
+        undefined,
+        item.card.set,
+        item.card.name,
+        (item.card as any).number
       );
       
       if (data.unavailable) {

@@ -112,7 +112,10 @@ export const fetchCardPrices = async (
   isHolo?: boolean,
   game?: string,
   isReverseHolo?: boolean,
-  timeoutMs: number = 10000
+  timeoutMs: number = 10000,
+  setName?: string,
+  cardName?: string,
+  cardNumber?: any
 ): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; usedFallback?: boolean; method?: string; conditionAnomalyAdjusted?: boolean; adjustmentNote?: string }> => {
   // Helper function to try fetching price using edge function
   const tryFetchPriceWithEdgeFunction = async (conditionToTry: string): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; method: string; conditionAnomalyAdjusted?: boolean; adjustmentNote?: string }> => {
@@ -129,7 +132,10 @@ export const fetchCardPrices = async (
           isFirstEdition: firstEdition,
           isHolo: holo,
           isReverseHolo: reverseHolo,
-          game
+          game,
+          setName,
+          cardName,
+          cardNumber
         }
       });
 

@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { productId, condition, isFirstEdition, isHolo, isReverseHolo, game } = await req.json();
+    const { productId, condition, isFirstEdition, isHolo, isReverseHolo, game, setName, cardName, cardNumber } = await req.json();
 
     if (!productId) {
       return new Response(JSON.stringify({ error: 'productId is required' }), {
@@ -202,10 +202,44 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Exact-match filter by setName, cardName, and cardNumber if provided
+    const normalize = (s: any) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const normalizeNumber = (n: any) => {
+      const s = String(n ?? '').toLowerCase().trim();
+      const main = (s.split('/')[0] || s).replace(/\s+/g, '');
+      return normalize(main);
+    };
+    const providedSet = normalize(typeof setName === 'string' ? setName : '');
+    const providedName = normalize(typeof cardName === 'string' ? cardName : '');
+
+    const providedNum = (() => {
+      if (!cardNumber) return '';
+      if (typeof cardNumber === 'object') {
+        const raw = cardNumber.raw ?? cardNumber.formatted ?? cardNumber.number ?? cardNumber.displayName ?? cardNumber.value;
+        return normalizeNumber(raw);
+      }
+      return normalizeNumber(cardNumber);
+    })();
+
+    const matchesAll = (card: any) => {
+      const cName = normalize(card?.name ?? card?.cardName ?? card?.title);
+      const sName = normalize(card?.set?.name ?? card?.setName ?? card?.set ?? card?.series?.name);
+      const cNum = normalizeNumber(card?.number ?? card?.cardNumber ?? card?.no ?? card?.collector_number ?? card?.collectorNumber);
+
+      if (providedSet && !(sName.includes(providedSet) || providedSet.includes(sName))) return false;
+      if (providedName && !(cName === providedName || cName.includes(providedName))) return false;
+      if (providedNum && cNum !== providedNum) return false;
+      return true;
+    };
+
+    const filtered = cards.filter(matchesAll);
+    const candidateCards = filtered.length > 0 ? filtered : cards;
+    console.log(`[justtcg] Exact-match filter: before=${cards.length} after=${filtered.length} set="${setName ?? ''}" name="${cardName ?? ''}" number="${String(cardNumber ?? '')}"`);
+
     // Prefer a variant that best matches the requested flags
-    let selected = cards[0];
-    if (cards.length > 1) {
-      const scored = cards
+    let selected = candidateCards[0];
+    if (candidateCards.length > 1) {
+      const scored = candidateCards
         .map((c: any) => ({ c, s: scoreVariant(c, { isFirstEdition, isHolo, isReverseHolo }) }))
         .sort((a: any, b: any) => b.s - a.s);
       selected = scored[0].c;
