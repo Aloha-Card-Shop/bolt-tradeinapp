@@ -65,192 +65,21 @@ export class FirecrawlService {
     return this.firecrawlApp;
   }
 
-  // Scrape TCGPlayer prices with proper DOM parsing
+  // DEPRECATED: TCGPlayer price scraping is now handled exclusively by the edge function
+  // This method is kept for backwards compatibility but should not be used for new implementations
   static async scrapeTCGPlayerPrice(
-    productId: string,
-    condition: string,
-    language: string = 'English',
-    isFirstEdition: boolean = false,
-    isHolo: boolean = false,
-    isReverseHolo: boolean = false
+    _productId: string,
+    _condition: string,
+    _language: string = 'English',
+    _isFirstEdition: boolean = false,
+    _isHolo: boolean = false,
+    _isReverseHolo: boolean = false
   ): Promise<FirecrawlResponse> {
-    try {
-      console.log('Scraping TCGPlayer price with Firecrawl:', { productId, condition });
-      
-      // Build the TCGPlayer URL
-      let url = `https://www.tcgplayer.com/product/${productId}?Language=${language}&page=1`;
-      
-      if (isFirstEdition === true && isHolo === true) {
-        url += '&Printing=1st+Edition+Holofoil';
-      } else if (isFirstEdition === true && isReverseHolo === true) {
-        url += '&Printing=1st+Edition+Reverse+Holofoil';
-      } else if (isFirstEdition === true) {
-        url += '&Printing=1st+Edition';
-      } else if (isHolo === true) {
-        url += '&Printing=Holofoil';
-      } else if (isReverseHolo === true) {
-        url += '&Printing=Reverse+Holofoil';
-      }
-      
-      if (condition) {
-        const formattedCondition = condition 
-          ? condition.split('_')
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-              .join('+')
-          : 'Near+Mint';
-        url += `&Condition=${formattedCondition}`;
-      }
-
-      const app = this.getApp();
-      const scrapeResult = await app.scrapeUrl(url, {
-        formats: ['html'],
-        timeout: 30000,
-        waitFor: 3000
-      });
-
-      if (!scrapeResult.success) {
-        console.error('Firecrawl scrape failed:', scrapeResult);
-        return { success: false, error: 'Failed to scrape TCGPlayer page with Firecrawl' };
-      }
-
-      const htmlContent = (scrapeResult as any).data?.html || '';
-      console.log('Firecrawl HTML received:', { 
-        length: htmlContent.length,
-        containsPrice: htmlContent.includes('$'),
-        snippet: htmlContent.substring(0, 500)
-      });
-
-      // Parse HTML using DOMParser (browser environment)
-      let doc: Document;
-      if (typeof window !== 'undefined' && window.DOMParser) {
-        const parser = new DOMParser();
-        doc = parser.parseFromString(htmlContent, 'text/html');
-      } else {
-        // For Node.js environment, use jsdom or similar
-        try {
-          const { JSDOM } = await import('jsdom');
-          const dom = new JSDOM(htmlContent);
-          doc = dom.window.document;
-        } catch (e) {
-          console.log('JSDOM not available, falling back to regex');
-          doc = null as any;
-        }
-      }
-
-      // Use updated TCGPlayer-specific selectors based on current page structure
-      const priceSelectors = [
-        ".spotlight__price",
-        "[data-testid='price-guide-price']", 
-        ".price-guide__spotlight-price",
-        ".price-points__point-value",
-        ".inventory__price",
-        // New selectors based on current TCGPlayer structure
-        ".price-points .price-points__point-value",
-        ".seller-listing__price",
-        ".product-details .price",
-        "[class*='price']", // Any element with 'price' in class name
-        ".tcg-price"
-      ];
-      
-      let price: string | undefined;
-      if (doc) {
-        for (const selector of priceSelectors) {
-          const priceEl = doc.querySelector(selector);
-          if (priceEl?.textContent) {
-            price = priceEl.textContent.trim();
-            console.log('Found price with selector:', { selector, price });
-            break;
-          }
-        }
-      }
-
-      // Fallback to regex if DOM parsing fails
-      if (!price) {
-        console.log('DOM selectors failed, trying comprehensive regex fallback');
-        // Look for price patterns in the HTML
-        const pricePatterns = [
-          /\$[\d,]+\.?\d*/g,
-          /Price[:\s]*\$?[\d,]+\.?\d*/gi,
-          /[\$]?[\d,]+\.[\d]{2}/g
-        ];
-        
-        for (const pattern of pricePatterns) {
-          const matches = htmlContent.match(pattern);
-          if (matches && matches.length > 0) {
-            // Filter out obviously wrong prices (like years, etc.)
-            const validPrices = matches.filter((match: string) => {
-              const numericValue = parseFloat(match.replace(/[^\d.]/g, ''));
-              return numericValue > 0 && numericValue < 10000; // Reasonable price range
-            });
-            
-            if (validPrices.length > 0) {
-              price = validPrices[0];
-              console.log('Found price with regex:', price);
-              break;
-            }
-          }
-        }
-      }
-      
-      if (!price) {
-        console.error('No price found in Firecrawl response');
-        console.log('HTML sample for debugging:', htmlContent.substring(0, 2000));
-        console.log('HTML contains $ symbol:', htmlContent.includes('$'));
-        console.log('HTML contains price text:', htmlContent.toLowerCase().includes('price'));
-        return {
-          success: true,
-          data: { 
-            price: "0.00", 
-            unavailable: true,
-            actualCondition: condition,
-            method: 'firecrawl',
-            debugInfo: {
-              htmlLength: htmlContent.length,
-              containsDollar: htmlContent.includes('$'),
-              containsPrice: htmlContent.toLowerCase().includes('price'),
-              htmlSample: htmlContent.substring(0, 500)
-            }
-          }
-        };
-      }
-
-      // Clean and validate price (matching edge function logic)
-      const cleanPrice = price.replace(/[^0-9.]/g, '');
-      const priceValue = parseFloat(cleanPrice);
-      
-      if (!cleanPrice || isNaN(priceValue) || !isFinite(priceValue)) {
-        console.error('Invalid price format:', { price, cleanPrice, priceValue });
-        return {
-          success: true,
-          data: { 
-            price: "0.00", 
-            unavailable: true,
-            actualCondition: condition,
-            method: 'firecrawl'
-          }
-        };
-      }
-
-      const formattedPrice = priceValue.toFixed(2);
-      console.log('Successfully extracted price:', { 
-        raw: price, 
-        cleaned: cleanPrice, 
-        formatted: formattedPrice 
-      });
-
-      return {
-        success: true,
-        data: {
-          price: formattedPrice,
-          unavailable: false,
-          actualCondition: condition,
-          method: 'firecrawl'
-        }
-      };
-    } catch (error) {
-      console.error('Error scraping TCGPlayer with Firecrawl:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Firecrawl scraping failed' };
-    }
+    console.warn('TCGPlayer price scraping via Firecrawl is deprecated. Use the edge function instead.');
+    return { 
+      success: false, 
+      error: 'TCGPlayer price scraping via Firecrawl is deprecated. Use the edge function instead.' 
+    };
   }
 
   // Scrape eBay sold listings

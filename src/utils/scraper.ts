@@ -1,6 +1,5 @@
 
 import { supabase } from '../integrations/supabase/client';
-import { FirecrawlService } from './FirecrawlService';
 
 interface CacheEntry {
   price: number;
@@ -163,87 +162,9 @@ export const fetchCardPrices = async (
     }
   };
 
-  // Helper function to try fetching price using Firecrawl (fallback)
-  const tryFetchPriceWithFirecrawl = async (conditionToTry: string): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; method: string }> => {
-    const language = game === 'japanese-pokemon' ? 'Japanese' : 'English';
-    
-    // Ensure boolean values are explicitly handled - default to false if undefined
-    const firstEdition = isFirstEdition === true;
-    const holo = isHolo === true;
-    const reverseHolo = isReverseHolo === true;
-    
-    const url = buildTcgPlayerUrl(
-      productId, 
-      conditionToTry, 
-      language, 
-      firstEdition, 
-      holo,
-      reverseHolo
-    );
 
-    // Check cache first
-    const cachedEntry = priceCache.get(url);
-    if (cachedEntry && (Date.now() - cachedEntry.timestamp) < CACHE_TTL) {
-      return { price: cachedEntry.price.toFixed(2), actualCondition: conditionToTry, method: 'cached-firecrawl' };
-    }
-
-    if (import.meta.env.DEV) {
-      console.log('Fetching price from Firecrawl for:', productId);
-    }
-    
-    // Use Firecrawl to scrape TCGPlayer price
-    const result = await FirecrawlService.scrapeTCGPlayerPrice(
-      productId,
-      conditionToTry,
-      language,
-      firstEdition,
-      holo,
-      reverseHolo
-    );
-
-    if (!result.success) {
-      throw new Error(`Failed to fetch price: ${result.error}`);
-    }
-
-    if (import.meta.env.DEV) {
-      console.log('Price data received from Firecrawl:', result.data);
-    }
-    
-    // Type guard to check if this is a price response
-    if ('price' in result.data) {
-      const priceData = result.data;
-      
-      // Handle case where price is not available
-      if (priceData.unavailable || !priceData.price) {
-        return { price: "0.00", unavailable: true, method: 'firecrawl' };
-      }
-
-      const priceValue = parseFloat(priceData.price);
-      if (isNaN(priceValue) || !isFinite(priceValue)) {
-        return { price: "0.00", unavailable: true, method: 'firecrawl' };
-      }
-
-      // Cache the formatted price using a simple cache key
-      const cacheKey = `${productId}-${conditionToTry}-${language}-${firstEdition}-${holo}-${reverseHolo}`;
-      priceCache.set(cacheKey, {
-        price: priceValue,
-        timestamp: Date.now()
-      });
-
-      return { 
-        price: priceValue.toFixed(2), 
-        actualCondition: conditionToTry,
-        method: 'firecrawl'
-      };
-    }
-    
-    // If it's not a price response, return unavailable
-    return { price: "0.00", unavailable: true, method: 'firecrawl' };
-  };
-
-  // Helper function to try fetching price for a specific condition using hybrid approach
+  // Helper function to try fetching price for a specific condition using edge function only
   const tryFetchPriceForCondition = async (conditionToTry: string): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; method?: string }> => {
-    // Try edge function first
     try {
       if (import.meta.env.DEV) {
         console.log('Attempting edge function price fetch for:', productId, conditionToTry);
@@ -257,27 +178,10 @@ export const fetchCardPrices = async (
         return edgeResult;
       }
     } catch (error) {
-      console.log('Edge function failed, falling back to Firecrawl:', error);
+      console.log('Edge function failed:', error);
     }
 
-    // Fallback to Firecrawl
-    try {
-      if (import.meta.env.DEV) {
-        console.log('Attempting Firecrawl price fetch for:', productId, conditionToTry);
-      }
-      
-      const firecrawlResult = await tryFetchPriceWithFirecrawl(conditionToTry);
-      if (!firecrawlResult.unavailable) {
-        if (import.meta.env.DEV) {
-          console.log('Firecrawl successful:', firecrawlResult);
-        }
-        return { ...firecrawlResult, method: `${firecrawlResult.method}-fallback` };
-      }
-    } catch (error) {
-      console.log('Firecrawl also failed:', error);
-    }
-
-    return { price: "0.00", unavailable: true, method: 'both-failed' };
+    return { price: "0.00", unavailable: true, method: 'edge-function-failed' };
   };
 
   // Smart condition prioritization based on starting condition
