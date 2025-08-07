@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { fetchCardPrices } from '../../utils/scraper';
 import { FirecrawlService } from '../../utils/FirecrawlService';
+import { supabase } from '../../integrations/supabase/client';
 
 const TEST_PRODUCTS = [
   { id: '497601', name: 'Bramblin (Test Card)' },
@@ -23,11 +24,11 @@ export const PriceTestPanel = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<TestResult[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [testType, setTestType] = useState<'scraper' | 'firecrawl' | 'dual-comparison'>('scraper');
+  const [testType, setTestType] = useState<'scraper' | 'firecrawl' | 'dual-comparison' | 'edge-function'>('scraper');
   const [circuitBreakerOpen, setCircuitBreakerOpen] = useState(false);
   const [consecutiveFailures, setConsecutiveFailures] = useState(0);
 
-  const runTestWithRetry = async (testFunction: () => Promise<any>, type: 'scraper' | 'firecrawl' | 'dual-comparison') => {
+  const runTestWithRetry = async (testFunction: () => Promise<any>, type: 'scraper' | 'firecrawl' | 'dual-comparison' | 'edge-function') => {
     if (circuitBreakerOpen) {
       setError('Circuit breaker is open. Too many consecutive failures. Try again in 5 minutes.');
       return;
@@ -106,16 +107,48 @@ export const PriceTestPanel = () => {
     'firecrawl'
   );
 
+  const testEdgeFunction = () => runTestWithRetry(
+    async () => {
+      const { data, error } = await supabase.functions.invoke('scrape-price', {
+        body: {
+          productId,
+          condition,
+          language: 'English',
+          isFirstEdition: false,
+          isHolo: false,
+          isReverseHolo: false
+        }
+      });
+      
+      if (error) throw new Error(error.message || 'Edge function failed');
+      return { ...data, method: 'edge-function' };
+    },
+    'edge-function'
+  );
+
   const testDualMethod = async () => {
     setIsLoading(true);
     setError(null);
     const startTime = Date.now();
     
     try {
-      // Test both methods in parallel
-      const [scraperResult, firecrawlResult] = await Promise.allSettled([
+      // Test all three methods in parallel
+      const [scraperResult, firecrawlResult, edgeResult] = await Promise.allSettled([
         fetchCardPrices(productId, condition, false, false, 'pokemon'),
-        FirecrawlService.scrapeTCGPlayerPrice(productId, condition, 'English', false, false, false)
+        FirecrawlService.scrapeTCGPlayerPrice(productId, condition, 'English', false, false, false),
+        supabase.functions.invoke('scrape-price', {
+          body: {
+            productId,
+            condition,
+            language: 'English',
+            isFirstEdition: false,
+            isHolo: false,
+            isReverseHolo: false
+          }
+        }).then(({ data, error }) => {
+          if (error) throw new Error(error.message || 'Edge function failed');
+          return { ...data, method: 'edge-function' };
+        })
       ]);
       
       const endTime = Date.now();
@@ -125,11 +158,13 @@ export const PriceTestPanel = () => {
         duration,
         attempt: 1,
         success: true,
-        testType: 'dual-comparison',
+        testType: 'triple-comparison',
         scraperResult: scraperResult.status === 'fulfilled' ? scraperResult.value : { error: scraperResult.reason?.message },
         firecrawlResult: firecrawlResult.status === 'fulfilled' ? firecrawlResult.value : { error: firecrawlResult.reason?.message },
+        edgeResult: edgeResult.status === 'fulfilled' ? edgeResult.value : { error: edgeResult.reason?.message },
         scraperSuccess: scraperResult.status === 'fulfilled',
-        firecrawlSuccess: firecrawlResult.status === 'fulfilled'
+        firecrawlSuccess: firecrawlResult.status === 'fulfilled',
+        edgeSuccess: edgeResult.status === 'fulfilled'
       };
       
       setResults(prev => [comparisonResult, ...prev.slice(0, 4)]);
@@ -142,7 +177,7 @@ export const PriceTestPanel = () => {
         duration: '0ms',
         attempt: 1,
         success: false,
-        testType: 'dual-comparison',
+        testType: 'triple-comparison',
         error: errorMsg
       };
       setResults(prev => [failedResult, ...prev.slice(0, 4)]);
@@ -210,21 +245,28 @@ export const PriceTestPanel = () => {
             disabled={isLoading || circuitBreakerOpen}
             className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
           >
-            {isLoading && testType === 'scraper' ? 'Testing Scraper...' : 'Test Scraper Function'}
+            {isLoading && testType === 'scraper' ? 'Testing Hybrid...' : 'Test Hybrid Scraper'}
           </button>
           <button 
             onClick={() => { setTestType('firecrawl'); testFirecrawlDirect(); }}
             disabled={isLoading || circuitBreakerOpen}
             className="px-4 py-2 border border-border rounded hover:bg-accent disabled:opacity-50"
           >
-            {isLoading && testType === 'firecrawl' ? 'Testing Firecrawl...' : 'Test Firecrawl Direct'}
+            {isLoading && testType === 'firecrawl' ? 'Testing Firecrawl...' : 'Test Firecrawl Only'}
+          </button>
+          <button 
+            onClick={() => { setTestType('edge-function'); testEdgeFunction(); }}
+            disabled={isLoading || circuitBreakerOpen}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          >
+            {isLoading && testType === 'edge-function' ? 'Testing Edge...' : 'Test Edge Function'}
           </button>
           <button 
             onClick={() => { setTestType('dual-comparison'); testDualMethod(); }}
             disabled={isLoading || circuitBreakerOpen}
             className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
           >
-            {isLoading && testType === 'dual-comparison' ? 'Comparing Methods...' : 'Compare Both Methods'}
+            {isLoading && testType === 'dual-comparison' ? 'Comparing All...' : 'Compare All Methods'}
           </button>
           <button 
             onClick={() => { setTestType('firecrawl'); runBulkTest(); }}
@@ -288,10 +330,10 @@ export const PriceTestPanel = () => {
                 </div>
                 {result.success && (
                   <div className="mt-2">
-                    {result.testType === 'dual-comparison' ? (
+                    {result.testType === 'triple-comparison' ? (
                       <div className="space-y-2">
                         <div className={`p-2 rounded ${result.scraperSuccess ? 'bg-green-100' : 'bg-red-100'}`}>
-                          <span className="font-semibold">Scraper: </span>
+                          <span className="font-semibold">Hybrid Scraper: </span>
                           <span className={result.scraperSuccess ? 'text-green-700' : 'text-red-700'}>
                             {result.scraperSuccess ? '✓ Success' : '✗ Failed'}
                           </span>
@@ -300,15 +342,31 @@ export const PriceTestPanel = () => {
                               ${result.scraperResult.price}
                             </span>
                           )}
+                          {result.scraperResult?.method && (
+                            <span className="ml-2 text-xs bg-blue-100 px-2 py-1 rounded">
+                              via {result.scraperResult.method}
+                            </span>
+                          )}
                         </div>
                         <div className={`p-2 rounded ${result.firecrawlSuccess ? 'bg-green-100' : 'bg-red-100'}`}>
-                          <span className="font-semibold">Firecrawl: </span>
+                          <span className="font-semibold">Firecrawl Only: </span>
                           <span className={result.firecrawlSuccess ? 'text-green-700' : 'text-red-700'}>
                             {result.firecrawlSuccess ? '✓ Success' : '✗ Failed'}
                           </span>
                           {result.firecrawlSuccess && result.firecrawlResult?.data?.price && (
                             <span className="ml-2 font-mono bg-green-200 px-2 py-1 rounded">
                               ${result.firecrawlResult.data.price}
+                            </span>
+                          )}
+                        </div>
+                        <div className={`p-2 rounded ${result.edgeSuccess ? 'bg-green-100' : 'bg-red-100'}`}>
+                          <span className="font-semibold">Edge Function: </span>
+                          <span className={result.edgeSuccess ? 'text-green-700' : 'text-red-700'}>
+                            {result.edgeSuccess ? '✓ Success' : '✗ Failed'}
+                          </span>
+                          {result.edgeSuccess && result.edgeResult?.price && (
+                            <span className="ml-2 font-mono bg-green-200 px-2 py-1 rounded">
+                              ${result.edgeResult.price}
                             </span>
                           )}
                         </div>

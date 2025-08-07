@@ -114,9 +114,47 @@ export const fetchCardPrices = async (
   game?: string,
   isReverseHolo?: boolean,
   timeoutMs: number = 10000
-): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; usedFallback?: boolean }> => {
-  // Helper function to try fetching price for a specific condition
-  const tryFetchPriceForCondition = async (conditionToTry: string): Promise<{ price: string; unavailable?: boolean; actualCondition?: string }> => {
+): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; usedFallback?: boolean; method?: string }> => {
+  // Helper function to try fetching price using edge function
+  const tryFetchPriceWithEdgeFunction = async (conditionToTry: string): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; method: string }> => {
+    try {
+      const language = game === 'japanese-pokemon' ? 'Japanese' : 'English';
+      const firstEdition = isFirstEdition === true;
+      const holo = isHolo === true;
+      const reverseHolo = isReverseHolo === true;
+      
+      const { data, error } = await supabase.functions.invoke('scrape-price', {
+        body: {
+          productId,
+          condition: conditionToTry,
+          language,
+          isFirstEdition: firstEdition,
+          isHolo: holo,
+          isReverseHolo: reverseHolo
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Edge function failed');
+      }
+
+      if (data?.price && parseFloat(data.price) > 0) {
+        return {
+          price: parseFloat(data.price).toFixed(2),
+          actualCondition: conditionToTry,
+          method: 'edge-function'
+        };
+      }
+
+      return { price: "0.00", unavailable: true, method: 'edge-function' };
+    } catch (error) {
+      console.error('Edge function price fetch failed:', error);
+      throw error;
+    }
+  };
+
+  // Helper function to try fetching price using Firecrawl (fallback)
+  const tryFetchPriceWithFirecrawl = async (conditionToTry: string): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; method: string }> => {
     const language = game === 'japanese-pokemon' ? 'Japanese' : 'English';
     
     // Ensure boolean values are explicitly handled - default to false if undefined
@@ -136,7 +174,7 @@ export const fetchCardPrices = async (
     // Check cache first
     const cachedEntry = priceCache.get(url);
     if (cachedEntry && (Date.now() - cachedEntry.timestamp) < CACHE_TTL) {
-      return { price: cachedEntry.price.toFixed(2), actualCondition: conditionToTry };
+      return { price: cachedEntry.price.toFixed(2), actualCondition: conditionToTry, method: 'cached-firecrawl' };
     }
 
     if (import.meta.env.DEV) {
@@ -167,12 +205,12 @@ export const fetchCardPrices = async (
       
       // Handle case where price is not available
       if (priceData.unavailable || !priceData.price) {
-        return { price: "0.00", unavailable: true };
+        return { price: "0.00", unavailable: true, method: 'firecrawl' };
       }
 
       const priceValue = parseFloat(priceData.price);
       if (isNaN(priceValue) || !isFinite(priceValue)) {
-        return { price: "0.00", unavailable: true };
+        return { price: "0.00", unavailable: true, method: 'firecrawl' };
       }
 
       // Cache the formatted price using a simple cache key
@@ -184,12 +222,52 @@ export const fetchCardPrices = async (
 
       return { 
         price: priceValue.toFixed(2), 
-        actualCondition: conditionToTry
+        actualCondition: conditionToTry,
+        method: 'firecrawl'
       };
     }
     
     // If it's not a price response, return unavailable
-    return { price: "0.00", unavailable: true };
+    return { price: "0.00", unavailable: true, method: 'firecrawl' };
+  };
+
+  // Helper function to try fetching price for a specific condition using hybrid approach
+  const tryFetchPriceForCondition = async (conditionToTry: string): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; method?: string }> => {
+    // Try edge function first
+    try {
+      if (import.meta.env.DEV) {
+        console.log('Attempting edge function price fetch for:', productId, conditionToTry);
+      }
+      
+      const edgeResult = await tryFetchPriceWithEdgeFunction(conditionToTry);
+      if (!edgeResult.unavailable) {
+        if (import.meta.env.DEV) {
+          console.log('Edge function successful:', edgeResult);
+        }
+        return edgeResult;
+      }
+    } catch (error) {
+      console.log('Edge function failed, falling back to Firecrawl:', error);
+    }
+
+    // Fallback to Firecrawl
+    try {
+      if (import.meta.env.DEV) {
+        console.log('Attempting Firecrawl price fetch for:', productId, conditionToTry);
+      }
+      
+      const firecrawlResult = await tryFetchPriceWithFirecrawl(conditionToTry);
+      if (!firecrawlResult.unavailable) {
+        if (import.meta.env.DEV) {
+          console.log('Firecrawl successful:', firecrawlResult);
+        }
+        return { ...firecrawlResult, method: `${firecrawlResult.method}-fallback` };
+      }
+    } catch (error) {
+      console.log('Firecrawl also failed:', error);
+    }
+
+    return { price: "0.00", unavailable: true, method: 'both-failed' };
   };
 
   // Smart condition prioritization based on starting condition
