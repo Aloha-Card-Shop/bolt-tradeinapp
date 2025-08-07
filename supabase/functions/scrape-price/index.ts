@@ -224,29 +224,112 @@ async function processScrapeRequest(url: string, productId: string): Promise<Res
 
     const doc = new DOMParser().parseFromString(html, "text/html");
     
-    // Try multiple selectors for price
+    console.log('[Scraper] Parsing HTML content for price extraction');
+    
+    // Enhanced selectors specifically for TCGPlayer's current structure
     const priceSelectors = [
+      // Main price display selectors
       ".spotlight__price",
       "[data-testid='price-guide-price']",
-      ".price-guide__spotlight-price"
+      ".price-guide__spotlight-price",
+      ".price-points__point-value",
+      ".inventory__price",
+      ".seller-listing__price",
+      ".product-details .price",
+      // Broader selectors for any price element
+      "[class*='price']",
+      "[data-testid*='price']",
+      ".tcg-price",
+      ".market-price",
+      ".listing-price",
+      // Even broader fallbacks
+      "*[class*='Price']",
+      "*[class*='PRICE']"
     ];
     
     let price: string | undefined;
+    let usedSelector: string | undefined;
+    
+    // Try DOM selectors first
     for (const selector of priceSelectors) {
-      const priceEl = doc?.querySelector(selector);
-      if (priceEl?.textContent) {
-        price = priceEl.textContent.trim();
-        console.log('[Scraper] Found price with selector:', { selector, price });
-        break;
+      try {
+        const elements = doc?.querySelectorAll(selector);
+        if (elements && elements.length > 0) {
+          for (const element of elements) {
+            const text = element.textContent?.trim();
+            if (text && text.includes('$')) {
+              price = text;
+              usedSelector = selector;
+              console.log('[Scraper] Found price with DOM selector:', { selector, price });
+              break;
+            }
+          }
+          if (price) break;
+        }
+      } catch (e) {
+        console.log('[Scraper] Error with selector:', selector, e);
+      }
+    }
+    
+    // Comprehensive regex fallback if DOM parsing fails
+    if (!price) {
+      console.log('[Scraper] DOM selectors failed, trying comprehensive regex patterns');
+      
+      const regexPatterns = [
+        // Standard price patterns
+        /\$[\d,]+\.[\d]{2}/g,
+        /\$[\d,]+/g,
+        // Price with context
+        /(?:price|Price|PRICE)[:\s]*\$?[\d,]+\.?[\d]*/gi,
+        /(?:market|Market)[:\s]*\$?[\d,]+\.?[\d]*/gi,
+        // JSON-like price patterns (for embedded data)
+        /"price":\s*"?\$?[\d,]+\.?[\d]*"?/gi,
+        /"market_price":\s*"?\$?[\d,]+\.?[\d]*"?/gi,
+        // Any number with dollar sign
+        /\$[\d,]+\.?\d*/g
+      ];
+      
+      for (const pattern of regexPatterns) {
+        const matches = html.match(pattern);
+        if (matches && matches.length > 0) {
+          console.log('[Scraper] Found potential prices with regex:', matches.slice(0, 5));
+          
+          // Filter valid prices (reasonable range and format)
+          const validPrices = matches
+            .map(match => {
+              const cleanMatch = match.replace(/[^\d.$]/g, '');
+              const numericValue = parseFloat(cleanMatch.replace(/[^\d.]/g, ''));
+              return { original: match, clean: cleanMatch, numeric: numericValue };
+            })
+            .filter(p => p.numeric > 0 && p.numeric < 10000 && !isNaN(p.numeric))
+            .sort((a, b) => b.numeric - a.numeric); // Sort highest first
+          
+          if (validPrices.length > 0) {
+            price = validPrices[0].clean;
+            console.log('[Scraper] Selected price from regex:', { 
+              pattern: pattern.toString(), 
+              selected: price,
+              allValid: validPrices.map(p => p.clean)
+            });
+            break;
+          }
+        }
       }
     }
 
     if (!price) {
-      console.error('[Scraper] Price not found. DOM structure:', {
-        head: doc?.querySelector('head')?.innerHTML,
-        body: doc?.querySelector('body')?.innerHTML.substring(0, 500) + '...'
+      console.error('[Scraper] No price found with any method');
+      console.log('[Scraper] HTML analysis:', {
+        containsDollar: html.includes('$'),
+        containsPrice: html.toLowerCase().includes('price'),
+        containsMarket: html.toLowerCase().includes('market'),
+        htmlLength: html.length,
+        firstDollarContext: html.substring(Math.max(0, html.indexOf('$') - 50), html.indexOf('$') + 50),
+        priceContext: html.toLowerCase().includes('price') ? 
+          html.substring(Math.max(0, html.toLowerCase().indexOf('price') - 50), html.toLowerCase().indexOf('price') + 100) : 
+          'No price text found'
       });
-      throw new Error("Price not found in page content");
+      throw new Error("Price not found in page content after comprehensive search");
     }
 
     // Clean and validate price
@@ -261,7 +344,9 @@ async function processScrapeRequest(url: string, productId: string): Promise<Res
     console.log('[Scraper] Successfully scraped price:', {
       raw: price,
       cleaned: cleanPrice,
-      formatted: formattedPrice
+      formatted: formattedPrice,
+      method: usedSelector ? `DOM(${usedSelector})` : 'Regex',
+      url: url
     });
 
     // Store formatted price in cache
@@ -280,7 +365,9 @@ async function processScrapeRequest(url: string, productId: string): Promise<Res
 
     return new Response(JSON.stringify({ 
       price: `$${formattedPrice}`,
-      productId 
+      productId,
+      method: usedSelector ? `DOM(${usedSelector})` : 'Regex',
+      cached: false
     }), {
       status: 200,
       headers: { 
