@@ -20,6 +20,7 @@ interface TestResult {
 export const PriceTestPanel = () => {
   const [productId, setProductId] = useState('497601');
   const [condition, setCondition] = useState('near_mint');
+  const [game, setGame] = useState('pokemon');
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<TestResult[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -105,6 +106,7 @@ export const PriceTestPanel = () => {
         body: {
           productId,
           condition,
+          game,
           isFirstEdition: false,
           isHolo: false,
           isReverseHolo: false
@@ -145,7 +147,7 @@ export const PriceTestPanel = () => {
     <div className="w-full border rounded-lg p-6 bg-card">
       <h3 className="text-lg font-semibold mb-4">TCGPlayer Price Test Panel</h3>
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="text-sm font-medium">Product ID</label>
             <input
@@ -168,6 +170,18 @@ export const PriceTestPanel = () => {
               <option value="moderately_played">Moderately Played</option>
               <option value="heavily_played">Heavily Played</option>
               <option value="damaged">Damaged</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Game</label>
+            <select
+              value={game}
+              onChange={(e) => setGame(e.target.value)}
+              className="w-full p-2 border rounded"
+            >
+              <option value="pokemon">Pokemon</option>
+              <option value="japanese-pokemon">Japanese Pokemon</option>
+              <option value="magic">Magic: The Gathering</option>
             </select>
           </div>
         </div>
