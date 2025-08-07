@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import TradeInTable from '../dashboard/TradeInTable';
 import ErrorMessage from '../common/ErrorMessage';
 import { TradeIn } from '../../types/tradeIn';
+import { useTradeInActions } from '../../hooks/useTradeInActions';
 
 interface MyTradeInsContentProps {
   tradeIns: TradeIn[];
@@ -14,6 +15,7 @@ interface MyTradeInsContentProps {
   loadingItems: string | null;
   onToggleDetails: (id: string) => void;
 }
+
 
 const MyTradeInsContent: React.FC<MyTradeInsContentProps> = ({
   tradeIns,
@@ -30,6 +32,16 @@ const MyTradeInsContent: React.FC<MyTradeInsContentProps> = ({
   React.useEffect(() => {
     setLocalTradeIns(tradeIns);
   }, [tradeIns]);
+
+  // Wire actions (approve, deny, delete)
+  const {
+    actionLoading,
+    actionsErrorMessage,
+    handleApproveTradeIn,
+    handleDenyTradeIn,
+    handleDeleteTradeIn,
+  } = useTradeInActions(setLocalTradeIns);
+
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16 pb-12">
@@ -50,6 +62,7 @@ const MyTradeInsContent: React.FC<MyTradeInsContentProps> = ({
         </div>
 
         {errorMessage && <ErrorMessage message={errorMessage} />}
+        {actionsErrorMessage && <ErrorMessage message={actionsErrorMessage} />}
 
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <TradeInTable 
@@ -57,11 +70,11 @@ const MyTradeInsContent: React.FC<MyTradeInsContentProps> = ({
             isLoading={isLoading}
             expandedTradeIn={expandedTradeIn}
             loadingItems={loadingItems}
-            actionLoading={null}
+            actionLoading={actionLoading}
             onToggleDetails={onToggleDetails}
-            onApprove={() => {}}
-            onDeny={() => {}}
-            onDelete={() => {}}
+            onApprove={handleApproveTradeIn}
+            onDeny={handleDenyTradeIn}
+            onDelete={handleDeleteTradeIn}
             setTradeIns={setLocalTradeIns}
           />
         </div>

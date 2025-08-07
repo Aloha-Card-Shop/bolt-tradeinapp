@@ -1,76 +1,35 @@
 
-import { useState, useEffect } from 'react';
-import { TradeIn } from '../types/tradeIn';
+import { useEffect, useState } from 'react';
 import { useTradeInExpansion } from './useTradeInExpansion';
+import { useTradeInFetch } from './useTradeInFetch';
 
 export const useMyTradeIns = () => {
-  const [tradeIns, setTradeIns] = useState<TradeIn[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Reuse the existing fetch logic (loads from Supabase, sorted by date)
+  const { tradeIns, setTradeIns, isDataLoading, errorMessage } = useTradeInFetch('all');
+
   const [loadingItems, setLoadingItems] = useState<string | null>(null);
 
-  // For demo purposes, we're mocking this functionality
+  // Optional: prefetch items when expanding
   const fetchTradeInItems = async (tradeInId: string) => {
     setLoadingItems(tradeInId);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Placeholder: if needed, implement item fetch here
+    await new Promise((r) => setTimeout(r, 300));
     setLoadingItems(null);
   };
 
   const { expandedTradeIn, toggleTradeInDetails } = useTradeInExpansion(fetchTradeInItems);
 
   useEffect(() => {
-    const fetchTradeIns = async () => {
-      try {
-        setIsLoading(true);
-        // Mock data for demonstration
-        const mockTradeIns: TradeIn[] = [
-          {
-            id: '1',
-            customer_id: '101',
-            trade_in_date: new Date().toISOString(),
-            total_value: 125.50,
-            status: 'pending',
-            cash_value: 100.40,
-            trade_value: 125.50,
-            customers: {
-              first_name: 'John',
-              last_name: 'Doe'
-            }
-          },
-          {
-            id: '2',
-            customer_id: '102',
-            trade_in_date: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-            total_value: 78.25,
-            status: 'accepted', // Changed from "approved" to "accepted"
-            cash_value: 60.20,
-            trade_value: 78.25,
-            customers: {
-              first_name: 'Jane',
-              last_name: 'Smith'
-            }
-          }
-        ];
-        
-        setTradeIns(mockTradeIns);
-      } catch (error) {
-        console.error('Error fetching trade-ins:', error);
-        setErrorMessage('Failed to load trade-ins. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTradeIns();
+    // no-op, kept for API compatibility
   }, []);
 
   return {
     tradeIns,
-    isLoading,
+    setTradeIns,
+    isLoading: isDataLoading,
     errorMessage,
     expandedTradeIn,
     loadingItems,
-    handleToggleDetails: toggleTradeInDetails
+    handleToggleDetails: toggleTradeInDetails,
   };
 };
