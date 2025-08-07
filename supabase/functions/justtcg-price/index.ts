@@ -2,7 +2,7 @@
 // Fetch ungraded card prices from JustTCG API using TCGPlayer productId
 // This function normalizes the response to { price, unavailable?, actualCondition?, method }
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
