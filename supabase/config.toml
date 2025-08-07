@@ -73,6 +73,9 @@ redirect_uri = ""
 # or any other third-party OIDC providers.
 url = ""
 
+[functions.scrape-price]
+verify_jwt = false
+
 [functions.scrape-130point]
 verify_jwt = false
 
