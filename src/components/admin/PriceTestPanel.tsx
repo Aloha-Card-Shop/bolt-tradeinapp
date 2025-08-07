@@ -206,7 +206,7 @@ export const PriceTestPanel = () => {
           <div>
             <label className="text-sm font-medium">Product ID</label>
             <input
-              className="w-full p-2 border rounded"
+              className="input-base"
               value={productId}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductId(e.target.value)}
               placeholder="Enter TCGPlayer Product ID"

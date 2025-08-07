@@ -201,4 +201,15 @@
   .hover-glow {
     @apply transition-all duration-300 hover:shadow-lg hover:shadow-primary/25;
   }
+
+  /* Dropdown utilities */
+  .dropdown-menu {
+    @apply bg-popover text-popover-foreground rounded-lg border border-border shadow-lg z-50;
+  }
+  .dropdown-overlay {
+    @apply fixed inset-0 bg-foreground/40 z-40;
+  }
+  .select-base {
+    @apply input-base pr-10 bg-background;
+  }
 }

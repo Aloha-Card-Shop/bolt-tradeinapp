@@ -19,15 +19,15 @@ const MobileNavigation: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg z-50">
       <div className="grid grid-cols-4 h-16">
         <button 
           onClick={() => navigate('/dashboard')}
           className="flex flex-col items-center justify-center space-y-1"
           aria-label="Dashboard"
         >
-          <Home className={`h-5 w-5 ${isActive('/dashboard') ? 'text-blue-600' : 'text-gray-500'}`} />
-          <span className={`text-xs ${isActive('/dashboard') ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+          <Home className={`h-5 w-5 ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'}`} />
+          <span className={`text-xs ${isActive('/dashboard') ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
             Home
           </span>
         </button>
@@ -37,8 +37,8 @@ const MobileNavigation: React.FC = () => {
           className="flex flex-col items-center justify-center space-y-1"
           aria-label="Trade-In App"
         >
-          <Package className={`h-5 w-5 ${isActive('/app') ? 'text-green-600' : 'text-gray-500'}`} />
-          <span className={`text-xs ${isActive('/app') ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
+          <Package className={`h-5 w-5 ${isActive('/app') ? 'text-primary' : 'text-muted-foreground'}`} />
+          <span className={`text-xs ${isActive('/app') ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
             Trade-In
           </span>
         </button>
@@ -49,8 +49,8 @@ const MobileNavigation: React.FC = () => {
             className="flex flex-col items-center justify-center space-y-1"
             aria-label="Manager Dashboard"
           >
-            <ClipboardList className={`h-5 w-5 ${isActive('/dashboard/manager') ? 'text-blue-600' : 'text-gray-500'}`} />
-            <span className={`text-xs ${isActive('/dashboard/manager') ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+            <ClipboardList className={`h-5 w-5 ${isActive('/dashboard/manager') ? 'text-primary' : 'text-muted-foreground'}`} />
+            <span className={`text-xs ${isActive('/dashboard/manager') ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
               Manage
             </span>
           </button>
@@ -62,8 +62,8 @@ const MobileNavigation: React.FC = () => {
             className="flex flex-col items-center justify-center space-y-1"
             aria-label="My Trade-Ins"
           >
-            <ClipboardList className={`h-5 w-5 ${isActive('/my-trade-ins') ? 'text-purple-600' : 'text-gray-500'}`} />
-            <span className={`text-xs ${isActive('/my-trade-ins') ? 'text-purple-600 font-medium' : 'text-gray-500'}`}>
+            <ClipboardList className={`h-5 w-5 ${isActive('/my-trade-ins') ? 'text-primary' : 'text-muted-foreground'}`} />
+            <span className={`text-xs ${isActive('/my-trade-ins') ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
               My Trade-Ins
             </span>
           </button>
@@ -76,15 +76,15 @@ const MobileNavigation: React.FC = () => {
         >
           {isAdmin ? (
             <>
-              <Settings className={`h-5 w-5 ${isActive('/admin') ? 'text-red-600' : 'text-gray-500'}`} />
-              <span className={`text-xs ${isActive('/admin') ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+              <Settings className={`h-5 w-5 ${isActive('/admin') ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className={`text-xs ${isActive('/admin') ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
                 Admin
               </span>
             </>
           ) : (
             <>
-              <UserCircle className={`h-5 w-5 ${isActive('/my-trade-ins') ? 'text-purple-600' : 'text-gray-500'}`} />
-              <span className={`text-xs ${isActive('/my-trade-ins') ? 'text-purple-600 font-medium' : 'text-gray-500'}`}>
+              <UserCircle className={`h-5 w-5 ${isActive('/my-trade-ins') ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className={`text-xs ${isActive('/my-trade-ins') ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
                 Account
               </span>
             </>
