@@ -123,14 +123,24 @@ export const fetchCardPrices = async (
       const holo = isHolo === true;
       const reverseHolo = isReverseHolo === true;
       
+      // Build the URL that the edge function expects
+      const url = buildTcgPlayerUrl(
+        productId, 
+        conditionToTry, 
+        language, 
+        firstEdition, 
+        holo,
+        reverseHolo
+      );
+      
       const { data, error } = await supabase.functions.invoke('scrape-price', {
         body: {
+          url,
           productId,
           condition: conditionToTry,
           language,
           isFirstEdition: firstEdition,
-          isHolo: holo,
-          isReverseHolo: reverseHolo
+          isHolo: holo
         }
       });
 
@@ -138,9 +148,9 @@ export const fetchCardPrices = async (
         throw new Error(error.message || 'Edge function failed');
       }
 
-      if (data?.price && parseFloat(data.price) > 0) {
+      if (data?.price && parseFloat(data.price.replace('$', '')) > 0) {
         return {
-          price: parseFloat(data.price).toFixed(2),
+          price: parseFloat(data.price.replace('$', '')).toFixed(2),
           actualCondition: conditionToTry,
           method: 'edge-function'
         };
