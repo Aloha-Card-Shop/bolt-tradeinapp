@@ -117,29 +117,19 @@ export const fetchCardPrices = async (
   // Helper function to try fetching price using edge function
   const tryFetchPriceWithEdgeFunction = async (conditionToTry: string): Promise<{ price: string; unavailable?: boolean; actualCondition?: string; method: string }> => {
     try {
-      const language = game === 'japanese-pokemon' ? 'Japanese' : 'English';
+      
       const firstEdition = isFirstEdition === true;
       const holo = isHolo === true;
       const reverseHolo = isReverseHolo === true;
       
-      // Build the URL that the edge function expects
-      const url = buildTcgPlayerUrl(
-        productId, 
-        conditionToTry, 
-        language, 
-        firstEdition, 
-        holo,
-        reverseHolo
-      );
-      
-      const { data, error } = await supabase.functions.invoke('scrape-price', {
+      const { data, error } = await supabase.functions.invoke('justtcg-price', {
         body: {
-          url,
           productId,
           condition: conditionToTry,
-          language,
           isFirstEdition: firstEdition,
-          isHolo: holo
+          isHolo: holo,
+          isReverseHolo: reverseHolo,
+          game
         }
       });
 
@@ -147,15 +137,17 @@ export const fetchCardPrices = async (
         throw new Error(error.message || 'Edge function failed');
       }
 
-      if (data?.price && parseFloat(data.price.replace('$', '')) > 0) {
+      const raw = data?.price;
+      const numeric = typeof raw === 'number' ? raw : parseFloat(String(raw).replace('$', ''));
+      if (numeric && numeric > 0) {
         return {
-          price: parseFloat(data.price.replace('$', '')).toFixed(2),
+          price: Number(numeric).toFixed(2),
           actualCondition: conditionToTry,
-          method: 'edge-function'
+          method: 'justtcg'
         };
       }
 
-      return { price: "0.00", unavailable: true, method: 'edge-function' };
+      return { price: "0.00", unavailable: true, method: 'justtcg' };
     } catch (error) {
       console.error('Edge function price fetch failed:', error);
       throw error;

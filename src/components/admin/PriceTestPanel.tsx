@@ -104,11 +104,10 @@ export const PriceTestPanel = () => {
 
   const testEdgeFunction = () => runTestWithRetry(
     async () => {
-      const { data, error } = await supabase.functions.invoke('scrape-price', {
+      const { data, error } = await supabase.functions.invoke('justtcg-price', {
         body: {
           productId,
           condition,
-          language: 'English',
           isFirstEdition: false,
           isHolo: false,
           isReverseHolo: false
@@ -130,11 +129,10 @@ export const PriceTestPanel = () => {
       // Test both methods in parallel
       const [scraperResult, edgeResult] = await Promise.allSettled([
         fetchCardPrices(productId, condition, false, false, 'pokemon'),
-        supabase.functions.invoke('scrape-price', {
+        supabase.functions.invoke('justtcg-price', {
           body: {
             productId,
             condition,
-            language: 'English',
             isFirstEdition: false,
             isHolo: false,
             isReverseHolo: false
