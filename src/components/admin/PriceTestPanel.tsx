@@ -295,18 +295,71 @@ export const PriceTestPanel = () => {
                           <span className={result.scraperSuccess ? 'text-green-700' : 'text-red-700'}>
                             {result.scraperSuccess ? '✓ Success' : '✗ Failed'}
                           </span>
+                          {result.scraperSuccess && result.scraperResult?.price && (
+                            <span className="ml-2 font-mono bg-green-200 px-2 py-1 rounded">
+                              ${result.scraperResult.price}
+                            </span>
+                          )}
                         </div>
                         <div className={`p-2 rounded ${result.firecrawlSuccess ? 'bg-green-100' : 'bg-red-100'}`}>
                           <span className="font-semibold">Firecrawl: </span>
                           <span className={result.firecrawlSuccess ? 'text-green-700' : 'text-red-700'}>
                             {result.firecrawlSuccess ? '✓ Success' : '✗ Failed'}
                           </span>
+                          {result.firecrawlSuccess && result.firecrawlResult?.data?.price && (
+                            <span className="ml-2 font-mono bg-green-200 px-2 py-1 rounded">
+                              ${result.firecrawlResult.data.price}
+                            </span>
+                          )}
                         </div>
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-xs text-gray-600">Show full results</summary>
+                          <pre className="text-xs text-green-700 whitespace-pre-wrap overflow-auto max-h-32 mt-1">
+                            {JSON.stringify(result, null, 2)}
+                          </pre>
+                        </details>
                       </div>
                     ) : (
-                      <pre className="text-xs text-green-700 whitespace-pre-wrap overflow-auto max-h-32">
-                        {JSON.stringify(result, null, 2)}
-                      </pre>
+                      <div>
+                        {/* Show price prominently for single method tests */}
+                        {result.price && (
+                          <div className="mb-2">
+                            <span className="font-semibold">Price Found: </span>
+                            <span className="font-mono bg-green-200 px-2 py-1 rounded text-lg">
+                              ${result.price}
+                            </span>
+                            {result.method && (
+                              <span className="ml-2 text-xs bg-blue-100 px-2 py-1 rounded">
+                                via {result.method}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {result.data?.price && (
+                          <div className="mb-2">
+                            <span className="font-semibold">Price Found: </span>
+                            <span className="font-mono bg-green-200 px-2 py-1 rounded text-lg">
+                              ${result.data.price}
+                            </span>
+                            {result.data.method && (
+                              <span className="ml-2 text-xs bg-blue-100 px-2 py-1 rounded">
+                                via {result.data.method}
+                              </span>
+                            )}
+                            {result.data.unavailable && (
+                              <span className="ml-2 text-xs bg-orange-100 px-2 py-1 rounded text-orange-700">
+                                Price Unavailable
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        <details>
+                          <summary className="cursor-pointer text-xs text-gray-600">Show full response</summary>
+                          <pre className="text-xs text-green-700 whitespace-pre-wrap overflow-auto max-h-32 mt-1">
+                            {JSON.stringify(result, null, 2)}
+                          </pre>
+                        </details>
+                      </div>
                     )}
                   </div>
                 )}
