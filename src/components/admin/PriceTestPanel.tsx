@@ -23,11 +23,11 @@ export const PriceTestPanel = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<TestResult[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [testType, setTestType] = useState<'scraper' | 'firecrawl'>('scraper');
+  const [testType, setTestType] = useState<'scraper' | 'firecrawl' | 'dual-comparison'>('scraper');
   const [circuitBreakerOpen, setCircuitBreakerOpen] = useState(false);
   const [consecutiveFailures, setConsecutiveFailures] = useState(0);
 
-  const runTestWithRetry = async (testFunction: () => Promise<any>, type: 'scraper' | 'firecrawl') => {
+  const runTestWithRetry = async (testFunction: () => Promise<any>, type: 'scraper' | 'firecrawl' | 'dual-comparison') => {
     if (circuitBreakerOpen) {
       setError('Circuit breaker is open. Too many consecutive failures. Try again in 5 minutes.');
       return;
@@ -106,6 +106,51 @@ export const PriceTestPanel = () => {
     'firecrawl'
   );
 
+  const testDualMethod = async () => {
+    setIsLoading(true);
+    setError(null);
+    const startTime = Date.now();
+    
+    try {
+      // Test both methods in parallel
+      const [scraperResult, firecrawlResult] = await Promise.allSettled([
+        fetchCardPrices(productId, condition, false, false, 'pokemon'),
+        FirecrawlService.scrapeTCGPlayerPrice(productId, condition, 'English', false, false, false)
+      ]);
+      
+      const endTime = Date.now();
+      const duration = `${endTime - startTime}ms`;
+      
+      const comparisonResult: TestResult = {
+        duration,
+        attempt: 1,
+        success: true,
+        testType: 'dual-comparison',
+        scraperResult: scraperResult.status === 'fulfilled' ? scraperResult.value : { error: scraperResult.reason?.message },
+        firecrawlResult: firecrawlResult.status === 'fulfilled' ? firecrawlResult.value : { error: firecrawlResult.reason?.message },
+        scraperSuccess: scraperResult.status === 'fulfilled',
+        firecrawlSuccess: firecrawlResult.status === 'fulfilled'
+      };
+      
+      setResults(prev => [comparisonResult, ...prev.slice(0, 4)]);
+      setConsecutiveFailures(0);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      setError(`Dual test failed: ${errorMsg}`);
+      
+      const failedResult: TestResult = {
+        duration: '0ms',
+        attempt: 1,
+        success: false,
+        testType: 'dual-comparison',
+        error: errorMsg
+      };
+      setResults(prev => [failedResult, ...prev.slice(0, 4)]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const runBulkTest = async () => {
     if (circuitBreakerOpen) {
       setError('Circuit breaker is open. Cannot run bulk tests.');
@@ -175,6 +220,13 @@ export const PriceTestPanel = () => {
             {isLoading && testType === 'firecrawl' ? 'Testing Firecrawl...' : 'Test Firecrawl Direct'}
           </button>
           <button 
+            onClick={() => { setTestType('dual-comparison'); testDualMethod(); }}
+            disabled={isLoading || circuitBreakerOpen}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+          >
+            {isLoading && testType === 'dual-comparison' ? 'Comparing Methods...' : 'Compare Both Methods'}
+          </button>
+          <button 
             onClick={() => { setTestType('firecrawl'); runBulkTest(); }}
             disabled={isLoading || circuitBreakerOpen}
             className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90 disabled:opacity-50"
@@ -235,9 +287,28 @@ export const PriceTestPanel = () => {
                   )}
                 </div>
                 {result.success && (
-                  <pre className="mt-2 text-xs text-green-700 whitespace-pre-wrap overflow-auto max-h-32">
-                    {JSON.stringify(result, null, 2)}
-                  </pre>
+                  <div className="mt-2">
+                    {result.testType === 'dual-comparison' ? (
+                      <div className="space-y-2">
+                        <div className={`p-2 rounded ${result.scraperSuccess ? 'bg-green-100' : 'bg-red-100'}`}>
+                          <span className="font-semibold">Scraper: </span>
+                          <span className={result.scraperSuccess ? 'text-green-700' : 'text-red-700'}>
+                            {result.scraperSuccess ? '✓ Success' : '✗ Failed'}
+                          </span>
+                        </div>
+                        <div className={`p-2 rounded ${result.firecrawlSuccess ? 'bg-green-100' : 'bg-red-100'}`}>
+                          <span className="font-semibold">Firecrawl: </span>
+                          <span className={result.firecrawlSuccess ? 'text-green-700' : 'text-red-700'}>
+                            {result.firecrawlSuccess ? '✓ Success' : '✗ Failed'}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <pre className="text-xs text-green-700 whitespace-pre-wrap overflow-auto max-h-32">
+                        {JSON.stringify(result, null, 2)}
+                      </pre>
+                    )}
+                  </div>
                 )}
               </div>
             ))}
