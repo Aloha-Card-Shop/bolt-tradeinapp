@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { AlertTriangle, TrendingDown, Database, Bug, Network, FileQuestion } from 'lucide-react';
 import { useTradeValue } from '../../hooks/useTradeValue';
 
@@ -91,9 +92,9 @@ const FallbackNotification: React.FC<FallbackNotificationProps> = ({
             Fallback values: Cash: ${cashValue.toFixed(2)}, Trade: ${tradeValue.toFixed(2)}
           </p>
           <p className="mt-2 text-xs text-yellow-700">
-            <a href="/admin/trade-values" className="font-medium underline">
+            <Link to="/admin/trade-values" className="font-medium underline">
               Check trade value settings
-            </a>
+            </Link>
           </p>
         </div>
       </div>

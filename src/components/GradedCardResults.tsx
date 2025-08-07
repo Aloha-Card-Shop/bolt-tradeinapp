@@ -136,6 +136,8 @@ const GradedCardResults: React.FC<GradedCardResultsProps> = ({
                         src={card.imageUrl} 
                         alt={card.name}
                         className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                         }}

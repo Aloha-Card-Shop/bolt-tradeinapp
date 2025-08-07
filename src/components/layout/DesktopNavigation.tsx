@@ -12,14 +12,14 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ userRole }) => {
     <div className="hidden md:flex space-x-4">
       <Link 
         to="/app" 
-        className="text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
         Trade-In App
       </Link>
       
       <Link 
         to="/my-trade-ins" 
-        className="text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
         My Trade-Ins
       </Link>
@@ -27,7 +27,7 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ userRole }) => {
       {userRole === 'admin' && (
         <Link 
           to="/admin" 
-          className="text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+          className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           <Layout className="h-5 w-5 mr-1 inline" />
           Admin Settings

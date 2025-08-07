@@ -82,6 +82,8 @@ const TradeInItemsList: React.FC<TradeInItemsListProps> = ({
                         src={item.card.imageUrl} 
                         alt={item.card.name}
                         className="w-12 h-12 object-cover rounded-lg"
+                        loading="lazy"
+                        decoding="async"
                       />
                     )}
                     <div>

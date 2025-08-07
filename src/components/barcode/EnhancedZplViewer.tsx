@@ -179,6 +179,8 @@ const EnhancedZplViewer: React.FC<EnhancedZplViewerProps> = ({
                 src={imageData} 
                 alt="Label Preview" 
                 className="max-w-full max-h-full object-contain"
+                loading="lazy"
+                decoding="async"
               />
             ) : (
               <canvas 

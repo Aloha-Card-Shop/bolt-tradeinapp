@@ -65,6 +65,8 @@ const CertificateResultCard: React.FC<CertificateResultCardProps> = ({ result, p
             src={result.imageUrl} 
             alt={`PSA ${result.grade} ${result.cardName}`}
             className="max-h-40 mx-auto object-contain"
+            loading="lazy"
+            decoding="async"
           />
         </div>
       )}

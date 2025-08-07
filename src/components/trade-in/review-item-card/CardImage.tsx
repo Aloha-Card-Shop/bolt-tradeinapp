@@ -15,6 +15,8 @@ const CardImage: React.FC<CardImageProps> = ({ imageUrl, name }) => {
           src={imageUrl} 
           alt={name}
           className="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
           onError={(e) => {
             e.currentTarget.src = 'https://placehold.co/64x80?text=No+Image';
           }}

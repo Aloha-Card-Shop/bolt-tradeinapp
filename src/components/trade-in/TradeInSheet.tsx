@@ -451,6 +451,8 @@ const MobileItemCard: React.FC<MobileItemCardProps> = ({
             src={item.fullCardData.imageUrl} 
             alt={item.fullCardData.name}
             className="w-12 h-16 object-cover rounded border"
+            loading="lazy"
+            decoding="async"
           />
         )}
         <div className="flex-1 min-w-0">
@@ -652,6 +654,8 @@ const DesktopItemRow: React.FC<DesktopItemRowProps> = ({
               src={item.fullCardData.imageUrl} 
               alt={item.fullCardData.name}
               className="w-8 h-11 object-cover rounded border"
+              loading="lazy"
+              decoding="async"
             />
           )}
           <div className="min-w-0 flex-1">

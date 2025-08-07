@@ -14,6 +14,8 @@ const CardImage: React.FC<CardImageProps> = ({ imageUrl, name }) => {
           src={imageUrl} 
           alt={name} 
           className="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
           onError={(e) => {
             // Replace broken image with placeholder
             e.currentTarget.src = 'https://via.placeholder.com/64?text=?';

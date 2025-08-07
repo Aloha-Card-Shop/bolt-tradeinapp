@@ -42,6 +42,8 @@ const SearchSuggestionsList: React.FC<SearchSuggestionsListProps> = ({
                 src={suggestion.imageUrl} 
                 alt={suggestion.name}
                 className="w-full h-full object-contain rounded-md shadow-sm"
+                loading="lazy"
+                decoding="async"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                 }}

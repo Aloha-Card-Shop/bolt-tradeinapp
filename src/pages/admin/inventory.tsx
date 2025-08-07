@@ -363,11 +363,13 @@ const CardInventory = () => {
                       <div className="flex items-center gap-4">
                         {item.cards.image_url ? (
                           <div className="relative group">
-                            <img 
-                              src={item.cards.image_url} 
-                              alt={item.cards.name}
-                              className="w-12 h-16 object-cover rounded-lg shadow-sm group-hover:shadow-md transition-shadow"
-                            />
+            <img 
+              src={item.cards.image_url} 
+              alt={item.cards.name}
+              className="w-12 h-16 object-cover rounded-lg shadow-sm group-hover:shadow-md transition-shadow"
+              loading="lazy"
+              decoding="async"
+            />
                             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-all"></div>
                           </div>
                         ) : (

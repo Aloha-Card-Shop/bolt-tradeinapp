@@ -363,6 +363,11 @@ export const PriceTestPanel = () => {
                                 via {result.method}
                               </span>
                             )}
+                            {(result as any).conditionAnomalyAdjusted && (
+                              <span className="ml-2 text-xs px-2 py-1 rounded border bg-warning/10 text-warning border-warning/20">
+                                Condition anomaly adjusted
+                              </span>
+                            )}
                           </div>
                         )}
                         {result.data?.price && (
@@ -374,6 +379,11 @@ export const PriceTestPanel = () => {
                             {result.data.method && (
                               <span className="ml-2 text-xs bg-blue-100 px-2 py-1 rounded">
                                 via {result.data.method}
+                              </span>
+                            )}
+                            {result.data.conditionAnomalyAdjusted && (
+                              <span className="ml-2 text-xs px-2 py-1 rounded border bg-warning/10 text-warning border-warning/20">
+                                Condition anomaly adjusted
                               </span>
                             )}
                             {result.data.unavailable && (
