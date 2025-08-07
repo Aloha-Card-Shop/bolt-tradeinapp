@@ -13,6 +13,7 @@ interface ScrapePriceResponse {
     actualCondition?: string;
     usedFallback?: boolean;
     method?: string;
+    debugInfo?: any;
   };
 }
 
@@ -136,13 +137,19 @@ export class FirecrawlService {
         }
       }
 
-      // Use TCGPlayer-specific selectors (matching edge function)
+      // Use updated TCGPlayer-specific selectors based on current page structure
       const priceSelectors = [
         ".spotlight__price",
-        "[data-testid='price-guide-price']",
+        "[data-testid='price-guide-price']", 
         ".price-guide__spotlight-price",
-        ".price-points__point-value", // Additional selector
-        ".inventory__price" // Additional selector
+        ".price-points__point-value",
+        ".inventory__price",
+        // New selectors based on current TCGPlayer structure
+        ".price-points .price-points__point-value",
+        ".seller-listing__price",
+        ".product-details .price",
+        "[class*='price']", // Any element with 'price' in class name
+        ".tcg-price"
       ];
       
       let price: string | undefined;
@@ -159,23 +166,50 @@ export class FirecrawlService {
 
       // Fallback to regex if DOM parsing fails
       if (!price) {
-        console.log('DOM selectors failed, trying regex fallback');
-        const priceMatches = htmlContent.match(/\$[\d,]+\.?\d*/g);
-        if (priceMatches && priceMatches.length > 0) {
-          price = priceMatches[0];
-          console.log('Found price with regex:', price);
+        console.log('DOM selectors failed, trying comprehensive regex fallback');
+        // Look for price patterns in the HTML
+        const pricePatterns = [
+          /\$[\d,]+\.?\d*/g,
+          /Price[:\s]*\$?[\d,]+\.?\d*/gi,
+          /[\$]?[\d,]+\.[\d]{2}/g
+        ];
+        
+        for (const pattern of pricePatterns) {
+          const matches = htmlContent.match(pattern);
+          if (matches && matches.length > 0) {
+            // Filter out obviously wrong prices (like years, etc.)
+            const validPrices = matches.filter((match: string) => {
+              const numericValue = parseFloat(match.replace(/[^\d.]/g, ''));
+              return numericValue > 0 && numericValue < 10000; // Reasonable price range
+            });
+            
+            if (validPrices.length > 0) {
+              price = validPrices[0];
+              console.log('Found price with regex:', price);
+              break;
+            }
+          }
         }
       }
       
       if (!price) {
         console.error('No price found in Firecrawl response');
+        console.log('HTML sample for debugging:', htmlContent.substring(0, 2000));
+        console.log('HTML contains $ symbol:', htmlContent.includes('$'));
+        console.log('HTML contains price text:', htmlContent.toLowerCase().includes('price'));
         return {
           success: true,
           data: { 
             price: "0.00", 
             unavailable: true,
             actualCondition: condition,
-            method: 'firecrawl'
+            method: 'firecrawl',
+            debugInfo: {
+              htmlLength: htmlContent.length,
+              containsDollar: htmlContent.includes('$'),
+              containsPrice: htmlContent.toLowerCase().includes('price'),
+              htmlSample: htmlContent.substring(0, 500)
+            }
           }
         };
       }
