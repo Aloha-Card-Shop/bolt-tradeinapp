@@ -139,7 +139,7 @@ const CardResults: React.FC<CardResultsProps> = ({
     try {
       const selectedCardType = selectedCardTypes.get(cardId) || 'normal';
       console.log('Fetching price with card type:', selectedCardType);
-      const data = await fetchCardPricesWithType(card.productId, condition, selectedCardType, card.game);
+      const data = await fetchCardPricesWithType(card.productId, condition, selectedCardType, card.game, card.set, card.name, (card as any).number);
       
       if (!data.unavailable) {
         setFetchedPrices(prev => {
@@ -168,7 +168,7 @@ const CardResults: React.FC<CardResultsProps> = ({
 
     try {
       const selectedCardType = cardType || selectedCardTypes.get(cardId) || 'normal';
-      const data = await fetchCardPricesWithType(card.productId!, condition, selectedCardType, card.game);
+      const data = await fetchCardPricesWithType(card.productId!, condition, selectedCardType, card.game, card.set, card.name, (card as any).number);
       
       if (!data.unavailable) {
         setFetchedPrices(prev => {
@@ -189,7 +189,7 @@ const CardResults: React.FC<CardResultsProps> = ({
   };
 
   // Helper function to fetch prices with card type
-  const fetchCardPricesWithType = async (productId: string, condition: string, cardType: string, game: string) => {
+  const fetchCardPricesWithType = async (productId: string, condition: string, cardType: string, game: string, setName?: string, cardName?: string, cardNumber?: any) => {
     // Convert cardType to individual boolean flags for the existing API
     const isFirstEdition = cardType === 'first_edition' || cardType === 'first_edition_holo';
     const isHolo = cardType === 'holo' || cardType === 'first_edition_holo' || cardType === 'unlimited_holo';
@@ -201,7 +201,11 @@ const CardResults: React.FC<CardResultsProps> = ({
       isFirstEdition,
       isHolo,
       game,
-      isReverseHolo
+      isReverseHolo,
+      undefined,
+      setName,
+      cardName,
+      cardNumber
     );
   };
 

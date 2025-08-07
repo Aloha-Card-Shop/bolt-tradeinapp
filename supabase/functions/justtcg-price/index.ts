@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
     const condMap: Record<string, string> = { mint: 'M', near_mint: 'NM', lightly_played: 'LP', moderately_played: 'MP', heavily_played: 'HP', damaged: 'D' };
     const normCondKey = String(condition ?? '').toLowerCase().replace(/[\s\-]+/g, '_');
     const condParam = condMap[normCondKey] ?? undefined;
-    const printingParam = (isHolo || isReverseHolo) ? 'Foil' : 'Normal';
+    const printingParam = (isHolo || isReverseHolo) ? 'Foil' : undefined;
 
     // Try multiple possible parameter names for identifiers (TCGplayer product or JustTCG card id)
     const paramCandidates = ['tcgplayerId', 'tcgPlayerId', 'tcgplayer_id', 'tcgplayerProductId', 'productId', 'cardId', 'card_id', 'id'];

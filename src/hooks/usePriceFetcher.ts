@@ -10,6 +10,9 @@ interface UsePriceFetcherProps {
   isHolo: boolean;
   game?: string;
   isReverseHolo?: boolean;
+  setName?: string;
+  cardName?: string;
+  cardNumber?: any;
 }
 
 export const usePriceFetcher = ({ 
@@ -18,7 +21,10 @@ export const usePriceFetcher = ({
   isFirstEdition, 
   isHolo, 
   game,
-  isReverseHolo 
+  isReverseHolo,
+  setName,
+  cardName,
+  cardNumber 
 }: UsePriceFetcherProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
@@ -42,7 +48,11 @@ export const usePriceFetcher = ({
         isFirstEdition,
         isHolo,
         game,
-        isReverseHolo
+        isReverseHolo,
+        undefined,
+        setName,
+        cardName,
+        cardNumber
       );
       
       if (data.unavailable) {
@@ -71,7 +81,7 @@ export const usePriceFetcher = ({
     } finally {
       setIsLoading(false);
     }
-  }, [productId, condition, isFirstEdition, isHolo, game, isReverseHolo]);
+  }, [productId, condition, isFirstEdition, isHolo, game, isReverseHolo, setName, cardName, cardNumber]);
 
   const updatePrice = (newPrice: number) => {
     setPrice(newPrice);
