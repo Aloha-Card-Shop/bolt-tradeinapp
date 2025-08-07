@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { fetchCardPrices } from '../../utils/scraper';
+
 import { supabase } from '../../integrations/supabase/client';
 
 const TEST_PRODUCTS = [
@@ -23,11 +23,11 @@ export const PriceTestPanel = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<TestResult[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [testType, setTestType] = useState<'scraper' | 'dual-comparison' | 'edge-function'>('scraper');
+  const [testType, setTestType] = useState<'edge-function'>('edge-function');
   const [circuitBreakerOpen, setCircuitBreakerOpen] = useState(false);
   const [consecutiveFailures, setConsecutiveFailures] = useState(0);
 
-  const runTestWithRetry = async (testFunction: () => Promise<any>, type: 'scraper' | 'dual-comparison' | 'edge-function') => {
+  const runTestWithRetry = async (testFunction: () => Promise<any>, type: 'edge-function') => {
     if (circuitBreakerOpen) {
       setError('Circuit breaker is open. Too many consecutive failures. Try again in 5 minutes.');
       return;
@@ -96,10 +96,7 @@ export const PriceTestPanel = () => {
     setIsLoading(false);
   };
 
-  const testScraperFunction = () => runTestWithRetry(
-    () => fetchCardPrices(productId, condition, false, false, 'pokemon'),
-    'scraper'
-  );
+  // Hybrid scraper removed in favor of JustTCG edge function
 
 
   const testEdgeFunction = () => runTestWithRetry(
@@ -120,61 +117,7 @@ export const PriceTestPanel = () => {
     'edge-function'
   );
 
-  const testDualMethod = async () => {
-    setIsLoading(true);
-    setError(null);
-    const startTime = Date.now();
-    
-    try {
-      // Test both methods in parallel
-      const [scraperResult, edgeResult] = await Promise.allSettled([
-        fetchCardPrices(productId, condition, false, false, 'pokemon'),
-        supabase.functions.invoke('justtcg-price', {
-          body: {
-            productId,
-            condition,
-            isFirstEdition: false,
-            isHolo: false,
-            isReverseHolo: false
-          }
-        }).then(({ data, error }) => {
-          if (error) throw new Error(error.message || 'Edge function failed');
-          return { ...data, method: 'edge-function' };
-        })
-      ]);
-      
-      const endTime = Date.now();
-      const duration = `${endTime - startTime}ms`;
-      
-      const comparisonResult: TestResult = {
-        duration,
-        attempt: 1,
-        success: true,
-        testType: 'dual-comparison',
-        scraperResult: scraperResult.status === 'fulfilled' ? scraperResult.value : { error: scraperResult.reason?.message },
-        edgeResult: edgeResult.status === 'fulfilled' ? edgeResult.value : { error: edgeResult.reason?.message },
-        scraperSuccess: scraperResult.status === 'fulfilled',
-        edgeSuccess: edgeResult.status === 'fulfilled'
-      };
-      
-      setResults(prev => [comparisonResult, ...prev.slice(0, 4)]);
-      setConsecutiveFailures(0);
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      setError(`Dual test failed: ${errorMsg}`);
-      
-      const failedResult: TestResult = {
-        duration: '0ms',
-        attempt: 1,
-        success: false,
-        testType: 'dual-comparison',
-        error: errorMsg
-      };
-      setResults(prev => [failedResult, ...prev.slice(0, 4)]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Dual comparison test removed; using JustTCG edge function exclusively
 
   const runBulkTest = async () => {
     if (circuitBreakerOpen) {
@@ -231,25 +174,11 @@ export const PriceTestPanel = () => {
 
         <div className="flex gap-2 flex-wrap">
           <button 
-            onClick={() => { setTestType('scraper'); testScraperFunction(); }}
+            onClick={() => { setTestType('edge-function'); testEdgeFunction(); }}
             disabled={isLoading || circuitBreakerOpen}
             className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
           >
-            {isLoading && testType === 'scraper' ? 'Testing Hybrid...' : 'Test Hybrid Scraper'}
-          </button>
-          <button 
-            onClick={() => { setTestType('edge-function'); testEdgeFunction(); }}
-            disabled={isLoading || circuitBreakerOpen}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-          >
-            {isLoading && testType === 'edge-function' ? 'Testing Edge...' : 'Test Edge Function'}
-          </button>
-          <button 
-            onClick={() => { setTestType('dual-comparison'); testDualMethod(); }}
-            disabled={isLoading || circuitBreakerOpen}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-          >
-            {isLoading && testType === 'dual-comparison' ? 'Comparing Both...' : 'Compare Both Methods'}
+            {isLoading && testType === 'edge-function' ? 'Testing...' : 'Test JustTCG' }
           </button>
           <button 
             onClick={() => { setTestType('edge-function'); runBulkTest(); }}
