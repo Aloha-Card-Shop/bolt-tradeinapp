@@ -48,6 +48,7 @@ serve(async (req) => {
       const upstream = await fetch("https://api.justtcg.com/v1/cards", {
         method: "POST",
         headers: {
+          "x-api-key": JUSTTCG_API_KEY,
           "X-API-Key": JUSTTCG_API_KEY,
           "Content-Type": "application/json",
         },
@@ -84,6 +85,7 @@ serve(async (req) => {
 
     const upstream = await fetch(url.toString(), {
       headers: {
+        "x-api-key": JUSTTCG_API_KEY,
         "X-API-Key": JUSTTCG_API_KEY,
       },
     });

@@ -43,6 +43,7 @@ serve(async (req) => {
 
     const upstream = await fetch(url.toString(), {
       headers: {
+        "x-api-key": JUSTTCG_API_KEY,
         "X-API-Key": JUSTTCG_API_KEY,
       },
     });
