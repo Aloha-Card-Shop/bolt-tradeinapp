@@ -1,12 +1,13 @@
 // Supabase Edge Function: justtcg-price
 // Fetch ungraded card prices from JustTCG API using TCGPlayer productId
 // This function normalizes the response to { price, unavailable?, actualCondition?, method }
-
-
+const RAW = Deno.env.get('JUSTTCG_API_KEY') ?? "";
+const API_KEY = RAW.trim().replace(/^['"]|['"]$/g, "");
+const AUTH_HEADERS = { "X-API-Key": API_KEY, "accept": "application/json" } as Record<string, string>;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-justtcg-key',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 };
 
 // Utility: safely read a nested value by possible keys
@@ -116,8 +117,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get('JUSTTCG_API_KEY');
-    if (!apiKey) {
+    if (!API_KEY) {
       return new Response(JSON.stringify({ error: 'Missing JUSTTCG_API_KEY' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -160,10 +160,7 @@ Deno.serve(async (req) => {
 
       const jtRes = await fetch(url, {
         method: 'GET',
-        headers: {
-          'x-justtcg-key': apiKey,
-          'accept': 'application/json',
-        },
+        headers: AUTH_HEADERS,
       });
 
       if (!jtRes.ok) {

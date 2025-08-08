@@ -1,12 +1,13 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const RAW_JUSTTCG_API_KEY = Deno.env.get("JUSTTCG_API_KEY");
-const JUSTTCG_API_KEY = RAW_JUSTTCG_API_KEY?.trim().replace(/^['"]|['"]$/g, "");
+const RAW = Deno.env.get("JUSTTCG_API_KEY") ?? "";
+const API_KEY = RAW.trim().replace(/^['"]|['"]$/g, "");
+const AUTH_HEADERS = { "X-API-Key": API_KEY, "accept": "application/json" } as Record<string, string>;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-justtcg-key",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
 };
 
 type SingleLookup = {
@@ -27,7 +28,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  if (!JUSTTCG_API_KEY) {
+  if (!API_KEY) {
     return new Response(JSON.stringify({ error: "Missing JUSTTCG_API_KEY" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -46,12 +47,11 @@ serve(async (req) => {
 
     // Batch: if an array is provided, directly POST to /cards with that array
     if (Array.isArray(body)) {
-      console.log("[justtcg-cards] BATCH POST /cards", { count: body.length, key: JUSTTCG_API_KEY ? `${JUSTTCG_API_KEY.slice(0,4)}...${JUSTTCG_API_KEY.slice(-4)}` : "none" });
+      console.log("[justtcg-cards] BATCH POST /cards", { count: body.length, key: API_KEY ? `${API_KEY.slice(0,4)}...${API_KEY.slice(-4)}` : "none" });
       const upstream = await fetch("https://api.justtcg.com/v1/cards", {
         method: "POST",
         headers: {
-          "x-justtcg-key": JUSTTCG_API_KEY,
-          "accept": "application/json",
+          ...AUTH_HEADERS,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
@@ -89,16 +89,13 @@ serve(async (req) => {
     setIf("variantId", params.variantId);
 
     const upstream = await fetch(url.toString(), {
-      headers: {
-        "x-justtcg-key": JUSTTCG_API_KEY,
-        "accept": "application/json",
-      },
+      headers: AUTH_HEADERS,
     });
 
     const text = await upstream.text();
     let data: unknown;
     try { data = JSON.parse(text); } catch { data = { raw: text }; }
-    console.log("[justtcg-cards] GET /cards response", { status: upstream.status, ok: upstream.ok, url: url.toString(), key: JUSTTCG_API_KEY ? `${JUSTTCG_API_KEY.slice(0,4)}...${JUSTTCG_API_KEY.slice(-4)}` : "none" });
+    console.log("[justtcg-cards] GET /cards response", { status: upstream.status, ok: upstream.ok, url: url.toString(), key: API_KEY ? `${API_KEY.slice(0,4)}...${API_KEY.slice(-4)}` : "none" });
 
     return new Response(JSON.stringify(data), {
       status: upstream.status,
