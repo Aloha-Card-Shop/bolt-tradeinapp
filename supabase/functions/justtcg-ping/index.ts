@@ -73,18 +73,68 @@ serve(async (req) => {
     try { dataApiKey = JSON.parse(textApiKey); } catch { dataApiKey = { raw: textApiKey }; }
     console.log("[justtcg-ping] x-api-key result", { status: upstreamApiKey.status, ok: upstreamApiKey.ok });
 
-    const scheme = upstreamApiKey.ok ? "x-api-key" : null;
+    // Attempt 4: x-justtcg-api-key (alternative header name)
+    const altJustHeaders = { "x-justtcg-api-key": JUSTTCG_API_KEY, "X-JustTCG-API-Key": JUSTTCG_API_KEY, "accept": "application/json" } as Record<string, string>;
+    const upstreamAltJust = await fetch(url.toString(), { headers: altJustHeaders });
+    const textAltJust = await upstreamAltJust.text();
+    let dataAltJust: unknown;
+    try { dataAltJust = JSON.parse(textAltJust); } catch { dataAltJust = { raw: textAltJust }; }
+    console.log("[justtcg-ping] x-justtcg-api-key result", { status: upstreamAltJust.status, ok: upstreamAltJust.ok });
+
+    // Attempt 5: Query param apiKey
+    const urlApiKey = new URL(url.toString());
+    urlApiKey.searchParams.set("apiKey", JUSTTCG_API_KEY);
+    const upstreamQueryApiKey = await fetch(urlApiKey.toString(), { headers: { accept: "application/json" } });
+    const textQueryApiKey = await upstreamQueryApiKey.text();
+    let dataQueryApiKey: unknown;
+    try { dataQueryApiKey = JSON.parse(textQueryApiKey); } catch { dataQueryApiKey = { raw: textQueryApiKey }; }
+    console.log("[justtcg-ping] ?apiKey= result", { status: upstreamQueryApiKey.status, ok: upstreamQueryApiKey.ok });
+
+    // Attempt 6: Query param key
+    const urlKey = new URL(url.toString());
+    urlKey.searchParams.set("key", JUSTTCG_API_KEY);
+    const upstreamQueryKey = await fetch(urlKey.toString(), { headers: { accept: "application/json" } });
+    const textQueryKey = await upstreamQueryKey.text();
+    let dataQueryKey: unknown;
+    try { dataQueryKey = JSON.parse(textQueryKey); } catch { dataQueryKey = { raw: textQueryKey }; }
+    console.log("[justtcg-ping] ?key= result", { status: upstreamQueryKey.status, ok: upstreamQueryKey.ok });
+
+    // Collate attempts and choose best response
+    const attempts = {
+      xJustKey: { status: upstreamJust.status, ok: upstreamJust.ok },
+      bearer: { status: upstreamBearer.status, ok: upstreamBearer.ok },
+      xApiKey: { status: upstreamApiKey.status, ok: upstreamApiKey.ok },
+      xJustTcgApiKey: { status: upstreamAltJust.status, ok: upstreamAltJust.ok },
+      queryApiKey: { status: upstreamQueryApiKey.status, ok: upstreamQueryApiKey.ok },
+      queryKey: { status: upstreamQueryKey.status, ok: upstreamQueryKey.ok },
+    } as const;
+
+    const successOrder = [
+      { scheme: "x-justtcg-key", ok: upstreamJust.ok, status: upstreamJust.status, data: dataJust },
+      { scheme: "bearer", ok: upstreamBearer.ok, status: upstreamBearer.status, data: dataBearer },
+      { scheme: "x-api-key", ok: upstreamApiKey.ok, status: upstreamApiKey.status, data: dataApiKey },
+      { scheme: "x-justtcg-api-key", ok: upstreamAltJust.ok, status: upstreamAltJust.status, data: dataAltJust },
+      { scheme: "query-apiKey", ok: upstreamQueryApiKey.ok, status: upstreamQueryApiKey.status, data: dataQueryApiKey },
+      { scheme: "query-key", ok: upstreamQueryKey.ok, status: upstreamQueryKey.status, data: dataQueryKey },
+    ];
+
+    const firstSuccess = successOrder.find(a => a.ok);
+
+    if (firstSuccess) {
+      return new Response(
+        JSON.stringify({ ok: true, status: firstSuccess.status, scheme: firstSuccess.scheme, data: firstSuccess.data, meta: { keyPreview: masked }, attempts }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // If none succeeded, return combined diagnostics
     return new Response(
       JSON.stringify({
-        ok: upstreamApiKey.ok,
-        status: upstreamApiKey.status,
-        scheme,
-        attempts: {
-          xJustKey: { status: upstreamJust.status, ok: upstreamJust.ok },
-          bearer: { status: upstreamBearer.status, ok: upstreamBearer.ok },
-          xApiKey: { status: upstreamApiKey.status, ok: upstreamApiKey.ok },
-        },
-        data: upstreamApiKey.ok ? dataApiKey : (upstreamBearer.ok ? dataBearer : dataJust),
+        ok: false,
+        status: upstreamQueryKey.status,
+        scheme: null,
+        attempts,
+        data: dataQueryKey,
         meta: { keyPreview: masked },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
