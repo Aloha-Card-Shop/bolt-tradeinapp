@@ -7,6 +7,7 @@ import { PriceTestPanel } from '../../components/admin/PriceTestPanel';
 import { TcgDatabaseRefresh } from '../../components/admin/TcgDatabaseRefresh';
 import AuthGuard from '../../components/AuthGuard';
 import JustTcgDiagnostics from '../../components/admin/JustTcgDiagnostics';
+import JustTcgKeyCard from '../../components/admin/JustTcgKeyCard';
 
 const ApiSettingsPage = () => {
   const navigate = useNavigate();
@@ -39,16 +40,21 @@ const ApiSettingsPage = () => {
           
           <div className="space-y-6">
             <TcgDatabaseRefresh />
-            
+
             <div className="bg-white rounded-lg shadow-sm">
               <PriceTestPanel />
             </div>
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <ApiKeySettings />
             </div>
-            
-            <JustTcgDiagnostics />
-            
+
+            {/* JustTCG Secret Management & Diagnostics */}
+            <div className="space-y-6">
+              {/* Minimal card to input/test key and link to Supabase Secrets */}
+              <JustTcgKeyCard />
+              <JustTcgDiagnostics />
+            </div>
+
             <CertificateTestPanel />
           </div>
         </div>
