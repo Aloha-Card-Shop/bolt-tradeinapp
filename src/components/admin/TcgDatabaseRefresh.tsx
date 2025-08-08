@@ -24,39 +24,66 @@ export const TcgDatabaseRefresh: React.FC = () => {
   }>(null);
   const [cancelRequested, setCancelRequested] = useState(false);
   const handleRefresh = async () => {
+    setCancelRequested(false);
+    setProgress(null);
+    toast.dismiss();
     try {
       setIsRefreshing(true);
-      toast.loading('Starting TCG database refresh...');
+      if (mode === 'sample') {
+        toast.loading('Running sample refresh...');
+        const { data, error } = await supabase.functions.invoke('refresh-tcg-database', {
+          body: { mode: 'sample' }
+        });
+        if (error) throw new Error(error.message);
+        if (data?.error) throw new Error(data.message || 'Refresh failed');
+        setLastRefresh(new Date());
+        setLastStats(data.stats);
+        toast.dismiss();
+        toast.success(
+          `Sample refresh complete: ${data.stats.games} games, ${data.stats.sets} sets, ${data.stats.products} products`,
+          { duration: 5000 }
+        );
+      } else {
+        toast.loading('Starting full refresh...');
+        let offset = 0;
+        // Initial call with full wipe
+        let run = await supabase.functions.invoke('refresh-tcg-database', {
+          body: { mode: 'full', start: true, setOffset: 0 }
+        });
+        if (run.error) throw new Error(run.error.message);
+        if (run.data?.error) throw new Error(run.data.message || 'Refresh failed');
+        setLastRefresh(new Date());
+        setLastStats(run.data.stats);
+        if (run.data.progress) setProgress(run.data.progress);
+        offset = run.data?.progress?.nextSetOffset ?? 0;
 
-      const { data, error } = await supabase.functions.invoke('refresh-tcg-database');
-
-      if (error) {
-        throw new Error(error.message);
+        // Continue in chunks until done or cancelled
+        while (!cancelRequested && run.data?.progress && !run.data.progress.done) {
+          run = await supabase.functions.invoke('refresh-tcg-database', {
+            body: { mode: 'full', start: false, setOffset: offset }
+          });
+          if (run.error) throw new Error(run.error.message);
+          if (run.data?.error) throw new Error(run.data.message || 'Refresh failed');
+          setLastStats(run.data.stats);
+          if (run.data.progress) {
+            setProgress(run.data.progress);
+            offset = run.data.progress.nextSetOffset ?? offset;
+          } else {
+            break;
+          }
+        }
+        toast.dismiss();
+        if (cancelRequested) {
+          toast('Full refresh cancelled', { icon: '🛑' });
+        } else {
+          toast.success('Full refresh completed', { duration: 4000 });
+        }
       }
-
-      if (data.error) {
-        throw new Error(data.message || 'Refresh failed');
-      }
-
-      setLastRefresh(new Date());
-      setLastStats(data.stats);
-      
-      toast.dismiss();
-      toast.success(
-        `Database refreshed successfully! ${data.stats.games} games, ${data.stats.sets} sets, ${data.stats.products} products`,
-        { duration: 5000 }
-      );
-
     } catch (error) {
       console.error('Refresh failed:', error);
       toast.dismiss();
-      
-      // Show more specific error message if available
       let errorMessage = 'Failed to refresh database';
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
+      if (error instanceof Error) errorMessage = error.message;
       toast.error(errorMessage);
     } finally {
       setIsRefreshing(false);
@@ -106,24 +133,54 @@ export const TcgDatabaseRefresh: React.FC = () => {
             </div>
           </div>
         </div>
+        <div className="flex items-center gap-3">
+          <label className="text-sm font-medium text-gray-700">Mode</label>
+          <select
+            value={mode}
+            onChange={(e) => setMode(e.target.value as 'sample' | 'full')}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isRefreshing}
+          >
+            <option value="sample">Sample (quick)</option>
+            <option value="full">Full (chunked)</option>
+          </select>
+        </div>
 
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {isRefreshing ? (
-            <>
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              Refreshing Database...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh TCG Database
-            </>
+        {mode === 'full' && progress && (
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800">
+            <div>Processed sets: {progress.nextSetOffset} / {progress.totalSets}</div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+          >
+            {isRefreshing ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                {mode === 'full' ? 'Run Full Refresh' : 'Run Sample Refresh'}
+              </>
+            )}
+          </button>
+
+          {mode === 'full' && isRefreshing && (
+            <button
+              type="button"
+              onClick={() => setCancelRequested(true)}
+              className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
           )}
-        </button>
+        </div>
       </div>
     </div>
   );
