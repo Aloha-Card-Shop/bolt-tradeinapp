@@ -6,25 +6,26 @@ const corsHeaders = {
 };
 
 interface TCGCSVCategory {
-  id: string;
+  categoryId: number;
   name: string;
+  displayName?: string;
 }
 
 interface TCGCSVSet {
-  id: string;
+  groupId: number;
   name: string;
   abbreviation?: string;
-  category_id: string;
-  released_on?: string;
+  categoryId?: number;
+  publishedOn?: string;
 }
 
 interface TCGCSVProduct {
-  id: string;
+  productId: number;
   name: string;
-  set_id: string;
-  number?: string;
+  groupId?: number;
+  cardNumber?: string;
   rarity?: string;
-  image_url?: string;
+  imageUrl?: string;
 }
 
 interface ScraperStats {
@@ -102,7 +103,7 @@ Deno.serve(async (req) => {
     // Insert categories as games
     if (categories.length > 0) {
       const games = categories.map(category => ({
-        id: category.id,
+        id: category.categoryId.toString(),
         name: category.name
       }));
 
@@ -120,21 +121,21 @@ Deno.serve(async (req) => {
     let totalSets = 0;
     const allSets: any[] = [];
 
-    // Focus on Pokemon (category id '3') first as a test
-    const pokemonCategory = categories.find(cat => cat.id === '3');
+    // Focus on Pokemon (category id 3) first as a test
+    const pokemonCategory = categories.find(cat => cat.categoryId === 3);
     const categoriesToProcess = pokemonCategory ? [pokemonCategory] : categories.slice(0, 3);
 
     for (const category of categoriesToProcess) {
       console.log(`Fetching sets for category: ${category.name}`);
       
-      const setsResponse = await fetch(`https://tcgcsv.com/tcgplayer/${category.id}/groups`, {
+      const setsResponse = await fetch(`https://tcgcsv.com/tcgplayer/${category.categoryId}/groups`, {
         headers: {
           'User-Agent': 'TCG-Database-Refresh/1.0'
         }
       });
 
       if (!setsResponse.ok) {
-        console.error(`Failed to fetch sets for category ${category.id}: ${setsResponse.status}`);
+        console.error(`Failed to fetch sets for category ${category.categoryId}: ${setsResponse.status}`);
         await sleep(500);
         continue;
       }
@@ -155,9 +156,9 @@ Deno.serve(async (req) => {
       }
       
       const setsWithGameId = sets.map(set => ({
-        id: set.id,
+        id: set.groupId.toString(),
         name: set.name,
-        game_id: category.id
+        game_id: category.categoryId.toString()
       }));
 
       allSets.push(...setsWithGameId);
@@ -222,10 +223,10 @@ Deno.serve(async (req) => {
       }
       
       const productsWithSetId = products.map(product => ({
-        id: product.id,
+        id: product.productId.toString(),
         name: product.name,
         set_id: set.id,
-        image_url: product.image_url || null
+        image_url: product.imageUrl || null
       }));
 
       allProducts.push(...productsWithSetId);
