@@ -99,6 +99,54 @@ serve(async (req) => {
     try { dataQueryKey = JSON.parse(textQueryKey); } catch { dataQueryKey = { raw: textQueryKey }; }
     console.log("[justtcg-ping] ?key= result", { status: upstreamQueryKey.status, ok: upstreamQueryKey.ok });
 
+    // Attempt 7: x-just-tcg-key (alternate hyphenation)
+    const altHyphenHeaders = { "x-just-tcg-key": JUSTTCG_API_KEY, accept: "application/json" } as Record<string, string>;
+    const upstreamAltHyphen = await fetch(url.toString(), { headers: altHyphenHeaders });
+    const textAltHyphen = await upstreamAltHyphen.text();
+    let dataAltHyphen: unknown;
+    try { dataAltHyphen = JSON.parse(textAltHyphen); } catch { dataAltHyphen = { raw: textAltHyphen }; }
+    console.log("[justtcg-ping] x-just-tcg-key result", { status: upstreamAltHyphen.status, ok: upstreamAltHyphen.ok });
+
+    // Attempt 8: x-justtcg (short form)
+    const shortFormHeaders = { "x-justtcg": JUSTTCG_API_KEY, "X-JustTCG": JUSTTCG_API_KEY, accept: "application/json" } as Record<string, string>;
+    const upstreamShort = await fetch(url.toString(), { headers: shortFormHeaders });
+    const textShort = await upstreamShort.text();
+    let dataShort: unknown;
+    try { dataShort = JSON.parse(textShort); } catch { dataShort = { raw: textShort }; }
+    console.log("[justtcg-ping] x-justtcg result", { status: upstreamShort.status, ok: upstreamShort.ok });
+
+    // Attempt 9: api-key variants
+    const apiKeyVariantHeaders = { "api-key": JUSTTCG_API_KEY, "Api-Key": JUSTTCG_API_KEY, accept: "application/json" } as Record<string, string>;
+    const upstreamApiKeyVariant = await fetch(url.toString(), { headers: apiKeyVariantHeaders });
+    const textApiKeyVariant = await upstreamApiKeyVariant.text();
+    let dataApiKeyVariant: unknown;
+    try { dataApiKeyVariant = JSON.parse(textApiKeyVariant); } catch { dataApiKeyVariant = { raw: textApiKeyVariant }; }
+    console.log("[justtcg-ping] api-key result", { status: upstreamApiKeyVariant.status, ok: upstreamApiKeyVariant.ok });
+
+    // Attempt 10: Authorization: ApiKey <key>
+    const authApiKeyHeaders = { Authorization: `ApiKey ${JUSTTCG_API_KEY}`, accept: "application/json" } as Record<string, string>;
+    const upstreamAuthApiKey = await fetch(url.toString(), { headers: authApiKeyHeaders });
+    const textAuthApiKey = await upstreamAuthApiKey.text();
+    let dataAuthApiKey: unknown;
+    try { dataAuthApiKey = JSON.parse(textAuthApiKey); } catch { dataAuthApiKey = { raw: textAuthApiKey }; }
+    console.log("[justtcg-ping] Authorization ApiKey result", { status: upstreamAuthApiKey.status, ok: upstreamAuthApiKey.ok });
+
+    // Attempt 11: Authorization: Token <key>
+    const authTokenHeaders = { Authorization: `Token ${JUSTTCG_API_KEY}`, accept: "application/json" } as Record<string, string>;
+    const upstreamAuthToken = await fetch(url.toString(), { headers: authTokenHeaders });
+    const textAuthToken = await upstreamAuthToken.text();
+    let dataAuthToken: unknown;
+    try { dataAuthToken = JSON.parse(textAuthToken); } catch { dataAuthToken = { raw: textAuthToken }; }
+    console.log("[justtcg-ping] Authorization Token result", { status: upstreamAuthToken.status, ok: upstreamAuthToken.ok });
+
+    // Attempt 12: Authorization: JustTCG <key>
+    const authJustHeaders = { Authorization: `JustTCG ${JUSTTCG_API_KEY}`, accept: "application/json" } as Record<string, string>;
+    const upstreamAuthJust = await fetch(url.toString(), { headers: authJustHeaders });
+    const textAuthJust = await upstreamAuthJust.text();
+    let dataAuthJust: unknown;
+    try { dataAuthJust = JSON.parse(textAuthJust); } catch { dataAuthJust = { raw: textAuthJust }; }
+    console.log("[justtcg-ping] Authorization JustTCG result", { status: upstreamAuthJust.status, ok: upstreamAuthJust.ok });
+
     // Collate attempts and choose best response
     const attempts = {
       xJustKey: { status: upstreamJust.status, ok: upstreamJust.ok },
@@ -107,6 +155,12 @@ serve(async (req) => {
       xJustTcgApiKey: { status: upstreamAltJust.status, ok: upstreamAltJust.ok },
       queryApiKey: { status: upstreamQueryApiKey.status, ok: upstreamQueryApiKey.ok },
       queryKey: { status: upstreamQueryKey.status, ok: upstreamQueryKey.ok },
+      xJustTcgKeyHyphen: { status: upstreamAltHyphen.status, ok: upstreamAltHyphen.ok },
+      xJustTcgShort: { status: upstreamShort.status, ok: upstreamShort.ok },
+      apiKeyVariant: { status: upstreamApiKeyVariant.status, ok: upstreamApiKeyVariant.ok },
+      authApiKey: { status: upstreamAuthApiKey.status, ok: upstreamAuthApiKey.ok },
+      authToken: { status: upstreamAuthToken.status, ok: upstreamAuthToken.ok },
+      authJustTcg: { status: upstreamAuthJust.status, ok: upstreamAuthJust.ok },
     } as const;
 
     const successOrder = [
@@ -116,6 +170,12 @@ serve(async (req) => {
       { scheme: "x-justtcg-api-key", ok: upstreamAltJust.ok, status: upstreamAltJust.status, data: dataAltJust },
       { scheme: "query-apiKey", ok: upstreamQueryApiKey.ok, status: upstreamQueryApiKey.status, data: dataQueryApiKey },
       { scheme: "query-key", ok: upstreamQueryKey.ok, status: upstreamQueryKey.status, data: dataQueryKey },
+      { scheme: "x-just-tcg-key", ok: upstreamAltHyphen.ok, status: upstreamAltHyphen.status, data: dataAltHyphen },
+      { scheme: "x-justtcg", ok: upstreamShort.ok, status: upstreamShort.status, data: dataShort },
+      { scheme: "api-key", ok: upstreamApiKeyVariant.ok, status: upstreamApiKeyVariant.status, data: dataApiKeyVariant },
+      { scheme: "auth-Apikey", ok: upstreamAuthApiKey.ok, status: upstreamAuthApiKey.status, data: dataAuthApiKey },
+      { scheme: "auth-Token", ok: upstreamAuthToken.ok, status: upstreamAuthToken.status, data: dataAuthToken },
+      { scheme: "auth-JustTCG", ok: upstreamAuthJust.ok, status: upstreamAuthJust.status, data: dataAuthJust },
     ];
 
     const firstSuccess = successOrder.find(a => a.ok);
@@ -136,9 +196,14 @@ serve(async (req) => {
         attempts,
         data: dataQueryKey,
         meta: { keyPreview: masked },
+        triedHeaderNames: [
+          "x-justtcg-key", "authorization(bearer)", "x-api-key", "x-justtcg-api-key", "query:apiKey", "query:key",
+          "x-just-tcg-key", "x-justtcg", "api-key", "Authorization: ApiKey", "Authorization: Token", "Authorization: JustTCG"
+        ]
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (e) {
     console.error("[justtcg-ping] error:", e);
     return new Response(JSON.stringify({ ok: false, error: String(e) }), {
