@@ -28,7 +28,7 @@ export const useCardSuggestions = () => {
     }
   }, []);
 
-  // Fetch suggestions based on query and game
+  // Fetch suggestions based on query and game (uses JustTCG edge function)
   const fetchSuggestions = async (query: string, game: GameType, categoryId: number) => {
     if (!query || query.length < 2) {
       setSuggestions([]);
@@ -39,80 +39,39 @@ export const useCardSuggestions = () => {
     setError(null);
 
     try {
-      // First check for exact matches
-      const { data: exactMatches, error: exactError } = await supabase
-        .from('unified_products')
-        .select('name, group_id, attributes, image_url, id, product_id, tcgplayer_product_id')
-        .eq('category_id', categoryId)
-        .ilike('name', `${query}%`) // Starts with the query
-        .limit(MAX_SUGGESTIONS);
+      const mapGameToJustTcg = (g?: string) => {
+        if (!g) return undefined;
+        if (g === 'pokemon' || g === 'japanese-pokemon') return 'pokemon';
+        return g; // fallthrough for future games if added
+      };
 
-      if (exactError) throw exactError;
-
-      // If we don't have enough exact matches, look for partial matches
-      let allMatches = exactMatches || [];
-      
-      if (allMatches.length < MAX_SUGGESTIONS) {
-        const { data: partialMatches, error: partialError } = await supabase
-          .from('unified_products')
-          .select('name, group_id, attributes, image_url, id, product_id, tcgplayer_product_id')
-          .eq('category_id', categoryId)
-          .ilike('name', `%${query}%`) // Contains the query
-          .not('name', 'ilike', `${query}%`) // Exclude the exactMatches we already have
-          .limit(MAX_SUGGESTIONS - allMatches.length);
-
-        if (partialError) throw partialError;
-        
-        if (partialMatches) {
-          allMatches = [...allMatches, ...partialMatches];
+      const { data, error } = await supabase.functions.invoke('justtcg-cards', {
+        body: {
+          q: query,
+          game: mapGameToJustTcg(game),
+          limit: MAX_SUGGESTIONS,
+          offset: 0,
         }
-      }
-
-      // Transform to CardDetails format with improved card number and product ID extraction
-      const suggestions = allMatches.map(product => {
-        // Extract card number from attributes using multiple possible paths
-        const attrs = product.attributes as any;
-        let cardNumber = '';
-        if (attrs && typeof attrs === 'object') {
-          if (attrs.Number) {
-            cardNumber = typeof attrs.Number === 'object' ? 
-              (attrs.Number.value || attrs.Number.displayName || '') : 
-              String(attrs.Number);
-          } else if (attrs.number) {
-            cardNumber = typeof attrs.number === 'object' ? 
-              (attrs.number.value || attrs.number.displayName || '') : 
-              String(attrs.number);
-          } else if (attrs.card_number) {
-            cardNumber = typeof attrs.card_number === 'object' ? 
-              (attrs.card_number.value || attrs.card_number.displayName || '') : 
-              String(attrs.card_number);
-          }
-        }
-
-        // Prioritize tcgplayer_product_id, then fall back to other ID fields
-        const productId = 
-          product.tcgplayer_product_id || 
-          (attrs?.tcgplayer_product_id?.toString()) || 
-          product.product_id?.toString() || 
-          null;
-
-        return {
-          name: product.name,
-          game,
-          categoryId,
-          imageUrl: product.image_url || null,
-          productId,
-          set: '',
-          number: cardNumber
-        };
       });
 
+      if (error) throw error;
+
+      const cards = Array.isArray(data?.data) ? data.data : [];
+
+      const suggestions = cards.map((c: any) => ({
+        name: c.name || '',
+        game,
+        categoryId,
+        imageUrl: null,
+        productId: c.tcgplayerId || null,
+        set: c.set || '',
+        number: c.number || ''
+      }));
+
       setSuggestions(suggestions);
-      
-      // Log the suggestions for debugging
-      console.log(`Found ${suggestions.length} suggestions for query: ${query}`, suggestions);
+      console.log(`Found ${suggestions.length} suggestions (JustTCG) for query: ${query}`, suggestions);
     } catch (err) {
-      console.error('Error fetching suggestions:', err);
+      console.error('Error fetching suggestions (JustTCG):', err);
       setError('Failed to load suggestions');
       setSuggestions([]);
     } finally {

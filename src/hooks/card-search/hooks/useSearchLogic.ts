@@ -6,7 +6,7 @@ import { SetOption } from '../../useSetOptions';
 interface UseSearchLogicProps {
   searchCards: (details: CardDetails, setOptions: SetOption[]) => Promise<string[]>;
   setOptions: SetOption[];
-  filterSetOptions: (searchTerms: string[], foundSetIds: Set<number>) => void;
+  filterSetOptions: (searchTerms: string[], foundSetIds: Set<string>) => void;
   isFiltered: boolean;
   setSearchResults: (results: any[]) => void;
   lastSearchRef: React.MutableRefObject<string>;
@@ -62,17 +62,10 @@ export const useSearchLogic = ({
       // Search cards and get set IDs from results
       const foundSetIds = await searchCards(details, setOptions);
       
-      // Convert string array to Set<number> for filterSetOptions
       const searchTerms = (details.name || '').toLowerCase().split(' ').filter(Boolean);
       
-      // Create a new Set from the string array, converting strings to numbers
-      const setIdSet = new Set<number>();
-      foundSetIds.forEach(id => {
-        const numericId = parseInt(id, 10);
-        if (!isNaN(numericId)) {
-          setIdSet.add(numericId);
-        }
-      });
+      // Build a Set<string> directly from found set IDs
+      const setIdSet = new Set<string>(foundSetIds);
       
       filterSetOptions(searchTerms, setIdSet);
       

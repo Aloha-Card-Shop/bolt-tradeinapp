@@ -10,7 +10,7 @@ interface UseSearchEffectsProps {
   suggestionDebounceRef: React.MutableRefObject<NodeJS.Timeout | null>;
   setPotentialCardNumber: React.Dispatch<React.SetStateAction<string | null>>;
   fetchSuggestions: (name: string, game: any, categoryId: number) => void;
-  filterSetOptions: (searchTerms: string[], foundSetIds: Set<number>) => void;
+  filterSetOptions: (searchTerms: string[], foundSetIds: Set<string>) => void;
   performActualSearch: (details: CardDetails) => Promise<void>;
   setSearchResults: (results: any[]) => void;
   loadSetsByGame: (game: any) => void;
@@ -62,7 +62,7 @@ export const useSearchEffects = ({
     // Update set options when no name search is active
     if (!cardDetails.name) {
       const searchTerms: string[] = [];
-      filterSetOptions(searchTerms, new Set<number>());
+      filterSetOptions(searchTerms, new Set<string>());
     }
     
     // Determine if we should perform a search
