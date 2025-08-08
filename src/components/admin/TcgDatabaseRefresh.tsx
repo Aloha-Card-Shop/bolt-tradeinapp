@@ -42,9 +42,16 @@ export const TcgDatabaseRefresh: React.FC = () => {
     } catch (error) {
       console.error('Refresh failed:', error);
       toast.dismiss();
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to refresh database'
-      );
+      
+      // Show more specific error message if available
+      let errorMessage = 'Failed to refresh database';
+      if (error instanceof Error && error.message.includes('Edge Function returned')) {
+        errorMessage = 'API key configuration error. Please check that JUSTTCG_API_KEY is properly set in Supabase secrets.';
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsRefreshing(false);
     }
