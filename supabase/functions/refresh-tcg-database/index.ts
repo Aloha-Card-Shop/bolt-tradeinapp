@@ -5,44 +5,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface TCGPlayerCategory {
-  categoryId: number;
+interface TCGCSVCategory {
+  id: string;
   name: string;
-  displayName: string;
-  seoCategoryName: string;
-  sealedLabel: string;
-  nonSealedLabel: string;
-  conditionGuideUrl: string;
-  isDirect: boolean;
-  popularity: number;
 }
 
-interface TCGPlayerGroup {
-  groupId: number;
+interface TCGCSVSet {
+  id: string;
   name: string;
-  abbreviation: string;
-  isSupplemental: boolean;
-  publishedOn: string;
-  modifiedOn: string;
-  categoryId: number;
+  abbreviation?: string;
+  category_id: string;
+  released_on?: string;
 }
 
-interface TCGPlayerProduct {
-  productId: number;
+interface TCGCSVProduct {
+  id: string;
   name: string;
-  cleanName: string;
-  imageUrl: string;
-  categoryId: number;
-  groupId: number;
-  url: string;
-  modifiedOn: string;
-}
-
-interface TCGPlayerAuthResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  userName: string;
+  set_id: string;
+  number?: string;
+  rarity?: string;
+  image_url?: string;
 }
 
 interface ScraperStats {
@@ -50,47 +32,6 @@ interface ScraperStats {
   totalSets: number;
   totalProducts: number;
   duration: number;
-}
-
-// TCGPlayer Authentication
-async function getTCGPlayerAccessToken(publicKey: string, privateKey: string): Promise<string> {
-  const authUrl = 'https://api.tcgplayer.com/token';
-  
-  const params = new URLSearchParams({
-    grant_type: 'client_credentials',
-    client_id: publicKey,
-    client_secret: privateKey
-  });
-
-  const response = await fetch(authUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: params.toString()
-  });
-
-  if (!response.ok) {
-    throw new Error(`TCGPlayer auth failed: ${response.status} ${response.statusText}`);
-  }
-
-  const authData: TCGPlayerAuthResponse = await response.json();
-  return authData.access_token;
-}
-
-// Parse the combined API key format: "tcg_publickey_privatekey"
-function parseApiKey(apiKey: string): { publicKey: string; privateKey: string } {
-  // Expected format: tcg_ecc59dbc086648d8afe3dc164cb37225
-  // For TCGPlayer, this is usually the public key. We'll treat it as such.
-  // Real TCGPlayer keys come in pairs, but for now we'll work with what we have
-  const cleanKey = apiKey.replace('tcg_', '');
-  
-  // For now, treat the entire key as the public key and use it as both
-  // In a real implementation, you'd have separate public/private keys
-  return {
-    publicKey: cleanKey,
-    privateKey: cleanKey // This is not ideal but we'll work with what we have
-  };
 }
 
 Deno.serve(async (req) => {
@@ -101,63 +42,20 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const tcgPlayerApiKey = Deno.env.get('TCGPLAYER_API_KEY') || Deno.env.get('JUSTTCG_API_KEY');
-
-  console.log('Environment check:');
-  console.log('- TCGPLAYER_API_KEY exists:', !!Deno.env.get('TCGPLAYER_API_KEY'));
-  console.log('- JUSTTCG_API_KEY exists:', !!Deno.env.get('JUSTTCG_API_KEY'));
-  console.log('- Using API key:', tcgPlayerApiKey ? tcgPlayerApiKey.substring(0, 10) + '...' : 'none');
-
-  if (!tcgPlayerApiKey || tcgPlayerApiKey.trim() === '') {
-    console.error('TCGPlayer API key not found in environment variables');
-    return new Response(
-      JSON.stringify({ 
-        error: 'TCGPlayer API key not configured. Please set TCGPLAYER_API_KEY in Supabase secrets.',
-        debug: {
-          tcgPlayerKeyExists: !!Deno.env.get('TCGPLAYER_API_KEY'),
-          justTcgKeyExists: !!Deno.env.get('JUSTTCG_API_KEY')
-        }
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
   const startTime = Date.now();
   let stats: Partial<ScraperStats> = {};
 
   try {
-    console.log('Starting TCGPlayer database refresh...');
+    console.log('Starting TCGCSV database refresh...');
 
     // Log start of operation
     await supabase.from('tcg_scraper_logs').insert({
-      operation: 'refresh_database_tcgplayer',
+      operation: 'refresh_database_tcgcsv',
       status: 'started',
-      message: 'Starting TCGPlayer database refresh'
+      message: 'Starting TCGCSV database refresh'
     });
-
-    const { publicKey, privateKey } = parseApiKey(tcgPlayerApiKey);
-    console.log('Parsed API key - Public key length:', publicKey.length);
-
-    // Get access token
-    console.log('Getting TCGPlayer access token...');
-    let accessToken: string;
-    
-    try {
-      accessToken = await getTCGPlayerAccessToken(publicKey, privateKey);
-      console.log('Successfully obtained access token');
-    } catch (authError) {
-      console.error('Authentication failed:', authError);
-      // Try to use the API key directly for now
-      console.log('Falling back to direct API key usage');
-      accessToken = tcgPlayerApiKey;
-    }
-
-    const apiHeaders = {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      'X-Tcg-Access-Token': accessToken
-    };
 
     // Helper function for rate limiting
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -169,10 +67,8 @@ Deno.serve(async (req) => {
     await supabase.from('games').delete().neq('id', '');
 
     // Step 2: Fetch categories (games)
-    console.log('Fetching TCGPlayer categories...');
-    const categoriesResponse = await fetch('https://api.tcgplayer.com/catalog/categories', {
-      headers: apiHeaders
-    });
+    console.log('Fetching TCGCSV categories...');
+    const categoriesResponse = await fetch('https://tcgcsv.com/categories.json');
 
     console.log('Categories API response status:', categoriesResponse.status);
 
@@ -182,8 +78,7 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to fetch categories: ${categoriesResponse.status} ${categoriesResponse.statusText}`);
     }
 
-    const categoriesData = await categoriesResponse.json();
-    const categories: TCGPlayerCategory[] = categoriesData.results || [];
+    const categories: TCGCSVCategory[] = await categoriesResponse.json();
     stats.totalGames = categories.length;
 
     console.log(`Found ${categories.length} categories`);
@@ -191,8 +86,8 @@ Deno.serve(async (req) => {
     // Insert categories as games
     if (categories.length > 0) {
       const games = categories.map(category => ({
-        id: category.categoryId.toString(),
-        name: category.displayName || category.name
+        id: category.id,
+        name: category.name
       }));
 
       const { error: gamesError } = await supabase.from('games').insert(games);
@@ -202,39 +97,40 @@ Deno.serve(async (req) => {
       }
     }
 
-    await sleep(1000); // Rate limiting
+    await sleep(500); // Rate limiting for public API
 
-    // Step 3: Fetch groups (sets) for each category
-    console.log('Fetching TCGPlayer groups...');
+    // Step 3: Fetch sets for each category
+    console.log('Fetching TCGCSV sets...');
     let totalSets = 0;
     const allSets: any[] = [];
 
-    for (const category of categories) {
-      console.log(`Fetching groups for category: ${category.name}`);
-      
-      const groupsResponse = await fetch(`https://api.tcgplayer.com/catalog/categories/${category.categoryId}/groups`, {
-        headers: apiHeaders
-      });
+    // Focus on Pokemon (category id '3') first as a test
+    const pokemonCategory = categories.find(cat => cat.id === '3');
+    const categoriesToProcess = pokemonCategory ? [pokemonCategory] : categories.slice(0, 3);
 
-      if (!groupsResponse.ok) {
-        console.error(`Failed to fetch groups for category ${category.categoryId}: ${groupsResponse.status}`);
-        await sleep(1000);
+    for (const category of categoriesToProcess) {
+      console.log(`Fetching sets for category: ${category.name}`);
+      
+      const setsResponse = await fetch(`https://tcgcsv.com/${category.id}/sets.json`);
+
+      if (!setsResponse.ok) {
+        console.error(`Failed to fetch sets for category ${category.id}: ${setsResponse.status}`);
+        await sleep(500);
         continue;
       }
 
-      const groupsData = await groupsResponse.json();
-      const groups: TCGPlayerGroup[] = groupsData.results || [];
+      const sets: TCGCSVSet[] = await setsResponse.json();
       
-      const setsWithGameId = groups.map(group => ({
-        id: group.groupId.toString(),
-        name: group.name,
-        game_id: category.categoryId.toString()
+      const setsWithGameId = sets.map(set => ({
+        id: set.id,
+        name: set.name,
+        game_id: category.id
       }));
 
       allSets.push(...setsWithGameId);
-      totalSets += groups.length;
+      totalSets += sets.length;
 
-      await sleep(1000); // Rate limiting
+      await sleep(500); // Rate limiting for public API
     }
 
     stats.totalSets = totalSets;
@@ -253,41 +149,42 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Step 4: Fetch products for each group (limited sample for now)
-    console.log('Fetching TCGPlayer products (sample)...');
+    // Step 4: Fetch products for sets (limited sample)
+    console.log('Fetching TCGCSV products (sample)...');
     let totalProducts = 0;
     const allProducts: any[] = [];
 
-    // Limit to first 10 sets to avoid hitting rate limits
-    const limitedSets = allSets.slice(0, 10);
+    // Limit to first 5 sets to avoid overwhelming the API
+    const limitedSets = allSets.slice(0, 5);
 
     for (const set of limitedSets) {
-      console.log(`Fetching products for group: ${set.name}`);
+      console.log(`Fetching products for set: ${set.name}`);
       
-      const productsResponse = await fetch(`https://api.tcgplayer.com/catalog/products?groupId=${set.id}&limit=100`, {
-        headers: apiHeaders
-      });
+      // TCGCSV uses category/set structure for products
+      const gameCategory = categories.find(cat => cat.id === set.game_id);
+      if (!gameCategory) continue;
+
+      const productsResponse = await fetch(`https://tcgcsv.com/${gameCategory.id}/${set.id}.json`);
 
       if (!productsResponse.ok) {
-        console.error(`Failed to fetch products for group ${set.id}: ${productsResponse.status}`);
-        await sleep(1000);
+        console.error(`Failed to fetch products for set ${set.id}: ${productsResponse.status}`);
+        await sleep(500);
         continue;
       }
 
-      const productsData = await productsResponse.json();
-      const products: TCGPlayerProduct[] = productsData.results || [];
+      const products: TCGCSVProduct[] = await productsResponse.json();
       
       const productsWithSetId = products.map(product => ({
-        id: product.productId.toString(),
+        id: product.id,
         name: product.name,
         set_id: set.id,
-        image_url: product.imageUrl || null
+        image_url: product.image_url || null
       }));
 
       allProducts.push(...productsWithSetId);
       totalProducts += products.length;
 
-      await sleep(1000); // Rate limiting
+      await sleep(500); // Rate limiting for public API
     }
 
     stats.totalProducts = totalProducts;
@@ -309,14 +206,14 @@ Deno.serve(async (req) => {
     const duration = Date.now() - startTime;
     stats.duration = duration;
 
-    console.log(`TCGPlayer database refresh completed successfully in ${duration}ms`);
+    console.log(`TCGCSV database refresh completed successfully in ${duration}ms`);
     console.log(`Stats: ${stats.totalGames} games, ${stats.totalSets} sets, ${stats.totalProducts} products`);
 
     // Log success
     await supabase.from('tcg_scraper_logs').insert({
-      operation: 'refresh_database_tcgplayer',
+      operation: 'refresh_database_tcgcsv',
       status: 'completed',
-      message: 'TCGPlayer database refresh completed successfully',
+      message: 'TCGCSV database refresh completed successfully',
       total_games: stats.totalGames,
       total_sets: stats.totalSets,
       total_products: stats.totalProducts,
@@ -326,7 +223,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'TCGPlayer database refreshed successfully',
+        message: 'TCGCSV database refreshed successfully',
         stats: {
           games: stats.totalGames,
           sets: stats.totalSets,
@@ -341,13 +238,13 @@ Deno.serve(async (req) => {
     const duration = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
-    console.error('TCGPlayer database refresh failed:', errorMessage);
+    console.error('TCGCSV database refresh failed:', errorMessage);
 
     // Log error
     await supabase.from('tcg_scraper_logs').insert({
-      operation: 'refresh_database_tcgplayer',
+      operation: 'refresh_database_tcgcsv',
       status: 'failed',
-      message: 'TCGPlayer database refresh failed',
+      message: 'TCGCSV database refresh failed',
       error_details: { error: errorMessage },
       total_games: stats.totalGames || 0,
       total_sets: stats.totalSets || 0,
@@ -357,7 +254,7 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        error: 'TCGPlayer database refresh failed',
+        error: 'TCGCSV database refresh failed',
         message: errorMessage,
         stats
       }),
