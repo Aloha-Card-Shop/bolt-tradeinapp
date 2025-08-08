@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../integrations/supabase/client';
 import { CardDetails } from '../types/card';
+import { extractNumberBeforeSlash } from '../utils/cardSearchUtils';
 
 export const useCardSearchQuery = () => {
   const [searchResults, setSearchResults] = useState<CardDetails[]>([]);
@@ -34,11 +35,12 @@ export const useCardSearchQuery = () => {
         return g; // fallthrough for future games if added
       };
 
-      // Build a simple query string combining name and number for better matches
+      // Build query: when both name and number are present, query by name only (then filter by number client-side)
       const numberStr = typeof cardDetails.number === 'string'
         ? cardDetails.number.trim()
-        : (cardDetails.number?.value || cardDetails.number?.formatted || cardDetails.number?.raw || '').toString();
-      const q = [cardDetails.name?.trim(), numberStr?.trim()].filter(Boolean).join(' ');
+        : (cardDetails.number?.value || cardDetails.number?.formatted || cardDetails.number?.raw || '').toString().trim();
+      const nameStr = (cardDetails.name || '').trim();
+      const q = nameStr || numberStr; // prefer name; if none, use number only
 
       const { data, error } = await supabase.functions.invoke('justtcg-cards', {
         body: {
@@ -63,13 +65,24 @@ export const useCardSearchQuery = () => {
 
       const cards = Array.isArray(data?.data) ? data.data : [];
 
-      if (cards.length === 0) {
+      // If a number was provided, filter results client-side by matching the number before the slash
+      let filteredCards: any[] = cards;
+      if (numberStr) {
+        const norm = (s: string) => (extractNumberBeforeSlash(s) || '').replace(/^0+/, '');
+        const target = norm(numberStr);
+        filteredCards = cards.filter((c: any) => {
+          const num = String(c?.number || '');
+          return norm(num) === target || num.includes(numberStr);
+        });
+      }
+
+      if (filteredCards.length === 0) {
         setSearchResults([]);
         setHasMoreResults(false);
         setTotalResults(0);
         toast.error('No results found');
       } else {
-        const formattedResults: CardDetails[] = cards.map((c: any) => ({
+        const formattedResults: CardDetails[] = filteredCards.map((c: any) => ({
           id: c.id || `jt-${Math.random().toString(36).slice(2, 10)}`,
           name: c.name || '',
           set: c.set || undefined,
