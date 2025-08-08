@@ -45,9 +45,7 @@ export const TcgDatabaseRefresh: React.FC = () => {
       
       // Show more specific error message if available
       let errorMessage = 'Failed to refresh database';
-      if (error instanceof Error && error.message.includes('Edge Function returned')) {
-        errorMessage = 'API key configuration error. Please check that JUSTTCG_API_KEY is properly set in Supabase secrets.';
-      } else if (error instanceof Error) {
+      if (error instanceof Error) {
         errorMessage = error.message;
       }
       
@@ -66,7 +64,7 @@ export const TcgDatabaseRefresh: React.FC = () => {
 
       <div className="space-y-4">
         <p className="text-gray-600">
-          Refresh the entire TCG database with the latest data from JustTCG API. 
+          Refresh the entire TCG database with the latest data from tcgcsv.com. 
           This will replace all games, sets, and products with fresh data.
         </p>
 

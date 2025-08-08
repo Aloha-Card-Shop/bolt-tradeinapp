@@ -82,7 +82,16 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to fetch categories: ${categoriesResponse.status} ${categoriesResponse.statusText}`);
     }
 
-    const categories: TCGCSVCategory[] = await categoriesResponse.json();
+    const categoriesData = await categoriesResponse.json();
+    console.log('Raw categories response:', JSON.stringify(categoriesData, null, 2));
+    
+    // Validate that we received an array of categories
+    if (!Array.isArray(categoriesData)) {
+      console.error('Categories response is not an array:', typeof categoriesData);
+      throw new Error(`Invalid categories response format: expected array, got ${typeof categoriesData}`);
+    }
+
+    const categories: TCGCSVCategory[] = categoriesData;
     stats.totalGames = categories.length;
 
     console.log(`Found ${categories.length} categories`);
@@ -127,7 +136,17 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const sets: TCGCSVSet[] = await setsResponse.json();
+      const setsData = await setsResponse.json();
+      console.log(`Raw sets response for ${category.name}:`, JSON.stringify(setsData, null, 2));
+      
+      // Validate that we received an array of sets
+      if (!Array.isArray(setsData)) {
+        console.error(`Sets response for ${category.name} is not an array:`, typeof setsData);
+        await sleep(500);
+        continue;
+      }
+      
+      const sets: TCGCSVSet[] = setsData;
       
       const setsWithGameId = sets.map(set => ({
         id: set.id,
@@ -181,7 +200,17 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const products: TCGCSVProduct[] = await productsResponse.json();
+      const productsData = await productsResponse.json();
+      console.log(`Raw products response for ${set.name}:`, JSON.stringify(productsData, null, 2));
+      
+      // Validate that we received an array of products
+      if (!Array.isArray(productsData)) {
+        console.error(`Products response for ${set.name} is not an array:`, typeof productsData);
+        await sleep(500);
+        continue;
+      }
+      
+      const products: TCGCSVProduct[] = productsData;
       
       const productsWithSetId = products.map(product => ({
         id: product.id,
