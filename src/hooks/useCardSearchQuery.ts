@@ -12,7 +12,7 @@ export const useCardSearchQuery = () => {
   const [lastPage, setLastPage] = useState(0);
   
   // Perform the search
-  const searchCards = useCallback(async (cardDetails: CardDetails, setOptions: any[]) => {
+  const searchCards = useCallback(async (cardDetails: CardDetails, _setOptions: any[]) => {
     setIsSearching(true);
     const foundSetIds: string[] = [];
     
@@ -25,116 +25,60 @@ export const useCardSearchQuery = () => {
         setTotalResults(0);
         return foundSetIds;
       }
-      
-      // Build the query for unified_products table
-      let query = supabase
-        .from('unified_products')
-        .select('*', { count: 'exact' })
-        .order('name', { ascending: true })
-        .limit(12);
-      
-      // Filter by category based on game type - using correct category IDs
-      if (cardDetails.game === 'pokemon') {
-        query = query.eq('category_id', 3); // Correct Pokemon category ID
-      } else if (cardDetails.game === 'japanese-pokemon') {
-        query = query.eq('category_id', 85); // Correct Japanese Pokemon category ID
-      }
-      
-      // Add name search filter
-      if (cardDetails.name && cardDetails.name.trim()) {
-        const searchName = cardDetails.name.trim();
-        query = query.ilike('name', `%${searchName}%`);
-      }
-      
-      // Add card number search filter
-      if (cardDetails.number) {
-        const searchNumber = typeof cardDetails.number === 'string' 
-          ? cardDetails.number.trim() 
-          : cardDetails.number.value || cardDetails.number.formatted || cardDetails.number.raw || '';
-          
-        if (searchNumber) {
-          // Search in both card_number column and attributes->Number field
-          query = query.or(`card_number.ilike.%${searchNumber}%,attributes->>'Number'.ilike.%${searchNumber}%`);
+
+      // Build a realtime JustTCG search using our edge proxy
+      const mapGameToJustTcg = (g?: string) => {
+        if (!g) return undefined;
+        // Map our internal game keys to JustTCG "game" ids
+        if (g === 'pokemon' || g === 'japanese-pokemon') return 'pokemon';
+        return g; // fallthrough for future games if added
+      };
+
+      // Build a simple query string combining name and number for better matches
+      const numberStr = typeof cardDetails.number === 'string'
+        ? cardDetails.number.trim()
+        : (cardDetails.number?.value || cardDetails.number?.formatted || cardDetails.number?.raw || '').toString();
+      const q = [cardDetails.name?.trim(), numberStr?.trim()].filter(Boolean).join(' ');
+
+      const { data, error } = await supabase.functions.invoke('justtcg-cards', {
+        body: {
+          q,
+          game: mapGameToJustTcg(cardDetails.game),
+          limit: 12,
+          offset: 0,
         }
-      }
-      
-      // Add set search filter
-      if (cardDetails.set && cardDetails.set.trim()) {
-        // Find the group_id from setOptions if available
-        const selectedSet = setOptions.find(setOpt => 
-          setOpt.name === cardDetails.set || setOpt.value === cardDetails.set
-        );
-        
-        if (selectedSet && selectedSet.id) {
-          query = query.eq('group_id', selectedSet.id);
-        } else {
-          // Fallback to searching by name pattern in attributes
-          query = query.ilike('attributes->>"Set Name"', `%${cardDetails.set.trim()}%`);
-        }
-      }
-      
-      console.log('Executing unified_products query with params:', {
-        name: cardDetails.name,
-        number: cardDetails.number,
-        set: cardDetails.set,
-        game: cardDetails.game,
-        categoryId: cardDetails.game === 'pokemon' ? 3 : 85
       });
-      
-      const { data, error, count } = await query;
-      
+
       if (error) {
-        console.error('Database search error:', error);
+        console.error('JustTCG search error:', error);
         toast.error('Error searching cards');
         setIsSearching(false);
         return foundSetIds;
       }
-      
-      console.log('Database search results:', { count, resultsLength: data?.length });
-      
-      // Process and format results
-      if (data && Array.isArray(data)) {
-        const formattedResults: CardDetails[] = data.map(item => {
-          // Extract card number from attributes or card_number column
-          let cardNumber = item.card_number || '';
-          if (!cardNumber && item.attributes) {
-            const attributes = typeof item.attributes === 'string'
-              ? JSON.parse(item.attributes)
-              : item.attributes;
-            cardNumber = attributes?.Number || attributes?.card_number || '';
-          }
-          
-          // Find set name from setOptions using group_id
-          const setName = setOptions.find(s => s.id === item.group_id)?.name || '';
-          
-          // Extract set IDs for filtering
-          if (item.group_id) {
-            foundSetIds.push(item.group_id.toString());
-          }
-          
-          return {
-            id: item.id?.toString() || `unified-${Math.random().toString(36).substring(2, 11)}`,
-            name: item.name || '',
-            set: setName,
-            setId: item.group_id?.toString() || undefined,
-            number: cardNumber,
-            game: cardDetails.game || 'pokemon',
-            imageUrl: item.image_url || null,
-            productId: item.product_id?.toString() || item.tcgplayer_product_id || null,
-            releaseYear: item.released_on?.substring(0, 4) || undefined,
-            categoryId: item.category_id
-          };
-        });
-        
-        setSearchResults(formattedResults);
-        setTotalResults(count || data.length);
-        setHasMoreResults((count || 0) > 12);
-        setLastPage(1);
-      } else {
+
+      const cards = Array.isArray(data?.data) ? data.data : [];
+
+      if (cards.length === 0) {
         setSearchResults([]);
         setHasMoreResults(false);
         setTotalResults(0);
         toast.error('No results found');
+      } else {
+        const formattedResults: CardDetails[] = cards.map((c: any) => ({
+          id: c.id || `jt-${Math.random().toString(36).slice(2, 10)}`,
+          name: c.name || '',
+          set: c.set || undefined,
+          number: c.number || undefined,
+          game: cardDetails.game || 'pokemon',
+          imageUrl: null,
+          productId: c.tcgplayerId || null,
+          rarity: c.rarity || undefined,
+        }));
+
+        setSearchResults(formattedResults);
+        setTotalResults(data?.meta?.total ?? formattedResults.length);
+        setHasMoreResults(Boolean(data?.meta?.hasMore));
+        setLastPage(1);
       }
     } catch (err) {
       console.error('Card search error:', err);

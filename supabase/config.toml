@@ -1,4 +1,3 @@
-
 # A string used to distinguish different Supabase projects on the same host. Defaults to the working
 # directory name when running `supabase init`.
 project_id = "qgsabaicokoynabxgdco"
@@ -102,3 +101,13 @@ verify_jwt = false
 
 [functions.justtcg-price]
 verify_jwt = false
+
+# New JustTCG realtime proxy functions (require auth)
+[functions.justtcg-games]
+verify_jwt = true
+
+[functions.justtcg-sets]
+verify_jwt = true
+
+[functions.justtcg-cards]
+verify_jwt = true
