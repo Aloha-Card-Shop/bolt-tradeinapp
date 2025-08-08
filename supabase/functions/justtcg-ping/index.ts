@@ -9,7 +9,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
 };
 
-const AUTH_HEADERS = { "X-API-Key": API_KEY, "accept": "application/json" } as Record<string, string>;
+const AUTH = { "X-API-Key": API_KEY, accept: "application/json" } as Record<string, string>;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -24,11 +24,18 @@ serve(async (req) => {
       );
     }
 
-    const masked = `${API_KEY.slice(0, 4)}...${API_KEY.slice(-4)}`;
-    const upstream = await fetch("https://api.justtcg.com/v1/games", { headers: AUTH_HEADERS });
+    const maskedLog = `tcg_${API_KEY.slice(4, 8)}...${API_KEY.slice(-4)}`;
+    const maskedMeta = `tcg_...${API_KEY.slice(-4)}`;
+
+    const r = await fetch("https://api.justtcg.com/v1/games", { headers: AUTH });
+    const text = await r.text();
+    let data: unknown;
+    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+
+    console.log("[justtcg-ping] upstream status:", { status: r.status, ok: r.ok, key: maskedLog });
 
     return new Response(
-      JSON.stringify({ ok: upstream.ok, status: upstream.status, meta: { keyPreview: masked } }),
+      JSON.stringify({ ok: r.ok, status: r.status, scheme: "X-API-Key", meta: { keyPreview: maskedMeta }, data }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {

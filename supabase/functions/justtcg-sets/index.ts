@@ -43,7 +43,7 @@ serve(async (req) => {
     const url = new URL("https://api.justtcg.com/v1/sets");
     url.searchParams.set("game", gameParam);
 
-    const masked = API_KEY ? `${API_KEY.slice(0, 4)}...${API_KEY.slice(-4)}` : "none";
+    const masked = API_KEY ? `tcg_${API_KEY.slice(4,8)}...${API_KEY.slice(-4)}` : "none";
     console.log("[justtcg-sets] GET /sets", { url: url.toString(), game: gameParam, key: masked });
 
     const upstream = await fetch(url.toString(), {

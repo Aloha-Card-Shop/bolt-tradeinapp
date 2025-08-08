@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
     const condMap: Record<string, string> = { mint: 'M', near_mint: 'NM', lightly_played: 'LP', moderately_played: 'MP', heavily_played: 'HP', damaged: 'D' };
     const normCondKey = String(condition ?? '').toLowerCase().replace(/[\s\-]+/g, '_');
     const condParam = condMap[normCondKey] ?? undefined;
-    const printingParam = (isHolo || isReverseHolo) ? 'Foil' : undefined;
+    const printingParam = (isHolo || isReverseHolo) ? 'Foil' : 'Normal';
 
     // Try multiple possible parameter names for identifiers (TCGplayer product or JustTCG card id)
     const paramCandidates = ['tcgplayerId', 'tcgPlayerId', 'tcgplayer_id', 'tcgplayerProductId', 'productId', 'cardId', 'card_id', 'id'];
@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
 
     for (const param of paramCandidates) {
       const url = `https://api.justtcg.com/v1/cards?${param}=${encodeURIComponent(productId)}${game ? `&game=${encodeURIComponent(String(game))}` : ''}${condParam ? `&condition=${encodeURIComponent(condParam)}` : ''}${printingParam ? `&printing=${encodeURIComponent(printingParam)}` : ''}`;
-      console.log(`[justtcg] Fetch attempt with param="${param}" url=${url}`);
+      console.log(`[justtcg-price] Fetch attempt param="${param}"`, { url, key: `tcg_${API_KEY.slice(4,8)}...${API_KEY.slice(-4)}` });
 
       const jtRes = await fetch(url, {
         method: 'GET',
@@ -166,7 +166,7 @@ Deno.serve(async (req) => {
       if (!jtRes.ok) {
         lastStatus = jtRes.status;
         lastDetail = await jtRes.text();
-        console.log(`[justtcg] Non-OK response for param=${param} status=${jtRes.status} detailSnippet=${(lastDetail || '').slice(0, 200)}`);
+        console.log(`[justtcg-price] Non-OK`, { param, status: jtRes.status, key: `tcg_${API_KEY.slice(4,8)}...${API_KEY.slice(-4)}`, detailSnippet: (lastDetail || '').slice(0, 200) });
         continue;
       }
 

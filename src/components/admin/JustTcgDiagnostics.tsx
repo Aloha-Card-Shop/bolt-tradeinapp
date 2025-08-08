@@ -2,39 +2,61 @@ import React, { useState } from "react";
 import { supabase } from "../../integrations/supabase/client";
 
 const JustTcgDiagnostics: React.FC = () => {
-  const [output, setOutput] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [resp, setResp] = useState<any | null>(null);
+  const [copying, setCopying] = useState(false);
 
   const runPing = async () => {
     setLoading(true);
-    setOutput("Testing JustTCG connectivity...\n");
+    setResp(null);
     try {
       const { data, error } = await supabase.functions.invoke("justtcg-ping");
       if (error) {
-        setOutput((p) => p + `Error: ${error.message}\n`);
-        if ((error as any)?.context?.response?.status === 401) {
-          setOutput((p) => p + "Hint: JustTCG rejected the API key (401). Please verify the JUSTTCG_API_KEY in Supabase Edge Function secrets.\n");
-        }
+        setResp({ ok: false, error: error.message, status: (error as any)?.context?.response?.status });
       } else {
-        const d: any = data as any;
-        const parts: string[] = [];
-        if (d?.scheme) parts.push(`Scheme: ${d.scheme}`);
-        if (d?.meta?.keyPreview) parts.push(`Key: ${d.meta.keyPreview}`);
-        if (typeof d?.status !== "undefined") parts.push(`Status: ${d.status}`);
-        if (parts.length) setOutput((p) => p + parts.join(" | ") + "\n");
-        setOutput((p) => p + JSON.stringify(d, null, 2));
+        setResp(data);
       }
     } catch (e: any) {
-      setOutput((p) => p + `Unexpected error: ${e.message}\n`);
+      setResp({ ok: false, error: e.message });
     } finally {
       setLoading(false);
     }
   };
 
+  const copyJson = async () => {
+    if (!resp) return;
+    try {
+      setCopying(true);
+      await navigator.clipboard.writeText(JSON.stringify(resp, null, 2));
+    } finally {
+      setCopying(false);
+    }
+  };
+
+  const scheme = resp?.scheme ?? "X-API-Key";
+  const keyPreview = resp?.meta?.keyPreview ?? "—";
+  const status = typeof resp?.status !== "undefined" ? resp.status : "—";
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm">
       <h3 className="text-lg font-semibold mb-2">JustTCG Diagnostics</h3>
-      <p className="text-sm text-gray-600 mb-4">Quickly validates the configured JUSTTCG_API_KEY by calling the /games endpoint.</p>
+      <p className="text-sm text-gray-600 mb-4">Quick check using GET /v1/games with X-API-Key.</p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <div className="rounded border p-3">
+          <div className="text-xs text-gray-500">Scheme</div>
+          <div className="font-medium">{scheme}</div>
+        </div>
+        <div className="rounded border p-3">
+          <div className="text-xs text-gray-500">Key preview</div>
+          <div className="font-mono">{keyPreview}</div>
+        </div>
+        <div className="rounded border p-3">
+          <div className="text-xs text-gray-500">Status</div>
+          <div className="font-medium">{status}</div>
+        </div>
+      </div>
+
       <button
         onClick={runPing}
         disabled={loading}
@@ -42,9 +64,28 @@ const JustTcgDiagnostics: React.FC = () => {
       >
         {loading ? "Running..." : "Run JustTCG Ping"}
       </button>
-      {output && (
-        <pre className="mt-4 bg-gray-50 p-3 rounded text-sm max-h-96 overflow-auto">{output}</pre>
-      )}
+
+      <div className="mt-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm text-gray-600">Response JSON</span>
+          <button
+            onClick={copyJson}
+            disabled={!resp || copying}
+            className="text-sm px-2 py-1 rounded border hover:bg-gray-50 disabled:opacity-50"
+          >
+            {copying ? "Copying..." : "Copy"}
+          </button>
+        </div>
+        {resp && (
+          <pre className="bg-gray-50 p-3 rounded text-sm max-h-96 overflow-auto">
+            {JSON.stringify(resp, null, 2)}
+          </pre>
+        )}
+      </div>
+
+      <p className="mt-4 text-xs text-gray-500">
+        Secrets are read from Supabase Functions → JUSTTCG_API_KEY. Redeploy required after changing.
+      </p>
     </div>
   );
 };

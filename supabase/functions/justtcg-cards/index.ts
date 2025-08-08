@@ -47,7 +47,7 @@ serve(async (req) => {
 
     // Batch: if an array is provided, directly POST to /cards with that array
     if (Array.isArray(body)) {
-      console.log("[justtcg-cards] BATCH POST /cards", { count: body.length, key: API_KEY ? `${API_KEY.slice(0,4)}...${API_KEY.slice(-4)}` : "none" });
+      console.log("[justtcg-cards] BATCH POST /cards", { count: body.length, key: API_KEY ? `tcg_${API_KEY.slice(4,8)}...${API_KEY.slice(-4)}` : "none" });
       const upstream = await fetch("https://api.justtcg.com/v1/cards", {
         method: "POST",
         headers: {
@@ -95,7 +95,7 @@ serve(async (req) => {
     const text = await upstream.text();
     let data: unknown;
     try { data = JSON.parse(text); } catch { data = { raw: text }; }
-    console.log("[justtcg-cards] GET /cards response", { status: upstream.status, ok: upstream.ok, url: url.toString(), key: API_KEY ? `${API_KEY.slice(0,4)}...${API_KEY.slice(-4)}` : "none" });
+    console.log("[justtcg-cards] GET /cards response", { status: upstream.status, ok: upstream.ok, url: url.toString(), key: API_KEY ? `tcg_${API_KEY.slice(4,8)}...${API_KEY.slice(-4)}` : "none" });
 
     return new Response(JSON.stringify(data), {
       status: upstream.status,
