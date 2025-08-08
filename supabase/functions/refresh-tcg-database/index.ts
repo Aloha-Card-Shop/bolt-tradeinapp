@@ -70,9 +70,11 @@ Deno.serve(async (req) => {
 
     // Step 2: Fetch and insert games
     console.log('Fetching games...');
+    console.log('Making request to JustTCG API with key:', justTcgApiKey ? 'Key exists' : 'No key found');
+    
     const gamesResponse = await fetch('https://api.justtcg.com/v1/games', {
       headers: {
-        'Authorization': `Bearer ${justTcgApiKey}`,
+        'X-API-Key': justTcgApiKey,
         'Content-Type': 'application/json'
       }
     });
@@ -110,7 +112,7 @@ Deno.serve(async (req) => {
       
       const setsResponse = await fetch(`https://api.justtcg.com/v1/sets?game=${game.id}`, {
         headers: {
-          'Authorization': `Bearer ${justTcgApiKey}`,
+          'X-API-Key': justTcgApiKey,
           'Content-Type': 'application/json'
         }
       });
@@ -162,7 +164,7 @@ Deno.serve(async (req) => {
       
       const productsResponse = await fetch(`https://api.justtcg.com/v1/products?set=${set.id}`, {
         headers: {
-          'Authorization': `Bearer ${justTcgApiKey}`,
+          'X-API-Key': justTcgApiKey,
           'Content-Type': 'application/json'
         }
       });
