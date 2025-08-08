@@ -85,13 +85,16 @@ Deno.serve(async (req) => {
     const categoriesData = await categoriesResponse.json();
     console.log('Raw categories response:', JSON.stringify(categoriesData, null, 2));
     
-    // Validate that we received an array of categories
-    if (!Array.isArray(categoriesData)) {
-      console.error('Categories response is not an array:', typeof categoriesData);
-      throw new Error(`Invalid categories response format: expected array, got ${typeof categoriesData}`);
+    // Handle tcgcsv.com response format which has results array nested in object
+    let categories: TCGCSVCategory[];
+    if (Array.isArray(categoriesData)) {
+      categories = categoriesData;
+    } else if (categoriesData && Array.isArray(categoriesData.results)) {
+      categories = categoriesData.results;
+    } else {
+      console.error('Categories response format unexpected:', typeof categoriesData);
+      throw new Error(`Invalid categories response format: expected array or object with results array`);
     }
-
-    const categories: TCGCSVCategory[] = categoriesData;
     stats.totalGames = categories.length;
 
     console.log(`Found ${categories.length} categories`);
@@ -139,14 +142,17 @@ Deno.serve(async (req) => {
       const setsData = await setsResponse.json();
       console.log(`Raw sets response for ${category.name}:`, JSON.stringify(setsData, null, 2));
       
-      // Validate that we received an array of sets
-      if (!Array.isArray(setsData)) {
-        console.error(`Sets response for ${category.name} is not an array:`, typeof setsData);
+      // Handle tcgcsv.com response format
+      let sets: TCGCSVSet[];
+      if (Array.isArray(setsData)) {
+        sets = setsData;
+      } else if (setsData && Array.isArray(setsData.results)) {
+        sets = setsData.results;
+      } else {
+        console.error(`Sets response for ${category.name} format unexpected:`, typeof setsData);
         await sleep(500);
         continue;
       }
-      
-      const sets: TCGCSVSet[] = setsData;
       
       const setsWithGameId = sets.map(set => ({
         id: set.id,
@@ -203,14 +209,17 @@ Deno.serve(async (req) => {
       const productsData = await productsResponse.json();
       console.log(`Raw products response for ${set.name}:`, JSON.stringify(productsData, null, 2));
       
-      // Validate that we received an array of products
-      if (!Array.isArray(productsData)) {
-        console.error(`Products response for ${set.name} is not an array:`, typeof productsData);
+      // Handle tcgcsv.com response format
+      let products: TCGCSVProduct[];
+      if (Array.isArray(productsData)) {
+        products = productsData;
+      } else if (productsData && Array.isArray(productsData.results)) {
+        products = productsData.results;
+      } else {
+        console.error(`Products response for ${set.name} format unexpected:`, typeof productsData);
         await sleep(500);
         continue;
       }
-      
-      const products: TCGCSVProduct[] = productsData;
       
       const productsWithSetId = products.map(product => ({
         id: product.id,
