@@ -14,7 +14,15 @@ export const TcgDatabaseRefresh: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [lastStats, setLastStats] = useState<RefreshStats | null>(null);
-
+  const [mode, setMode] = useState<'sample' | 'full'>('sample');
+  const [progress, setProgress] = useState<null | {
+    setOffset: number;
+    nextSetOffset: number;
+    processedSets: number;
+    totalSets: number;
+    done: boolean;
+  }>(null);
+  const [cancelRequested, setCancelRequested] = useState(false);
   const handleRefresh = async () => {
     try {
       setIsRefreshing(true);

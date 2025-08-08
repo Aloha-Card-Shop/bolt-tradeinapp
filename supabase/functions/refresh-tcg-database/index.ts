@@ -51,28 +51,41 @@ Deno.serve(async (req) => {
   try {
     console.log('Starting TCGCSV database refresh...');
 
+    // Parse body params for chunked/full refresh
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch (_) {
+      body = {};
+    }
+    const mode: 'full' | 'sample' = body?.mode ?? 'sample';
+    const start: boolean = body?.start ?? false;
+    const categoryIds: number[] | undefined = body?.categoryIds;
+    const setOffset: number = Number(body?.setOffset ?? 0);
+    const setLimit: number = Number(body?.setLimit ?? 25);
+
     // Log start of operation
     await supabase.from('tcg_scraper_logs').insert({
       operation: 'refresh_database_tcgcsv',
       status: 'started',
-      message: 'Starting TCGCSV database refresh'
+      message: `Starting TCGCSV database refresh (mode=${mode}, start=${start}, setOffset=${setOffset}, setLimit=${setLimit})`
     });
 
     // Helper function for rate limiting
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    
-    // Step 1: Clear existing data
-    console.log('Clearing existing data...');
-    await supabase.from('products').delete().neq('id', '');
-    await supabase.from('sets').delete().neq('id', '');
-    await supabase.from('games').delete().neq('id', '');
 
-    // Step 2: Fetch categories (games) from tcgcsv.com
+    // Wipe only when explicitly requested on a full refresh first call
+    if (mode === 'full' && start) {
+      console.log('Clearing existing data (full wipe)...');
+      await supabase.from('products').delete().neq('id', '');
+      await supabase.from('sets').delete().neq('id', '');
+      await supabase.from('games').delete().neq('id', '');
+    }
+
+    // Fetch categories (games) from tcgcsv.com
     console.log('Fetching TCGCSV categories...');
     const categoriesResponse = await fetch('https://tcgcsv.com/tcgplayer/categories', {
-      headers: {
-        'User-Agent': 'TCG-Database-Refresh/1.0'
-      }
+      headers: { 'User-Agent': 'TCG-Database-Refresh/1.1' }
     });
 
     console.log('Categories API response status:', categoriesResponse.status);
@@ -84,184 +97,184 @@ Deno.serve(async (req) => {
     }
 
     const categoriesData = await categoriesResponse.json();
-    console.log('Raw categories response:', JSON.stringify(categoriesData, null, 2));
-    
+    console.log('Raw categories response length:', Array.isArray(categoriesData?.results) ? categoriesData.results.length : Array.isArray(categoriesData) ? categoriesData.length : 'unknown');
+
     // Handle tcgcsv.com response format which has results array nested in object
     let categories: TCGCSVCategory[];
     if (Array.isArray(categoriesData)) {
-      categories = categoriesData;
+      categories = categoriesData as TCGCSVCategory[];
     } else if (categoriesData && Array.isArray(categoriesData.results)) {
-      categories = categoriesData.results;
+      categories = categoriesData.results as TCGCSVCategory[];
     } else {
       console.error('Categories response format unexpected:', typeof categoriesData);
       throw new Error(`Invalid categories response format: expected array or object with results array`);
     }
     stats.totalGames = categories.length;
 
-    console.log(`Found ${categories.length} categories`);
+    // Filter categories if requested
+    let selectedCategories = categories;
+    if (Array.isArray(categoryIds) && categoryIds.length > 0) {
+      const setIds = new Set(categoryIds);
+      selectedCategories = categories.filter(c => setIds.has(c.categoryId));
+    }
 
-    // Insert categories as games
+    // Default behavior for sample: only Pokemon (3) or first 3 categories
+    if (mode === 'sample') {
+      const pokemon = categories.find(c => c.categoryId === 3);
+      selectedCategories = pokemon ? [pokemon] : categories.slice(0, 3);
+    }
+
+    // Upsert categories into games table
     if (categories.length > 0) {
-      const games = categories.map(category => ({
-        id: category.categoryId.toString(),
-        name: category.name
-      }));
-
-      const { error: gamesError } = await supabase.from('games').insert(games);
-      
+      const games = categories.map(category => ({ id: category.categoryId.toString(), name: category.name }));
+      const { error: gamesError } = await supabase.from('games').upsert(games, { onConflict: 'id' });
       if (gamesError) {
-        throw new Error(`Failed to insert games: ${gamesError.message}`);
+        throw new Error(`Failed to upsert games: ${gamesError.message}`);
       }
     }
 
-    await sleep(500); // Rate limiting for public API
+    await sleep(300);
 
-    // Step 3: Fetch sets for each category
-    console.log('Fetching TCGCSV sets...');
-    let totalSets = 0;
-    const allSets: any[] = [];
+    console.log(`Fetching sets for ${selectedCategories.length} categories...`);
+    // Collect sets for the selected categories
+    const allSets: Array<{ id: string; name: string; game_id: string }> = [];
 
-    // Focus on Pokemon (category id 3) first as a test
-    const pokemonCategory = categories.find(cat => cat.categoryId === 3);
-    const categoriesToProcess = pokemonCategory ? [pokemonCategory] : categories.slice(0, 3);
+    for (const category of selectedCategories) {
+      console.log(`Fetching sets for category: ${category.name} (${category.categoryId})`);
 
-    for (const category of categoriesToProcess) {
-      console.log(`Fetching sets for category: ${category.name}`);
-      
       const setsResponse = await fetch(`https://tcgcsv.com/tcgplayer/${category.categoryId}/groups`, {
-        headers: {
-          'User-Agent': 'TCG-Database-Refresh/1.0'
-        }
+        headers: { 'User-Agent': 'TCG-Database-Refresh/1.1' }
       });
 
       if (!setsResponse.ok) {
         console.error(`Failed to fetch sets for category ${category.categoryId}: ${setsResponse.status}`);
-        await sleep(500);
+        await sleep(300);
         continue;
       }
 
       const setsData = await setsResponse.json();
-      console.log(`Raw sets response for ${category.name}:`, JSON.stringify(setsData, null, 2));
-      
       // Handle tcgcsv.com response format
       let sets: TCGCSVSet[];
       if (Array.isArray(setsData)) {
-        sets = setsData;
+        sets = setsData as TCGCSVSet[];
       } else if (setsData && Array.isArray(setsData.results)) {
-        sets = setsData.results;
+        sets = setsData.results as TCGCSVSet[];
       } else {
         console.error(`Sets response for ${category.name} format unexpected:`, typeof setsData);
-        await sleep(500);
+        await sleep(300);
         continue;
       }
-      
-      const setsWithGameId = sets.map(set => ({
-        id: set.groupId.toString(),
-        name: set.name,
-        game_id: category.categoryId.toString()
-      }));
 
+      const setsWithGameId = sets.map(set => ({ id: set.groupId.toString(), name: set.name, game_id: category.categoryId.toString() }));
       allSets.push(...setsWithGameId);
-      totalSets += sets.length;
-
-      await sleep(500); // Rate limiting for public API
+      await sleep(300);
     }
 
-    stats.totalSets = totalSets;
-    console.log(`Found ${totalSets} total sets`);
+    stats.totalSets = allSets.length;
 
-    // Insert sets in batches
+    // Upsert sets in batches
     if (allSets.length > 0) {
       const batchSize = 1000;
       for (let i = 0; i < allSets.length; i += batchSize) {
         const batch = allSets.slice(i, i + batchSize);
-        const { error: setsError } = await supabase.from('sets').insert(batch);
-        
+        const { error: setsError } = await supabase.from('sets').upsert(batch, { onConflict: 'id' });
         if (setsError) {
-          throw new Error(`Failed to insert sets batch: ${setsError.message}`);
+          throw new Error(`Failed to upsert sets batch: ${setsError.message}`);
         }
       }
     }
 
-    // Step 4: Fetch products for sets (limited sample)
-    console.log('Fetching TCGCSV products (sample)...');
-    let totalProducts = 0;
-    const allProducts: any[] = [];
+    // Determine which sets to process for products (chunked for full, small sample otherwise)
+    let setsToProcess: Array<{ id: string; name: string; game_id: string }>; 
+    let totalSetsAll = allSets.length;
+    if (mode === 'full') {
+      const startIdx = Math.max(0, setOffset);
+      const endIdx = Math.min(totalSetsAll, startIdx + Math.max(1, setLimit));
+      setsToProcess = allSets.slice(startIdx, endIdx);
+    } else {
+      setsToProcess = allSets.slice(0, 5); // small sample
+    }
 
-    // Limit to first 5 sets to avoid overwhelming the API
-    const limitedSets = allSets.slice(0, 5);
+    // Fetch and upsert products for selected sets
+    let processedProducts = 0;
+    const productRows: Array<{ id: string; name: string; set_id: string; image_url: string | null }> = [];
 
-    for (const set of limitedSets) {
+    for (const set of setsToProcess) {
       console.log(`Fetching products for set: ${set.name}`);
-      
-      // Use the tcgcsv.com structure: /tcgplayer/{categoryId}/{groupId}/products
       const productsResponse = await fetch(`https://tcgcsv.com/tcgplayer/${set.game_id}/${set.id}/products`, {
-        headers: {
-          'User-Agent': 'TCG-Database-Refresh/1.0'
-        }
+        headers: { 'User-Agent': 'TCG-Database-Refresh/1.1' }
       });
 
       if (!productsResponse.ok) {
         console.error(`Failed to fetch products for set ${set.id}: ${productsResponse.status}`);
-        await sleep(500);
+        await sleep(300);
         continue;
       }
 
       const productsData = await productsResponse.json();
-      console.log(`Raw products response for ${set.name}:`, JSON.stringify(productsData, null, 2));
-      
-      // Handle tcgcsv.com response format
       let products: TCGCSVProduct[];
       if (Array.isArray(productsData)) {
-        products = productsData;
+        products = productsData as TCGCSVProduct[];
       } else if (productsData && Array.isArray(productsData.results)) {
-        products = productsData.results;
+        products = productsData.results as TCGCSVProduct[];
       } else {
         console.error(`Products response for ${set.name} format unexpected:`, typeof productsData);
-        await sleep(500);
+        await sleep(300);
         continue;
       }
-      
-      const productsWithSetId = products.map(product => ({
-        id: product.productId.toString(),
-        name: product.name,
-        set_id: set.id,
-        image_url: product.imageUrl || null
-      }));
 
-      allProducts.push(...productsWithSetId);
-      totalProducts += products.length;
-
-      await sleep(500); // Rate limiting for public API
+      const mapped = products.map(p => ({ id: p.productId.toString(), name: p.name, set_id: set.id, image_url: p.imageUrl || null }));
+      productRows.push(...mapped);
+      processedProducts += mapped.length;
+      await sleep(300);
     }
 
-    stats.totalProducts = totalProducts;
-    console.log(`Found ${totalProducts} total products (sample)`);
-
-    // Insert products in batches
-    if (allProducts.length > 0) {
+    // Upsert products in batches
+    if (productRows.length > 0) {
       const batchSize = 1000;
-      for (let i = 0; i < allProducts.length; i += batchSize) {
-        const batch = allProducts.slice(i, i + batchSize);
-        const { error: productsError } = await supabase.from('products').insert(batch);
-        
+      for (let i = 0; i < productRows.length; i += batchSize) {
+        const batch = productRows.slice(i, i + batchSize);
+        const { error: productsError } = await supabase.from('products').upsert(batch, { onConflict: 'id' });
         if (productsError) {
-          throw new Error(`Failed to insert products batch: ${productsError.message}`);
+          throw new Error(`Failed to upsert products batch: ${productsError.message}`);
         }
       }
     }
 
     const duration = Date.now() - startTime;
+    stats.totalProducts = processedProducts;
     stats.duration = duration;
 
-    console.log(`TCGCSV database refresh completed successfully in ${duration}ms`);
-    console.log(`Stats: ${stats.totalGames} games, ${stats.totalSets} sets, ${stats.totalProducts} products`);
+    // Determine progress for full mode
+    let progress: any = undefined;
+    if (mode === 'full') {
+      const processedSets = setsToProcess.length;
+      const next = setOffset + processedSets;
+      const done = next >= totalSetsAll;
+      progress = { setOffset, nextSetOffset: next, processedSets, totalSets: totalSetsAll, done };
 
-    // Log success
+      await supabase.from('tcg_scraper_logs').insert({
+        operation: 'refresh_database_tcgcsv',
+        status: done ? 'completed' : 'in_progress',
+        message: done ? 'Full refresh completed for all sets' : `Processed ${processedSets} sets in this chunk`,
+        total_games: stats.totalGames,
+        total_sets: totalSetsAll,
+        total_products: stats.totalProducts,
+        duration_ms: duration
+      });
+
+      return new Response(
+        JSON.stringify({ success: true, mode, start, stats: { games: stats.totalGames, sets: setsToProcess.length, products: processedProducts, duration: `${duration}ms` }, progress }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Sample mode success
+    console.log(`Sample refresh completed successfully in ${duration}ms`);
     await supabase.from('tcg_scraper_logs').insert({
       operation: 'refresh_database_tcgcsv',
       status: 'completed',
-      message: 'TCGCSV database refresh completed successfully',
+      message: 'Sample refresh completed',
       total_games: stats.totalGames,
       total_sets: stats.totalSets,
       total_products: stats.totalProducts,
@@ -269,23 +282,14 @@ Deno.serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'TCGCSV database refreshed successfully',
-        stats: {
-          games: stats.totalGames,
-          sets: stats.totalSets,
-          products: stats.totalProducts,
-          duration: `${duration}ms`
-        }
-      }),
+      JSON.stringify({ success: true, mode, stats: { games: stats.totalGames, sets: stats.totalSets, products: processedProducts, duration: `${duration}ms` }, progress: { done: true } }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     const duration = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
+
     console.error('TCGCSV database refresh failed:', errorMessage);
 
     // Log error
@@ -301,15 +305,9 @@ Deno.serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({
-        error: 'TCGCSV database refresh failed',
-        message: errorMessage,
-        stats
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ error: 'TCGCSV database refresh failed', message: errorMessage, stats }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
+}
 });
