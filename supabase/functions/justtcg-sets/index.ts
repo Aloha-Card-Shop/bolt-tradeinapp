@@ -6,7 +6,7 @@ const JUSTTCG_API_KEY = RAW_JUSTTCG_API_KEY?.trim().replace(/^['"]|['"]$/g, "");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-justtcg-key",
 };
 
 serve(async (req) => {
@@ -47,9 +47,8 @@ serve(async (req) => {
 
     const upstream = await fetch(url.toString(), {
       headers: {
-        Authorization: `Bearer ${JUSTTCG_API_KEY}`,
-        "x-api-key": JUSTTCG_API_KEY,
-        "X-API-Key": JUSTTCG_API_KEY,
+        "x-justtcg-key": JUSTTCG_API_KEY,
+        "accept": "application/json",
       },
     });
 

@@ -35,7 +35,22 @@ serve(async (req) => {
     const masked = `${JUSTTCG_API_KEY.slice(0, 4)}...${JUSTTCG_API_KEY.slice(-4)}`;
     console.log("[justtcg-ping] Testing key against /games", { key: masked, override: Boolean(overrideKey) });
 
-    // Attempt 1: Authorization Bearer
+    // Attempt 1: x-justtcg-key (preferred)
+    const justKeyHeaders = { "x-justtcg-key": JUSTTCG_API_KEY, "accept": "application/json" } as Record<string, string>;
+    const upstreamJust = await fetch(url.toString(), { headers: justKeyHeaders });
+    const textJust = await upstreamJust.text();
+    let dataJust: unknown;
+    try { dataJust = JSON.parse(textJust); } catch { dataJust = { raw: textJust }; }
+    console.log("[justtcg-ping] x-justtcg-key result", { status: upstreamJust.status, ok: upstreamJust.ok });
+
+    if (upstreamJust.ok) {
+      return new Response(
+        JSON.stringify({ ok: true, status: upstreamJust.status, scheme: "x-justtcg-key", data: dataJust, meta: { keyPreview: masked } }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Attempt 2: Authorization Bearer
     const bearerHeaders = { Authorization: `Bearer ${JUSTTCG_API_KEY}` } as Record<string, string>;
     const upstreamBearer = await fetch(url.toString(), { headers: bearerHeaders });
     const textBearer = await upstreamBearer.text();
@@ -50,8 +65,8 @@ serve(async (req) => {
       );
     }
 
-    // Attempt 2: x-api-key fallback
-    const apiKeyHeaders = { "x-api-key": JUSTTCG_API_KEY, "X-API-Key": JUSTTCG_API_KEY } as Record<string, string>;
+    // Attempt 3: x-api-key fallback
+    const apiKeyHeaders = { "x-api-key": JUSTTCG_API_KEY, "X-API-Key": JUSTTCG_API_KEY, "accept": "application/json" } as Record<string, string>;
     const upstreamApiKey = await fetch(url.toString(), { headers: apiKeyHeaders });
     const textApiKey = await upstreamApiKey.text();
     let dataApiKey: unknown;
@@ -65,10 +80,11 @@ serve(async (req) => {
         status: upstreamApiKey.status,
         scheme,
         attempts: {
+          xJustKey: { status: upstreamJust.status, ok: upstreamJust.ok },
           bearer: { status: upstreamBearer.status, ok: upstreamBearer.ok },
           xApiKey: { status: upstreamApiKey.status, ok: upstreamApiKey.ok },
         },
-        data: upstreamApiKey.ok ? dataApiKey : dataBearer,
+        data: upstreamApiKey.ok ? dataApiKey : (upstreamBearer.ok ? dataBearer : dataJust),
         meta: { keyPreview: masked },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

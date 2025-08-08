@@ -6,7 +6,7 @@
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-justtcg-key',
 };
 
 // Utility: safely read a nested value by possible keys
@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
       const jtRes = await fetch(url, {
         method: 'GET',
         headers: {
-          'x-api-key': apiKey,
+          'x-justtcg-key': apiKey,
           'accept': 'application/json',
         },
       });
