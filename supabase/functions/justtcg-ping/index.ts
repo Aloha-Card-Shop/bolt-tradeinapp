@@ -147,6 +147,31 @@ serve(async (req) => {
     try { dataAuthJust = JSON.parse(textAuthJust); } catch { dataAuthJust = { raw: textAuthJust }; }
     console.log("[justtcg-ping] Authorization JustTCG result", { status: upstreamAuthJust.status, ok: upstreamAuthJust.ok });
 
+    // Attempt 13: Query param x-api-key
+    const urlXApiKey = new URL(url.toString());
+    urlXApiKey.searchParams.set("x-api-key", JUSTTCG_API_KEY);
+    const upstreamQueryXApiKey = await fetch(urlXApiKey.toString(), { headers: { accept: "application/json" } });
+    const textQueryXApiKey = await upstreamQueryXApiKey.text();
+    let dataQueryXApiKey: unknown;
+    try { dataQueryXApiKey = JSON.parse(textQueryXApiKey); } catch { dataQueryXApiKey = { raw: textQueryXApiKey }; }
+    console.log("[justtcg-ping] ?x-api-key= result", { status: upstreamQueryXApiKey.status, ok: upstreamQueryXApiKey.ok });
+
+    // Attempt 14: Query param X-API-Key (caps)
+    const urlXApiKeyCaps = new URL(url.toString());
+    urlXApiKeyCaps.searchParams.set("X-API-Key", JUSTTCG_API_KEY);
+    const upstreamQueryXApiKeyCaps = await fetch(urlXApiKeyCaps.toString(), { headers: { accept: "application/json" } });
+    const textQueryXApiKeyCaps = await upstreamQueryXApiKeyCaps.text();
+    let dataQueryXApiKeyCaps: unknown;
+    try { dataQueryXApiKeyCaps = JSON.parse(textQueryXApiKeyCaps); } catch { dataQueryXApiKeyCaps = { raw: textQueryXApiKeyCaps }; }
+    console.log("[justtcg-ping] ?X-API-Key= result", { status: upstreamQueryXApiKeyCaps.status, ok: upstreamQueryXApiKeyCaps.ok });
+
+    // Attempt 15: POST with x-justtcg-key
+    const upstreamPostJust = await fetch(url.toString(), { method: "POST", headers: justKeyHeaders, body: JSON.stringify({ ping: true }) });
+    const textPostJust = await upstreamPostJust.text();
+    let dataPostJust: unknown;
+    try { dataPostJust = JSON.parse(textPostJust); } catch { dataPostJust = { raw: textPostJust }; }
+    console.log("[justtcg-ping] POST x-justtcg-key result", { status: upstreamPostJust.status, ok: upstreamPostJust.ok });
+
     // Collate attempts and choose best response
     const attempts = {
       xJustKey: { status: upstreamJust.status, ok: upstreamJust.ok },
@@ -161,6 +186,9 @@ serve(async (req) => {
       authApiKey: { status: upstreamAuthApiKey.status, ok: upstreamAuthApiKey.ok },
       authToken: { status: upstreamAuthToken.status, ok: upstreamAuthToken.ok },
       authJustTcg: { status: upstreamAuthJust.status, ok: upstreamAuthJust.ok },
+      queryXApiKey: { status: upstreamQueryXApiKey.status, ok: upstreamQueryXApiKey.ok },
+      queryXApiKeyCaps: { status: upstreamQueryXApiKeyCaps.status, ok: upstreamQueryXApiKeyCaps.ok },
+      postXJustKey: { status: upstreamPostJust.status, ok: upstreamPostJust.ok },
     } as const;
 
     const successOrder = [
@@ -176,6 +204,9 @@ serve(async (req) => {
       { scheme: "auth-Apikey", ok: upstreamAuthApiKey.ok, status: upstreamAuthApiKey.status, data: dataAuthApiKey },
       { scheme: "auth-Token", ok: upstreamAuthToken.ok, status: upstreamAuthToken.status, data: dataAuthToken },
       { scheme: "auth-JustTCG", ok: upstreamAuthJust.ok, status: upstreamAuthJust.status, data: dataAuthJust },
+      { scheme: "query-x-api-key", ok: upstreamQueryXApiKey.ok, status: upstreamQueryXApiKey.status, data: dataQueryXApiKey },
+      { scheme: "query-X-API-Key", ok: upstreamQueryXApiKeyCaps.ok, status: upstreamQueryXApiKeyCaps.status, data: dataQueryXApiKeyCaps },
+      { scheme: "post-x-justtcg-key", ok: upstreamPostJust.ok, status: upstreamPostJust.status, data: dataPostJust },
     ];
 
     const firstSuccess = successOrder.find(a => a.ok);
@@ -198,7 +229,8 @@ serve(async (req) => {
         meta: { keyPreview: masked },
         triedHeaderNames: [
           "x-justtcg-key", "authorization(bearer)", "x-api-key", "x-justtcg-api-key", "query:apiKey", "query:key",
-          "x-just-tcg-key", "x-justtcg", "api-key", "Authorization: ApiKey", "Authorization: Token", "Authorization: JustTCG"
+          "x-just-tcg-key", "x-justtcg", "api-key", "Authorization: ApiKey", "Authorization: Token", "Authorization: JustTCG",
+          "query:x-api-key", "query:X-API-Key", "POST x-justtcg-key"
         ]
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
