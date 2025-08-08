@@ -1,7 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const JUSTTCG_API_KEY = Deno.env.get("JUSTTCG_API_KEY");
+const RAW_JUSTTCG_API_KEY = Deno.env.get("JUSTTCG_API_KEY");
+const JUSTTCG_API_KEY = RAW_JUSTTCG_API_KEY?.trim().replace(/^['"]|['"]$/g, "");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,6 +46,7 @@ serve(async (req) => {
 
     // Batch: if an array is provided, directly POST to /cards with that array
     if (Array.isArray(body)) {
+      console.log("[justtcg-cards] BATCH POST /cards", { count: body.length, key: JUSTTCG_API_KEY ? `${JUSTTCG_API_KEY.slice(0,4)}...${JUSTTCG_API_KEY.slice(-4)}` : "none" });
       const upstream = await fetch("https://api.justtcg.com/v1/cards", {
         method: "POST",
         headers: {
@@ -54,7 +56,10 @@ serve(async (req) => {
         },
         body: JSON.stringify(body),
       });
-      const data = await upstream.json();
+      const text = await upstream.text();
+      let data: unknown;
+      try { data = JSON.parse(text); } catch { data = { raw: text }; }
+      console.log("[justtcg-cards] BATCH response", { status: upstream.status, ok: upstream.ok });
       return new Response(JSON.stringify(data), {
         status: upstream.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -90,7 +95,10 @@ serve(async (req) => {
       },
     });
 
-    const data = await upstream.json();
+    const text = await upstream.text();
+    let data: unknown;
+    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+    console.log("[justtcg-cards] GET /cards response", { status: upstream.status, ok: upstream.ok, url: url.toString(), key: JUSTTCG_API_KEY ? `${JUSTTCG_API_KEY.slice(0,4)}...${JUSTTCG_API_KEY.slice(-4)}` : "none" });
 
     return new Response(JSON.stringify(data), {
       status: upstream.status,

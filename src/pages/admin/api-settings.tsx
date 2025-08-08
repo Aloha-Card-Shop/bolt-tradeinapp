@@ -6,6 +6,7 @@ import CertificateTestPanel from '../../components/admin/CertificateTestPanel';
 import { PriceTestPanel } from '../../components/admin/PriceTestPanel';
 import { TcgDatabaseRefresh } from '../../components/admin/TcgDatabaseRefresh';
 import AuthGuard from '../../components/AuthGuard';
+import JustTcgDiagnostics from '../../components/admin/JustTcgDiagnostics';
 
 const ApiSettingsPage = () => {
   const navigate = useNavigate();
@@ -42,10 +43,11 @@ const ApiSettingsPage = () => {
             <div className="bg-white rounded-lg shadow-sm">
               <PriceTestPanel />
             </div>
-            
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <ApiKeySettings />
             </div>
+            
+            <JustTcgDiagnostics />
             
             <CertificateTestPanel />
           </div>

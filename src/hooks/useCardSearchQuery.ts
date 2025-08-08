@@ -50,8 +50,13 @@ export const useCardSearchQuery = () => {
       });
 
       if (error) {
+        const status = (error as any)?.context?.response?.status || (error as any)?.status;
         console.error('JustTCG search error:', error);
-        toast.error('Error searching cards');
+        if (status === 401) {
+          toast.error('JustTCG rejected the API key. Check Admin → API Settings.');
+        } else {
+          toast.error('Error searching cards');
+        }
         setIsSearching(false);
         return foundSetIds;
       }

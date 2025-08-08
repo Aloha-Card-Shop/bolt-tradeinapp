@@ -1,7 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const JUSTTCG_API_KEY = Deno.env.get("JUSTTCG_API_KEY");
+const RAW_JUSTTCG_API_KEY = Deno.env.get("JUSTTCG_API_KEY");
+const JUSTTCG_API_KEY = RAW_JUSTTCG_API_KEY?.trim().replace(/^['"]|['"]$/g, "");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,6 +23,9 @@ serve(async (req) => {
 
   try {
     const url = new URL("https://api.justtcg.com/v1/games");
+
+    const masked = JUSTTCG_API_KEY ? `${JUSTTCG_API_KEY.slice(0, 4)}...${JUSTTCG_API_KEY.slice(-4)}` : "none";
+    console.log("[justtcg-games] GET /games", { url: url.toString(), key: masked });
 
     const upstream = await fetch(url.toString(), {
       headers: {
