@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { RefreshCw, Database, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../../integrations/supabase/client';
 import { toast } from 'react-hot-toast';
@@ -23,8 +23,10 @@ export const TcgDatabaseRefresh: React.FC = () => {
     done: boolean;
   }>(null);
   const [cancelRequested, setCancelRequested] = useState(false);
+  const cancelRef = useRef(false);
   const handleRefresh = async () => {
     setCancelRequested(false);
+    cancelRef.current = false;
     setProgress(null);
     toast.dismiss();
     try {
@@ -58,7 +60,7 @@ export const TcgDatabaseRefresh: React.FC = () => {
         offset = run.data?.progress?.nextSetOffset ?? 0;
 
         // Continue in chunks until done or cancelled
-        while (!cancelRequested && run.data?.progress && !run.data.progress.done) {
+        while (!cancelRef.current && run.data?.progress && !run.data.progress.done) {
           run = await supabase.functions.invoke('refresh-tcg-database', {
             body: { mode: 'full', start: false, setOffset: offset }
           });
@@ -174,7 +176,7 @@ export const TcgDatabaseRefresh: React.FC = () => {
           {mode === 'full' && isRefreshing && (
             <button
               type="button"
-              onClick={() => setCancelRequested(true)}
+              onClick={() => { setCancelRequested(true); cancelRef.current = true; }}
               className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
