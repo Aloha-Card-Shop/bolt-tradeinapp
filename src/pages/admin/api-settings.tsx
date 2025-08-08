@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import ApiKeySettings from '../../components/admin/ApiKeySettings';
 import CertificateTestPanel from '../../components/admin/CertificateTestPanel';
 import { PriceTestPanel } from '../../components/admin/PriceTestPanel';
+import { TcgDatabaseRefresh } from '../../components/admin/TcgDatabaseRefresh';
 import AuthGuard from '../../components/AuthGuard';
 
 const ApiSettingsPage = () => {
@@ -36,6 +37,8 @@ const ApiSettingsPage = () => {
           </div>
           
           <div className="space-y-6">
+            <TcgDatabaseRefresh />
+            
             <div className="bg-white rounded-lg shadow-sm">
               <PriceTestPanel />
             </div>

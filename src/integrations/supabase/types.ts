@@ -627,6 +627,27 @@ export type Database = {
         }
         Relationships: []
       }
+      games: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       groups: {
         Row: {
           abbreviation: string | null
@@ -1112,6 +1133,41 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          created_at: string | null
+          id: string
+          image_url: string | null
+          name: string
+          set_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          image_url?: string | null
+          name: string
+          set_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          set_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -1135,6 +1191,38 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      sets: {
+        Row: {
+          created_at: string | null
+          game_id: string
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          game_id: string
+          id: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          game_id?: string
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sets_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shop_category_mappings: {
         Row: {
@@ -1449,6 +1537,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tcg_scraper_logs: {
+        Row: {
+          created_at: string | null
+          duration_ms: number | null
+          error_details: Json | null
+          id: string
+          message: string | null
+          operation: string
+          status: string
+          total_games: number | null
+          total_products: number | null
+          total_sets: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration_ms?: number | null
+          error_details?: Json | null
+          id?: string
+          message?: string | null
+          operation: string
+          status: string
+          total_games?: number | null
+          total_products?: number | null
+          total_sets?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          duration_ms?: number | null
+          error_details?: Json | null
+          id?: string
+          message?: string | null
+          operation?: string
+          status?: string
+          total_games?: number | null
+          total_products?: number | null
+          total_sets?: number | null
+        }
+        Relationships: []
       }
       tcgcsv: {
         Row: {
