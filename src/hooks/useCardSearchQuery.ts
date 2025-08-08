@@ -88,7 +88,7 @@ export const useCardSearchQuery = () => {
           set: c.set || undefined,
           number: c.number || undefined,
           game: cardDetails.game || 'pokemon',
-          imageUrl: null,
+          imageUrl: c.imageUrl || c.image_url || c.image || (c.images?.small ?? (Array.isArray(c.images) ? c.images[0] : undefined)) || null,
           productId: c.tcgplayerId || null,
           rarity: c.rarity || undefined,
         }));

@@ -62,7 +62,7 @@ export const useCardSuggestions = () => {
         name: c.name || '',
         game,
         categoryId,
-        imageUrl: null,
+        imageUrl: c.imageUrl || c.image_url || c.image || (c.images?.small ?? (Array.isArray(c.images) ? c.images[0] : undefined)) || null,
         productId: c.tcgplayerId || null,
         set: c.set || '',
         number: c.number || ''
