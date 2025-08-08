@@ -26,21 +26,49 @@ serve(async (req) => {
     const masked = `${JUSTTCG_API_KEY.slice(0, 4)}...${JUSTTCG_API_KEY.slice(-4)}`;
     console.log("[justtcg-ping] Testing key against /games", { key: masked });
 
-    const upstream = await fetch(url.toString(), {
-      headers: {
-        "x-api-key": JUSTTCG_API_KEY,
-        "X-API-Key": JUSTTCG_API_KEY,
-      },
-    });
+    // Attempt 1: Authorization Bearer
+    const bearerHeaders = {
+      Authorization: `Bearer ${JUSTTCG_API_KEY}`,
+    } as Record<string, string>;
 
-    const text = await upstream.text();
-    let data: unknown;
-    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+    const upstreamBearer = await fetch(url.toString(), { headers: bearerHeaders });
+    const textBearer = await upstreamBearer.text();
+    let dataBearer: unknown;
+    try { dataBearer = JSON.parse(textBearer); } catch { dataBearer = { raw: textBearer }; }
+    console.log("[justtcg-ping] Bearer result", { status: upstreamBearer.status, ok: upstreamBearer.ok });
 
-    console.log("[justtcg-ping] Result", { status: upstream.status, ok: upstream.ok });
+    if (upstreamBearer.ok) {
+      return new Response(
+        JSON.stringify({ ok: true, status: upstreamBearer.status, scheme: "bearer", data: dataBearer, meta: { keyPreview: masked } }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
+    // Attempt 2: x-api-key fallback
+    const apiKeyHeaders = {
+      "x-api-key": JUSTTCG_API_KEY,
+      "X-API-Key": JUSTTCG_API_KEY,
+    } as Record<string, string>;
+
+    const upstreamApiKey = await fetch(url.toString(), { headers: apiKeyHeaders });
+    const textApiKey = await upstreamApiKey.text();
+    let dataApiKey: unknown;
+    try { dataApiKey = JSON.parse(textApiKey); } catch { dataApiKey = { raw: textApiKey }; }
+    console.log("[justtcg-ping] x-api-key result", { status: upstreamApiKey.status, ok: upstreamApiKey.ok });
+
+    const scheme = upstreamApiKey.ok ? "x-api-key" : null;
     return new Response(
-      JSON.stringify({ ok: upstream.ok, status: upstream.status, data, meta: { keyPreview: masked } }),
+      JSON.stringify({
+        ok: upstreamApiKey.ok,
+        status: upstreamApiKey.status,
+        scheme,
+        attempts: {
+          bearer: { status: upstreamBearer.status, ok: upstreamBearer.ok },
+          xApiKey: { status: upstreamApiKey.status, ok: upstreamApiKey.ok },
+        },
+        data: upstreamApiKey.ok ? dataApiKey : dataBearer,
+        meta: { keyPreview: masked },
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {

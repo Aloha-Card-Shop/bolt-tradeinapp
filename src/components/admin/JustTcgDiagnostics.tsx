@@ -16,7 +16,13 @@ const JustTcgDiagnostics: React.FC = () => {
           setOutput((p) => p + "Hint: JustTCG rejected the API key (401). Please verify the JUSTTCG_API_KEY in Supabase Edge Function secrets.\n");
         }
       } else {
-        setOutput((p) => p + JSON.stringify(data, null, 2));
+        const d: any = data as any;
+        const parts: string[] = [];
+        if (d?.scheme) parts.push(`Scheme: ${d.scheme}`);
+        if (d?.meta?.keyPreview) parts.push(`Key: ${d.meta.keyPreview}`);
+        if (typeof d?.status !== "undefined") parts.push(`Status: ${d.status}`);
+        if (parts.length) setOutput((p) => p + parts.join(" | ") + "\n");
+        setOutput((p) => p + JSON.stringify(d, null, 2));
       }
     } catch (e: any) {
       setOutput((p) => p + `Unexpected error: ${e.message}\n`);

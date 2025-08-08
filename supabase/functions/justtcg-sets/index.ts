@@ -47,12 +47,17 @@ serve(async (req) => {
 
     const upstream = await fetch(url.toString(), {
       headers: {
+        Authorization: `Bearer ${JUSTTCG_API_KEY}`,
         "x-api-key": JUSTTCG_API_KEY,
         "X-API-Key": JUSTTCG_API_KEY,
       },
     });
 
-    const data = await upstream.json();
+    const text = await upstream.text();
+    let data: unknown;
+    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+
+    console.log("[justtcg-sets] response", { status: upstream.status, ok: upstream.ok });
 
     return new Response(JSON.stringify(data), {
       status: upstream.status,
