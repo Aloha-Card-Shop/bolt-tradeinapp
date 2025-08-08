@@ -66,9 +66,13 @@ Deno.serve(async (req) => {
     await supabase.from('sets').delete().neq('id', '');
     await supabase.from('games').delete().neq('id', '');
 
-    // Step 2: Fetch categories (games)
+    // Step 2: Fetch categories (games) from tcgcsv.com
     console.log('Fetching TCGCSV categories...');
-    const categoriesResponse = await fetch('https://tcgcsv.com/categories.json');
+    const categoriesResponse = await fetch('https://tcgcsv.com/tcgplayer/categories', {
+      headers: {
+        'User-Agent': 'TCG-Database-Refresh/1.0'
+      }
+    });
 
     console.log('Categories API response status:', categoriesResponse.status);
 
@@ -111,7 +115,11 @@ Deno.serve(async (req) => {
     for (const category of categoriesToProcess) {
       console.log(`Fetching sets for category: ${category.name}`);
       
-      const setsResponse = await fetch(`https://tcgcsv.com/${category.id}/sets.json`);
+      const setsResponse = await fetch(`https://tcgcsv.com/tcgplayer/${category.id}/groups`, {
+        headers: {
+          'User-Agent': 'TCG-Database-Refresh/1.0'
+        }
+      });
 
       if (!setsResponse.ok) {
         console.error(`Failed to fetch sets for category ${category.id}: ${setsResponse.status}`);
@@ -160,11 +168,12 @@ Deno.serve(async (req) => {
     for (const set of limitedSets) {
       console.log(`Fetching products for set: ${set.name}`);
       
-      // TCGCSV uses category/set structure for products
-      const gameCategory = categories.find(cat => cat.id === set.game_id);
-      if (!gameCategory) continue;
-
-      const productsResponse = await fetch(`https://tcgcsv.com/${gameCategory.id}/${set.id}.json`);
+      // Use the tcgcsv.com structure: /tcgplayer/{categoryId}/{groupId}/products
+      const productsResponse = await fetch(`https://tcgcsv.com/tcgplayer/${set.game_id}/${set.id}/products`, {
+        headers: {
+          'User-Agent': 'TCG-Database-Refresh/1.0'
+        }
+      });
 
       if (!productsResponse.ok) {
         console.error(`Failed to fetch products for set ${set.id}: ${productsResponse.status}`);
