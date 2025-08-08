@@ -38,9 +38,22 @@ Deno.serve(async (req) => {
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const justTcgApiKey = Deno.env.get('JUSTTCG_API_KEY');
 
-  if (!justTcgApiKey) {
+  // Enhanced debugging for API key retrieval
+  console.log('Environment check:');
+  console.log('- JUSTTCG_API_KEY exists:', !!justTcgApiKey);
+  console.log('- API key length:', justTcgApiKey ? justTcgApiKey.length : 0);
+  console.log('- API key first 10 chars:', justTcgApiKey ? justTcgApiKey.substring(0, 10) + '...' : 'none');
+
+  if (!justTcgApiKey || justTcgApiKey.trim() === '') {
+    console.error('JUSTTCG_API_KEY not found or empty in environment variables');
     return new Response(
-      JSON.stringify({ error: 'JUSTTCG_API_KEY not configured' }),
+      JSON.stringify({ 
+        error: 'API key configuration error. Please check that JUSTTCG_API_KEY is properly set in Supabase secrets.',
+        debug: {
+          keyExists: !!justTcgApiKey,
+          keyLength: justTcgApiKey ? justTcgApiKey.length : 0
+        }
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -68,9 +81,13 @@ Deno.serve(async (req) => {
     await supabase.from('sets').delete().neq('id', '');
     await supabase.from('games').delete().neq('id', '');
 
-    // Step 2: Fetch and insert games
-    console.log('Fetching games...');
-    console.log('Making request to JustTCG API with key:', justTcgApiKey ? 'Key exists' : 'No key found');
+    // Step 2: Test API key first with a simple request
+    console.log('Testing API key with games endpoint...');
+    console.log('API key validation:', {
+      exists: !!justTcgApiKey,
+      length: justTcgApiKey.length,
+      firstChars: justTcgApiKey.substring(0, 8) + '...'
+    });
     
     const gamesResponse = await fetch('https://api.justtcg.com/v1/games', {
       headers: {
@@ -78,6 +95,9 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json'
       }
     });
+
+    console.log('Games API response status:', gamesResponse.status);
+    console.log('Games API response headers:', Object.fromEntries(gamesResponse.headers.entries()));
 
     if (!gamesResponse.ok) {
       throw new Error(`Failed to fetch games: ${gamesResponse.status} ${gamesResponse.statusText}`);
