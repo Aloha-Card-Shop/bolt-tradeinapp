@@ -2,6 +2,7 @@
 import { useCallback } from 'react';
 import { TradeInItem } from '../useTradeInList';
 import { fetchCardPrices } from '../../utils/scraper';
+import { selectVariantPriceFromCardData } from '../../utils/priceFromCardData';
 
 interface PriceManagementProps {
   item: TradeInItem;
@@ -19,8 +20,8 @@ export const usePriceManagement = ({
   setInitialCalculation
 }: PriceManagementProps) => {
   const refreshPrice = useCallback(async () => {
-    if (!item.card.productId || !item.condition) {
-      console.warn(`usePriceManagement [${instanceId}]: Cannot refresh price, missing productId or condition`);
+    if (!item.condition) {
+      console.warn(`usePriceManagement [${instanceId}]: Cannot refresh price, missing condition`);
       return;
     }
 
@@ -32,8 +33,36 @@ export const usePriceManagement = ({
     });
 
     try {
+      // Prefer price from card variants if available
+      const fromVariants = selectVariantPriceFromCardData(item.card, item.condition, {
+        isHolo: item.isHolo,
+        isReverseHolo: item.isReverseHolo,
+      });
+
+      if (fromVariants.price != null) {
+        onUpdate({
+          price: fromVariants.price,
+          isLoadingPrice: false,
+          error: undefined,
+          cashValue: undefined,
+          tradeValue: undefined,
+          initialCalculation: true,
+          marketPriceManuallySet: false,
+          usedFallback: false,
+          fallbackReason: undefined,
+        });
+        setMarketPriceSet(false);
+        setInitialCalculation(true);
+        return;
+      }
+
+      if (!item.card.productId) {
+        onUpdate({ isLoadingPrice: false, error: undefined });
+        return;
+      }
+
       const data = await fetchCardPrices(
-        item.card.productId,
+        String(item.card.productId),
         item.condition,
         item.isFirstEdition,
         item.isHolo,

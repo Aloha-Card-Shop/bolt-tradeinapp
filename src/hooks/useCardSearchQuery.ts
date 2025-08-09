@@ -92,6 +92,16 @@ export const useCardSearchQuery = () => {
           imageUrl: c.imageUrl || c.image_url || c.image || (c.images?.small ?? (Array.isArray(c.images) ? c.images[0] : undefined)) || null,
           productId: c.tcgplayerId || null,
           rarity: c.rarity || undefined,
+          variants: Array.isArray(c.variants)
+            ? c.variants.map((v: any) => ({
+                id: v.id || v.variantId || `${c.id || c.name}-${v.condition}-${v.printing}`,
+                condition: v.condition,
+                printing: v.printing,
+                price: typeof v.price === 'number' ? v.price : Number(v.price) || 0,
+                lastUpdated: typeof v.lastUpdated === 'number' ? v.lastUpdated : undefined,
+                avgPrice: typeof v.avgPrice === 'number' ? v.avgPrice : undefined,
+              }))
+            : undefined,
         }));
 
         // Enrich results with images from unified_products when missing

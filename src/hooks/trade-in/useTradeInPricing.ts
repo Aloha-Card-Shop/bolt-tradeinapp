@@ -3,12 +3,13 @@ import { toast } from 'react-hot-toast';
 import { fetchCardPrices } from '../../utils/scraper';
 import { usePsaPriceLookup } from '../usePsaPriceLookup';
 import { TradeInItem } from '../useTradeInList';
+import { selectVariantPriceFromCardData } from '../../utils/priceFromCardData';
 
 export const useTradeInPricing = (updateItemAttribute: (index: number, key: keyof TradeInItem, value: any) => void) => {
   const { lookupPsaPrice } = usePsaPriceLookup();
 
   const fetchItemPrice = useCallback(async (index: number, item: TradeInItem) => {
-    if (!item || !item.card.productId || (!item.condition && !item.card.isCertified)) {
+    if (!item || (!item.condition && !item.card.isCertified)) {
       return;
     }
     
@@ -70,9 +71,41 @@ export const useTradeInPricing = (updateItemAttribute: (index: number, key: keyo
     updateItemAttribute(index, 'error', undefined);
     updateItemAttribute(index, 'isPriceUnavailable', false);
     
+    // Prefer price from card variants if available
+    const fromVariants = selectVariantPriceFromCardData(item.card, item.condition, {
+      isHolo: item.isHolo,
+      isReverseHolo: item.isReverseHolo,
+    });
+
+    if (fromVariants.price != null) {
+      updateItemAttribute(index, 'price', fromVariants.price);
+      updateItemAttribute(index, 'isPriceUnavailable', false);
+      const updatedCard = {
+        ...item.card,
+        priceSource: {
+          name: 'CardData',
+          url: '',
+          calculationMethod: 'variant',
+          query: fromVariants.matchedVariantId,
+        },
+      } as any;
+      updateItemAttribute(index, 'card', updatedCard);
+      updateItemAttribute(index, 'isLoadingPrice', false);
+      return;
+    }
+
+    // Fallback to legacy price fetcher if we have a productId
+    if (!item.card.productId) {
+      updateItemAttribute(index, 'price', 0);
+      updateItemAttribute(index, 'isPriceUnavailable', true);
+      updateItemAttribute(index, 'isLoadingPrice', false);
+      toast.error('No pricing available for this card configuration');
+      return;
+    }
+    
     try {
       const data = await fetchCardPrices(
-        item.card.productId,
+        String(item.card.productId),
         item.condition,
         item.isFirstEdition,
         item.isHolo,

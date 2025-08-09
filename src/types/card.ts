@@ -38,6 +38,15 @@ export interface PriceSource {
   query?: string;
 }
 
+export interface CardVariant {
+  id: string;
+  condition: string; // e.g., "Near Mint", "Lightly Played"
+  printing: string; // e.g., "Normal", "Foil"
+  price: number; // USD
+  lastUpdated?: number; // unix seconds
+  avgPrice?: number;
+}
+
 export interface CardDetails {
   id?: string;
   name: string;
@@ -61,6 +70,8 @@ export interface CardDetails {
     isHolo: boolean;
     isReverseHolo: boolean;
   };
+  // Pricing-bearing variants for this card
+  variants?: CardVariant[];
 }
 
 export interface PriceData {
