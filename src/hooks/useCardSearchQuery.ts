@@ -93,8 +93,40 @@ export const useCardSearchQuery = () => {
           rarity: c.rarity || undefined,
         }));
 
-        setSearchResults(formattedResults);
-        setTotalResults(data?.meta?.total ?? formattedResults.length);
+        // Enrich results with images from unified_products when missing
+        let enrichedResults = formattedResults;
+        const idsToFetch = Array.from(
+          new Set(
+            formattedResults
+              .filter((r) => !r.imageUrl && r.productId)
+              .map((r) => String(r.productId))
+          )
+        );
+
+        if (idsToFetch.length > 0) {
+          const { data: imageRows, error: imgErr } = await supabase
+            .from('unified_products')
+            .select('tcgplayer_product_id, image_url')
+            .in('tcgplayer_product_id', idsToFetch as any);
+
+          if (imgErr) {
+            console.warn('Image enrichment query failed:', imgErr);
+          } else if (Array.isArray(imageRows)) {
+            const imgMap: Record<string, string> = {};
+            for (const row of imageRows) {
+              if (row?.image_url) {
+                imgMap[String(row.tcgplayer_product_id)] = row.image_url as string;
+              }
+            }
+            enrichedResults = formattedResults.map((r) => ({
+              ...r,
+              imageUrl: r.imageUrl ?? (r.productId ? imgMap[String(r.productId)] ?? null : null),
+            }));
+          }
+        }
+
+        setSearchResults(enrichedResults);
+        setTotalResults(data?.meta?.total ?? enrichedResults.length);
         setHasMoreResults(Boolean(data?.meta?.hasMore));
         setLastPage(1);
       }

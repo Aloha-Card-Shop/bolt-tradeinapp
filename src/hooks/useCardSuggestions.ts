@@ -58,7 +58,7 @@ export const useCardSuggestions = () => {
 
       const cards = Array.isArray(data?.data) ? data.data : [];
 
-      const suggestions = cards.map((c: any) => ({
+      const baseSuggestions = cards.map((c: any) => ({
         name: c.name || '',
         game,
         categoryId,
@@ -68,8 +68,33 @@ export const useCardSuggestions = () => {
         number: c.number || ''
       }));
 
-      setSuggestions(suggestions);
-      console.log(`Found ${suggestions.length} suggestions (JustTCG) for query: ${query}`, suggestions);
+      // Enrich with images from unified_products when missing
+      let enrichedSuggestions = baseSuggestions;
+      const idsToFetch = Array.from(new Set(baseSuggestions.filter((s: any) => !s.imageUrl && s.productId).map((s: any) => String(s.productId))));
+      if (idsToFetch.length > 0) {
+        const { data: imageRows, error: imgErr } = await supabase
+          .from('unified_products')
+          .select('tcgplayer_product_id, image_url')
+          .in('tcgplayer_product_id', idsToFetch as any);
+
+        if (imgErr) {
+          console.warn('Suggestion image enrichment failed:', imgErr);
+        } else if (Array.isArray(imageRows)) {
+          const imgMap: Record<string, string> = {};
+          for (const row of imageRows) {
+            if (row?.image_url) {
+              imgMap[String(row.tcgplayer_product_id)] = row.image_url as string;
+            }
+          }
+          enrichedSuggestions = baseSuggestions.map((s: any) => ({
+            ...s,
+            imageUrl: s.imageUrl ?? (s.productId ? imgMap[String(s.productId)] ?? null : null)
+          }));
+        }
+      }
+
+      setSuggestions(enrichedSuggestions);
+      console.log(`Found ${enrichedSuggestions.length} suggestions (JustTCG) for query: ${query}`, enrichedSuggestions);
     } catch (err) {
       console.error('Error fetching suggestions (JustTCG):', err);
       setError('Failed to load suggestions');
