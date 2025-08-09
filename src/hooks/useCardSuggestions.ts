@@ -7,7 +7,7 @@ import { addToSearchHistory, getSearchHistory } from '../utils/cardSearchUtils';
 const SEARCH_HISTORY_KEY = 'card_search_history';
 
 // Maximum number of suggestions to show
-const MAX_SUGGESTIONS = 7;
+const MAX_SUGGESTIONS = 10;
 
 // Maximum number of history items to store
 const MAX_HISTORY_ITEMS = 10;

@@ -46,7 +46,7 @@ export const useCardSearchQuery = () => {
         body: {
           q,
           game: mapGameToJustTcg(cardDetails.game),
-          limit: 12,
+          limit: 10,
           offset: 0,
         }
       });
@@ -82,7 +82,8 @@ export const useCardSearchQuery = () => {
         setTotalResults(0);
         toast.error('No results found');
       } else {
-        const formattedResults: CardDetails[] = filteredCards.map((c: any) => ({
+        const limitedFilteredCards = filteredCards.slice(0, 10);
+        const formattedResults: CardDetails[] = limitedFilteredCards.map((c: any) => ({
           id: c.id || `jt-${Math.random().toString(36).slice(2, 10)}`,
           name: c.name || '',
           set: c.set || undefined,
